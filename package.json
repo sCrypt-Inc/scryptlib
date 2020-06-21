@@ -1,0 +1,50 @@
+{
+  "name": "scryptjs",
+  "version": "1.0.0",
+  "description": "sCrypt Javascript API",
+  "main": "dist/index.js",
+  "scripts": {
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "lint": "eslint src --ext .ts,.js",
+    "test": "mocha -r ts-node/register src/**/*.test.ts --timeout 600000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scrypt-sv/scryptjs.git"
+  },
+  "keywords": [
+    "bsv",
+    "sCrypt",
+    "Javascript",
+    "API"
+  ],
+  "author": "sCrypt.Inc",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scrypt-sv/scryptjs/issues"
+  },
+  "homepage": "https://github.com/scrypt-sv/scryptjs#readme",
+  "devDependencies": {
+    "@types/chai": "^4.2.7",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^13.1.2",
+    "@types/rimraf": "^2.0.3",
+    "@typescript-eslint/eslint-plugin": "^3.3.0",
+    "@typescript-eslint/parser": "^3.3.0",
+    "chai": "^4.2.0",
+    "eslint": "^7.2.0",
+    "mocha": "^6.2.2",
+    "ts-loader": "^6.2.1",
+    "ts-node": "^8.6.2",
+    "ts-optchain": "^0.1.8",
+    "typescript": "^3.9.5",
+    "webpack": "4.29.5",
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {
+    "node": "^12.14.0",
+    "scryptc": "^0.1.20",
+    "bsv": "git+https://git@github.com/scrypt-sv/bsv.git"
+  }
+}
