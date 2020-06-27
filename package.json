@@ -6,8 +6,9 @@
   "scripts": {
     "compile": "tsc -b",
     "watch": "tsc -b -w",
-    "lint": "eslint src --ext .ts,.js",
-    "test": "mocha -r ts-node/register src/**/*.test.ts --timeout 600000"
+    "lint": "eslint src --ext .ts,.js --cache --fix",
+    "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
+    "pretest": "ts-node test/helper.ts"
   },
   "repository": {
     "type": "git",

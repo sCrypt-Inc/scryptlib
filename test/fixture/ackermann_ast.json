@@ -1,0 +1,503 @@
+{
+    "stdin": {
+        "nodeType": "Program",
+        "src": ":1:1:40:2",
+        "imports": [],
+        "contracts": [
+            {
+                "nodeType": "Contract",
+                "name": "Ackermann",
+                "src": ":1:1:40:2",
+                "constructor": null,
+                "statics": [],
+                "functions": [
+                    {
+                        "nodeType": "FunctionDefinition",
+                        "params": [
+                            {
+                                "nodeType": "Parameter",
+                                "name": "m",
+                                "src": ":5:24:5:29",
+                                "type": "int"
+                            },
+                            {
+                                "nodeType": "Parameter",
+                                "name": "n",
+                                "src": ":5:31:5:36",
+                                "type": "int"
+                            }
+                        ],
+                        "name": "ackermann",
+                        "src": ":5:5:34:6",
+                        "returnType": "int",
+                        "return": {
+                            "nodeType": "Variable",
+                            "name": "n",
+                            "src": ":33:16:33:17"
+                        },
+                        "static": false,
+                        "body": [
+                            {
+                                "nodeType": "VariableDeclaration",
+                                "name": "stk",
+                                "src": ":6:9:6:35",
+                                "type": "bytes",
+                                "expr": {
+                                    "nodeType": "FunctionCall",
+                                    "params": [
+                                        {
+                                            "nodeType": "Variable",
+                                            "name": "m",
+                                            "src": ":6:29:6:30"
+                                        },
+                                        {
+                                            "nodeType": "IntConst",
+                                            "src": ":6:32:6:33",
+                                            "value": 1
+                                        }
+                                    ],
+                                    "name": "num2bin",
+                                    "src": ":6:21:6:34"
+                                }
+                            },
+                            {
+                                "nodeType": "Loop",
+                                "src": ":10:9:31:10",
+                                "body": {
+                                    "nodeType": "Block",
+                                    "src": ":10:19:31:10",
+                                    "stmts": [
+                                        {
+                                            "nodeType": "If",
+                                            "src": ":11:13:30:14",
+                                            "falseBranch": null,
+                                            "trueBranch": {
+                                                "nodeType": "Block",
+                                                "src": ":11:34:30:14",
+                                                "stmts": [
+                                                    {
+                                                        "nodeType": "VariableDeclaration",
+                                                        "name": "top",
+                                                        "src": ":12:17:12:38",
+                                                        "type": "bytes",
+                                                        "expr": {
+                                                            "nodeType": "Slice",
+                                                            "name": "stk",
+                                                            "end": {
+                                                                "nodeType": "IntConst",
+                                                                "src": ":12:35:12:36",
+                                                                "value": 1
+                                                            },
+                                                            "src": ":12:29:12:37",
+                                                            "start": {
+                                                                "nodeType": "IntConst",
+                                                                "src": ":12:33:12:34",
+                                                                "value": 0
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "nodeType": "Assignment",
+                                                        "name": "m",
+                                                        "src": ":13:17:13:33",
+                                                        "expr": {
+                                                            "nodeType": "FunctionCall",
+                                                            "params": [
+                                                                {
+                                                                    "nodeType": "Variable",
+                                                                    "name": "top",
+                                                                    "src": ":13:28:13:31"
+                                                                }
+                                                            ],
+                                                            "name": "unpack",
+                                                            "src": ":13:21:13:32"
+                                                        }
+                                                    },
+                                                    {
+                                                        "nodeType": "Assignment",
+                                                        "name": "stk",
+                                                        "src": ":16:17:16:42",
+                                                        "expr": {
+                                                            "nodeType": "Slice",
+                                                            "name": "stk",
+                                                            "end": {
+                                                                "nodeType": "FunctionCall",
+                                                                "params": [
+                                                                    {
+                                                                        "nodeType": "Variable",
+                                                                        "name": "stk",
+                                                                        "src": ":16:36:16:39"
+                                                                    }
+                                                                ],
+                                                                "name": "length",
+                                                                "src": ":16:29:16:40"
+                                                            },
+                                                            "src": ":16:23:16:41",
+                                                            "start": {
+                                                                "nodeType": "IntConst",
+                                                                "src": ":16:27:16:28",
+                                                                "value": 1
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "nodeType": "If",
+                                                        "src": ":18:17:29:18",
+                                                        "falseBranch": {
+                                                            "nodeType": "If",
+                                                            "src": ":20:24:29:18",
+                                                            "falseBranch": {
+                                                                "nodeType": "Block",
+                                                                "src": ":25:24:29:18",
+                                                                "stmts": [
+                                                                    {
+                                                                        "nodeType": "Assignment",
+                                                                        "name": "stk",
+                                                                        "src": ":26:21:26:51",
+                                                                        "expr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Add",
+                                                                            "src": ":26:45:26:47",
+                                                                            "rExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "stk",
+                                                                                "src": ":26:47:26:50"
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "FunctionCall",
+                                                                                "params": [
+                                                                                    {
+                                                                                        "nodeType": "BinaryExpr",
+                                                                                        "name": "Sub",
+                                                                                        "src": ":26:37:26:39",
+                                                                                        "rExpr": {
+                                                                                            "nodeType": "IntConst",
+                                                                                            "src": ":26:39:26:40",
+                                                                                            "value": 1
+                                                                                        },
+                                                                                        "lExpr": {
+                                                                                            "nodeType": "Variable",
+                                                                                            "name": "m",
+                                                                                            "src": ":26:35:26:36"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "nodeType": "IntConst",
+                                                                                        "src": ":26:42:26:43",
+                                                                                        "value": 1
+                                                                                    }
+                                                                                ],
+                                                                                "name": "num2bin",
+                                                                                "src": ":26:27:26:44"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "nodeType": "Assignment",
+                                                                        "name": "stk",
+                                                                        "src": ":27:21:27:47",
+                                                                        "expr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Add",
+                                                                            "src": ":27:41:27:43",
+                                                                            "rExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "stk",
+                                                                                "src": ":27:43:27:46"
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "FunctionCall",
+                                                                                "params": [
+                                                                                    {
+                                                                                        "nodeType": "Variable",
+                                                                                        "name": "m",
+                                                                                        "src": ":27:35:27:36"
+                                                                                    },
+                                                                                    {
+                                                                                        "nodeType": "IntConst",
+                                                                                        "src": ":27:38:27:39",
+                                                                                        "value": 1
+                                                                                    }
+                                                                                ],
+                                                                                "name": "num2bin",
+                                                                                "src": ":27:27:27:40"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "nodeType": "Assignment",
+                                                                        "name": "n",
+                                                                        "src": ":28:21:28:31",
+                                                                        "expr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Sub",
+                                                                            "src": ":28:27:28:29",
+                                                                            "rExpr": {
+                                                                                "nodeType": "IntConst",
+                                                                                "src": ":28:29:28:30",
+                                                                                "value": 1
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "n",
+                                                                                "src": ":28:25:28:26"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "trueBranch": {
+                                                                "nodeType": "Block",
+                                                                "src": ":20:36:25:18",
+                                                                "stmts": [
+                                                                    {
+                                                                        "nodeType": "Assignment",
+                                                                        "name": "n",
+                                                                        "src": ":21:21:21:31",
+                                                                        "expr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Add",
+                                                                            "src": ":21:27:21:29",
+                                                                            "rExpr": {
+                                                                                "nodeType": "IntConst",
+                                                                                "src": ":21:29:21:30",
+                                                                                "value": 1
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "n",
+                                                                                "src": ":21:25:21:26"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "nodeType": "Assignment",
+                                                                        "name": "m",
+                                                                        "src": ":22:21:22:31",
+                                                                        "expr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Sub",
+                                                                            "src": ":22:27:22:29",
+                                                                            "rExpr": {
+                                                                                "nodeType": "IntConst",
+                                                                                "src": ":22:29:22:30",
+                                                                                "value": 1
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "m",
+                                                                                "src": ":22:25:22:26"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "nodeType": "Assignment",
+                                                                        "name": "stk",
+                                                                        "src": ":24:21:24:47",
+                                                                        "expr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Add",
+                                                                            "src": ":24:41:24:43",
+                                                                            "rExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "stk",
+                                                                                "src": ":24:43:24:46"
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "FunctionCall",
+                                                                                "params": [
+                                                                                    {
+                                                                                        "nodeType": "Variable",
+                                                                                        "name": "m",
+                                                                                        "src": ":24:35:24:36"
+                                                                                    },
+                                                                                    {
+                                                                                        "nodeType": "IntConst",
+                                                                                        "src": ":24:38:24:39",
+                                                                                        "value": 1
+                                                                                    }
+                                                                                ],
+                                                                                "name": "num2bin",
+                                                                                "src": ":24:27:24:40"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "cond": {
+                                                                "nodeType": "BinaryExpr",
+                                                                "name": "Eq",
+                                                                "src": ":20:30:20:33",
+                                                                "rExpr": {
+                                                                    "nodeType": "IntConst",
+                                                                    "src": ":20:33:20:34",
+                                                                    "value": 0
+                                                                },
+                                                                "lExpr": {
+                                                                    "nodeType": "Variable",
+                                                                    "name": "n",
+                                                                    "src": ":20:28:20:29"
+                                                                }
+                                                            }
+                                                        },
+                                                        "trueBranch": {
+                                                            "nodeType": "Block",
+                                                            "src": ":18:29:20:18",
+                                                            "stmts": [
+                                                                {
+                                                                    "nodeType": "Assignment",
+                                                                    "name": "n",
+                                                                    "src": ":19:21:19:35",
+                                                                    "expr": {
+                                                                        "nodeType": "BinaryExpr",
+                                                                        "name": "Add",
+                                                                        "src": ":19:31:19:33",
+                                                                        "rExpr": {
+                                                                            "nodeType": "IntConst",
+                                                                            "src": ":19:33:19:34",
+                                                                            "value": 1
+                                                                        },
+                                                                        "lExpr": {
+                                                                            "nodeType": "BinaryExpr",
+                                                                            "name": "Add",
+                                                                            "src": ":19:27:19:29",
+                                                                            "rExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "m",
+                                                                                "src": ":19:29:19:30"
+                                                                            },
+                                                                            "lExpr": {
+                                                                                "nodeType": "Variable",
+                                                                                "name": "n",
+                                                                                "src": ":19:25:19:26"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        "cond": {
+                                                            "nodeType": "BinaryExpr",
+                                                            "name": "Eq",
+                                                            "src": ":18:23:18:26",
+                                                            "rExpr": {
+                                                                "nodeType": "IntConst",
+                                                                "src": ":18:26:18:27",
+                                                                "value": 0
+                                                            },
+                                                            "lExpr": {
+                                                                "nodeType": "Variable",
+                                                                "name": "m",
+                                                                "src": ":18:21:18:22"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "cond": {
+                                                "nodeType": "BinaryExpr",
+                                                "name": "Gt",
+                                                "src": ":11:29:11:31",
+                                                "rExpr": {
+                                                    "nodeType": "IntConst",
+                                                    "src": ":11:31:11:32",
+                                                    "value": 0
+                                                },
+                                                "lExpr": {
+                                                    "nodeType": "FunctionCall",
+                                                    "params": [
+                                                        {
+                                                            "nodeType": "Variable",
+                                                            "name": "stk",
+                                                            "src": ":11:24:11:27"
+                                                        }
+                                                    ],
+                                                    "name": "length",
+                                                    "src": ":11:17:11:28"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "count": {
+                                    "nodeType": "IntConst",
+                                    "src": ":10:15:10:17",
+                                    "value": 14
+                                }
+                            }
+                        ],
+                        "visibility": "Private"
+                    },
+                    {
+                        "nodeType": "FunctionDefinition",
+                        "params": [
+                            {
+                                "nodeType": "Parameter",
+                                "name": "y",
+                                "src": ":37:28:37:33",
+                                "type": "int"
+                            }
+                        ],
+                        "name": "unlock",
+                        "src": ":37:12:39:6",
+                        "returnType": "bool",
+                        "return": {
+                            "nodeType": "BoolConst",
+                            "src": ":1:1:1:1",
+                            "value": true
+                        },
+                        "static": false,
+                        "body": [
+                            {
+                                "nodeType": "Requirement",
+                                "src": ":38:9:38:54",
+                                "expr": {
+                                    "nodeType": "BinaryExpr",
+                                    "name": "Eq",
+                                    "src": ":38:19:38:22",
+                                    "rExpr": {
+                                        "nodeType": "FunctionCall",
+                                        "params": [
+                                            {
+                                                "nodeType": "Variable",
+                                                "name": "this.a",
+                                                "src": ":38:37:38:43"
+                                            },
+                                            {
+                                                "nodeType": "Variable",
+                                                "name": "this.b",
+                                                "src": ":38:45:38:51"
+                                            }
+                                        ],
+                                        "name": "Ackermann.ackermann",
+                                        "src": ":38:22:38:52"
+                                    },
+                                    "lExpr": {
+                                        "nodeType": "Variable",
+                                        "name": "y",
+                                        "src": ":38:17:38:18"
+                                    }
+                                }
+                            }
+                        ],
+                        "visibility": "Public"
+                    }
+                ],
+                "properties": [
+                    {
+                        "nodeType": "Property",
+                        "name": "this.a",
+                        "src": ":2:5:2:10",
+                        "type": "int"
+                    },
+                    {
+                        "nodeType": "Property",
+                        "name": "this.b",
+                        "src": ":3:5:3:10",
+                        "type": "int"
+                    }
+                ]
+            }
+        ]
+    }
+}

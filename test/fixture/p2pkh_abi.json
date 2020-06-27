@@ -1,0 +1,1 @@
+{"DemoP2PKH":[{"abiType":"function","name":"unlock","index":0,"params":[{"name":"sig","type":"Sig"},{"name":"pubKey","type":"PubKey"}],"returnType":"bool"},{"abiType":"constructor","name":"constructor","params":[{"name":"pubKeyHash","type":"Ripemd160"}]}]}
