@@ -27,7 +27,7 @@ export class ScriptedMethodCall {
   constructor(public methodName: string, public params: SupportedParamType[], binding: { lockingScript?: AsmString; unlockingScript?: AsmString }) {
 
     if (binding.lockingScript === undefined && binding.unlockingScript === undefined) {
-      throw new Error(`param binding.lockingScript & binding.unlockingScript can not be both empty`);
+      throw new Error(`param binding.lockingScript & binding.unlockingScript cannot both be empty`);
     }
 
     this.lockingScript = binding.lockingScript;
