@@ -3,8 +3,13 @@ import bsv = require('bsv');
 export { bsv };
 
 const BN = bsv.crypto.BN;
+const Interpreter = bsv.Script.Interpreter;
 
-export const FLAGS = bsv.Script.Interpreter.SCRIPT_VERIFY_MINIMALDATA | bsv.Script.Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID | bsv.Script.Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES | bsv.Script.Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES;
+export const FLAGS =
+  Interpreter.SCRIPT_VERIFY_MINIMALDATA |
+  Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID |
+  Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES |
+  Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES;
 
 export function bool2Asm(str: string): string {
   if (str === 'true') {
