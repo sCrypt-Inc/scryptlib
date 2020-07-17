@@ -1,0 +1,38 @@
+contract First {
+    int x;
+
+    constructor(int x) {
+        this.x = x;
+    }
+
+    public function equal(int y) {
+        require(y == this.x);
+    }
+
+    function t() returns(int) {
+        return -1;
+    }
+}
+
+contract Second {
+    int x; 
+
+    constructor(int x) {
+        this.x = x;
+    }
+
+   public function equal(int y) {
+        First t0 = new First(this.x);
+        require(t0.equal(y));
+    }
+
+    public function less(int y) {
+        First t0 = new First(2);
+        int x = 5;
+        this.x = this.x + 2;
+        int b = 4;
+        bool s = false;
+        // auto p = t0.x + this.x;
+        require(t0.equal(y));
+    }
+}

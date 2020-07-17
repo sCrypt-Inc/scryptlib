@@ -4,6 +4,8 @@ export { bsv };
 
 const BN = bsv.crypto.BN;
 
+export const FLAGS = bsv.Script.Interpreter.SCRIPT_VERIFY_MINIMALDATA | bsv.Script.Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID | bsv.Script.Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES | bsv.Script.Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES;
+
 export function bool2Asm(str: string): string {
   if (str === 'true') {
     return 'OP_TRUE';
@@ -182,4 +184,8 @@ export function getValidatedHexString(hex: string, allowEmpty = false): string {
   }
 
   return ret;
+}
+
+export function deserialize(txHex: string) {
+  return new bsv.Transaction(txHex);
 }

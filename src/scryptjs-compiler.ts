@@ -18,10 +18,10 @@ export interface CompileErrorBase {
 	type: string;
 	filePath: string;
 	position: {
-		line: number,
-		column: number
-	},
-	message: string
+		line: number;
+		column: number;
+	};
+	message: string;
 }
 
 export interface SyntaxError extends CompileErrorBase {
@@ -31,7 +31,7 @@ export interface SyntaxError extends CompileErrorBase {
 }
 
 export interface SemanticError extends CompileErrorBase {
-	type: CompileErrorType.SemanticError,
+	type: CompileErrorType.SemanticError;
 }
 
 export interface ImportError extends CompileErrorBase {
@@ -43,11 +43,11 @@ export type CompileError = SyntaxError | SemanticError | ImportError;
 
 export interface CompileResult {
 	asm?: string;
-	debugAsm?: DebugModeAsmWord[],
-	ast?: Record<string, unknown>,
-	dependencyAsts?: Record<string, unknown>,
-	abi?: Record<string, Array<ABIEntity>>,
-	errors: CompileError[]
+	debugAsm?: DebugModeAsmWord[];
+	ast?: Record<string, unknown>;
+	dependencyAsts?: Record<string, unknown>;
+	abi?: Array<ABIEntity>;
+	errors: CompileError[];
 }
 
 export enum DebugModeTag {
@@ -57,14 +57,21 @@ export enum DebugModeTag {
 }
 
 export interface DebugModeAsmWord {
-	file?: string,
-	line?: number,
-	endLine?: number,
-	column?: number,
-	endColumn: number,
-	opcode: string,
-	stack: string[],
-	debugTag?: DebugModeTag,
+	file?: string;
+	line?: number;
+	endLine?: number;
+	column?: number;
+	endColumn: number;
+	opcode: string;
+	stack: string[];
+	debugTag?: DebugModeTag;
+}
+
+export interface AbiJSON {
+	compilerVersion: string;
+	contract: string;
+	abi: Array<ABIEntity>;
+	asm: string;
 }
 
 export function compile(
@@ -81,17 +88,18 @@ export function compile(
 		outputToFiles?: boolean,
 		cmdArgs?: string
 	} = {
-			asm: true
+			asm: true,
+			debug: true
 		}
 ): CompileResult {
 	const sourcePath = source.path;
 	const srcDir = dirname(sourcePath);
 	const sourceFileName = basename(sourcePath);
 	const currentWorkingDir = settings.cwd || srcDir;
-	const outputFiles: string[] = [];
+	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm ? '--asm' : ''} ${settings.ast || settings.abi ? '--ast' : ''} ${settings.debug ? '--debug' : ''} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.abi ? '--asm' : ''} ${settings.ast || settings.abi ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		const output = execSync(cmd, { input: sourceContent, cwd: currentWorkingDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
@@ -156,7 +164,7 @@ export function compile(
 
 		if (settings.ast || settings.abi) {
 			const outputFilePath = getOutputFilePath(currentWorkingDir, 'ast');
-			outputFiles.push(outputFilePath);
+			outputFiles['ast'] = outputFilePath;
 
 			const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir);
 			result.ast = allAst['stdin'];
@@ -172,11 +180,13 @@ export function compile(
 				}, {});
 		}
 
-		if (settings.asm) {
+		if (settings.asm || settings.abi) {
 			const outputFilePath = getOutputFilePath(currentWorkingDir, 'asm');
-			outputFiles.push(outputFilePath);
+			outputFiles['asm'] = outputFilePath;
 
-			if (settings.debug) {
+			if (settings.debug == false) {
+				result.asm = readFileSync(outputFilePath, 'utf8');
+			} else {
 				const asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
 				const sources = asmObj.sources.map((s: string) => {
 					return join(srcDir, s);
@@ -215,32 +225,42 @@ export function compile(
 				});
 
 				result.asm = result.debugAsm.map(item => item["opcode"].trim()).join(' ');
-			} else {
-				result.asm = readFileSync(outputFilePath, 'utf8');
 			}
 		}
 
 		if (settings.abi) {
-			result.abi = getABIDeclaration(result.ast);
+			const { contract: name, abi } = getABIDeclaration(result.ast);
+			result.abi = abi;
 			if (settings.outputToFiles) {
 				const outputFilePath = getOutputFilePath(currentWorkingDir, 'abi');
-				outputFiles.push(outputFilePath);
-				writeFileSync(outputFilePath, JSON.stringify(result.abi));
+				outputFiles['abi'] = outputFilePath;
+				const abiOutput: AbiJSON = {
+					compilerVersion: compilerVersion(),
+					contract: name,
+					abi,
+					asm: result.asm
+				};
+				writeFileSync(outputFilePath, JSON.stringify(abiOutput));
 			}
 		}
 
 		return result;
 	} finally {
 		if (settings.outputToFiles) {
-			// rename all output files
-			outputFiles.forEach(file => {
+			Object.keys(outputFiles).forEach(outputType => {
+				const file = outputFiles[outputType];
 				if (existsSync(file)) {
-					rename(file, file.replace('stdin', basename(sourcePath, '.scrypt')), () => { });
+					if (settings[outputType]) {
+						// rename all output files
+						rename(file, file.replace('stdin', basename(sourcePath, '.scrypt')), () => { return; });
+					} else {
+						unlinkSync(file);
+					}
 				}
 			});
 		} else {
 			// cleanup all output files
-			outputFiles.forEach(file => {
+			Object.values<string>(outputFiles).forEach(file => {
 				if (existsSync(file)) {
 					unlinkSync(file);
 				}
@@ -250,7 +270,8 @@ export function compile(
 }
 
 export function compilerVersion() {
-	return execSync(`node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" version`).toString();
+	const text = execSync(`node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" version`).toString();
+	return /Version:\s*([^\s]+)\s*/.exec(text)[1];
 }
 
 function addSourceLocation(astRoot, basePath: string) {
@@ -297,44 +318,44 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	return join(baseDir, relativePath);
 }
 
-function getABIDeclaration(astRoot): Record<string, Array<ABIEntity>> {
-	return (astRoot["contracts"] || []).reduce((result: Record<string, Array<ABIEntity>>, contract) => {
-		let pubIndex = 0;
+function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> } {
+	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
+	let pubIndex = 0;
 
-		let entities: ABIEntity[] =
-			contract['functions']
-				.filter(f => f['visibility'] === 'Public')
-				.map(f => {
-					const entity: ABIEntity = {
-						abiType: ABIEntityType.FUNCTION,
-						name: f['name'],
-						index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-						params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-						returnType: f['returnType']
-					};
-					return entity;
-				});
+	const entities: ABIEntity[] =
+		mainContract['functions']
+			.filter(f => f['visibility'] === 'Public')
+			.map(f => {
+				const entity: ABIEntity = {
+					abiType: ABIEntityType.FUNCTION,
+					name: f['name'],
+					index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
+					params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+					// returnType: f['returnType']
+				};
+				return entity;
+			});
 
-		// explict constructor
-		if (contract['construcotr']) {
+	// explict constructor
+	if (mainContract['construcotr']) {
+		entities.push({
+			abiType: ABIEntityType.CONSTRUCTOR,
+			name: 'constructor',
+			params: mainContract['construcotr']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+		});
+	} else {
+		// implicit constructor
+		if (mainContract['properties']) {
 			entities.push({
 				abiType: ABIEntityType.CONSTRUCTOR,
 				name: 'constructor',
-				params: contract['construcotr']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
 			});
-		} else {
-			// implicit constructor
-			if (contract['properties']) {
-				entities.push({
-					abiType: ABIEntityType.CONSTRUCTOR,
-					name: 'constructor',
-					params: contract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
-				})
-			}
 		}
+	}
 
-		result[contract['name']] = entities;
-
-		return result;
-	}, {});
+	return {
+		contract: mainContract['name'],
+		abi: entities
+	};
 }

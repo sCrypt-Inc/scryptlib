@@ -1,5 +1,6 @@
 import { oc } from 'ts-optchain';
-import { literal2Asm, int2Asm, bool2Asm, bsv } from "./scryptjs-utils";
+import { literal2Asm, int2Asm, bool2Asm, bsv  } from "./scryptjs-utils";
+import { AbstractContract, TxContext } from './scryptjs-contract';
 
 export enum ABIEntityType {
   FUNCTION = 'function',
@@ -11,7 +12,7 @@ export interface ABIEntity {
   name: string;
   params: Array<{ name: string, type: string }>;
   index?: number;
-  returnType?: string;
+  // returnType?: string;
 }
 
 export type AsmString = string;
@@ -20,16 +21,27 @@ export type SupportedParamType = string | boolean | number;
 
 export class ScriptedMethodCall {
 
+  readonly contract: AbstractContract;
+
   readonly lockingScript?: string;
 
   readonly unlockingScript?: string;
 
-  constructor(public methodName: string, public params: SupportedParamType[], binding: { lockingScript?: AsmString; unlockingScript?: AsmString }) {
+  constructor(
+    public methodName: string,
+    public params: SupportedParamType[],
+    binding: {
+      contract: AbstractContract;
+      lockingScript?: AsmString;
+      unlockingScript?: AsmString;
+    }
+  ) {
 
     if (binding.lockingScript === undefined && binding.unlockingScript === undefined) {
       throw new Error(`param binding.lockingScript & binding.unlockingScript cannot both be empty`);
     }
 
+    this.contract = binding.contract;
     this.lockingScript = binding.lockingScript;
     this.unlockingScript = binding.unlockingScript;
   }
@@ -54,13 +66,21 @@ export class ScriptedMethodCall {
     return this.toScript().toHex();
   }
 
+  verify(inputSatoshis: number, txContext?: TxContext): boolean {
+    if (this.unlockingScript) {
+      return this.contract.verify(this.unlockingScript, inputSatoshis, txContext);
+    }
+
+    throw new Error("evaluation failed, missing lockingScript");
+  }
+
 }
 
 export class ABICoder {
 
   constructor(public jsonABI: ABIEntity[]) { }
 
-  encodeConstructor(asmTemplate: string, ...args: SupportedParamType[]): ScriptedMethodCall {
+  encodeConstructor(contract: AbstractContract, asmTemplate: string, ...args: SupportedParamType[]): ScriptedMethodCall {
 
     const constructorABI = this.jsonABI.filter(entity => entity.abiType === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = oc(constructorABI).params([]);
@@ -69,19 +89,23 @@ export class ABICoder {
       throw new Error(`wrong arguments length for #constructor, expected ${cParams.length} but got ${args.length}`);
     }
 
-    let asm = asmTemplate;
+    let lockingScript = asmTemplate;
 
     cParams.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in asm tempalte`);
       }
-      asm = asm.replace(`$${param.name}`, this.encodeParam(args[index], param.type));
+      lockingScript = lockingScript.replace(`$${param.name}`, this.encodeParam(args[index], param.type));
     });
 
-    return new ScriptedMethodCall('constructor', args, { lockingScript: asm });
+    if (contract.opReturn !== undefined) {
+      lockingScript += ` OP_RETURN ${contract.opReturn}`;
+    }
+
+    return new ScriptedMethodCall('constructor', args, { contract, lockingScript });
   }
 
-  encodeFunctionCall(name: string, args: SupportedParamType[]): ScriptedMethodCall {
+  encodeFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): ScriptedMethodCall {
 
     for (const entity of this.jsonABI) {
       if (entity.name === name) {
@@ -93,7 +117,7 @@ export class ABICoder {
           const pubFuncIndex = entity.index + 1;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }
-        return new ScriptedMethodCall(name, args, { unlockingScript: asm });
+        return new ScriptedMethodCall(name, args, { contract, unlockingScript: asm });
       }
     }
 
