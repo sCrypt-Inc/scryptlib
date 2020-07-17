@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { loadAbiJSON } from './helper';
-import { ABICoder, ScriptedMethodCall } from '../src/scryptjs-abi';
-import { getContractClass } from '../src/scryptjs-contract';
+import { ABICoder, ScriptedMethodCall } from '../src/abi';
+import { getContractClass } from '../src/contract';
 
 const contractFile1 = 'p2pkh.scrypt';
 const abiJson1 = loadAbiJSON(contractFile1);

@@ -2,7 +2,7 @@ import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, rename } from 'fs';
 import { oc } from 'ts-optchain';
-import { ABIEntity, ABIEntityType } from './scryptjs-abi';
+import { ABIEntity, ABIEntityType } from './abi';
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+)\n(?<message>[^\n]+)\n/g;

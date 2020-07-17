@@ -1,6 +1,6 @@
-import { ABICoder, ABIEntity, ScriptedMethodCall, SupportedParamType } from "./scryptjs-abi";
-import { AbiJSON } from './scryptjs-compiler';
-import { bsv, FLAGS, deserialize } from "./scryptjs-utils";
+import { ABICoder, ABIEntity, ScriptedMethodCall, SupportedParamType } from "./abi";
+import { AbiJSON } from './compiler';
+import { bsv, FLAGS, deserialize } from "./utils";
 
 export interface TxContext {
   tx?: any;

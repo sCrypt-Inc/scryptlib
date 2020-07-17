@@ -1,6 +1,6 @@
 import { version } from '../package.json';
-import { getContractClass } from './scryptjs-contract';
-import { compile } from './scryptjs-compiler';
+import { getContractClass } from './contract';
+import { compile } from './compiler';
 
 const Scrypt = {
   version,

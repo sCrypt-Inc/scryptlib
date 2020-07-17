@@ -1,6 +1,6 @@
 import { oc } from 'ts-optchain';
-import { literal2Asm, int2Asm, bool2Asm, bsv  } from "./scryptjs-utils";
-import { AbstractContract, TxContext } from './scryptjs-contract';
+import { literal2Asm, int2Asm, bool2Asm, bsv  } from "./utils";
+import { AbstractContract, TxContext } from './contract';
 
 export enum ABIEntityType {
   FUNCTION = 'function',

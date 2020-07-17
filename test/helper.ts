@@ -1,7 +1,7 @@
 import glob = require('glob');
 import { join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { compile, compilerVersion, AbiJSON } from '../src/scryptjs-compiler';
+import { compile, compilerVersion, AbiJSON } from '../src/compiler';
 
 export function loadAbiJSON(fileName: string): AbiJSON {
   return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_abi.json'))).toString());

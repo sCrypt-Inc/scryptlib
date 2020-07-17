@@ -1,8 +1,8 @@
 import { assert } from 'chai';
 import { loadAbiJSON } from './helper';
-import { getContractClass, AbstractContract } from '../src/scryptjs-contract';
-import { ScriptedMethodCall } from '../src/scryptjs-abi';
-import { deserialize } from '../src/scryptjs-utils';
+import { getContractClass, AbstractContract } from '../src/contract';
+import { ScriptedMethodCall } from '../src/abi';
+import { deserialize } from '../src/utils';
 
 const abiJSON = loadAbiJSON('p2pkh.scrypt');
 const pubKeyHash = '2bc7163e0085b0bcd4e0efd1c537537053aa13f2';
