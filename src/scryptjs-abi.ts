@@ -12,7 +12,6 @@ export interface ABIEntity {
   name: string;
   params: Array<{ name: string, type: string }>;
   index?: number;
-  // returnType?: string;
 }
 
 export type AsmString = string;

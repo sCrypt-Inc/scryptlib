@@ -331,7 +331,6 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 					name: f['name'],
 					index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
 					params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-					// returnType: f['returnType']
 				};
 				return entity;
 			});
