@@ -1,23 +1,22 @@
 import { assert } from 'chai';
-import { loadAbiJSON } from './helper';
-import { getContractClass, AbstractContract } from '../src/contract';
-import { ScriptedMethodCall } from '../src/abi';
-import { deserialize } from '../src/utils';
+import { loadAbiJSON, newTx } from './helper';
+import { getContractClass, AbstractContract, TxContext } from '../src/contract';
+import { FunctionCall } from '../src/abi';
+import { bsv, signTx, toHex } from '../src/utils';
+
+const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+const publicKey = privateKey.publicKey;
+const inputSatoshis = 100000;
+const tx = newTx(inputSatoshis);
 
 const abiJSON = loadAbiJSON('p2pkh.scrypt');
-const pubKeyHash = '2bc7163e0085b0bcd4e0efd1c537537053aa13f2';
-const sig = '30440220729d3935d496e5a708a6a1d4c61dcdd1bebae6f0e0b63b9b9eb1b7616cdbbc2b02203b58cdde0133a6e90d921ecee6ecafca7000a13a3e38673810b4c6badd8d952041';
-const pubKey = '03613fa845ad3fe1ef4fe9bbf0b50a1cb5219dd30a0c4e3e4e46fb218313af9220';
-const txHex = '01000000015884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a40000000000ffffffff0000000000';
-const tx = deserialize(txHex);
-const inputSatoshis = 100000;
 
 describe('getContractClass()', () => {
 
   it('should return a reflected contract class object', () => {
     const DemoP2PKH = getContractClass(abiJSON);
     assert.typeOf(DemoP2PKH, 'function');
-    assert.deepEqual(DemoP2PKH.abi, abiJSON.abi);
+    assert.deepEqual(DemoP2PKH.interfaces, abiJSON.interfaces);
     assert.deepEqual(DemoP2PKH.asm, abiJSON.asm);
   })
 
@@ -25,10 +24,21 @@ describe('getContractClass()', () => {
 
     let DemoP2PKH: any;
     let instance: any;
+    let pubKeyHash: any;
+    let sig: any;
+    let txContext: TxContext;
+    let unlockingScript: string;
 
     before(() => {
+      pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
+
       DemoP2PKH = getContractClass(abiJSON);
-      instance = new DemoP2PKH(pubKeyHash);
+      instance = new DemoP2PKH(toHex(pubKeyHash));
+
+      sig = signTx(tx, privateKey, instance.lockingScript, inputSatoshis);
+      txContext = { inputSatoshis, tx };
+
+      unlockingScript = [toHex(sig), toHex(publicKey)].join(' ');
     })
 
     it('should be an instance of AbstractContract', () => {
@@ -36,45 +46,39 @@ describe('getContractClass()', () => {
     })
 
     describe('toHex()', () => {
-      it('should return the locking script in hex of the contract', () => {
-        assert.equal(instance.toHex(), '5101400100015101b101b2142bc7163e0085b0bcd4e0efd1c537537053aa13f25779a95179876958795879ac777777777777777777');
+      it('should return the locking script of the contract in hex', () => {
+        assert.equal(instance.toHex(), `5101400100015101b101b214${toHex(pubKeyHash)}5779a95179876958795879ac777777777777777777`);
       })
     })
 
     describe('toASM()', () => {
-      it('should return the locking script in ASM of the contract', () => {
-        assert.equal(instance.toASM(), 'OP_1 40 00 51 b1 b2 2bc7163e0085b0bcd4e0efd1c537537053aa13f2 OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP');
+      it('should return the locking script of the contract in ASM', () => {
+        assert.equal(instance.toASM(), instance.lockingScript);
+        assert.equal(instance.toASM(), `OP_1 40 00 51 b1 b2 ${toHex(pubKeyHash)} OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
       })
     })
 
     describe('verify()', () => {
+      it('should return true if all arguments are correct', () => {
+        // use param txContext as the context
+        assert.isTrue(instance.verify(unlockingScript, txContext));
 
-      const unlockingScript = '30440220729d3935d496e5a708a6a1d4c61dcdd1bebae6f0e0b63b9b9eb1b7616cdbbc2b02203b58cdde0133a6e90d921ecee6ecafca7000a13a3e38673810b4c6badd8d952041 03613fa845ad3fe1ef4fe9bbf0b50a1cb5219dd30a0c4e3e4e46fb218313af9220';
-      const txContext = { hex: txHex };
-
-      describe('when instance.txContext is unset', () => {
-        it('should return true if all arguments are correct', () => {
-          assert.isTrue(instance.verify(unlockingScript, inputSatoshis, txContext));
-        })
+        // use instance.txContxt as the context
+        instance.txContext = txContext;
+        assert.isTrue(instance.verify(unlockingScript));
+        instance.txContext = undefined;
       })
 
-      describe('when instance.txContext is set', () => {
-        it('should return true if other arguments (except txContext) is correct', () => {
-          instance.txContext = txContext;
-          assert.isTrue(instance.verify(unlockingScript, inputSatoshis));
-        })
+      it('should return false if param `unlockingScript` is incorrect', () => {
+        assert.isFalse(instance.verify(unlockingScript + '00', txContext));
       })
 
-      it('should return false if param `unlockingScript` is wrong', () => {
-        assert.isFalse(instance.verify(unlockingScript + '00', inputSatoshis, txContext));
-      })
+      it('should return false if param `txContext` is incorrect', () => {
+        // emtpy txContext
+        assert.isFalse(instance.verify(unlockingScript));
 
-      it('should return false if param `inputSatoshis` is wrong', () => {
-        assert.isFalse(instance.verify(unlockingScript, inputSatoshis + 1, txContext));
-      })
-
-      it('should return false if param `txContext` is wrong', () => {
-        assert.isFalse(instance.verify(unlockingScript, inputSatoshis, undefined));
+        // incorrect inputSatoshis
+        assert.isFalse(instance.verify(unlockingScript, Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 })));
       })
     })
 
@@ -83,14 +87,28 @@ describe('getContractClass()', () => {
     })
 
     describe("when the mapped-method being invoked", () => {
-      it("should return ScriptedMethodCall type object which could be transformed to locking script", () => {
-        const methodCall = instance.unlock(sig, pubKey);
-        assert.instanceOf(methodCall, ScriptedMethodCall);
-        assert.equal(methodCall.toASM(), '30440220729d3935d496e5a708a6a1d4c61dcdd1bebae6f0e0b63b9b9eb1b7616cdbbc2b02203b58cdde0133a6e90d921ecee6ecafca7000a13a3e38673810b4c6badd8d952041 03613fa845ad3fe1ef4fe9bbf0b50a1cb5219dd30a0c4e3e4e46fb218313af9220');
-        assert.equal(methodCall.toHex(), '4730440220729d3935d496e5a708a6a1d4c61dcdd1bebae6f0e0b63b9b9eb1b7616cdbbc2b02203b58cdde0133a6e90d921ecee6ecafca7000a13a3e38673810b4c6badd8d9520412103613fa845ad3fe1ef4fe9bbf0b50a1cb5219dd30a0c4e3e4e46fb218313af9220');
-        assert.isTrue(methodCall.verify(inputSatoshis, { hex: txHex }))
-        assert.isTrue(methodCall.verify(inputSatoshis, { tx }))
+
+      it("should return FunctionCall type object which could be transformed to unlocking script", () => {
+        const functionCall = instance.unlock(toHex(sig), toHex(publicKey));
+        assert.instanceOf(functionCall, FunctionCall);
+        assert.equal(functionCall.toASM(), unlockingScript);
+        assert.equal(functionCall.toHex(), bsv.Script.fromASM(unlockingScript).toHex());
       })
+
+      it('the returned object can be verified whether it could unlock the contract', () => {
+        // can unlock contract if params are correct
+        const validSig = toHex(sig);
+        const validPubkey = toHex(publicKey);
+        assert.isTrue(instance.unlock(validSig, validPubkey).verify({ inputSatoshis, hex: toHex(tx) }));
+        assert.isTrue(instance.unlock(validSig, validPubkey).verify({ inputSatoshis, tx }));
+
+        // can not unlock contract if any param is incorrect
+        const invalidSig = validSig.replace('1', '0');
+        const invalidPubKey = validPubkey.replace('0', '1');
+        assert.isFalse(instance.unlock(invalidSig, validPubkey).verify({ inputSatoshis, tx }));
+        assert.isFalse(instance.unlock(validSig, invalidPubKey).verify({ inputSatoshis, tx }));
+      })
+
     })
 
   })

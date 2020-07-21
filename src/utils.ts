@@ -5,11 +5,14 @@ export { bsv };
 const BN = bsv.crypto.BN;
 const Interpreter = bsv.Script.Interpreter;
 
-export const FLAGS =
+export const DEFAULT_FLAGS =
   Interpreter.SCRIPT_VERIFY_MINIMALDATA |
   Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID |
   Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES |
   Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES;
+
+export const DEFAULT_SIGHASH_TYPE =
+  bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
 
 export function bool2Asm(str: string): string {
   if (str === 'true') {
@@ -194,3 +197,12 @@ export function getValidatedHexString(hex: string, allowEmpty = false): string {
 export function deserialize(txHex: string) {
   return new bsv.Transaction(txHex);
 }
+
+export function signTx(tx, privateKey, lockingScript: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
+  return bsv.Transaction.sighash.sign(
+    tx, privateKey, sighashType, inputIndex,
+    bsv.Script.fromASM(lockingScript), new bsv.crypto.BN(inputAmount), flags
+  ).toTxFormat();
+}
+
+export const toHex = (x) => x.toString('hex');

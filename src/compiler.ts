@@ -2,7 +2,7 @@ import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, rename } from 'fs';
 import { oc } from 'ts-optchain';
-import { ABIEntity, ABIEntityType } from './abi';
+import { ABIEntity, ABIEntityType, AbiJSON } from './abi';
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+)\n(?<message>[^\n]+)\n/g;
@@ -46,7 +46,7 @@ export interface CompileResult {
 	debugAsm?: DebugModeAsmWord[];
 	ast?: Record<string, unknown>;
 	dependencyAsts?: Record<string, unknown>;
-	abi?: Array<ABIEntity>;
+	interfaces?: Array<ABIEntity>;
 	errors: CompileError[];
 }
 
@@ -65,13 +65,6 @@ export interface DebugModeAsmWord {
 	opcode: string;
 	stack: string[];
 	debugTag?: DebugModeTag;
-}
-
-export interface AbiJSON {
-	compilerVersion: string;
-	contract: string;
-	abi: Array<ABIEntity>;
-	asm: string;
 }
 
 export function compile(
@@ -229,18 +222,18 @@ export function compile(
 		}
 
 		if (settings.abi) {
-			const { contract: name, abi } = getABIDeclaration(result.ast);
-			result.abi = abi;
+			const { contract: name, interfaces } = getABIDeclaration(result.ast);
+			result.interfaces = interfaces;
 			if (settings.outputToFiles) {
 				const outputFilePath = getOutputFilePath(currentWorkingDir, 'abi');
 				outputFiles['abi'] = outputFilePath;
 				const abiOutput: AbiJSON = {
 					compilerVersion: compilerVersion(),
 					contract: name,
-					abi,
+					interfaces,
 					asm: result.asm
 				};
-				writeFileSync(outputFilePath, JSON.stringify(abiOutput));
+				writeFileSync(outputFilePath, JSON.stringify(abiOutput, null, 4));
 			}
 		}
 
@@ -318,7 +311,7 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	return join(baseDir, relativePath);
 }
 
-function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> } {
+function getABIDeclaration(astRoot): { contract: string, interfaces: Array<ABIEntity> } {
 	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
 	let pubIndex = 0;
 
@@ -327,7 +320,7 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 			.filter(f => f['visibility'] === 'Public')
 			.map(f => {
 				const entity: ABIEntity = {
-					abiType: ABIEntityType.FUNCTION,
+					type: ABIEntityType.FUNCTION,
 					name: f['name'],
 					index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
 					params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
@@ -338,7 +331,7 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 	// explict constructor
 	if (mainContract['construcotr']) {
 		entities.push({
-			abiType: ABIEntityType.CONSTRUCTOR,
+			type: ABIEntityType.CONSTRUCTOR,
 			name: 'constructor',
 			params: mainContract['construcotr']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
 		});
@@ -346,7 +339,7 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 		// implicit constructor
 		if (mainContract['properties']) {
 			entities.push({
-				abiType: ABIEntityType.CONSTRUCTOR,
+				type: ABIEntityType.CONSTRUCTOR,
 				name: 'constructor',
 				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
 			});
@@ -355,6 +348,6 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 
 	return {
 		contract: mainContract['name'],
-		abi: entities
+		interfaces: entities
 	};
 }

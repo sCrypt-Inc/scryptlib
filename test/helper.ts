@@ -1,7 +1,9 @@
 import glob = require('glob');
 import { join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { compile, compilerVersion, AbiJSON } from '../src/compiler';
+import { compile, compilerVersion } from '../src/compiler';
+import { AbiJSON } from '../src/abi';
+import { bsv } from '../src/utils';
 
 export function loadAbiJSON(fileName: string): AbiJSON {
   return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_abi.json'))).toString());
@@ -29,6 +31,16 @@ function beforeAllTests() {
     compileAllFixtureContracts();
     writeFileSync(compilerVersionFile, curVersion);
   }
+}
+
+export function newTx(inputSatoshis: number) {
+  const utxo = {
+    txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
+    outputIndex: 0,
+    script: '',   // placeholder
+    satoshis: inputSatoshis
+  };
+  return new bsv.Transaction().from(utxo);
 }
 
 beforeAllTests();
