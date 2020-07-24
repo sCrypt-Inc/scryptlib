@@ -2,12 +2,13 @@
     "compilerOptions": {
         "target": "es6",
         "module": "commonjs",
-        "outDir": "dist",
+        "outDir": "./dist",
         "alwaysStrict": true,
         "sourceMap": true,
         "resolveJsonModule": true,
         "moduleResolution": "node",
         "declaration": true,
+        "declarationDir": "./dist",
         "lib": [
             "es2020"
         ]

@@ -1,8 +1,9 @@
 {
   "name": "scryptjs",
   "version": "1.0.0",
-  "description": "sCrypt Javascript API",
+  "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "main": "dist/index.js",
+  "types": "dist",
   "scripts": {
     "compile": "tsc -b",
     "watch": "tsc -b -w",

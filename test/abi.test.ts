@@ -1,19 +1,20 @@
 import { assert } from 'chai';
-import { loadAbiJSON, newTx } from './helper';
+import { loadDescription, newTx } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
-import { getContractClass } from '../src/contract';
+import { buildContractClass } from '../src/contract';
 import { bsv, toHex, signTx } from '../src/utils';
+import { Bytes, PubKey, Sig, Ripemd160 } from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
+const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 const txHex = toHex(tx);
 
-const abiJSON = loadAbiJSON('p2pkh.scrypt');
-const DemoP2PKH = getContractClass(abiJSON);
-const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
-const p2pkh = new DemoP2PKH(toHex(pubKeyHash));
+const jsonDescr = loadDescription('p2pkh.scrypt');
+const DemoP2PKH = buildContractClass(jsonDescr);
+const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
 
 describe('FunctionCall', () => {
 
@@ -22,18 +23,18 @@ describe('FunctionCall', () => {
   describe('when it is the contract constructor', () => {
 
     before(() => {
-      target = new FunctionCall('constructor', [toHex(pubKeyHash)], { contract: p2pkh, lockingScript: p2pkh.lockingScript });
+      target = new FunctionCall('constructor', [new Ripemd160(toHex(pubKeyHash))], { contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM() });
     })
 
     describe('toHex() / toString()', () => {
       it('should return the locking script in hex', () => {
-        assert.equal(target.toHex(), bsv.Script.fromASM(p2pkh.lockingScript).toHex());
+        assert.equal(target.toHex(), p2pkh.lockingScript.toHex());
       })
     })
 
     describe('toASM()', () => {
       it('should return the locking script in ASM', () => {
-        assert.equal(target.toASM(), p2pkh.lockingScript);
+        assert.equal(target.toASM(), p2pkh.lockingScript.toASM());
       })
     })
 
@@ -46,11 +47,13 @@ describe('FunctionCall', () => {
 
   describe('when it is a contract public function', () => {
 
-    let sig: any;
+    let sig: Sig;
+    let pubkey: PubKey;
 
     before(() => {
-      sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-      target = new FunctionCall('unlock', [toHex(sig), toHex(publicKey)], { contract: p2pkh, unlockingScript: [toHex(sig), toHex(publicKey)].join(' ') });
+      sig = new Sig(toHex(signTx(tx, privateKey, p2pkh.lockingScript.toASM(), inputSatoshis)));
+      pubkey = new PubKey(toHex(publicKey));
+      target = new FunctionCall('unlock', [sig, pubkey], { contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' ') });
     })
 
     describe('toHex() / toString()', () => {
@@ -61,7 +64,7 @@ describe('FunctionCall', () => {
 
     describe('toASM()', () => {
       it('should return the unlocking script in ASM', () => {
-        assert.equal(target.toASM(), [toHex(sig), toHex(publicKey)].join(' '));
+        assert.equal(target.toASM(), [sig.toASM(), pubkey.toASM()].join(' '));
       })
     })
 

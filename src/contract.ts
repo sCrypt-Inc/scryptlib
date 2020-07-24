@@ -1,5 +1,5 @@
-import { ABICoder, ABIEntity, FunctionCall, SupportedParamType, AbiJSON } from "./abi";
-import { bsv, DEFAULT_FLAGS, deserialize } from "./utils";
+import { ABICoder, ABIEntity, FunctionCall, SupportedParamType, Script } from "./abi";
+import { bsv, DEFAULT_FLAGS } from "./utils";
 
 export interface TxContext {
   inputSatoshis: number;
@@ -9,10 +9,17 @@ export interface TxContext {
   sighashFlags?: number;
 }
 
+export interface ContractDescription {
+  compilerVersion: string;
+  contract: string;
+  abi: Array<ABIEntity>;
+  asm: string;
+}
+
 export class AbstractContract {
 
   public static contracName: string;
-  public static interfaces: ABIEntity[];
+  public static abi: ABIEntity[];
   public static asm: string;
   public static abiCoder: ABICoder;
 
@@ -26,12 +33,12 @@ export class AbstractContract {
     return this.scriptedConstructor.toASM();
   }
 
-  toScript(): any {
-    return this.scriptedConstructor.toScript();
-  }
-
-  get lockingScript(): string {
-    return this.toASM();
+  get lockingScript(): Script {
+    let lsASM = this.scriptedConstructor.toASM();
+    if (this._opReturn !== undefined) {
+      lsASM += ` OP_RETURN ${this._opReturn}`;
+    }
+    return bsv.Script.fromASM(lsASM);
   }
 
   private _txContext?: TxContext;
@@ -44,12 +51,12 @@ export class AbstractContract {
     return this._txContext;
   }
 
-  verify(unlockingScript: string, txContext?: TxContext): boolean {
+  verify(unlockingScriptASM: string, txContext?: TxContext): boolean {
     const txCtx: TxContext = Object.assign({ inputSatoshis: 0 }, this._txContext || {}, txContext || {});
 
-    const us = bsv.Script.fromASM(unlockingScript);
-    const ls = this.toScript();
-    const tx = txCtx.tx || (txCtx.hex ? deserialize(txCtx.hex) : null);
+    const us = bsv.Script.fromASM(unlockingScriptASM);
+    const ls = this.lockingScript;
+    const tx = txCtx.tx || (txCtx.hex ? new bsv.Transaction(txCtx.hex) : null);
     const inputIndex = txCtx.inputIndex || 0;
     const flags = txCtx.sighashFlags || DEFAULT_FLAGS;
 
@@ -59,8 +66,12 @@ export class AbstractContract {
 
   private _opReturn?: string;
 
-  set opReturn(opReturnInHex: string) {
-    this.opReturn = opReturnInHex.trim();
+  set opReturn(opReturnInHex: string | undefined | null) {
+    if (opReturnInHex === undefined || opReturnInHex === null) {
+      this._opReturn = undefined;
+    } else {
+      this._opReturn = opReturnInHex.trim();
+    }
   }
 
   get opReturn() {
@@ -68,7 +79,19 @@ export class AbstractContract {
   }
 }
 
-export function getContractClass(abiJSON: AbiJSON): any {
+export function buildContractClass(description: ContractDescription): any {
+
+  if (!description.contract) {
+    throw new Error('missing field `contract` in description');
+  }
+
+  if (!description.abi) {
+    throw new Error('missing field `abi` in description');
+  }
+
+  if (!description.asm) {
+    throw new Error('missing field `asm` in description');
+  }
 
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
@@ -77,12 +100,12 @@ export function getContractClass(abiJSON: AbiJSON): any {
     }
   };
 
-  ContractClass.contracName = abiJSON.contract;
-  ContractClass.interfaces = abiJSON.interfaces;
-  ContractClass.asm = abiJSON.asm;
-  ContractClass.abiCoder = new ABICoder(abiJSON.interfaces);
+  ContractClass.contracName = description.contract;
+  ContractClass.abi = description.abi;
+  ContractClass.asm = description.asm;
+  ContractClass.abiCoder = new ABICoder(description.abi);
 
-  ContractClass.interfaces.forEach(entity => {
+  ContractClass.abi.forEach(entity => {
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
       return ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
     };

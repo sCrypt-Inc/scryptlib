@@ -1,7 +1,7 @@
 {
     "compilerVersion": "0.1.0+commit.ab4c22f",
     "contract": "DemoP2PKH",
-    "interfaces": [
+    "abi": [
         {
             "type": "function",
             "name": "unlock",

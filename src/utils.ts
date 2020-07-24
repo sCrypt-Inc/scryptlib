@@ -79,7 +79,7 @@ export function literal2Asm(l: string): [string, string] {
     return [bytes, 'bytes'];
   }
 
-  // PubKey
+  // PrivKey
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
@@ -175,7 +175,7 @@ export function hexStringToBytes(hex: string): number[] {
 }
 
 
-export function getValidatedHexString(hex: string, allowEmpty = false): string {
+export function getValidatedHexString(hex: string, allowEmpty = true): string {
 
   const ret = hex.trim();
 
@@ -194,15 +194,11 @@ export function getValidatedHexString(hex: string, allowEmpty = false): string {
   return ret;
 }
 
-export function deserialize(txHex: string) {
-  return new bsv.Transaction(txHex);
-}
-
-export function signTx(tx, privateKey, lockingScript: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
+export function signTx(tx, privateKey, lockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
   return bsv.Transaction.sighash.sign(
     tx, privateKey, sighashType, inputIndex,
-    bsv.Script.fromASM(lockingScript), new bsv.crypto.BN(inputAmount), flags
+    bsv.Script.fromASM(lockingScriptASM), new bsv.crypto.BN(inputAmount), flags
   ).toTxFormat();
 }
 
-export const toHex = (x) => x.toString('hex');
+export const toHex = (x: any) => x.toString('hex');

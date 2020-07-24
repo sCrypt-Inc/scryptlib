@@ -2,7 +2,8 @@ import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, rename } from 'fs';
 import { oc } from 'ts-optchain';
-import { ABIEntity, ABIEntityType, AbiJSON } from './abi';
+import { ABIEntity, ABIEntityType } from './abi';
+import { ContractDescription } from './contract';
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+)\n(?<message>[^\n]+)\n/g;
@@ -46,7 +47,7 @@ export interface CompileResult {
 	debugAsm?: DebugModeAsmWord[];
 	ast?: Record<string, unknown>;
 	dependencyAsts?: Record<string, unknown>;
-	interfaces?: Array<ABIEntity>;
+	abi?: Array<ABIEntity>;
 	errors: CompileError[];
 }
 
@@ -76,7 +77,7 @@ export function compile(
 		ast?: boolean,
 		asm?: boolean,
 		debug?: boolean,
-		abi?: boolean,
+		descr?: boolean,
 		cwd?: string,
 		outputToFiles?: boolean,
 		cmdArgs?: string
@@ -92,7 +93,7 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.abi ? '--asm' : ''} ${settings.ast || settings.abi ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.descr ? '--asm' : ''} ${settings.ast || settings.descr ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		const output = execSync(cmd, { input: sourceContent, cwd: currentWorkingDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
@@ -155,7 +156,7 @@ export function compile(
 
 		const result: CompileResult = { errors: [] };
 
-		if (settings.ast || settings.abi) {
+		if (settings.ast || settings.descr) {
 			const outputFilePath = getOutputFilePath(currentWorkingDir, 'ast');
 			outputFiles['ast'] = outputFilePath;
 
@@ -173,7 +174,7 @@ export function compile(
 				}, {});
 		}
 
-		if (settings.asm || settings.abi) {
+		if (settings.asm || settings.descr) {
 			const outputFilePath = getOutputFilePath(currentWorkingDir, 'asm');
 			outputFiles['asm'] = outputFilePath;
 
@@ -221,20 +222,19 @@ export function compile(
 			}
 		}
 
-		if (settings.abi) {
-			const { contract: name, interfaces } = getABIDeclaration(result.ast);
-			result.interfaces = interfaces;
-			if (settings.outputToFiles) {
-				const outputFilePath = getOutputFilePath(currentWorkingDir, 'abi');
-				outputFiles['abi'] = outputFilePath;
-				const abiOutput: AbiJSON = {
-					compilerVersion: compilerVersion(),
-					contract: name,
-					interfaces,
-					asm: result.asm
-				};
-				writeFileSync(outputFilePath, JSON.stringify(abiOutput, null, 4));
-			}
+		if (settings.descr) {
+			settings.outputToFiles = true;
+			const { contract: name, abi } = getABIDeclaration(result.ast);
+			result.abi = abi;
+			const outputFilePath = getOutputFilePath(currentWorkingDir, 'descr');
+			outputFiles['descr'] = outputFilePath;
+			const description: ContractDescription = {
+				compilerVersion: compilerVersion(),
+				contract: name,
+				abi,
+				asm: result.asm
+			};
+			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
 		}
 
 		return result;
@@ -300,7 +300,7 @@ function _addSourceLocationProperty(astObj, path: string | null) {
 	return astObj;
 }
 
-function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'abi'): string {
+function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'descr'): string {
 	return join(baseDir, `stdin_${target}.json`);
 }
 
@@ -311,11 +311,11 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	return join(baseDir, relativePath);
 }
 
-function getABIDeclaration(astRoot): { contract: string, interfaces: Array<ABIEntity> } {
+function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> } {
 	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
 	let pubIndex = 0;
 
-	const entities: ABIEntity[] =
+	const interfaces: ABIEntity[] =
 		mainContract['functions']
 			.filter(f => f['visibility'] === 'Public')
 			.map(f => {
@@ -330,7 +330,7 @@ function getABIDeclaration(astRoot): { contract: string, interfaces: Array<ABIEn
 
 	// explict constructor
 	if (mainContract['construcotr']) {
-		entities.push({
+		interfaces.push({
 			type: ABIEntityType.CONSTRUCTOR,
 			name: 'constructor',
 			params: mainContract['construcotr']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
@@ -338,7 +338,7 @@ function getABIDeclaration(astRoot): { contract: string, interfaces: Array<ABIEn
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
-			entities.push({
+			interfaces.push({
 				type: ABIEntityType.CONSTRUCTOR,
 				name: 'constructor',
 				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
@@ -348,6 +348,6 @@ function getABIDeclaration(astRoot): { contract: string, interfaces: Array<ABIEn
 
 	return {
 		contract: mainContract['name'],
-		interfaces: entities
+		abi: interfaces
 	};
 }

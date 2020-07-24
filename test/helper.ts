@@ -1,12 +1,12 @@
 import glob = require('glob');
 import { join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { compile, compilerVersion } from '../src/compiler';
-import { AbiJSON } from '../src/abi';
+import { compile, compilerVersion } from '../src/compilerWrapper';
 import { bsv } from '../src/utils';
+import { ContractDescription } from '../src/contract';
 
-export function loadAbiJSON(fileName: string): AbiJSON {
-  return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_abi.json'))).toString());
+export function loadDescription(fileName: string): ContractDescription {
+  return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_descr.json'))).toString());
 }
 
 export function loadASM(fileName: string): string {
@@ -18,7 +18,7 @@ function compileAllFixtureContracts() {
   contracts.forEach(filePath => {
     compile(
       { path: filePath },
-      { abi: true, outputToFiles: true }
+      { descr: true }
     );
   })
 }
