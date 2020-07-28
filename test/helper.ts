@@ -6,7 +6,7 @@ import { bsv } from '../src/utils';
 import { ContractDescription } from '../src/contract';
 
 export function loadDescription(fileName: string): ContractDescription {
-  return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_descr.json'))).toString());
+  return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_desc.json'))).toString());
 }
 
 export function loadASM(fileName: string): string {
@@ -18,7 +18,7 @@ function compileAllFixtureContracts() {
   contracts.forEach(filePath => {
     compile(
       { path: filePath },
-      { descr: true }
+      { desc: true }
     );
   })
 }

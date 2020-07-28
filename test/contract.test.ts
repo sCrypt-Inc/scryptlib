@@ -40,43 +40,52 @@ describe('buildContractClass()', () => {
       assert.instanceOf(instance, AbstractContract);
     })
 
-    describe('toHex()', () => {
+    describe('.codePart', () => {
+      it('should return the partial locking script (the part before op_return) of the contract', () => {
+        const lsBeforeAddOpReturn = instance.lockingScript;
+
+        assert.equal(instance.codePart.toASM(), lsBeforeAddOpReturn.toASM()); // without op_return data, they should be the same
+
+        instance.opReturn = 'aa';
+        const lsAfterAddOpReturn = instance.lockingScript; // locking script changed after adding op_return
+
+        assert.equal(instance.codePart.toASM(), lsBeforeAddOpReturn.toASM());
+        assert.equal(instance.codePart.toHex(), lsBeforeAddOpReturn.toHex());
+
+        assert.equal(instance.codePart.toASM() + ' OP_RETURN aa', lsAfterAddOpReturn.toASM());
+        assert.equal(instance.codePart.toHex() + '6a01aa', lsAfterAddOpReturn.toHex());
+        
+        assert.equal(instance.codePart.toASM(), `OP_1 40 00 51 b1 b2 ${toHex(pubKeyHash)} OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
+        assert.equal(instance.codePart.toHex(), `5101400100015101b101b214${toHex(pubKeyHash)}5779a95179876958795879ac777777777777777777`);
+      })
+    })
+
+    describe('.dataPart', () => {
       describe('when opReturn is unset', () => {
-        it('should return the complete locking script of the contract in hex', () => {
-          assert.equal(instance.toHex(), instance.lockingScript.toHex());
-          assert.equal(instance.toHex(), `5101400100015101b101b214${toHex(pubKeyHash)}5779a95179876958795879ac777777777777777777`);
+        it('should return undefined', () => {
+          assert.isUndefined(instance.dataPart);
         })
       })
 
       describe('when opReturn is set', () => {
-        it('should return the partial locking script (the part before op_return) of the contract in hex', () => {
-          const partialLockingScriptHex = instance.lockingScript.toHex();
+        it('should return the partial locking script (the part before op_return) of the contract', () => {
           instance.opReturn = 'aa';
-          const completeLockingScriptHex = instance.lockingScript.toHex(); // locking script changed after adding op_return
-          assert.equal(instance.toHex(), partialLockingScriptHex);
-          assert.equal(instance.toHex() + '6a01aa', completeLockingScriptHex);
-          assert.equal(instance.toHex(), `5101400100015101b101b214${toHex(pubKeyHash)}5779a95179876958795879ac777777777777777777`);
+          assert.equal(instance.dataPart.toASM(), 'aa');
+          assert.equal(instance.dataPart.toHex(), '01aa');
         })
       })
     })
 
-    describe('toASM()', () => {
-      describe('when opReturn is unset', () => {
-        it('should return the the complete locking script of the contract in ASM', () => {
-          assert.equal(instance.toASM(), instance.lockingScript.toASM());
-          assert.equal(instance.toASM(), `OP_1 40 00 51 b1 b2 ${toHex(pubKeyHash)} OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
-        })
-      })
+    describe('.lockingScript', () => {
+      it('should return the whole locking script of the contract', () => {
+        // when op_return is non-exist
+        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM());
+        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex());
 
-      describe('when opReturn is set', () => {
-        it('should return the partial locking script (the part before op_return) of the contract in ASM', () => {
-          const partialLockingScriptASM = instance.lockingScript.toASM();
-          instance.opReturn = 'aa';
-          const completeLockingScriptASM = instance.lockingScript.toASM(); // locking script changed after adding op_return
-          assert.equal(instance.toASM(), partialLockingScriptASM);
-          assert.equal(instance.toASM() + ' OP_RETURN aa', completeLockingScriptASM);
-          assert.equal(instance.toASM(), `OP_1 40 00 51 b1 b2 ${toHex(pubKeyHash)} OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
-        })
+        // when op_return is exist
+        instance.opReturn = 'aa';
+        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' OP_RETURN ' + instance.dataPart.toASM());
+        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + '6a' + instance.dataPart.toHex());
       })
     })
 

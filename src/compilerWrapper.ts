@@ -77,7 +77,7 @@ export function compile(
 		ast?: boolean,
 		asm?: boolean,
 		debug?: boolean,
-		descr?: boolean,
+		desc?: boolean,
 		cwd?: string,
 		outputToFiles?: boolean,
 		cmdArgs?: string
@@ -93,7 +93,7 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.descr ? '--asm' : ''} ${settings.ast || settings.descr ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		const output = execSync(cmd, { input: sourceContent, cwd: currentWorkingDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
@@ -156,7 +156,7 @@ export function compile(
 
 		const result: CompileResult = { errors: [] };
 
-		if (settings.ast || settings.descr) {
+		if (settings.ast || settings.desc) {
 			const outputFilePath = getOutputFilePath(currentWorkingDir, 'ast');
 			outputFiles['ast'] = outputFilePath;
 
@@ -174,7 +174,7 @@ export function compile(
 				}, {});
 		}
 
-		if (settings.asm || settings.descr) {
+		if (settings.asm || settings.desc) {
 			const outputFilePath = getOutputFilePath(currentWorkingDir, 'asm');
 			outputFiles['asm'] = outputFilePath;
 
@@ -222,12 +222,12 @@ export function compile(
 			}
 		}
 
-		if (settings.descr) {
+		if (settings.desc) {
 			settings.outputToFiles = true;
 			const { contract: name, abi } = getABIDeclaration(result.ast);
 			result.abi = abi;
-			const outputFilePath = getOutputFilePath(currentWorkingDir, 'descr');
-			outputFiles['descr'] = outputFilePath;
+			const outputFilePath = getOutputFilePath(currentWorkingDir, 'desc');
+			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
 				compilerVersion: compilerVersion(),
 				contract: name,
@@ -300,7 +300,7 @@ function _addSourceLocationProperty(astObj, path: string | null) {
 	return astObj;
 }
 
-function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'descr'): string {
+function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'desc'): string {
 	return join(baseDir, `stdin_${target}.json`);
 }
 

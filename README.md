@@ -44,14 +44,41 @@ The compiler outputs results in a JSON file. It’s a representation used to bui
 
 ```
 {
-  "compilerVersion": "...",   // the version of compiler used to produce this file
-  "contract": "...",          // the name of the contract
-  "abi": [...],               // the ABI array of the contract, ie. the interfaces of the public functions.
-  "asm": "..."                // the locking script asm template of the contract
+  "compilerVersion": "0.1.0+commit.312f643",    // version of compiler used to produce this file
+  "contract": "DemoP2PKH",    // name of the contract
+  "abi": [    // ABI of the contract: the interfaces of the public functions and constructor.
+    {
+        "type": "constructor",
+        "name": "constructor",
+        "params": [
+            {
+                "name": "pubKeyHash",
+                "type": "Ripemd160"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "unlock",
+        "index": 0,
+        "params": [
+            {
+                "name": "sig",
+                "type": "Sig"
+            },
+            {
+                "name": "pubKey",
+                "type": "PubKey"
+            }
+        ]
+    },
+    ...
+  ],
+  "asm": "$pubKeyHash OP_OVER OP_HASH160 ..."    // locking script of the contract in ASM format
 }
 ```
 
-There are two ways to generate this file (named as `xxx_descr.json`):
+There are two ways to generate this file (named as `xxx_desc.json`):
 
 1. Use **sCrypt VSC extension**;
 2. Use the function `compile` in `scryptjs` like:
@@ -67,7 +94,7 @@ There are two ways to generate this file (named as `xxx_descr.json`):
       path: contractFilePath  //  the file path of the contract
     }, 
     {
-      descr: true  // set this flag to be `true` to get the descripion file output
+      desc: true  // set this flag to be `true` to get the description file output
     }
   );
 ```
@@ -81,31 +108,59 @@ Both **deploying a contract** and **calling a contract function**are achieved by
 
 You can use the description file to build a reflected contract class in Javascript like this:
 
-> `const MyContract = buildContractClass(JSON.parse(descriptionFileContent));`
+> `const MyContract = buildContractClass(JSON.parse(descFileContent));`
 
-To create instance of the contract class, for example:
+To create an instance of the contract class, for example:
 
 > `const instance = new MyContract(1234, true, ...parameters);`
 
-To get the locking script in asm format, use:
+To get the locking script, use:
 
-> `const lockingScriptASM = instance.lockingScript.toASM();`
+> `const lockingScript = instance.lockingScript;`
 
-or just use:
+To convert it to ASM/hex format
 
-> `const lockingScriptASM = instance.toASM();`
+> `const lockingScriptASM = lockingScript.toASM();`
 
-To get the unlocking script in asm format, just call the function and turn the result to asm, for example:
+> `const lockingScriptHex = lockingScript.toHex();`
 
-> `const unlockingScriptASM = instance.someFunc(new Sig('0123456...'), ...parameters).toASM();`
+Additionally, you can access OP_RETURN data of the contract locking script by using an accessor named `opReturn`, for example:
 
-Note that the `parameter` in both constructor and function call should be instance or has the same type of these objects:
+> `instance.opReturn = dataInASM;`
 
-* sCrypt Native Type Wrapper: like `Int` / `Bool` / `Sig` / `PubKey` / `Ripemd160` / ...
-* Javascript `boolean`: true / false, is equivalent to use Wrapper `Int`
-* Javascript `number`: only integer accepted, is equivalent to use Wrapper `Bool`
+After that, the `instance.lockingScript` would include the opReturn data automatically. If you want to access the code part of the contract locking script without `opReturn` data, use:
 
-In this way, the type of parameters could be checked during compile time and the potential bugs might be detected before running.
+> `const codePart = instance.codePart;`
+
+> `const codePartASM = instance.codePart.toASM();`
+
+> `const codePartHex = instance.codePart.toHex();`
+
+Also to access the data part (in OP_RETURN) of the contract locking script, use:
+
+> `const dataPart = instance.dataPart;`
+
+> `const dataPartASM = instance.dataPart.toASM();`
+
+> `const dataPartHex = instance.dataPart.toHex();`
+
+To get the unlocking script, just call the function and turn the result to asm, for example:
+
+> `const unlockingScript = instance.someFunc(new Sig('0123456'), new Bytes('aa11ff'), ...parameters);`
+
+To convert it to ASM/hex format
+
+> `const unlockingScriptASM = unlockingScript.toASM();`
+
+> `const unlockingScriptHex = unlockingScript.toHex();`
+
+Note that `parameters` in both constructor and function call are mapped to sCrypt types as follows:
+
+* `boolean`: mapped to sCrypt `bool`
+* `number`: mapped to sCrypt `int`
+* `new Bytes(x)` / `new Sig(x)` / `new PubKey(x)` / `new Ripemd160(x)` / … : mapped to sCrypt `bytes` / `Sig` / `PubKey` / `Ripemd160` / … , where `x` is hex string
+
+In this way, the type of parameters could be checked and potential bugs can be detected before running.
 ### Local Unit Tests
 
 Another very useful functionality is provided by a method: `verify(txContext)`. It would run a contract function call with certain arguments locally. If they satisfy all the constraints of the contract function being called, the return value would be `true`, meaning the call succeeds; otherwise it would be `false` and the call fails.
@@ -117,15 +172,15 @@ const pass = instance.someFunc(...params).verify( { inputSatoshis, tx } );
 expect(pass).to.equal(true)
 ```
 
-The `txContext` argument provides some context information of current transaction. The optional parts will be required if `checkSig` or `checkMultiSig` was called inside the function.
+The `txContext` argument provides some context information of the current transaction. The optional parts will be required only if `checkSig` or `checkMultiSig` is called inside the function.
 
 ```
 {
-  inputSatoshis: number;  // the input amount in satoshis
+  inputSatoshis?: number;  // input amount in satoshis
   tx?: any;               // current transaction represented in bsv.Transaction object
   hex?: string;           // current transaction represented in hex format
-  inputIndex?: number;    // the input index, default value: 0
-  sighashFlags?: number;  // the sighash type of current transaction, default value: SIGHASH_ALL | SIGHASH_FORKID
+  inputIndex?: number;    // input index, default value: 0
+  sighashFlags?: number;  // sighash type of current transaction, default value: SIGHASH_ALL | SIGHASH_FORKID
 }
 ```
 

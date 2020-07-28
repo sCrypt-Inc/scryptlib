@@ -2,7 +2,7 @@ import { ABICoder, ABIEntity, FunctionCall, SupportedParamType, Script } from ".
 import { bsv, DEFAULT_FLAGS } from "./utils";
 
 export interface TxContext {
-  inputSatoshis: number;
+  inputSatoshis?: number;
   tx?: any;
   hex?: string;
   inputIndex?: number;
@@ -25,14 +25,6 @@ export class AbstractContract {
 
   scriptedConstructor: FunctionCall;
 
-  toHex(): string {
-    return this.scriptedConstructor.toHex();
-  }
-
-  toASM(): string {
-    return this.scriptedConstructor.toASM();
-  }
-
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
     if (this._opReturn !== undefined) {
@@ -52,16 +44,17 @@ export class AbstractContract {
   }
 
   verify(unlockingScriptASM: string, txContext?: TxContext): boolean {
-    const txCtx: TxContext = Object.assign({ inputSatoshis: 0 }, this._txContext || {}, txContext || {});
+    const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM);
     const ls = this.lockingScript;
     const tx = txCtx.tx || (txCtx.hex ? new bsv.Transaction(txCtx.hex) : null);
     const inputIndex = txCtx.inputIndex || 0;
     const flags = txCtx.sighashFlags || DEFAULT_FLAGS;
+    const inputSatoshis = txCtx.inputSatoshis || 0;
 
     const si = bsv.Script.Interpreter();
-    return si.verify(us, ls, tx, inputIndex, flags, new bsv.crypto.BN(txCtx.inputSatoshis));
+    return si.verify(us, ls, tx, inputIndex, flags, new bsv.crypto.BN(inputSatoshis));
   }
 
   private _opReturn?: string;
@@ -74,8 +67,19 @@ export class AbstractContract {
     }
   }
 
-  get opReturn() {
+  get opReturn(): string {
     return this._opReturn;
+  }
+
+  get codePart(): Script {
+    return this.scriptedConstructor.lockingScript;
+  }
+
+  get dataPart(): Script | undefined {
+    if (this._opReturn !== undefined && this._opReturn !== null) {
+      return bsv.Script.fromASM(this._opReturn);
+    }
+    return undefined;
   }
 }
 
