@@ -1,6 +1,7 @@
 {
     "compilerVersion": "0.1.0+commit.ab4c22f",
     "contract": "Second",
+    "md5": "663b4f419283f4902fb500786ed4a2aa",
     "abi": [
         {
             "type": "function",

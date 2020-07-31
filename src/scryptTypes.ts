@@ -16,7 +16,7 @@ export abstract class ScryptType {
       }
       this._asm = asm;
     } catch (error) {
-      throw new Error(`constructor param for ${this.constructor.name} ${error.message}`)
+      throw new Error(`constructor param for ${this.constructor.name} ${error.message}`);
     }
   }
 

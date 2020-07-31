@@ -1,6 +1,7 @@
 {
     "compilerVersion": "0.1.0+commit.ab4c22f",
     "contract": "DemoP2PKH",
+    "md5": "35bbeee99481c17c95f580e8b86d117f",
     "abi": [
         {
             "type": "function",
@@ -28,5 +29,5 @@
             ]
         }
     ],
-    "asm": "OP_1 40 00 51 b1 b2 $pubKeyHash OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP"
+    "asm": "OP_1 40 00 51 b1 b2 OP_NOP $pubKeyHash OP_0 OP_1 OP_PICK OP_1 OP_ROLL OP_DROP OP_NOP OP_8 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_9 OP_PICK OP_9 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP"
 }

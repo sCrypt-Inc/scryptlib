@@ -118,7 +118,7 @@ export class ABICoder {
           throw new Error(`wrong arguments length for #${name}, expected ${entity.params.length} but got ${args.length}`);
         }
         let asm = this.encodeParams(args, entity.params.map(p => p.type));
-        if (this.abi.length > 2 && entity.index) {
+        if (this.abi.length > 2 && entity.index !== undefined) {
           const pubFuncIndex = entity.index + 1;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }

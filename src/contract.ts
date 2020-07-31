@@ -12,6 +12,7 @@ export interface TxContext {
 export interface ContractDescription {
   compilerVersion: string;
   contract: string;
+  md5: string;
   abi: Array<ABIEntity>;
   asm: string;
 }
@@ -39,7 +40,7 @@ export class AbstractContract {
     this._txContext = txContext;
   }
 
-  get txContext() {
+  get txContext(): TxContext {
     return this._txContext;
   }
 
@@ -54,7 +55,21 @@ export class AbstractContract {
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
     const si = bsv.Script.Interpreter();
-    return si.verify(us, ls, tx, inputIndex, flags, new bsv.crypto.BN(inputSatoshis));
+    const result = si.verify(us, ls, tx, inputIndex, flags, new bsv.crypto.BN(inputSatoshis));
+
+    // if (!result) {
+    //   console.debug(`verify failed due to ${si.errstr}, context:`);
+    //   console.debug({
+    //     'lockingScript': ls.toASM(),
+    //     'unlockingScript': us.toASM(),
+    //     'txHex': tx ? tx.toString('hex') : undefined,
+    //     inputIndex,
+    //     flags,
+    //     inputSatoshis
+    //   });
+    // }
+
+    return result;
   }
 
   private _opReturn?: string;
@@ -115,5 +130,5 @@ export function buildContractClass(description: ContractDescription): any {
     };
   });
 
-  return ContractClass as any;
+  return ContractClass;
 }

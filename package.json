@@ -1,7 +1,10 @@
 {
   "name": "scryptjs",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
+  "engines": {
+    "node": ">=12.0.0"
+  },
   "main": "dist/index.js",
   "types": "dist",
   "scripts": {
@@ -9,7 +12,8 @@
     "watch": "tsc -b -w",
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
-    "pretest": "ts-node test/helper.ts"
+    "pretest": "ts-node test/fixture/autoCompile.ts",
+    "prepublishOnly": "npm run lint && npm run compile"
   },
   "repository": {
     "type": "git",
@@ -45,8 +49,8 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
-    "node": "^12.14.0",
-    "scryptc": "^0.1.20",
-    "bsv": "git+https://git@github.com/scrypt-sv/bsv.git"
+    "bsv": "git+https://git@github.com/scrypt-sv/bsv.git#07f0d3c688a979d0b5d5cfe5e96c53f52fce6d58",
+    "md5": "^2.2.1",
+    "scryptc": "0.1.20"
   }
 }

@@ -55,8 +55,8 @@ describe('buildContractClass()', () => {
         assert.equal(instance.codePart.toASM() + ' OP_RETURN aa', lsAfterAddOpReturn.toASM());
         assert.equal(instance.codePart.toHex() + '6a01aa', lsAfterAddOpReturn.toHex());
         
-        assert.equal(instance.codePart.toASM(), `OP_1 40 00 51 b1 b2 ${toHex(pubKeyHash)} OP_7 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_8 OP_PICK OP_8 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
-        assert.equal(instance.codePart.toHex(), `5101400100015101b101b214${toHex(pubKeyHash)}5779a95179876958795879ac777777777777777777`);
+        assert.equal(instance.codePart.toASM(), `OP_1 40 00 51 b1 b2 OP_NOP ${toHex(pubKeyHash)} 0 OP_1 OP_PICK OP_1 OP_ROLL OP_DROP OP_NOP OP_8 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_9 OP_PICK OP_9 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
+        assert.equal(instance.codePart.toHex(), `5101400100015101b101b26114${toHex(pubKeyHash)}005179517a75615879a95179876959795979ac77777777777777777777`);
       })
     })
 

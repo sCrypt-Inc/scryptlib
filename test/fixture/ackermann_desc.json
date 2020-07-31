@@ -1,6 +1,7 @@
 {
     "compilerVersion": "0.1.0+commit.ab4c22f",
     "contract": "Ackermann",
+    "md5": "43612b0c30dafa2209cb611833c842c1",
     "abi": [
         {
             "type": "function",

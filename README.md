@@ -2,18 +2,6 @@
 
 > Javascript SDK for integration of Bitcoin SV Smart Contracts written in the sCrypt language.
 
-## Guide
-
-[**sCrypt**](https://scryptdoc.readthedocs.io) is a high-level programming language for writing smart contracts on Bitcoin SV. This SDK aims to provide useful tools to help developers integrate sCrypt smart contracts to their Javascript-based projects. Our recommended procedure of developing smart contract based applications is as follows:
-
-1. Contract Development and Test
-
-[The sCrypt Visual Studio Extension](https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt) is a tool for developers to write, test, and debug sCrypt smart contracts. There is also a [boilerplate](https://github.com/scrypt-sv/boilerplate) project to help beginners to bootstrap quickly.
-
-2. Contract Integration and Application Launch
-
-After developing and unit testing the smart contracts, the next step is to integrate them into your application which is written in other languages such as Javascript or Python. Integration tests should be run on Bitcoin SV [Testnet](https://test.whatsonchain.com/) or [Scaling Test Network(STN)](https://bitcoinscaling.io/) before launching the application to the public on mainnet.
-
 ## Installation
 
 You can install `scryptjs` in your project as usual:
@@ -46,6 +34,7 @@ The compiler outputs results in a JSON file. It’s a representation used to bui
 {
   "compilerVersion": "0.1.0+commit.312f643",    // version of compiler used to produce this file
   "contract": "DemoP2PKH",    // name of the contract
+  "md5": "01234...",    // md5 of the contract source code file
   "abi": [    // ABI of the contract: the interfaces of the public functions and constructor.
     {
         "type": "constructor",
@@ -172,7 +161,7 @@ const pass = instance.someFunc(...params).verify( { inputSatoshis, tx } );
 expect(pass).to.equal(true)
 ```
 
-The `txContext` argument provides some context information of the current transaction. The optional parts will be required only if `checkSig` or `checkMultiSig` is called inside the function.
+The `txContext` argument provides some context information of the current transaction. It will be required only if `checkSig` or `checkMultiSig` is called inside the function.
 
 ```
 {

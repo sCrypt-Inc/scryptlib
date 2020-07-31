@@ -5,6 +5,8 @@ import { oc } from 'ts-optchain';
 import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
 
+import md5 = require('md5');
+
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+)\n(?<message>[^\n]+)\n/g;
 const IMPORT_ERR_REG = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
@@ -78,7 +80,7 @@ export function compile(
 		asm?: boolean,
 		debug?: boolean,
 		desc?: boolean,
-		cwd?: string,
+		outputDir?: string,
 		outputToFiles?: boolean,
 		cmdArgs?: string
 	} = {
@@ -89,12 +91,12 @@ export function compile(
 	const sourcePath = source.path;
 	const srcDir = dirname(sourcePath);
 	const sourceFileName = basename(sourcePath);
-	const currentWorkingDir = settings.cwd || srcDir;
+	const outputDir = settings.outputDir || srcDir;
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${currentWorkingDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-		const output = execSync(cmd, { input: sourceContent, cwd: currentWorkingDir }).toString();
+		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const output = execSync(cmd, { input: sourceContent, cwd: srcDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
 				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG)].map(match => {
@@ -157,7 +159,7 @@ export function compile(
 		const result: CompileResult = { errors: [] };
 
 		if (settings.ast || settings.desc) {
-			const outputFilePath = getOutputFilePath(currentWorkingDir, 'ast');
+			const outputFilePath = getOutputFilePath(outputDir, 'ast');
 			outputFiles['ast'] = outputFilePath;
 
 			const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir);
@@ -175,7 +177,7 @@ export function compile(
 		}
 
 		if (settings.asm || settings.desc) {
-			const outputFilePath = getOutputFilePath(currentWorkingDir, 'asm');
+			const outputFilePath = getOutputFilePath(outputDir, 'asm');
 			outputFiles['asm'] = outputFilePath;
 
 			if (settings.debug == false) {
@@ -226,11 +228,12 @@ export function compile(
 			settings.outputToFiles = true;
 			const { contract: name, abi } = getABIDeclaration(result.ast);
 			result.abi = abi;
-			const outputFilePath = getOutputFilePath(currentWorkingDir, 'desc');
+			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
 				compilerVersion: compilerVersion(),
 				contract: name,
+				md5: md5(sourceContent),
 				abi,
 				asm: result.asm
 			};
@@ -262,7 +265,7 @@ export function compile(
 	}
 }
 
-export function compilerVersion() {
+export function compilerVersion(): string {
 	const text = execSync(`node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" version`).toString();
 	return /Version:\s*([^\s]+)\s*/.exec(text)[1];
 }
