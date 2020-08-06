@@ -42,18 +42,18 @@ describe('buildContractClass()', () => {
 
     describe('.codePart', () => {
       it('should return the partial locking script (the part before op_return) of the contract', () => {
-        const lsBeforeAddOpReturn = instance.lockingScript;
+        const lsBeforeAddDataLoad = instance.lockingScript;
 
-        assert.equal(instance.codePart.toASM(), lsBeforeAddOpReturn.toASM()); // without op_return data, they should be the same
+        assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM()); // without op_return data, they should be the same
 
-        instance.opReturn = 'aa';
-        const lsAfterAddOpReturn = instance.lockingScript; // locking script changed after adding op_return
+        instance.dataLoad = 'aa';
+        const lsAfterAddDataLoad = instance.lockingScript; // locking script changed after adding op_return
 
-        assert.equal(instance.codePart.toASM(), lsBeforeAddOpReturn.toASM());
-        assert.equal(instance.codePart.toHex(), lsBeforeAddOpReturn.toHex());
+        assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM());
+        assert.equal(instance.codePart.toHex(), lsBeforeAddDataLoad.toHex());
 
-        assert.equal(instance.codePart.toASM() + ' OP_RETURN aa', lsAfterAddOpReturn.toASM());
-        assert.equal(instance.codePart.toHex() + '6a01aa', lsAfterAddOpReturn.toHex());
+        assert.equal(instance.codePart.toASM() + ' OP_RETURN aa', lsAfterAddDataLoad.toASM());
+        assert.equal(instance.codePart.toHex() + '6a01aa', lsAfterAddDataLoad.toHex());
         
         assert.equal(instance.codePart.toASM(), `OP_1 40 00 51 b1 b2 OP_NOP ${toHex(pubKeyHash)} 0 OP_1 OP_PICK OP_1 OP_ROLL OP_DROP OP_NOP OP_8 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_9 OP_PICK OP_9 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP`);
         assert.equal(instance.codePart.toHex(), `5101400100015101b101b26114${toHex(pubKeyHash)}005179517a75615879a95179876959795979ac77777777777777777777`);
@@ -61,15 +61,15 @@ describe('buildContractClass()', () => {
     })
 
     describe('.dataPart', () => {
-      describe('when opReturn is unset', () => {
+      describe('when dataLoad is unset', () => {
         it('should return undefined', () => {
           assert.isUndefined(instance.dataPart);
         })
       })
 
-      describe('when opReturn is set', () => {
+      describe('when dataLoad is set', () => {
         it('should return the partial locking script (the part before op_return) of the contract', () => {
-          instance.opReturn = 'aa';
+          instance.dataLoad = 'aa';
           assert.equal(instance.dataPart.toASM(), 'aa');
           assert.equal(instance.dataPart.toHex(), '01aa');
         })
@@ -83,33 +83,33 @@ describe('buildContractClass()', () => {
         assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex());
 
         // when op_return is exist
-        instance.opReturn = 'aa';
+        instance.dataLoad = 'aa';
         assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' OP_RETURN ' + instance.dataPart.toASM());
         assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + '6a' + instance.dataPart.toHex());
       })
     })
 
-    describe('verify()', () => {
+    describe('run_verify()', () => {
       it('should return true if all arguments are correct', () => {
         // use param txContext as the context
-        assert.isTrue(instance.verify(unlockingScriptASM, txContext));
+        assert.isTrue(instance.run_verify(unlockingScriptASM, txContext));
 
         // use instance.txContxt as the context
         instance.txContext = txContext;
-        assert.isTrue(instance.verify(unlockingScriptASM));
+        assert.isTrue(instance.run_verify(unlockingScriptASM));
         instance.txContext = undefined;
       })
 
-      it('should return false if param `unlockingScript` is incorrect', () => {
-        assert.isFalse(instance.verify(unlockingScriptASM + '00', txContext));
+      it('should throw error if param `unlockingScript` is incorrect', () => {
+        assert.throws(() => { instance.run_verify(unlockingScriptASM + '00', txContext) });
       })
 
-      it('should return false if param `txContext` is incorrect', () => {
+      it('should throw error if param `txContext` is incorrect', () => {
         // emtpy txContext
-        assert.isFalse(instance.verify(unlockingScriptASM));
+        assert.throws(() => { instance.run_verify(unlockingScriptASM) });
 
         // incorrect inputSatoshis
-        assert.isFalse(instance.verify(unlockingScriptASM, Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 })));
+        assert.throws(() => { instance.run_verify(unlockingScriptASM, Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 })) });
       })
     })
 
@@ -136,8 +136,8 @@ describe('buildContractClass()', () => {
         // can not unlock contract if any param is incorrect
         const invalidSig = validSig.replace('1', '0');
         const invalidPubKey = validPubkey.replace('0', '1');
-        assert.isFalse(instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx }));
-        assert.isFalse(instance.unlock(new Sig(validSig), new PubKey(invalidPubKey)).verify({ inputSatoshis, tx }));
+        assert.throws(() => { instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx }) })
+        assert.throws(() => { instance.unlock(new Sig(validSig), new PubKey(invalidPubKey)).verify({ inputSatoshis, tx }) })
       })
 
     })

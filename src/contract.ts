@@ -28,10 +28,10 @@ export class AbstractContract {
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
-    if (this._opReturn !== undefined) {
-      lsASM += ` OP_RETURN ${this._opReturn}`;
+    if (this._dataLoad !== undefined) {
+      lsASM += ` OP_RETURN ${this._dataLoad}`;
     }
-    return bsv.Script.fromASM(lsASM);
+    return bsv.Script.fromASM(lsASM.trim());
   }
 
   private _txContext?: TxContext;
@@ -44,7 +44,7 @@ export class AbstractContract {
     return this._txContext;
   }
 
-  verify(unlockingScriptASM: string, txContext?: TxContext): boolean {
+  run_verify(unlockingScriptASM: string, txContext?: TxContext): boolean {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM);
@@ -57,33 +57,33 @@ export class AbstractContract {
     const si = bsv.Script.Interpreter();
     const result = si.verify(us, ls, tx, inputIndex, flags, new bsv.crypto.BN(inputSatoshis));
 
-    // if (!result) {
-    //   console.debug(`verify failed due to ${si.errstr}, context:`);
-    //   console.debug({
-    //     'lockingScript': ls.toASM(),
-    //     'unlockingScript': us.toASM(),
-    //     'txHex': tx ? tx.toString('hex') : undefined,
-    //     inputIndex,
-    //     flags,
-    //     inputSatoshis
-    //   });
-    // }
+    if (!result) {
+      throw new VerificationError(`failed to verify due to ${si.errstr}`,
+        {
+          'lockingScript': ls.toASM(),
+          'unlockingScript': us.toASM(),
+          'txHex': tx ? tx.toString('hex') : undefined,
+          inputIndex,
+          flags,
+          inputSatoshis
+        });
+    }
 
-    return result;
+    return true;
   }
 
-  private _opReturn?: string;
+  private _dataLoad?: string;
 
-  set opReturn(opReturnInHex: string | undefined | null) {
-    if (opReturnInHex === undefined || opReturnInHex === null) {
-      this._opReturn = undefined;
+  set dataLoad(dataInHex: string | undefined | null) {
+    if (dataInHex === undefined || dataInHex === null) {
+      this._dataLoad = undefined;
     } else {
-      this._opReturn = opReturnInHex.trim();
+      this._dataLoad = dataInHex.trim();
     }
   }
 
-  get opReturn(): string {
-    return this._opReturn;
+  get dataLoad(): string {
+    return this._dataLoad;
   }
 
   get codePart(): Script {
@@ -91,24 +91,24 @@ export class AbstractContract {
   }
 
   get dataPart(): Script | undefined {
-    if (this._opReturn !== undefined && this._opReturn !== null) {
-      return bsv.Script.fromASM(this._opReturn);
+    if (this._dataLoad !== undefined && this._dataLoad !== null) {
+      return bsv.Script.fromASM(this._dataLoad);
     }
     return undefined;
   }
 }
 
-export function buildContractClass(description: ContractDescription): any {
+export function buildContractClass(desc: ContractDescription): any {
 
-  if (!description.contract) {
+  if (!desc.contract) {
     throw new Error('missing field `contract` in description');
   }
 
-  if (!description.abi) {
+  if (!desc.abi) {
     throw new Error('missing field `abi` in description');
   }
 
-  if (!description.asm) {
+  if (!desc.asm) {
     throw new Error('missing field `asm` in description');
   }
 
@@ -119,10 +119,10 @@ export function buildContractClass(description: ContractDescription): any {
     }
   };
 
-  ContractClass.contracName = description.contract;
-  ContractClass.abi = description.abi;
-  ContractClass.asm = description.asm;
-  ContractClass.abiCoder = new ABICoder(description.abi);
+  ContractClass.contracName = desc.contract;
+  ContractClass.abi = desc.abi;
+  ContractClass.asm = desc.asm;
+  ContractClass.abiCoder = new ABICoder(desc.abi);
 
   ContractClass.abi.forEach(entity => {
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
@@ -131,4 +131,16 @@ export function buildContractClass(description: ContractDescription): any {
   });
 
   return ContractClass;
+}
+
+export class VerificationError extends Error {
+
+  constructor(public message: string, public context: Record<string, any>) {
+    super(message);
+  }
+
+  toString(): string {
+    return `Error: ${this.message}`;
+  }
+
 }

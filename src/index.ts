@@ -1,4 +1,4 @@
-export { buildContractClass as buildContractClass } from './contract';
+export { buildContractClass, VerificationError } from './contract';
 export { compile } from './compilerWrapper';
-export { signTx, toHex, bsv } from './utils';
+export { bsv, signTx, toHex, getPreimage, num2bin } from './utils';
 export { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, OpCodeType } from './scryptTypes';

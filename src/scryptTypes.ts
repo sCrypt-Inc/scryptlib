@@ -2,11 +2,11 @@ import { literal2Asm, getValidatedHexString } from "./utils";
 
 export abstract class ScryptType {
 
-  protected _value: number | boolean | string;
+  protected _value: number | BigInt | boolean | string;
   protected _literal: string;
   private _asm: string;
 
-  constructor(value: number | boolean | string) {
+  constructor(value: number | BigInt | boolean | string) {
     try {
       this._value = value;
       this._literal = this.toLiteral();
@@ -20,7 +20,7 @@ export abstract class ScryptType {
     }
   }
 
-  get value(): number | boolean | string {
+  get value(): number| BigInt | boolean | string {
     return this._value;
   }
 
@@ -36,7 +36,7 @@ export abstract class ScryptType {
 }
 
 export class Int extends ScryptType {
-  constructor(intVal: number) {
+  constructor(intVal: number | BigInt) {
     super(intVal);
   }
   toLiteral(): string {

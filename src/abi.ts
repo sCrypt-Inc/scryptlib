@@ -20,7 +20,7 @@ export interface Script {
   toHex(): string;
 }
 
-export type SupportedParamType = ScryptType | boolean | number;
+export type SupportedParamType = ScryptType | boolean | number | BigInt;
 
 export class FunctionCall {
 
@@ -77,7 +77,7 @@ export class FunctionCall {
 
   verify(txContext?: TxContext): boolean {
     if (this.unlockingScript) {
-      return this.contract.verify(this.unlockingScript.toASM(), txContext);
+      return this.contract.run_verify(this.unlockingScript.toASM(), txContext);
     }
 
     throw new Error("verification failed, missing unlockingScript");
@@ -147,6 +147,10 @@ export class ABICoder {
 
     if (typeofArg === 'number') {
       arg = new Int(arg as number);
+    }
+
+    if (typeofArg === 'bigint') {
+      arg = new Int(arg as BigInt);
     }
 
     if (arg.constructor.name.toLowerCase() !== scryptTypeName.toLowerCase()) {

@@ -35,14 +35,13 @@ export function int2Asm(str: string): string {
     throw new Error(`invalid str '${str}' to convert to int`);
   }
 
-  const num: number = parseInt(str);
+  const number = new BN(str, 10);
 
-  if (num === -1) return 'OP_1NEGATE';
+  if (number.eqn(-1)) { return 'OP_1NEGATE'; }
 
-  if (num >= 0 && num <= 16) return 'OP_' + num;
+  if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
 
-  const n = new BN(str);
-  const m = n.toSM({ endian: 'little' });
+  const m = number.toSM({ endian: 'little' });
   return m.toString('hex');
 }
 
@@ -71,12 +70,7 @@ export function literal2Asm(l: string): [string, string] {
   // bytes
   let m = /^b'([\da-fA-F]+)'$/.exec(l);
   if (m) {
-    let bytes = getValidatedHexString(m[1]);
-    const intVal = parseInt("0x" + bytes);
-    if (intVal >= 0 && intVal <= 16) {
-      bytes = "OP_" + intVal;
-    }
-    return [bytes, 'bytes'];
+    return [getValidatedHexString(m[1]), 'bytes'];
   }
 
   // PrivKey
@@ -195,10 +189,70 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
 }
 
 export function signTx(tx, privateKey, lockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
+
+  if (!tx) {
+    throw new Error('param tx can not be empty');
+  }
+
+  if (!privateKey) {
+    throw new Error('param privateKey can not be empty');
+  }
+
+  if (!lockingScriptASM) {
+    throw new Error('param lockingScriptASM can not be empty');
+  }
+
+  if (!inputAmount) {
+    throw new Error('param inputAmount can not be empty');
+  }
+
   return bsv.Transaction.sighash.sign(
     tx, privateKey, sighashType, inputIndex,
     bsv.Script.fromASM(lockingScriptASM), new bsv.crypto.BN(inputAmount), flags
   ).toTxFormat();
 }
 
-export const toHex = (x: any) => x.toString('hex');
+export function toHex(x: { toString(format: 'hex'): string }): string {
+  return x.toString('hex');
+}
+
+export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
+  return bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromASM(inputLockingScriptASM), new bsv.crypto.BN(inputAmount), flags);
+}
+
+// Converts a number into a sign-magnitude representation of certain size as a string
+// Throws if the number cannot be accommodated
+// Often used to append numbers to OP_RETURN, which are read in contracts
+// TODO: handle bigint
+export function num2bin(n: number, dataLen: number): string {
+  if (n === 0) {
+    return "00".repeat(dataLen);
+  }
+
+  const num = BN.fromNumber(n);
+  const s = num.toSM({ endian: 'little' }).toString('hex');
+
+  const byteLen_ = s.length / 2;
+  if (byteLen_ > dataLen) {
+    throw new Error(`${n} cannot fit in ${dataLen} byte[s]`);
+  }
+  if (byteLen_ === dataLen) {
+    return s;
+  }
+
+  const paddingLen = dataLen - byteLen_;
+  const lastByte = s.substring(s.length - 2);
+  const rest = s.substring(0, s.length - 2);
+  let m = parseInt(lastByte, 16);
+  if (n < 0) {
+    // reset sign bit
+    m &= 0x7F;
+  }
+  let mHex = m.toString(16);
+  if (mHex.length < 2) {
+    mHex = '0' + mHex;
+  }
+
+  const padding = n > 0 ? '00'.repeat(paddingLen) : '00'.repeat(paddingLen - 1) + '80';
+  return rest + mHex + padding;
+}

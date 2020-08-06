@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { loadDescription, newTx } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
-import { buildContractClass } from '../src/contract';
+import { buildContractClass, VerificationError } from '../src/contract';
 import { bsv, toHex, signTx } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160 } from '../src/scryptTypes';
 
@@ -79,17 +79,17 @@ describe('FunctionCall', () => {
         p2pkh.txContext = undefined;
       })
 
-      it('should return false if param `inputSatoshis` is inappropriate', () => {
-        assert.isFalse(target.verify({ inputSatoshis: inputSatoshis + 1, hex: txHex }));
-        assert.isFalse(target.verify({ inputSatoshis: inputSatoshis - 1, hex: txHex }));
+      it('should throw error if param `inputSatoshis` is inappropriate', () => {
+        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis + 1, hex: txHex }) }, VerificationError);
+        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis - 1, hex: txHex }) }, VerificationError);
       })
 
-      it('should return false if param `txContext` is inappropriate', () => {
+      it('should throw error if param `txContext` is inappropriate', () => {
         // missing txContext
-        assert.isFalse(target.verify({ inputSatoshis }));
+        assert.throws(() => { target.verify({ inputSatoshis }) }, VerificationError);
 
         // inappropriate txContext.hex
-        assert.isFalse(target.verify({ inputSatoshis, hex: txHex.slice(0, txHex.length - 1) + '1' }));
+        assert.throws(() => { target.verify({ inputSatoshis, hex: txHex.slice(0, txHex.length - 1) + '1' }) }, VerificationError);
       })
     })
   })

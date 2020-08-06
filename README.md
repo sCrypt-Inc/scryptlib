@@ -113,11 +113,11 @@ To convert it to ASM/hex format
 
 > `const lockingScriptHex = lockingScript.toHex();`
 
-Additionally, you can access OP_RETURN data of the contract locking script by using an accessor named `opReturn`, for example:
+Additionally, you can access OP_RETURN data of the contract locking script by using an accessor named `dataLoad`, for example:
 
-> `instance.opReturn = dataInASM;`
+> `instance.dataLoad = dataInASM;`
 
-After that, the `instance.lockingScript` would include the opReturn data automatically. If you want to access the code part of the contract locking script without `opReturn` data, use:
+After that, the `instance.lockingScript` would include the dataLoad automatically. If you want to access the code part of the contract's locking script without `dataLoad` data, use:
 
 > `const codePart = instance.codePart;`
 
