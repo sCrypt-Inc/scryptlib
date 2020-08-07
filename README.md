@@ -35,7 +35,7 @@ The compiler outputs results in a JSON file. It’s a representation used to bui
   "compilerVersion": "0.1.0+commit.312f643",    // version of compiler used to produce this file
   "contract": "DemoP2PKH",    // name of the contract
   "md5": "01234...",    // md5 of the contract source code file
-  "abi": [    // ABI of the contract: the interfaces of the public functions and constructor.
+  "abi": [    // ABI of the contract: interfaces of its public functions and constructor.
     {
         "type": "constructor",
         "name": "constructor",
@@ -63,7 +63,7 @@ The compiler outputs results in a JSON file. It’s a representation used to bui
     },
     ...
   ],
-  "asm": "$pubKeyHash OP_OVER OP_HASH160 ..."    // locking script of the contract in ASM format
+  "asm": "$pubKeyHash OP_OVER OP_HASH160 ..."    // locking script of the contract in ASM format, including placeholders for constructor parameters
 }
 ```
 
