@@ -1,5 +1,5 @@
 {
-  "name": "scryptjs",
+  "name": "scryptlib",
   "version": "0.1.0",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/scrypt-sv/scryptjs.git"
+    "url": "git+https://github.com/scrypt-sv/scryptlib.git"
   },
   "keywords": [
     "bsv",
@@ -28,9 +28,9 @@
   "author": "sCrypt.Inc",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/scrypt-sv/scryptjs/issues"
+    "url": "https://github.com/scrypt-sv/scryptlib/issues"
   },
-  "homepage": "https://github.com/scrypt-sv/scryptjs#readme",
+  "homepage": "https://github.com/scrypt-sv/scryptlib#readme",
   "devDependencies": {
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",

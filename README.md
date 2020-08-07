@@ -1,19 +1,19 @@
-# scryptjs
+# scryptlib
 
 > Javascript SDK for integration of Bitcoin SV Smart Contracts written in the sCrypt language.
 
 ## Installation
 
-You can install `scryptjs` in your project as usual:
+You can install `scryptlib` in your project as usual:
 
 ```
-$ npm i scryptjs
+$ npm i scryptlib
 ```
 
 Then
 
 ```
-import { buildContractClass, ... } from 'scryptjs';
+import { buildContractClass, ... } from 'scryptlib';
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ A smart contract is compiled to a locking script template. A contract function c
 
 * Assemble unlocking script: convert the arguments of a contract function call to script format and concatenate them to form the unlocking script.
 
-By using `scryptjs`, both scripts can be obtained with ease.
+By using `scryptlib`, both scripts can be obtained with ease.
 
 ### Contract Description File
 
@@ -70,11 +70,11 @@ The compiler outputs results in a JSON file. It’s a representation used to bui
 There are two ways to generate this file (named as `xxx_desc.json`):
 
 1. Use **sCrypt VSC extension**;
-2. Use the function `compile` in `scryptjs` like:
+2. Use the function `compile` in `scryptlib` like:
 
 > 
 ```
-  import { compile } from 'scryptjs';
+  import { compile } from 'scryptlib';
   
   ...
   
@@ -184,5 +184,5 @@ The `txContext` argument provides some context information of the current transa
 }
 ```
 
-You could find more examples using `scryptjs` in the [boilerplate](https://github.com/scrypt-sv/boilerplate) project mentioned above.
+You could find more examples using `scryptlib` in the [boilerplate](https://github.com/scrypt-sv/boilerplate) project mentioned above.
 
