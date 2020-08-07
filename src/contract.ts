@@ -60,8 +60,8 @@ export class AbstractContract {
     if (!result) {
       throw new VerificationError(`failed to verify due to ${si.errstr}`,
         {
-          'lockingScript': ls.toASM(),
-          'unlockingScript': us.toASM(),
+          'lockingScriptASM': ls.toASM(),
+          'unlockingScriptASM': us.toASM(),
           'txHex': tx ? tx.toString('hex') : undefined,
           inputIndex,
           flags,
