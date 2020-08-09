@@ -95,7 +95,7 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmd = `npx scryptc compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		const output = execSync(cmd, { input: sourceContent, cwd: srcDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
@@ -266,7 +266,7 @@ export function compile(
 }
 
 export function compilerVersion(): string {
-	const text = execSync(`node "${join(__dirname, '../node_modules/scryptc/scrypt.js')}" version`).toString();
+	const text = execSync(`npx scryptc version`).toString();
 	return /Version:\s*([^\s]+)\s*/.exec(text)[1];
 }
 

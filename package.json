@@ -43,7 +43,6 @@
     "mocha": "^6.2.2",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
-    "ts-optchain": "^0.1.8",
     "typescript": "^3.9.5",
     "webpack": "4.29.5",
     "webpack-cli": "^3.3.11"
@@ -51,6 +50,7 @@
   "dependencies": {
     "bsv": "git+https://git@github.com/scrypt-sv/bsv.git#07f0d3c688a979d0b5d5cfe5e96c53f52fce6d58",
     "md5": "^2.2.1",
-    "scryptc": "0.1.20"
+    "scryptc": "0.1.20",
+    "ts-optchain": "^0.1.8"
   }
 }
