@@ -51,6 +51,9 @@ export interface CompileResult {
 	dependencyAsts?: Record<string, unknown>;
 	abi?: Array<ABIEntity>;
 	errors: CompileError[];
+	compilerVersion?: string;
+	contract?: string;
+	md5?: string;
 }
 
 export enum DebugModeTag {
@@ -95,7 +98,7 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `npx scryptc compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmd = `npx --no-install scryptc compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		const output = execSync(cmd, { input: sourceContent, cwd: srcDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
@@ -227,7 +230,6 @@ export function compile(
 		if (settings.desc) {
 			settings.outputToFiles = true;
 			const { contract: name, abi } = getABIDeclaration(result.ast);
-			result.abi = abi;
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
@@ -237,7 +239,13 @@ export function compile(
 				abi,
 				asm: result.asm
 			};
+
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
+
+			result.compilerVersion = description.compilerVersion;
+			result.contract = description.contract;
+			result.md5 = description.md5;
+			result.abi = abi;
 		}
 
 		return result;
@@ -266,7 +274,7 @@ export function compile(
 }
 
 export function compilerVersion(): string {
-	const text = execSync(`npx scryptc version`).toString();
+	const text = execSync(`npx --no-install scryptc version`).toString();
 	return /Version:\s*([^\s]+)\s*/.exec(text)[1];
 }
 
