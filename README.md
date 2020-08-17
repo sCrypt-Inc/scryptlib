@@ -180,7 +180,6 @@ The `txContext` argument provides some context information of the current transa
   tx?: any;               // current transaction represented in bsv.Transaction object
   hex?: string;           // current transaction represented in hex format
   inputIndex?: number;    // input index, default value: 0
-  sighashFlags?: number;  // sighash type of current transaction, default value: SIGHASH_ALL | SIGHASH_FORKID
 }
 ```
 

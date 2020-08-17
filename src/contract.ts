@@ -6,7 +6,6 @@ export interface TxContext {
   tx?: any;
   hex?: string;
   inputIndex?: number;
-  sighashFlags?: number;
 }
 
 export interface ContractDescription {
