@@ -51,11 +51,10 @@ export class AbstractContract {
     const ls = this.lockingScript;
     const tx = txCtx.tx || (txCtx.hex ? new bsv.Transaction(txCtx.hex) : null);
     const inputIndex = txCtx.inputIndex || 0;
-    const flags = txCtx.sighashFlags || DEFAULT_FLAGS;
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
     const si = bsv.Script.Interpreter();
-    const result = si.verify(us, ls, tx, inputIndex, flags, new bsv.crypto.BN(inputSatoshis));
+    const result = si.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
     if (!result) {
       throw new VerificationError(`failed to verify due to ${si.errstr}`,
@@ -64,7 +63,6 @@ export class AbstractContract {
           'unlockingScriptASM': us.toASM(),
           'txHex': tx ? tx.toString('hex') : undefined,
           inputIndex,
-          flags,
           inputSatoshis
         });
     }
