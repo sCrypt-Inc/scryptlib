@@ -2,10 +2,10 @@ import { ABICoder, ABIEntity, FunctionCall, SupportedParamType, Script } from ".
 import { bsv, DEFAULT_FLAGS } from "./utils";
 
 export interface TxContext {
-  inputSatoshis?: number;
   tx?: any;
   hex?: string;
   inputIndex?: number;
+  inputSatoshis?: number;
 }
 
 export interface ContractDescription {
