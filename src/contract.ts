@@ -23,7 +23,7 @@ export interface ContractDescription {
 
 export class AbstractContract {
 
-  public static contracName: string;
+  public static contractName: string;
   public static abi: ABIEntity[];
   public static asm: string;
   public static abiCoder: ABICoder;
@@ -113,7 +113,7 @@ export function buildContractClass(desc: ContractDescription): any {
     }
   };
 
-  ContractClass.contracName = desc.contract;
+  ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm;
   ContractClass.abiCoder = new ABICoder(desc.abi);
