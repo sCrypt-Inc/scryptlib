@@ -130,7 +130,7 @@ describe('buildContractClass()', () => {
         // can unlock contract if params are correct
         const validSig = toHex(sig);
         const validPubkey = toHex(publicKey);
-        assert.isTrue(instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, hex: toHex(tx) }));
+        assert.isTrue(instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, txHex: toHex(tx) }));
         assert.isTrue(instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx }));
 
         // can not unlock contract if any param is incorrect

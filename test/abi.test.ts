@@ -40,7 +40,7 @@ describe('FunctionCall', () => {
 
     describe('verify()', () => {
       it('should throw exception', () => {
-        assert.throws(() => { target.verify({ inputSatoshis, hex: txHex }); }, 'verification failed, missing unlockingScript');
+        assert.throws(() => { target.verify({ inputSatoshis, txHex }); }, 'verification failed, missing unlockingScript');
       })
     })
   })
@@ -71,25 +71,25 @@ describe('FunctionCall', () => {
     describe('verify()', () => {
       it('should return true if params are appropriate', () => {
         // has no txContext in binding contract
-        assert.isTrue(target.verify({ inputSatoshis, hex: txHex }));
+        assert.isTrue(target.verify({ inputSatoshis, txHex }));
 
         // has txContext in binding contract
-        p2pkh.txContext = { inputSatoshis, hex: txHex };
+        p2pkh.txContext = { inputSatoshis, txHex };
         assert.isTrue(target.verify());
         p2pkh.txContext = undefined;
       })
 
       it('should throw error if param `inputSatoshis` is inappropriate', () => {
-        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis + 1, hex: txHex }) }, VerificationError);
-        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis - 1, hex: txHex }) }, VerificationError);
+        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis + 1, txHex }) }, VerificationError);
+        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis - 1, txHex }) }, VerificationError);
       })
 
       it('should throw error if param `txContext` is inappropriate', () => {
         // missing txContext
         assert.throws(() => { target.verify({ inputSatoshis }) }, VerificationError);
 
-        // inappropriate txContext.hex
-        assert.throws(() => { target.verify({ inputSatoshis, hex: txHex.slice(0, txHex.length - 1) + '1' }) }, VerificationError);
+        // inappropriate txContext.txHex
+        assert.throws(() => { target.verify({ inputSatoshis, txHex: txHex.slice(0, txHex.length - 1) + '1' }) }, VerificationError);
       })
     })
   })
