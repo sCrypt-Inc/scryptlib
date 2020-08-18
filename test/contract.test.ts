@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import { loadDescription, newTx } from './helper';
-import { buildContractClass, AbstractContract, TxContext } from '../src/contract';
+import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
 import { bsv, signTx, toHex } from '../src/utils';
 import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes';
@@ -29,6 +29,7 @@ describe('buildContractClass()', () => {
     let instance: any;
     let sig: any;
     let unlockingScriptASM: string;
+    let result: VerifyResult;
 
     beforeEach(() => {
       instance = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
@@ -92,24 +93,29 @@ describe('buildContractClass()', () => {
     describe('run_verify()', () => {
       it('should return true if all arguments are correct', () => {
         // use param txContext as the context
-        assert.isTrue(instance.run_verify(unlockingScriptASM, txContext));
+        result = instance.run_verify(unlockingScriptASM, txContext);
+        assert.isTrue(result.success, result.error);
 
         // use instance.txContxt as the context
         instance.txContext = txContext;
-        assert.isTrue(instance.run_verify(unlockingScriptASM));
+        result = instance.run_verify(unlockingScriptASM);
+        assert.isTrue(result.success, result.error);
         instance.txContext = undefined;
       })
 
-      it('should throw error if param `unlockingScript` is incorrect', () => {
-        assert.throws(() => { instance.run_verify(unlockingScriptASM + '00', txContext) });
+      it('should fail if param `unlockingScript` is incorrect', () => {
+        result = instance.run_verify(unlockingScriptASM + '00', txContext);
+        assert.isFalse(result.success, result.error);
       })
 
-      it('should throw error if param `txContext` is incorrect', () => {
+      it('should fail if param `txContext` is incorrect', () => {
         // emtpy txContext
-        assert.throws(() => { instance.run_verify(unlockingScriptASM) });
+        result = instance.run_verify(unlockingScriptASM);
+        assert.isFalse(result.success, result.error);
 
         // incorrect inputSatoshis
-        assert.throws(() => { instance.run_verify(unlockingScriptASM, Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 })) });
+        result = instance.run_verify(unlockingScriptASM, Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 }));
+        assert.isFalse(result.success, result.error);
       })
     })
 
@@ -130,14 +136,18 @@ describe('buildContractClass()', () => {
         // can unlock contract if params are correct
         const validSig = toHex(sig);
         const validPubkey = toHex(publicKey);
-        assert.isTrue(instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, txHex: toHex(tx) }));
-        assert.isTrue(instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx }));
+        result = instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, txHex: toHex(tx) });
+        assert.isTrue(result.success, result.error);
+        instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
+        assert.isTrue(result.success, result.error);
 
         // can not unlock contract if any param is incorrect
         const invalidSig = validSig.replace('1', '0');
         const invalidPubKey = validPubkey.replace('0', '1');
-        assert.throws(() => { instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx }) })
-        assert.throws(() => { instance.unlock(new Sig(validSig), new PubKey(invalidPubKey)).verify({ inputSatoshis, tx }) })
+        result = instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
+        assert.isFalse(result.success, result.error);
+        result = instance.unlock(new Sig(validSig), new PubKey(invalidPubKey)).verify({ inputSatoshis, tx })
+        assert.isFalse(result.success, result.error);
       })
 
     })

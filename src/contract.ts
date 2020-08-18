@@ -8,6 +8,11 @@ export interface TxContext {
   inputSatoshis?: number;
 }
 
+export interface VerifyResult {
+  success: boolean;
+  error: string; 
+}
+
 export interface ContractDescription {
   compilerVersion: string;
   contract: string;
@@ -43,7 +48,7 @@ export class AbstractContract {
     return this._txContext;
   }
 
-  run_verify(unlockingScriptASM: string, txContext?: TxContext): boolean {
+  run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM);
@@ -55,18 +60,10 @@ export class AbstractContract {
     const si = bsv.Script.Interpreter();
     const result = si.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
-    if (!result) {
-      throw new VerificationError(`failed to verify due to ${si.errstr}`,
-        {
-          'lockingScriptASM': ls.toASM(),
-          'unlockingScriptASM': us.toASM(),
-          'txHex': tx ? tx.toString('hex') : undefined,
-          inputIndex,
-          inputSatoshis
-        });
-    }
-
-    return true;
+    return {
+      success: result,
+      error: si.errstr
+    };
   }
 
   private _dataLoad?: string;
@@ -128,16 +125,4 @@ export function buildContractClass(desc: ContractDescription): any {
   });
 
   return ContractClass;
-}
-
-export class VerificationError extends Error {
-
-  constructor(public message: string, public context: Record<string, any>) {
-    super(message);
-  }
-
-  toString(): string {
-    return `Error: ${this.message}`;
-  }
-
 }

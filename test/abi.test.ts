@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { loadDescription, newTx } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
-import { buildContractClass, VerificationError } from '../src/contract';
+import { buildContractClass, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160 } from '../src/scryptTypes';
 
@@ -19,6 +19,7 @@ const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
 describe('FunctionCall', () => {
 
   let target: FunctionCall;
+  let result: VerifyResult;
 
   describe('when it is the contract constructor', () => {
 
@@ -39,8 +40,10 @@ describe('FunctionCall', () => {
     })
 
     describe('verify()', () => {
-      it('should throw exception', () => {
-        assert.throws(() => { target.verify({ inputSatoshis, txHex }); }, 'verification failed, missing unlockingScript');
+      it('should fail', () => {
+        result = target.verify({ inputSatoshis, txHex });
+        assert.isFalse(result.success);
+        assert.equal(result.error, 'verification failed, missing unlockingScript');
       })
     })
   })
@@ -71,25 +74,31 @@ describe('FunctionCall', () => {
     describe('verify()', () => {
       it('should return true if params are appropriate', () => {
         // has no txContext in binding contract
-        assert.isTrue(target.verify({ inputSatoshis, txHex }));
+        result = target.verify({ inputSatoshis, txHex });
+        assert.isTrue(result.success, result.error);
 
         // has txContext in binding contract
         p2pkh.txContext = { inputSatoshis, txHex };
-        assert.isTrue(target.verify());
+        result = target.verify();
+        assert.isTrue(result.success, result.error);
         p2pkh.txContext = undefined;
       })
 
-      it('should throw error if param `inputSatoshis` is inappropriate', () => {
-        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis + 1, txHex }) }, VerificationError);
-        assert.throws(() => { target.verify({ inputSatoshis: inputSatoshis - 1, txHex }) }, VerificationError);
+      it('should fail if param `inputSatoshis` is incorrect', () => {
+        result = target.verify({ inputSatoshis: inputSatoshis + 1, txHex });
+        assert.isFalse(result.success, result.error);
+        result = target.verify({ inputSatoshis: inputSatoshis - 1, txHex });
+        assert.isFalse(result.success, result.error);
       })
 
-      it('should throw error if param `txContext` is inappropriate', () => {
+      it('should fail if param `txContext` is incorrect', () => {
         // missing txContext
-        assert.throws(() => { target.verify({ inputSatoshis }) }, VerificationError);
+        result = target.verify({ inputSatoshis });
+        assert.isFalse(result.success, result.error);
 
         // inappropriate txContext.txHex
-        assert.throws(() => { target.verify({ inputSatoshis, txHex: txHex.slice(0, txHex.length - 1) + '1' }) }, VerificationError);
+        result = target.verify({ inputSatoshis, txHex: txHex.slice(0, txHex.length - 1) + '1' });
+        assert.isFalse(result.success, result.error);
       })
     })
   })

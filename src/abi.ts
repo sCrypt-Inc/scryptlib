@@ -1,6 +1,6 @@
 import { oc } from 'ts-optchain';
 import { int2Asm, bsv } from "./utils";
-import { AbstractContract, TxContext } from './contract';
+import { AbstractContract, TxContext, VerifyResult } from './contract';
 import { ScryptType, Bool, Int } from './scryptTypes';
 
 export enum ABIEntityType {
@@ -75,12 +75,15 @@ export class FunctionCall {
     return this.toScript().toHex();
   }
 
-  verify(txContext?: TxContext): boolean {
+  verify(txContext?: TxContext): VerifyResult {
     if (this.unlockingScript) {
       return this.contract.run_verify(this.unlockingScript.toASM(), txContext);
     }
 
-    throw new Error("verification failed, missing unlockingScript");
+    return {
+      success: false,
+      error: "verification failed, missing unlockingScript"
+    };
   }
 
 }
