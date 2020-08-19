@@ -10,7 +10,6 @@ const publicKey = privateKey.publicKey;
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
-const txHex = toHex(tx);
 
 const jsonDescr = loadDescription('p2pkh.scrypt');
 const DemoP2PKH = buildContractClass(jsonDescr);
@@ -41,7 +40,7 @@ describe('FunctionCall', () => {
 
     describe('verify()', () => {
       it('should fail', () => {
-        result = target.verify({ inputSatoshis, txHex });
+        result = target.verify({ inputSatoshis, tx });
         assert.isFalse(result.success);
         assert.equal(result.error, 'verification failed, missing unlockingScript');
       })
@@ -74,20 +73,20 @@ describe('FunctionCall', () => {
     describe('verify()', () => {
       it('should return true if params are appropriate', () => {
         // has no txContext in binding contract
-        result = target.verify({ inputSatoshis, txHex });
+        result = target.verify({ inputSatoshis, tx });
         assert.isTrue(result.success, result.error);
 
         // has txContext in binding contract
-        p2pkh.txContext = { inputSatoshis, txHex };
+        p2pkh.txContext = { inputSatoshis, tx };
         result = target.verify();
         assert.isTrue(result.success, result.error);
         p2pkh.txContext = undefined;
       })
 
       it('should fail if param `inputSatoshis` is incorrect', () => {
-        result = target.verify({ inputSatoshis: inputSatoshis + 1, txHex });
+        result = target.verify({ inputSatoshis: inputSatoshis + 1, tx });
         assert.isFalse(result.success, result.error);
-        result = target.verify({ inputSatoshis: inputSatoshis - 1, txHex });
+        result = target.verify({ inputSatoshis: inputSatoshis - 1, tx });
         assert.isFalse(result.success, result.error);
       })
 
@@ -96,9 +95,11 @@ describe('FunctionCall', () => {
         result = target.verify({ inputSatoshis });
         assert.isFalse(result.success, result.error);
 
-        // inappropriate txContext.txHex
-        result = target.verify({ inputSatoshis, txHex: txHex.slice(0, txHex.length - 1) + '1' });
+        // incorrect txContext.tx
+        tx.nLockTime = tx.nLockTime + 1;
+        result = target.verify({ inputSatoshis, tx });
         assert.isFalse(result.success, result.error);
+        tx.nLockTime = tx.nLockTime - 1;  //reset
       })
     })
   })

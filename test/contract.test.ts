@@ -136,7 +136,7 @@ describe('buildContractClass()', () => {
         // can unlock contract if params are correct
         const validSig = toHex(sig);
         const validPubkey = toHex(publicKey);
-        result = instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, txHex: toHex(tx) });
+        result = instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx });
         assert.isTrue(result.success, result.error);
         instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
         assert.isTrue(result.success, result.error);

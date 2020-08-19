@@ -120,7 +120,6 @@ A useful method `verify(txContext)` is provided for each contract function call.
 ```typescript
 {
   tx?: any;                 // current transaction represented in bsv.Transaction object
-  txHex?: string;           // current transaction represented in hex format
   inputIndex?: number;      // input index, default value: 0
   inputSatoshis?: number;   // input amount in satoshis
 }

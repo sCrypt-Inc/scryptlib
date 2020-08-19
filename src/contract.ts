@@ -3,7 +3,6 @@ import { bsv, DEFAULT_FLAGS } from "./utils";
 
 export interface TxContext {
   tx?: any;
-  txHex?: string;
   inputIndex?: number;
   inputSatoshis?: number;
 }
@@ -53,7 +52,7 @@ export class AbstractContract {
 
     const us = bsv.Script.fromASM(unlockingScriptASM);
     const ls = this.lockingScript;
-    const tx = txCtx.tx || (txCtx.txHex ? new bsv.Transaction(txCtx.txHex) : null);
+    const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
