@@ -158,8 +158,13 @@ export class ABICoder {
       arg = new Int(arg as BigInt);
     }
 
-    if (arg.constructor.name.toLowerCase() !== scryptTypeName.toLowerCase()) {
-      throw new Error(`wrong argument type, expected ${scryptTypeName} but got ${arg.constructor.name}`);
+    let ctorName = arg.constructor.name;
+    if (ctorName === 'Bytes') {
+      // "Bytes" is alias for "byte[]"
+      ctorName = 'byte[]';
+    }
+    if (ctorName.toLowerCase() !== scryptTypeName.toLowerCase()) {
+      throw new Error(`wrong argument type, expected ${scryptTypeName} but got ${ctorName}`);
     }
 
     return (arg as ScryptType).toASM();
