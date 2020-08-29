@@ -124,7 +124,7 @@ export class ABICoder {
         }
         let asm = this.encodeParams(args, entity.params.map(p => p.type));
         if (this.abi.length > 2 && entity.index !== undefined) {
-          const pubFuncIndex = entity.index + 1;
+          const pubFuncIndex = entity.index;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }
         return new FunctionCall(name, args, { contract, unlockingScriptASM: asm });
