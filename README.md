@@ -158,5 +158,16 @@ const dataPart = instance.dataPart;
 const dataPartASM = instance.dataPart.toASM();
 const dataPartHex = instance.dataPart.toHex();
 ```
+
+## Instantiate Inline Assembly Variables
+Assembly variables can be replaced with literal Script in ASM format using `replace()`. Each variable is prefixed by its unique scope, namely, the contract and the function it is under.
+```typescript
+const asmVars = {
+  'contract1.function1.variable1': 'ff41',
+  'contract2.function2.variable2': 'OP_4'
+};
+instance.replaceAsmVars(asmVars);
+```
+
 You could find more examples using `scryptlib` in the [boilerplate](https://github.com/scrypt-sv/boilerplate) repository.
 
