@@ -1,6 +1,6 @@
 import { oc } from 'ts-optchain';
 import { int2Asm, bsv } from "./utils";
-import { AbstractContract, TxContext, VerifyResult } from './contract';
+import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int } from './scryptTypes';
 
 export enum ABIEntityType {
@@ -26,9 +26,25 @@ export class FunctionCall {
 
   readonly contract: AbstractContract;
 
-  readonly lockingScript?: Script;
+  private _unlockingScriptAsm?: string;
 
-  readonly unlockingScript?: Script;
+  private _lockingScriptAsm?: string;
+
+  get unlockingScript(): Script | undefined {
+    return this._unlockingScriptAsm === undefined ? undefined : bsv.Script.fromASM(this._unlockingScriptAsm);
+  }
+
+  get lockingScript(): Script | undefined {
+    return this._lockingScriptAsm === undefined ? undefined : bsv.Script.fromASM(this._lockingScriptAsm);
+  }
+
+  init(asmVarValues: AsmVarValues): void {
+    for (const key in asmVarValues) {
+      const val = asmVarValues[key];
+      const re = new RegExp(`\\$${key}`, 'g');
+      this._lockingScriptAsm = this._lockingScriptAsm.replace(re, val);
+    }
+  }
 
   constructor(
     public methodName: string,
@@ -47,11 +63,11 @@ export class FunctionCall {
     this.contract = binding.contract;
 
     if (binding.lockingScriptASM) {
-      this.lockingScript = bsv.Script.fromASM(binding.lockingScriptASM);
+      this._lockingScriptAsm = binding.lockingScriptASM;
     }
 
     if (binding.unlockingScriptASM) {
-      this.unlockingScript = bsv.Script.fromASM(binding.unlockingScriptASM);
+      this._unlockingScriptAsm = binding.unlockingScriptASM;
     }
   }
 

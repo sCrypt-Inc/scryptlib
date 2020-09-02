@@ -20,6 +20,8 @@ export interface ContractDescription {
   asm: string;
 }
 
+export type AsmVarValues = { [key: string]: string }
+
 export class AbstractContract {
 
   public static contractName: string;
@@ -45,6 +47,11 @@ export class AbstractContract {
 
   get txContext(): TxContext {
     return this._txContext;
+  }
+
+  // replace assembly variables with assembly values
+  replaceAsmVars(asmVarValues: AsmVarValues): void {
+    this.scriptedConstructor.init(asmVarValues);
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
