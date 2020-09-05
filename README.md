@@ -116,7 +116,7 @@ In this way, the type of parameters could be checked and potential bugs can be d
 
 ## Local Unit Tests
 
-A useful method `verify(txContext)` is provided for each contract function call. It would execute the function call with the given context locally. The `txContext` argument provides some context information of the current transaction, needed only if signature is checked inside the contract.
+A useful method `verify(txContext)` is provided for each contract function call. It would execute the function call with the given context locally. The `txContext` argument provides some context information of the current transaction, **needed only if signature is checked inside the contract**.
 ```typescript
 {
   tx?: any;                 // current transaction represented in bsv.Transaction object
@@ -136,7 +136,8 @@ It usually appears in unit tests, like:
 
 ```typescript
 const funcCall = instance.someFunc(new Sig('0123456'), new Bytes('aa11ff'), ...parameters);
-const result = funcCall.verify( { tx, inputIndex, inputSatoshis } );
+const context = { tx, inputIndex, inputSatoshis };
+const result = funcCall.verify(context);
 expect(result.success, result.error).to.be.true;
 assert.isFalse(result.success, result.error);
 ```
