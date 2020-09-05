@@ -85,7 +85,7 @@ Both **deploying a contract** and **calling a contract function**are achieved by
 
 You can use the description file to build a reflected contract class in Javascript/TypeScript like this:
 ```typescript
-const MyContract = buildContractClass(JSON.parse(descFileContent));`
+const MyContract = buildContractClass(JSON.parse(descFileContent));
 ```
 To create an instance of the contract class, for example:
 ```typescript
