@@ -135,9 +135,15 @@ It returns an object:
 It usually appears in unit tests, like:
 
 ```typescript
-const funcCall = instance.someFunc(new Sig('0123456'), new Bytes('aa11ff'), ...parameters);
 const context = { tx, inputIndex, inputSatoshis };
+
+// 1) set context per verify()
+const funcCall = instance.someFunc(new Sig('0123456'), new Bytes('aa11ff'), ...parameters);
 const result = funcCall.verify(context);
+// 2) alternatively, context can be set at instance level and all following verify() will use it
+instance.txContext = context;
+const result = funcCall.verify();
+
 expect(result.success, result.error).to.be.true;
 assert.isFalse(result.success, result.error);
 ```
