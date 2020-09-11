@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.2.0
+
+* add some options to compile function
+* change source location in compileResult from path to uri
+
 ## 0.1.9
 
 * support ASM variable instantiation

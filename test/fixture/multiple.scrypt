@@ -9,7 +9,7 @@ contract First {
         require(y == this.x);
     }
 
-    function t() returns(int) {
+    function t(): int {
         return -1;
     }
 }
