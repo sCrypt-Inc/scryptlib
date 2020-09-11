@@ -33,7 +33,7 @@ export class AbstractContract {
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
-    if (this._dataLoad !== undefined) {
+    if (this._dataLoad !== undefined && this._dataLoad !== null) {
       lsASM += ` OP_RETURN ${this._dataLoad}`;
     }
     return bsv.Script.fromASM(lsASM.trim());
@@ -72,7 +72,7 @@ export class AbstractContract {
     };
   }
 
-  private _dataLoad?: string;
+  private _dataLoad: string | undefined;
 
   set dataLoad(dataInHex: string | undefined | null) {
     if (dataInHex === undefined || dataInHex === null) {
@@ -82,8 +82,8 @@ export class AbstractContract {
     }
   }
 
-  get dataLoad(): string {
-    return this._dataLoad;
+  get dataLoad(): string | undefined | null {
+    return this._dataLoad || null;
   }
 
   get codePart(): Script {

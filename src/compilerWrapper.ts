@@ -6,6 +6,7 @@ import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
 
 import md5 = require('md5');
+import { path2uri } from './utils';
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+)\n(?<message>[^\n]+)\n/g;
@@ -79,27 +80,33 @@ export function compile(
 		content?: string,
 	},
 	settings: {
+		npxArgs?: string,
+		scVersion?: string,
 		ast?: boolean,
 		asm?: boolean,
 		debug?: boolean,
 		desc?: boolean,
 		outputDir?: string,
 		outputToFiles?: boolean,
+		cwd?: string,
 		cmdArgs?: string
 	} = {
 			asm: true,
 			debug: true
 		}
 ): CompileResult {
+	let st = Date.now();
+	const npxArg = settings.npxArgs || '--no-install';
 	const sourcePath = source.path;
 	const srcDir = dirname(sourcePath);
+	const curWorkingDir = settings.cwd || srcDir;
 	const sourceFileName = basename(sourcePath);
 	const outputDir = settings.outputDir || srcDir;
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `npx --no-install scryptc compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-		const output = execSync(cmd, { input: sourceContent, cwd: srcDir }).toString();
+		const cmd = `npx ${npxArg} scryptc${settings.scVersion ? '@' + settings.scVersion : ''} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
 				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG)].map(match => {
@@ -165,18 +172,13 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'ast');
 			outputFiles['ast'] = outputFilePath;
 
-			const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir);
-			result.ast = allAst['stdin'];
-			result.dependencyAsts = Object.keys(allAst)
-				.filter(k => k !== 'stdin')
-				.reduce((res, key) => {
-					if (key === 'std') {
-						res[key] = allAst[key];
-					} else {
-						res[join(srcDir, key)] = allAst[key];
-					}
-					return res;
-				}, {});
+			const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
+
+			const sourceUri = path2uri(sourcePath);
+
+			result.ast = allAst[sourceUri];
+			delete allAst[sourceUri];
+			result.dependencyAsts = allAst;
 		}
 
 		if (settings.asm || settings.desc) {
@@ -184,7 +186,7 @@ export function compile(
 			outputFiles['asm'] = outputFilePath;
 
 			if (settings.debug == false) {
-				result.asm = readFileSync(outputFilePath, 'utf8');
+				result.asm = JSON.parse(readFileSync(outputFilePath, 'utf8')).join(' ');
 			} else {
 				const asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
 				const sources = asmObj.sources.map((s: string) => {
@@ -210,7 +212,7 @@ export function compile(
 						}
 
 						return {
-							file: fileIndex > -1 ? sources[fileIndex] : undefined,
+							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
 							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
 							endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
 							column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
@@ -233,7 +235,7 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
-				compilerVersion: compilerVersion(),
+				compilerVersion: compilerVersion(settings.cwd),
 				contract: name,
 				md5: md5(sourceContent),
 				abi,
@@ -270,23 +272,30 @@ export function compile(
 				}
 			});
 		}
+		// console.log('compile time spent: ', Date.now() - st)
 	}
 }
 
-export function compilerVersion(): string {
-	const text = execSync(`npx --no-install scryptc version`).toString();
+export function compilerVersion(cwd?: string): string {
+	const text = execSync(`npx --no-install scryptc version`, { cwd }).toString();
 	return /Version:\s*([^\s]+)\s*/.exec(text)[1];
 }
 
-function addSourceLocation(astRoot, basePath: string) {
+function addSourceLocation(astRoot, basePath: string, curFileName: string) {
 	for (const fileName in astRoot) {
-		const path = fileName === 'std' ? null : join(basePath, fileName);
-		astRoot[fileName] = _addSourceLocationProperty(astRoot[fileName], path);
+		if (fileName === 'std') {
+			astRoot['std'] = _addSourceLocationProperty(astRoot['std'], null);
+		} else {
+			const realFileName = fileName === 'stdin' ? curFileName : fileName;
+			const uri = path2uri(join(basePath, realFileName));
+			astRoot[uri] = _addSourceLocationProperty(astRoot[fileName], uri);
+			delete astRoot[fileName];
+		}
 	}
 	return astRoot;
 }
 
-function _addSourceLocationProperty(astObj, path: string | null) {
+function _addSourceLocationProperty(astObj, uri: string | null) {
 	if (!(astObj instanceof Object)) { return astObj; }
 
 	for (const field in astObj) {
@@ -297,14 +306,14 @@ function _addSourceLocationProperty(astObj, path: string | null) {
 				astObj.loc = null;
 			} else {
 				astObj.loc = {
-					source: path,
+					source: uri,
 					start: { line: parseInt(matches[1]), column: parseInt(matches[2]) },
 					end: { line: parseInt(matches[3]), column: parseInt(matches[4]) }
 				};
 			}
 			delete astObj['src'];
 		} else if (value instanceof Object) {
-			_addSourceLocationProperty(value, path);
+			_addSourceLocationProperty(value, uri);
 		}
 	}
 

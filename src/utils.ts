@@ -1,3 +1,5 @@
+import { pathToFileURL, fileURLToPath } from 'url';
+
 import bsv = require('bsv');
 
 export { bsv };
@@ -255,4 +257,12 @@ export function num2bin(n: number, dataLen: number): string {
 
   const padding = n > 0 ? '00'.repeat(paddingLen) : '00'.repeat(paddingLen - 1) + '80';
   return rest + mHex + padding;
+}
+
+export function path2uri(path: string): string {
+  return pathToFileURL(path).toString();
+}
+
+export function uri2path(uri: string): string {
+  return fileURLToPath(uri);
 }
