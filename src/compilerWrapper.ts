@@ -89,13 +89,14 @@ export function compile(
 		outputDir?: string,
 		outputToFiles?: boolean,
 		cwd?: string,
-		cmdArgs?: string
+		cmdPrefix?: string,
+		cmdArgs?: string,
 	} = {
 			asm: true,
 			debug: true
 		}
 ): CompileResult {
-	let st = Date.now();
+	const st = Date.now();
 	const npxArg = settings.npxArgs || '--no-install';
 	const sourcePath = source.path;
 	const srcDir = dirname(sourcePath);
@@ -105,7 +106,8 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmd = `npx ${npxArg} scryptc${settings.scVersion ? '@' + settings.scVersion : ''} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmdPrefix = settings.cmdPrefix || `npx ${npxArg} scryptc${settings.scVersion ? '@' + settings.scVersion : ''}`;
+		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
