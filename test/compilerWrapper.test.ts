@@ -25,7 +25,7 @@ function compileContract(fileName: string, folder: string): CompileResult {
   const filePath = path.join(__dirname, folder, fileName);
   const result = compile(
     { path: filePath },
-    { desc: true, outputDir: path.join(__dirname, '') }
+    { desc: true, outputDir: path.join(__dirname, 'fixture') }
   );
   return result;
 }
