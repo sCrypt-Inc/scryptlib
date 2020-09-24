@@ -1,8 +1,9 @@
 # scryptlib
+Javascript/TypeScript SDK for integration of Bitcoin SV Smart Contracts written in the sCrypt language.
 
-> Javascript/TypeScript SDK for integration of Bitcoin SV Smart Contracts written in the sCrypt language.
+[![Build Status](https://travis-ci.com/scrypt-sv/scryptlib.svg?branch=master)](https://travis-ci.com/scrypt-sv/scryptlib)
 
-You can install `scryptlib` in your project as usual:
+You can install `scryptlib` in your project as below:
 
 ```
 $ npm install scryptlib
