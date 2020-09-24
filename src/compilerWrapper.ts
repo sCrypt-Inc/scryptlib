@@ -351,18 +351,16 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 			});
 
 	// explict constructor
-	if (mainContract['construcotr']) {
+	if (mainContract['constructor']) {
 		interfaces.push({
 			type: ABIEntityType.CONSTRUCTOR,
-			name: 'constructor',
-			params: mainContract['construcotr']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
 		});
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
 			interfaces.push({
 				type: ABIEntityType.CONSTRUCTOR,
-				name: 'constructor',
 				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
 			});
 		}

@@ -27,7 +27,6 @@
         },
         {
             "type": "constructor",
-            "name": "constructor",
             "params": [
                 {
                     "name": "x",

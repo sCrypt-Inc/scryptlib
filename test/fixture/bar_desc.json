@@ -1,0 +1,36 @@
+{
+    "compilerVersion": "0.1.0+commit.b530ff4",
+    "contract": "Bar",
+    "md5": "a72c3d9e6f5279aa57a86aaa097cd073",
+    "abi": [
+        {
+            "type": "function",
+            "name": "unlock",
+            "index": 0,
+            "params": [
+                {
+                    "name": "y",
+                    "type": "int"
+                }
+            ]
+        },
+        {
+            "type": "constructor",
+            "params": [
+                {
+                    "name": "_x",
+                    "type": "int"
+                },
+                {
+                    "name": "y",
+                    "type": "int"
+                },
+                {
+                    "name": "z",
+                    "type": "int"
+                }
+            ]
+        }
+    ],
+    "asm": "OP_NOP $_x $y $z OP_0 OP_3 OP_PICK OP_3 OP_PICK OP_3 OP_PICK OP_MUL OP_ADD OP_1 OP_ROLL OP_DROP OP_NOP OP_NOP OP_0 OP_9 OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_NOP OP_1 OP_PICK OP_NOP OP_0 OP_PICK OP_NOP OP_1 OP_2 OP_1 OP_PICK OP_1 OP_PICK OP_ADD OP_0 OP_PICK OP_NIP OP_NIP OP_NIP OP_NOP OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP"
+}

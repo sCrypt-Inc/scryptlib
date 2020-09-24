@@ -1,0 +1,21 @@
+contract Foo {
+  int x;
+
+  constructor(int _x) {
+  	this.x = _x;
+  }
+
+  public function equal(int y) {
+		require(y == this.x);
+  }
+
+	public function equalAfterInc(int y) {
+		this.x = this.sum(this.x, 1);
+		require(this.x == y);
+	}
+
+	function sum(int x, int y): int {
+		int z = x + y;
+		return z;
+	}
+}

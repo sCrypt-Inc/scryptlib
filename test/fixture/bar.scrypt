@@ -1,0 +1,24 @@
+import "./foo.scrypt";
+
+contract Bar {
+  int x;
+ 
+  constructor(int _x, int y, int z) {
+    this.x = _x + y * z;
+  }
+ 
+  function get() : int {
+    return this.x;
+  }
+ 
+  public function unlock(int y) {
+    Foo foo = new Foo(9);
+    int z = this.get();
+    require(z == foo.sum(1,2));
+  }
+
+  function set(int x): int {
+    this.x = x;
+    return x;
+  }
+}

@@ -10,7 +10,7 @@ export enum ABIEntityType {
 
 export interface ABIEntity {
   type: ABIEntityType;
-  name: string;
+  name?: string;
   params: Array<{ name: string, type: string }>;
   index?: number;
 }
