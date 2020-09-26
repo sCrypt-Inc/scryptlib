@@ -125,6 +125,15 @@ export class SigHashType extends ScryptType {
   }
 }
 
+export class SigHashPreimage extends ScryptType {
+  constructor(bytesVal: string) {
+    super(bytesVal);
+  }
+  toLiteral(): string {
+    return `SigHashPreimage(b'${getValidatedHexString(this._value.toString())}')`;
+  }
+}
+
 export class OpCodeType extends ScryptType {
   constructor(bytesVal: string) {
     super(bytesVal);
