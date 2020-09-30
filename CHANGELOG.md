@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.2.4
+
+* support SigHashPreimage type
+
 ## 0.2.0
 
 * add some options to compile function
