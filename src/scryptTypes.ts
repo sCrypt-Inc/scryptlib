@@ -1,4 +1,4 @@
-import { literal2Asm, getValidatedHexString } from "./utils";
+import { literal2Asm, getValidatedHexString, bsv } from "./utils";
 
 export abstract class ScryptType {
 
@@ -116,13 +116,148 @@ export class Sha256 extends ScryptType {
   }
 }
 
+export enum SigHash {
+	ALL = 0x01,
+	NONE = 0x02,
+	SINGLE = 0x03,
+	FORKID = 0x40,
+	ANYONECANPAY = 0x80,
+}
+
 export class SigHashType extends ScryptType {
+
+  constructor(intVal: number) {
+    super(intVal);
+  }
+
+  toLiteral(): string {
+    let hexStr = this._value.toString(16);
+    if (hexStr.length % 2) {
+      hexStr = '0' + hexStr;
+    }
+    return `SigHashType(b'${hexStr}')`;
+  }
+
+  toString(): string {
+    const types: string[] = [];
+    let value = this._value as number;
+
+    if ((value & SigHash.ANYONECANPAY) === SigHash.ANYONECANPAY) {
+      types.push('SigHash.ANYONECANPAY');
+      value = value - SigHash.ANYONECANPAY;
+    }
+  
+    if ((value & SigHash.SINGLE) === SigHash.SINGLE) {
+      types.push('SigHash.SINGLE');
+      value = value - SigHash.SINGLE;
+    }
+  
+    if ((value & SigHash.NONE) === SigHash.NONE) {
+      types.push('SigHash.NONE');
+      value = value - SigHash.NONE;
+    }
+  
+    if ((value & SigHash.ALL) === SigHash.ALL) {
+      types.push('SigHash.ALL');
+      value = value - SigHash.ALL;
+    }
+  
+    if ((value & SigHash.FORKID) === SigHash.FORKID) {
+      types.push('SigHash.FORKID');
+      value = value - SigHash.FORKID;
+    }
+  
+    if (value === 0) {
+      return types.join(' | ');
+    }
+
+    throw new Error(`unknown sighash type value: ${this._value}`);
+  }
+
+}
+
+interface Outpoint { hash: string, index: number }
+
+export class SigHashPreimage extends ScryptType {
+
   constructor(bytesVal: string) {
     super(bytesVal);
+    this._buf = Buffer.from(bytesVal, 'hex');
+
+    const LEN_MIN_BYTES = 156;
+		if (this._buf.length <= LEN_MIN_BYTES) {
+			throw new Error(`Invalid preimage string length, should be greater than ${LEN_MIN_BYTES} bytes`);
+		}
   }
+
+	// raw data
+	private _buf: Buffer;
+
+	private getReader(buf: Buffer) {
+		return new bsv.encoding.BufferReader(buf);
+	}
+
+	// nVersion of the transaction
+	get nVersion(): number {
+		return this.getReader(this._buf.slice(0, 4)).readUInt32LE();
+	}
+
+	// hashPrevouts
+	get hashPrevouts(): string {
+		return this._buf.slice(4, 4 + 32).toString('hex');
+	}
+
+	// hashSequence
+	get hashSequence(): string {
+		return this._buf.slice(36, 36 + 32).toString('hex');
+	}
+
+	// outpoint
+	get outpoint(): Outpoint {
+		return {
+			hash: this._buf.slice(68, 68 + 32).toString('hex'),
+			index: this.getReader(this._buf.slice(68 + 32, 68 + 32 + 4)).readUInt32LE()
+		};
+	}
+
+	// scriptCode of the input
+	get scriptCode(): string {
+		return this._buf.slice(104, this._buf.length - 52).toString('hex');
+	}
+
+	// value of the output spent by this input
+	get amount(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 44 - 8, this._buf.length - 44)).readUInt32LE();
+	}
+
+	// nSequence of the input
+	get nSequence(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 40 - 4, this._buf.length - 40)).readUInt32LE();
+	}
+
+	// hashOutputs
+	get hashOutputs(): string {
+		return this._buf.slice(this._buf.length - 8 - 32, this._buf.length - 8).toString('hex');
+	}
+
+	// nLocktime of the transaction
+	get nLocktime(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 4 - 4, this._buf.length - 4)).readUInt32LE();
+	}
+
+	// sighash type of the signature
+	get sighashType(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
+	}
+
+	toString(): string {
+		return this._buf.toString('hex');
+	}
+
   toLiteral(): string {
-    return `SigHashType(b'${getValidatedHexString(this._value.toString())}')`;
+    return `SigHashPreimage(b'${getValidatedHexString(this._value.toString())}')`;
   }
+
 }
 
 export class OpCodeType extends ScryptType {
