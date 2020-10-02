@@ -1,4 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
+import { SigHashPreimage } from "./scryptTypes";
 
 import bsv = require('bsv');
 
@@ -8,10 +9,11 @@ const BN = bsv.crypto.BN;
 const Interpreter = bsv.Script.Interpreter;
 
 export const DEFAULT_FLAGS =
-  Interpreter.SCRIPT_VERIFY_MINIMALDATA |
-  Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID |
-  Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES |
-  Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES;
+  Interpreter.SCRIPT_VERIFY_MINIMALDATA
+  | Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID
+  | Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES
+  | Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES
+  | Interpreter.SCRIPT_VERIFY_NULLFAIL;
 
 export const DEFAULT_SIGHASH_TYPE =
   bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
@@ -224,8 +226,9 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
-export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
-  return bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromASM(inputLockingScriptASM), new bsv.crypto.BN(inputAmount), flags);
+export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromASM(inputLockingScriptASM), new bsv.crypto.BN(inputAmount), flags);
+  return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
 // Converts a number into a sign-magnitude representation of certain size as a string
