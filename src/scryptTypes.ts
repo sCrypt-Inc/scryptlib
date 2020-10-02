@@ -250,8 +250,8 @@ export class SigHashPreimage extends ScryptType {
 		return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
 	}
 
-	toString(): string {
-		return this._buf.toString('hex');
+	toString(format = 'hex'): string {
+		return this._buf.toString(format);
 	}
 
   toLiteral(): string {
