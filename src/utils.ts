@@ -125,7 +125,7 @@ export function literal2Asm(l: string): [string, string] {
     return [getValidatedHexString(m[1]), 'SigHashType'];
   }
 
-  // SigHashType
+  // SigHashPreimage
   m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     return [getValidatedHexString(m[1]), 'SigHashPreimage'];

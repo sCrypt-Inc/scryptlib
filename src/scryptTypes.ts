@@ -5,18 +5,17 @@ export abstract class ScryptType {
   protected _value: number | BigInt | boolean | string;
   protected _literal: string;
   private _asm: string;
+  private _type: string;
 
   constructor(value: number | BigInt | boolean | string) {
     try {
       this._value = value;
       this._literal = this.toLiteral();
       const [asm, scrType] = literal2Asm(this._literal);
-      if (this.constructor.name.toLowerCase() !== scrType.toLowerCase()) {
-        throw new Error(`type mismatch ${scrType} for ${this.constructor.name}`);
-      }
+      this._type = scrType;
       this._asm = asm;
     } catch (error) {
-      throw new Error(`constructor param for ${this.constructor.name} ${error.message}`);
+      throw new Error(`can't get type from ${this._literal}, ${error.message}`);
     }
   }
 
@@ -183,76 +182,71 @@ export class SigHashPreimage extends ScryptType {
   constructor(bytesVal: string) {
     super(bytesVal);
     this._buf = Buffer.from(bytesVal, 'hex');
-
-    const LEN_MIN_BYTES = 156;
-    if (this._buf.length <= LEN_MIN_BYTES) {
-      throw new Error(`Invalid preimage string length, should be greater than ${LEN_MIN_BYTES} bytes`);
-    }
   }
 
-  // raw data
-  private _buf: Buffer;
+	// raw data
+	private _buf: Buffer;
 
-  private getReader(buf: Buffer) {
-    return new bsv.encoding.BufferReader(buf);
-  }
+	private getReader(buf: Buffer) {
+		return new bsv.encoding.BufferReader(buf);
+	}
 
-  // nVersion of the transaction
-  get nVersion(): number {
-    return this.getReader(this._buf.slice(0, 4)).readUInt32LE();
-  }
+	// nVersion of the transaction
+	get nVersion(): number {
+		return this.getReader(this._buf.slice(0, 4)).readUInt32LE();
+	}
 
-  // hashPrevouts
-  get hashPrevouts(): string {
-    return this._buf.slice(4, 4 + 32).toString('hex');
-  }
+	// hashPrevouts
+	get hashPrevouts(): string {
+		return this._buf.slice(4, 4 + 32).toString('hex');
+	}
 
-  // hashSequence
-  get hashSequence(): string {
-    return this._buf.slice(36, 36 + 32).toString('hex');
-  }
+	// hashSequence
+	get hashSequence(): string {
+		return this._buf.slice(36, 36 + 32).toString('hex');
+	}
 
-  // outpoint
-  get outpoint(): Outpoint {
-    return {
-      hash: this._buf.slice(68, 68 + 32).toString('hex'),
-      index: this.getReader(this._buf.slice(68 + 32, 68 + 32 + 4)).readUInt32LE()
-    };
-  }
+	// outpoint
+	get outpoint(): Outpoint {
+		return {
+			hash: this._buf.slice(68, 68 + 32).toString('hex'),
+			index: this.getReader(this._buf.slice(68 + 32, 68 + 32 + 4)).readUInt32LE()
+		};
+	}
 
-  // scriptCode of the input
-  get scriptCode(): string {
-    return this._buf.slice(104, this._buf.length - 52).toString('hex');
-  }
+	// scriptCode of the input
+	get scriptCode(): string {
+		return this._buf.slice(104, this._buf.length - 52).toString('hex');
+	}
 
-  // value of the output spent by this input
-  get amount(): number {
-    return this.getReader(this._buf.slice(this._buf.length - 44 - 8, this._buf.length - 44)).readUInt32LE();
-  }
+	// value of the output spent by this input
+	get amount(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 44 - 8, this._buf.length - 44)).readUInt32LE();
+	}
 
-  // nSequence of the input
-  get nSequence(): number {
-    return this.getReader(this._buf.slice(this._buf.length - 40 - 4, this._buf.length - 40)).readUInt32LE();
-  }
+	// nSequence of the input
+	get nSequence(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 40 - 4, this._buf.length - 40)).readUInt32LE();
+	}
 
-  // hashOutputs
-  get hashOutputs(): string {
-    return this._buf.slice(this._buf.length - 8 - 32, this._buf.length - 8).toString('hex');
-  }
+	// hashOutputs
+	get hashOutputs(): string {
+		return this._buf.slice(this._buf.length - 8 - 32, this._buf.length - 8).toString('hex');
+	}
 
-  // nLocktime of the transaction
-  get nLocktime(): number {
-    return this.getReader(this._buf.slice(this._buf.length - 4 - 4, this._buf.length - 4)).readUInt32LE();
-  }
+	// nLocktime of the transaction
+	get nLocktime(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 4 - 4, this._buf.length - 4)).readUInt32LE();
+	}
 
-  // sighash type of the signature
-  get sighashType(): number {
-    return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
-  }
+	// sighash type of the signature
+	get sighashType(): number {
+		return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
+	}
 
-  toString(format = 'hex'): string {
-    return this._buf.toString(format);
-  }
+	toString(format = 'hex'): string {
+		return this._buf.toString(format);
+	}
 
   toLiteral(): string {
     return `SigHashPreimage(b'${getValidatedHexString(this._value.toString())}')`;
