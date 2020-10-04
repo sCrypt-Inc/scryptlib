@@ -5,18 +5,17 @@ export abstract class ScryptType {
   protected _value: number | BigInt | boolean | string;
   protected _literal: string;
   private _asm: string;
+  private _type: string;
 
   constructor(value: number | BigInt | boolean | string) {
     try {
       this._value = value;
       this._literal = this.toLiteral();
       const [asm, scrType] = literal2Asm(this._literal);
-      if (this.constructor.name.toLowerCase() !== scrType.toLowerCase()) {
-        throw new Error(`type mismatch ${scrType} for ${this.constructor.name}`);
-      }
+      this._type = scrType;
       this._asm = asm;
     } catch (error) {
-      throw new Error(`constructor param for ${this.constructor.name} ${error.message}`);
+      throw new Error(`can't get type from ${this._literal}, ${error.message}`);
     }
   }
 
@@ -183,11 +182,6 @@ export class SigHashPreimage extends ScryptType {
   constructor(bytesVal: string) {
     super(bytesVal);
     this._buf = Buffer.from(bytesVal, 'hex');
-
-    const LEN_MIN_BYTES = 156;
-		if (this._buf.length <= LEN_MIN_BYTES) {
-			throw new Error(`Invalid preimage string length, should be greater than ${LEN_MIN_BYTES} bytes`);
-		}
   }
 
 	// raw data
