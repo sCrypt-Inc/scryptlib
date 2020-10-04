@@ -19,7 +19,7 @@ export abstract class ScryptType {
     }
   }
 
-  get value(): number| BigInt | boolean | string {
+  get value(): number | BigInt | boolean | string {
     return this._value;
   }
 
@@ -116,11 +116,11 @@ export class Sha256 extends ScryptType {
 }
 
 export enum SigHash {
-	ALL = 0x01,
-	NONE = 0x02,
-	SINGLE = 0x03,
-	FORKID = 0x40,
-	ANYONECANPAY = 0x80,
+  ALL = 0x01,
+  NONE = 0x02,
+  SINGLE = 0x03,
+  FORKID = 0x40,
+  ANYONECANPAY = 0x80,
 }
 
 export class SigHashType extends ScryptType {
@@ -145,27 +145,27 @@ export class SigHashType extends ScryptType {
       types.push('SigHash.ANYONECANPAY');
       value = value - SigHash.ANYONECANPAY;
     }
-  
+
     if ((value & SigHash.SINGLE) === SigHash.SINGLE) {
       types.push('SigHash.SINGLE');
       value = value - SigHash.SINGLE;
     }
-  
+
     if ((value & SigHash.NONE) === SigHash.NONE) {
       types.push('SigHash.NONE');
       value = value - SigHash.NONE;
     }
-  
+
     if ((value & SigHash.ALL) === SigHash.ALL) {
       types.push('SigHash.ALL');
       value = value - SigHash.ALL;
     }
-  
+
     if ((value & SigHash.FORKID) === SigHash.FORKID) {
       types.push('SigHash.FORKID');
       value = value - SigHash.FORKID;
     }
-  
+
     if (value === 0) {
       return types.join(' | ');
     }
@@ -250,6 +250,21 @@ export class SigHashPreimage extends ScryptType {
 
   toLiteral(): string {
     return `SigHashPreimage(b'${getValidatedHexString(this._value.toString())}')`;
+  }
+
+  toJSON() {
+    return {
+      nVersion: this.nVersion,
+      hashPrevouts: this.hashOutputs,
+      hashSequence: this.hashSequence,
+      outpoint: this.outpoint,
+      scriptCode: this.scriptCode,
+      amount: this.amount,
+      nSequence: this.nSequence,
+      hashOutputs: this.hashOutputs,
+      nLocktime: this.nLocktime,
+      sighashType: new SigHashType(this.sighashType).toString()
+    };
   }
 
 }
