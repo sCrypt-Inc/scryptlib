@@ -6,14 +6,17 @@ import bsv = require('bsv');
 export { bsv };
 
 const BN = bsv.crypto.BN;
-const Interpreter = bsv.Script.Interpreter;
+const Interp = bsv.Script.Interpreter;
 
 export const DEFAULT_FLAGS =
-  Interpreter.SCRIPT_VERIFY_MINIMALDATA
-  | Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID
-  | Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES
-  | Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES
-  | Interpreter.SCRIPT_VERIFY_NULLFAIL;
+  //Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CLEANSTACK | // no longer applies now p2sh is deprecated: cleanstack only applies to p2sh
+  Interp.SCRIPT_ENABLE_MAGNETIC_OPCODES | Interp.SCRIPT_ENABLE_MONOLITH_OPCODES | // TODO: to be removed after upgrade to bsv 2.0
+  Interp.SCRIPT_VERIFY_STRICTENC |
+  Interp.SCRIPT_ENABLE_SIGHASH_FORKID | Interp.SCRIPT_VERIFY_LOW_S | Interp.SCRIPT_VERIFY_NULLFAIL |
+  Interp.SCRIPT_VERIFY_DERSIG |
+  Interp.SCRIPT_VERIFY_MINIMALDATA | Interp.SCRIPT_VERIFY_NULLDUMMY |
+  Interp.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
+  Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
 
 export const DEFAULT_SIGHASH_TYPE =
   bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
