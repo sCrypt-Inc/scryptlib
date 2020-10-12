@@ -1,10 +1,12 @@
-import { bsv } from './utils';
+import { bsv, num2bin } from './utils';
 
 /*
  * a varint serializer into Script ASM
  */
 
 const BN = bsv.crypto.BN;
+// number of bytes to denote state length after serialization, exclusing varint prefix
+const STATE_LEN = 2;
 
 function serializeBool(flag: boolean): string {
     return flag ? '01' : '00';
@@ -53,7 +55,8 @@ export function serializeState(state: Record<string, boolean | number | string>)
         asms.push(asm);
     });
 
-    const len = serializeInt(stateLen);
+    // use fixed size (2 bytes) to denote state len
+    const len = num2bin(stateLen, STATE_LEN);
     asms.push(len);
     return asms.join(' ');
 }
