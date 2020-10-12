@@ -26,22 +26,23 @@ function serializeBytes(hexStr: string): string {
     return hexStr;
 }
 
-function serialize(x: any) {
+function serialize(x: boolean | number | string) {
     const t = typeof x;
 
     switch (t) {
         case 'boolean':
-            return serializeBool(x);
+            return serializeBool(x as boolean);
         case 'number':
-            return serializeInt(x);
+            return serializeInt(x as number);
         case 'string':
-            return serializeBytes(x);
+            return serializeBytes(x as string);
         default:
             throw new Error(`cannot serialize value of type '${t}': '${x}'`);
     }
 }
 
-export function serializeState(state: unknown): string {
+// serialize contract state into Script ASM
+export function serializeState(state: Record<string, boolean | number | string>): string {
     const asms = [];
     let stateLen = 0;
 
