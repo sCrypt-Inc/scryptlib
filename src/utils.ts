@@ -240,7 +240,7 @@ export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: numb
 // TODO: handle bigint
 export function num2bin(n: number, dataLen: number): string {
   if (n === 0) {
-    return "00".repeat(dataLen);
+    return '00'.repeat(dataLen);
   }
 
   const num = BN.fromNumber(n);
