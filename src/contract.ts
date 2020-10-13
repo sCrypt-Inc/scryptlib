@@ -1,4 +1,5 @@
 import { ABICoder, ABIEntity, FunctionCall, SupportedParamType, Script } from "./abi";
+import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS } from "./utils";
 
 export interface TxContext {
@@ -82,9 +83,13 @@ export class AbstractContract {
     return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
 
-  setDataPart(dataInHex: string): void {
-    // TODO: validate hex string
-    this._dataPart = dataInHex.trim();
+  setDataPart(state: State | string): void {
+    if (typeof state === 'string') {
+      // TODO: validate hex string
+      this._dataPart = state.trim();
+    } else {
+      this._dataPart = serializeState(state);
+    }
   }
 
   get codePart(): Script {

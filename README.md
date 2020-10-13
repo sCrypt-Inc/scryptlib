@@ -157,6 +157,9 @@ const dataPartASM = instance.dataPart.toASM();
 const dataPartHex = instance.dataPart.toHex();
 // to set it using ASM
 instance.setDataPart(dataInASM);
+// to set it using state object (no nesting)
+let state = {'counter': 11, 'bytes': '1234', 'flag': true}
+instance.setDataPart(state)
 ```
 After that, the `instance.lockingScript` would include the data part automatically.
 

@@ -43,8 +43,10 @@ function serialize(x: boolean | number | string) {
     }
 }
 
+export type State = Record<string, boolean | number | string>
+
 // serialize contract state into Script ASM
-export function serializeState(state: Record<string, boolean | number | string>): string {
+export function serializeState(state: State): string {
     const asms = [];
     let stateLen = 0;
 
