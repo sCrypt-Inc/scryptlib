@@ -163,7 +163,7 @@ instance.setDataPart(state)
 ```
 After that, the `instance.lockingScript` would include the data part automatically.
 
-If you want to access the code part of the contract's locking script without `dataPart` data, use:
+If you want to access the code part of the contract's locking script including the trailing `OP_RETURN`, use:
 ```typescript
 const codePart = instance.codePart;
 const codePartASM = instance.codePart.toASM();

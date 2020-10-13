@@ -93,7 +93,9 @@ export class AbstractContract {
   }
 
   get codePart(): Script {
-    return this.scriptedConstructor.lockingScript;
+    const codeASM = this.scriptedConstructor.toASM();
+    // note: do not trim the trailing space
+    return bsv.Script.fromASM(codeASM + ` OP_RETURN`);
   }
 }
 

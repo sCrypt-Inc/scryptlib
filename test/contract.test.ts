@@ -45,19 +45,19 @@ describe('buildContractClass()', () => {
       it('should return the partial locking script (the part before op_return) of the contract', () => {
         const lsBeforeAddDataLoad = instance.lockingScript;
 
-        assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM()); // without op_return data, they should be the same
+        assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM() + ' OP_RETURN'); // without op_return data, they should be the same
 
         instance.setDataPart('aa');
         const lsAfterAddDataLoad = instance.lockingScript; // locking script changed after adding op_return
 
-        assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM());
-        assert.equal(instance.codePart.toHex(), lsBeforeAddDataLoad.toHex());
+        assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM() + ' OP_RETURN');
+        assert.equal(instance.codePart.toHex(), lsBeforeAddDataLoad.toHex()+'6a');
 
-        assert.equal(instance.codePart.toASM() + ' OP_RETURN aa', lsAfterAddDataLoad.toASM());
-        assert.equal(instance.codePart.toHex() + '6a01aa', lsAfterAddDataLoad.toHex());
+        assert.equal(instance.codePart.toASM() + ' aa', lsAfterAddDataLoad.toASM());
+        assert.equal(instance.codePart.toHex() + '01aa', lsAfterAddDataLoad.toHex());
         
-        assert.equal(instance.codePart.toASM(), `OP_NOP ${toHex(pubKeyHash)} 0 OP_1 OP_PICK OP_1 OP_ROLL OP_DROP OP_NOP OP_2 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_3 OP_PICK OP_3 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP`);
-        assert.equal(instance.codePart.toHex(), `6114${toHex(pubKeyHash)}005179517a75615279a95179876953795379ac77777777`);
+        assert.equal(instance.codePart.toASM(), `OP_NOP ${toHex(pubKeyHash)} 0 OP_1 OP_PICK OP_1 OP_ROLL OP_DROP OP_NOP OP_2 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_3 OP_PICK OP_3 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_NIP OP_RETURN`);
+        assert.equal(instance.codePart.toHex(), `6114${toHex(pubKeyHash)}005179517a75615279a95179876953795379ac777777776a`);
       })
     })
 
@@ -85,14 +85,14 @@ describe('buildContractClass()', () => {
 
     describe('.lockingScript', () => {
       it('should return the whole locking script of the contract', () => {
-        // when op_return is non-exist
-        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM());
-        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex());
+        // when op_return is non-existent
+        assert.equal(instance.lockingScript.toASM() + ' OP_RETURN', instance.codePart.toASM());
+        assert.equal(instance.lockingScript.toHex() + '6a', instance.codePart.toHex());
 
         // when op_return is exist
         instance.setDataPart('aa');
-        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' OP_RETURN ' + instance.dataPart.toASM());
-        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + '6a' + instance.dataPart.toHex());
+        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' ' + instance.dataPart.toASM());
+        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + instance.dataPart.toHex());
       })
     })
 
