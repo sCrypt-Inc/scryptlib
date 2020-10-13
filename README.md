@@ -150,21 +150,21 @@ assert.isFalse(result.success, result.error);
 ```
 
 ## Contracts with State
-sCrypt offers [stateful contracts](https://medium.com/xiaohuiliu/stateful-smart-contracts-on-bitcoin-sv-c24f83a0f783). `OP_RETURN` data of the contract locking script can be accessed by using an accessor named `dataLoad`, for example:
-```typescript
-instance.dataLoad = dataInASM;
-```
-After that, the `instance.lockingScript` would include the dataLoad automatically. If you want to access the code part of the contract's locking script without `dataLoad` data, use:
-```typescript
-const codePart = instance.codePart;
-const codePartASM = instance.codePart.toASM();
-const codePartHex = instance.codePart.toHex();
-```
-Also to access the data part (in `OP_RETURN`) of the contract locking script, use:
+sCrypt offers [stateful contracts](https://medium.com/xiaohuiliu/stateful-smart-contracts-on-bitcoin-sv-c24f83a0f783). `OP_RETURN` data of the contract locking script can be accessed by using an accessor named `dataPart`, for example:
 ```typescript
 const dataPart = instance.dataPart;
 const dataPartASM = instance.dataPart.toASM();
 const dataPartHex = instance.dataPart.toHex();
+// to set it using ASM
+instance.setDataPart(dataInASM);
+```
+After that, the `instance.lockingScript` would include the data part automatically.
+
+If you want to access the code part of the contract's locking script without `dataPart` data, use:
+```typescript
+const codePart = instance.codePart;
+const codePartASM = instance.codePart.toASM();
+const codePartHex = instance.codePart.toHex();
 ```
 
 ## Instantiate Inline Assembly Variables

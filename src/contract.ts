@@ -33,8 +33,8 @@ export class AbstractContract {
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
-    if (this._dataLoad !== undefined && this._dataLoad !== null) {
-      lsASM += ` OP_RETURN ${this._dataLoad}`;
+    if (this._dataPart !== undefined && this._dataPart !== null) {
+      lsASM += ` OP_RETURN ${this._dataPart}`;
     }
     return bsv.Script.fromASM(lsASM.trim());
   }
@@ -72,29 +72,23 @@ export class AbstractContract {
     };
   }
 
-  private _dataLoad: string | undefined;
+  private _dataPart: string | undefined;
 
-  set dataLoad(dataInHex: string | undefined | null) {
-    if (dataInHex === undefined || dataInHex === null) {
-      this._dataLoad = undefined;
-    } else {
-      this._dataLoad = dataInHex.trim();
-    }
+  set dataPart(dataInScript: Script | undefined) {
+    throw new Error('Setter for dataPart is not available. Please use: setDataPart() instead');
+  }
+  
+  get dataPart(): Script | undefined {
+    return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
 
-  get dataLoad(): string | undefined | null {
-    return this._dataLoad || null;
+  setDataPart(dataInHex: string): void {
+    // TODO: validate hex string
+    this._dataPart = dataInHex.trim();
   }
 
   get codePart(): Script {
     return this.scriptedConstructor.lockingScript;
-  }
-
-  get dataPart(): Script | undefined {
-    if (this._dataLoad !== undefined && this._dataLoad !== null) {
-      return bsv.Script.fromASM(this._dataLoad);
-    }
-    return undefined;
   }
 }
 
