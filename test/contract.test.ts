@@ -47,7 +47,7 @@ describe('buildContractClass()', () => {
 
         assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM()); // without op_return data, they should be the same
 
-        instance.dataLoad = 'aa';
+        instance.setDataPart('aa');
         const lsAfterAddDataLoad = instance.lockingScript; // locking script changed after adding op_return
 
         assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM());
@@ -62,15 +62,15 @@ describe('buildContractClass()', () => {
     })
 
     describe('.dataPart', () => {
-      describe('when dataLoad is unset', () => {
+      describe('when dataPart is unset', () => {
         it('should return undefined', () => {
           assert.isUndefined(instance.dataPart);
         })
       })
 
-      describe('when dataLoad is set', () => {
+      describe('when dataPart is set', () => {
         it('should return the partial locking script (the part before op_return) of the contract', () => {
-          instance.dataLoad = 'aa';
+          instance.setDataPart('aa');
           assert.equal(instance.dataPart.toASM(), 'aa');
           assert.equal(instance.dataPart.toHex(), '01aa');
         })
@@ -84,7 +84,7 @@ describe('buildContractClass()', () => {
         assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex());
 
         // when op_return is exist
-        instance.dataLoad = 'aa';
+        instance.setDataPart('aa');
         assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' OP_RETURN ' + instance.dataPart.toASM());
         assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + '6a' + instance.dataPart.toHex());
       })
