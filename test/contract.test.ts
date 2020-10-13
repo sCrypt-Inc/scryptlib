@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, expect } from 'chai';
 import { loadDescription, newTx } from './helper';
 import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
@@ -65,6 +65,12 @@ describe('buildContractClass()', () => {
       describe('when dataPart is unset', () => {
         it('should return undefined', () => {
           assert.isUndefined(instance.dataPart);
+        })
+      })
+
+      describe('when dataPart is to be set using setter', () => {
+        it('should throw', () => {
+          expect(() => { instance.dataPart = 'FF' }).to.throw('Setter for dataPart is not available. Please use: setDataPart() instead');
         })
       })
 
