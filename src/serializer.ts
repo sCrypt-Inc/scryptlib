@@ -29,17 +29,12 @@ function serializeBytes(hexStr: string): string {
 }
 
 function serialize(x: boolean | number | string) {
-    const t = typeof x;
-
-    switch (t) {
-        case 'boolean':
-            return serializeBool(x as boolean);
-        case 'number':
-            return serializeInt(x as number);
-        case 'string':
-            return serializeBytes(x as string);
-        default:
-            throw new Error(`cannot serialize value of type '${t}': '${x}'`);
+    if (typeof x === 'boolean') {
+        return serializeBool(x);
+    } if (typeof x === 'number') {
+        return serializeInt(x);
+    } else {
+        return serializeBytes(x);
     }
 }
 
