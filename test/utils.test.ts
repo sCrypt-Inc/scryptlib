@@ -98,6 +98,15 @@ describe('utils', () => {
         ).toString()
       ).to.equal(bn.toString())
     })
+
+
+    it('support unpack Buffer', () => {
+      let bn = new BN('010000000000200001', 16, 'le')
+      expect(pack(bn, 9)).to.equal('010000000000200001')
+      const buffer = bn.toBuffer({endian : 'little', size: 9})
+      expect(unpack(buffer).toString()).to.equal(bn.toString())
+    })
+
   })
 
 })

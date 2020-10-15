@@ -273,13 +273,14 @@ export function pack(n: number | BigInt | bsv.crypto.BN, dataLen: number): strin
 
 export const num2bin = pack
 
-export function bin2num (hex: string): number {
-  let bn = unpack (hex);
+export function bin2num (s: string | Buffer): number {
+  let bn = unpack (s);
   return Number(bn);
 }
 
 //Support Bigint
-export function unpack (hex: string): BigInt {
+export function unpack (s: string | Buffer): BigInt {
+  const hex = s.toString('hex')
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);
   const m = parseInt(lastByte, 16);
