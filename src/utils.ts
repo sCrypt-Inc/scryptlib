@@ -275,7 +275,7 @@ export function pack(n: any, dataLen: number): string {
   return rest + mHex + padding;
 }
 
-//Support negative number
+//TODO: Support negative number
 export function bin2num (hex: string): number {
   let bn = unpack (hex);
   return bn.toNumber();
