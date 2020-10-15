@@ -275,14 +275,27 @@ export function pack(n: any, dataLen: number): string {
   return rest + mHex + padding;
 }
 
-//TODO: Support negative number
 export function bin2num (hex: string): number {
   let bn = unpack (hex);
   return bn.toNumber();
 }
 
+//Support Bigint
 export function unpack (hex: string): bsv.crypto.BN {
-  return BN.fromHex(hex, { endian: 'little' } );
+  const lastByte = hex.substring(hex.length - 2);
+  const rest = hex.substring(0, hex.length - 2);
+  const m = parseInt(lastByte, 16);
+  const n = m & 0x7F
+  let nHex = n.toString(16);
+  if (nHex.length < 2) {
+    nHex = '0' + nHex;
+  }
+  //Support negative number
+  let bn = BN.fromHex(rest + nHex, { endian: 'little' } );
+  if (m >> 7) {
+    bn = bn.neg()
+  }
+  return bn
 }
 
 export function path2uri(path: string): string {

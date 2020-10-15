@@ -18,6 +18,7 @@ describe('utils', () => {
       expect(num2bin(1, 2)).to.equal('0100');
       expect(num2bin(0x123456789abcde, 10)).to.equal('debc9a78563412000000');
       expect(num2bin(-1000, 4)).to.equal('e8030080');
+      expect(num2bin(-123456789, 8)).to.equal('15cd5b0700000080');
     })
 
     it('BigInt pack & unpack', () => {
@@ -30,6 +31,9 @@ describe('utils', () => {
       bn = bn.add(bnHundred)
       expect(pack(bn, 8)).to.equal('0100000000002000');
       expect(unpack('0100000000002000').toString()).to.equal(bn.toString());
+      bn = bn.neg()
+      expect(pack(bn, 8)).to.equal('0100000000002080');
+      expect(unpack('0100000000002080').toString()).to.equal(bn.toString());
     })
 
     it('HexInt pack & unpack', () => {
@@ -49,12 +53,13 @@ describe('utils', () => {
       expect(bin2num('0a')).to.equal(10);
       expect(bin2num('2301')).to.equal(0x123);
       expect(bin2num('debc9a78563412')).to.equal(0x123456789abcde);
-      // expect(bin2num('e883')).to.equal(-1000);
+      expect(bin2num('e883')).to.equal(-1000);
 
       expect(bin2num('000000')).to.equal(0);
       expect(bin2num('0100')).to.equal(1);
       expect(bin2num('debc9a78563412000000')).to.equal(0x123456789abcde);
-      // expect(bin2num('e8030080')).to.equal(-1000);
+      expect(bin2num('e8030080')).to.equal(-1000);
+      expect(bin2num('15cd5b0700000080')).to.equal(-123456789);
     })
 
     it('should raise error if the number can not fit in certain bytes length', () => {
