@@ -48,7 +48,7 @@ describe('utils', () => {
       expect(unpack('0100000000002000010000000000200001000000000020000100000000002000').toString()).to.equal(bn.toString());
     })
 
-    it('bin2num only support unsigned number', () => {
+    it('bin2num', () => {
       expect(bin2num('00')).to.equal(0);
       expect(bin2num('0a')).to.equal(10);
       expect(bin2num('2301')).to.equal(0x123);
