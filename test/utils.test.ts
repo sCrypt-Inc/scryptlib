@@ -1,5 +1,7 @@
 import { expect } from 'chai';
-import { num2bin } from '../src/utils';
+import { num2bin, pack, unpack, bin2num, bsv } from '../src/utils';
+
+const BN = bsv.crypto.BN;
 
 describe('utils', () => {
 
@@ -16,6 +18,43 @@ describe('utils', () => {
       expect(num2bin(1, 2)).to.equal('0100');
       expect(num2bin(0x123456789abcde, 10)).to.equal('debc9a78563412000000');
       expect(num2bin(-1000, 4)).to.equal('e8030080');
+    })
+
+    it('BigInt pack & unpack', () => {
+      let bn = new BN(2**53-1)
+      const bnOne = new BN(1)
+      const bnHundred = new BN(1)
+      bn = bn.add(bnOne)
+      expect(pack(bn, 8)).to.equal('0000000000002000');
+      expect(unpack('0000000000002000').toString()).to.equal(bn.toString());
+      bn = bn.add(bnHundred)
+      expect(pack(bn, 8)).to.equal('0100000000002000');
+      expect(unpack('0100000000002000').toString()).to.equal(bn.toString());
+    })
+
+    it('HexInt pack & unpack', () => {
+      let bn = new BN('010000000000200001', 16, 'le')
+      expect(pack(bn, 9)).to.equal('010000000000200001');
+      expect(unpack('010000000000200001').toString()).to.equal(bn.toString());
+    })
+
+    it('UInt256 pack & unpack', () => {
+      let bn = new BN('0100000000002000010000000000200001000000000020000100000000002000', 16, 'le')
+      expect(pack(bn, 32)).to.equal('0100000000002000010000000000200001000000000020000100000000002000');
+      expect(unpack('0100000000002000010000000000200001000000000020000100000000002000').toString()).to.equal(bn.toString());
+    })
+
+    it('bin2num only support unsigned number', () => {
+      expect(bin2num('00')).to.equal(0);
+      expect(bin2num('0a')).to.equal(10);
+      expect(bin2num('2301')).to.equal(0x123);
+      expect(bin2num('debc9a78563412')).to.equal(0x123456789abcde);
+      // expect(bin2num('e883')).to.equal(-1000);
+
+      expect(bin2num('000000')).to.equal(0);
+      expect(bin2num('0100')).to.equal(1);
+      expect(bin2num('debc9a78563412000000')).to.equal(0x123456789abcde);
+      // expect(bin2num('e8030080')).to.equal(-1000);
     })
 
     it('should raise error if the number can not fit in certain bytes length', () => {

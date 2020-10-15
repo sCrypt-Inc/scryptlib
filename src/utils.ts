@@ -237,13 +237,17 @@ export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: numb
 // Converts a number into a sign-magnitude representation of certain size as a string
 // Throws if the number cannot be accommodated
 // Often used to append numbers to OP_RETURN, which are read in contracts
-// TODO: handle bigint
 export function num2bin(n: number, dataLen: number): string {
+  return pack(n, dataLen);
+}
+
+//Support Bigint
+export function pack(n: any, dataLen: number): string {
   if (n === 0) {
     return '00'.repeat(dataLen);
   }
 
-  const num = BN.fromNumber(n);
+  const num = new BN(n);
   const s = num.toSM({ endian: 'little' }).toString('hex');
 
   const byteLen_ = s.length / 2;
@@ -258,7 +262,7 @@ export function num2bin(n: number, dataLen: number): string {
   const lastByte = s.substring(s.length - 2);
   const rest = s.substring(0, s.length - 2);
   let m = parseInt(lastByte, 16);
-  if (n < 0) {
+  if (num.isNeg) {
     // reset sign bit
     m &= 0x7F;
   }
@@ -269,6 +273,16 @@ export function num2bin(n: number, dataLen: number): string {
 
   const padding = n > 0 ? '00'.repeat(paddingLen) : '00'.repeat(paddingLen - 1) + '80';
   return rest + mHex + padding;
+}
+
+//Support negative number
+export function bin2num (hex: string): number {
+  let bn = unpack (hex);
+  return bn.toNumber();
+}
+
+export function unpack (hex: string): bsv.crypto.BN {
+  return BN.fromHex(hex, { endian: 'little' } );
 }
 
 export function path2uri(path: string): string {
