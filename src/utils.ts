@@ -275,11 +275,11 @@ export const num2bin = pack
 
 export function bin2num (hex: string): number {
   let bn = unpack (hex);
-  return bn.toNumber();
+  return Number(bn);
 }
 
 //Support Bigint
-export function unpack (hex: string): bsv.crypto.BN {
+export function unpack (hex: string): BigInt {
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);
   const m = parseInt(lastByte, 16);
@@ -293,7 +293,7 @@ export function unpack (hex: string): bsv.crypto.BN {
   if (m >> 7) {
     bn = bn.neg()
   }
-  return bn
+  return BigInt(bn)
 }
 
 export function path2uri(path: string): string {
