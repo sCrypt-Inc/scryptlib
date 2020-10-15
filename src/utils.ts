@@ -237,11 +237,7 @@ export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: numb
 // Converts a number into a sign-magnitude representation of certain size as a string
 // Throws if the number cannot be accommodated
 // Often used to append numbers to OP_RETURN, which are read in contracts
-export function num2bin(n: number, dataLen: number): string {
-  return pack(n, dataLen);
-}
-
-//Support Bigint
+// Support Bigint
 export function pack(n: number | BigInt | bsv.crypto.BN, dataLen: number): string {
   if (n === 0) {
     return '00'.repeat(dataLen);
@@ -274,6 +270,8 @@ export function pack(n: number | BigInt | bsv.crypto.BN, dataLen: number): strin
   const padding = n > 0 ? '00'.repeat(paddingLen) : '00'.repeat(paddingLen - 1) + '80';
   return rest + mHex + padding;
 }
+
+export const num2bin = pack
 
 export function bin2num (hex: string): number {
   let bn = unpack (hex);
