@@ -41,32 +41,49 @@ describe('utils', () => {
       expect(bin2num('15cd5b0700000080')).to.equal(-123456789)
     })
   })
-  
+
   describe('pack() & unpack()', () => {
-    it('BigInt', () => {
+    it('support BigInt type', () => {
+      //2 ** 53 - 1 is max number in Javascript
+      let bn = BigInt(2 ** 53 - 1)
+      const bnOne = BigInt(1)
+      const bnHundred = BigInt(100)
+      bn = bn + bnOne
+      expect(pack(bn, 8)).to.equal('0000000000002000')
+      expect(unpack('0000000000002000').toString()).to.equal(bn.toString())
+      bn = bn + bnHundred
+      expect(pack(bn, 8)).to.equal('6400000000002000')
+      expect(unpack('6400000000002000').toString()).to.equal(bn.toString())
+      //negative bigint
+      bn = -bn
+      expect(pack(bn, 8)).to.equal('6400000000002080')
+      expect(unpack('6400000000002080').toString()).to.equal(bn.toString())
+    })
+
+    it('support BN.js type', () => {
       //2 ** 53 - 1 is max number in Javascript
       let bn = new BN(2 ** 53 - 1)
       const bnOne = new BN(1)
-      const bnHundred = new BN(1)
+      const bnHundred = new BN(100)
       bn = bn.add(bnOne)
       expect(pack(bn, 8)).to.equal('0000000000002000')
       expect(unpack('0000000000002000').toString()).to.equal(bn.toString())
       bn = bn.add(bnHundred)
-      expect(pack(bn, 8)).to.equal('0100000000002000')
-      expect(unpack('0100000000002000').toString()).to.equal(bn.toString())
+      expect(pack(bn, 8)).to.equal('6400000000002000')
+      expect(unpack('6400000000002000').toString()).to.equal(bn.toString())
       //negative bigint
       bn = bn.neg()
-      expect(pack(bn, 8)).to.equal('0100000000002080')
-      expect(unpack('0100000000002080').toString()).to.equal(bn.toString())
+      expect(pack(bn, 8)).to.equal('6400000000002080')
+      expect(unpack('6400000000002080').toString()).to.equal(bn.toString())
     })
 
-    it('HexInt', () => {
+    it('HexInt with 9bytes', () => {
       let bn = new BN('010000000000200001', 16, 'le')
       expect(pack(bn, 9)).to.equal('010000000000200001')
       expect(unpack('010000000000200001').toString()).to.equal(bn.toString())
     })
 
-    it('UInt256', () => {
+    it('UInt256 with 32ytes', () => {
       let bn = new BN(
         '0100000000002000010000000000200001000000000020000100000000002000',
         16,

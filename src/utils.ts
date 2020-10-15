@@ -242,7 +242,7 @@ export function num2bin(n: number, dataLen: number): string {
 }
 
 //Support Bigint
-export function pack(n: any, dataLen: number): string {
+export function pack(n: number | BigInt | bsv.crypto.BN, dataLen: number): string {
   if (n === 0) {
     return '00'.repeat(dataLen);
   }
