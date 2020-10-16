@@ -43,7 +43,7 @@ describe('utils', () => {
   })
 
   describe('num2bin() & bin2num()', () => {
-    it('support BigInt type', () => {
+    it('support bigint type', () => {
       //2 ** 53 - 1 is max number in Javascript
       let bn = BigInt(2 ** 53 - 1)
       const bnOne = BigInt(1)

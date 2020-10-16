@@ -238,7 +238,7 @@ export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: numb
 // Throws if the number cannot be accommodated
 // Often used to append numbers to OP_RETURN, which are read in contracts
 // Support Bigint
-export function num2bin(n: number | BigInt | bsv.crypto.BN, dataLen: number): string {
+export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): string {
   if (n === 0) {
     return '00'.repeat(dataLen);
   }
@@ -272,7 +272,7 @@ export function num2bin(n: number | BigInt | bsv.crypto.BN, dataLen: number): st
 }
 
 //Support Bigint
-export function bin2num (s: string | Buffer): BigInt {
+export function bin2num (s: string | Buffer): bigint {
   const hex = s.toString('hex')
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);

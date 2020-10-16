@@ -20,7 +20,7 @@ export interface Script {
   toHex(): string;
 }
 
-export type SupportedParamType = ScryptType | boolean | number | BigInt;
+export type SupportedParamType = ScryptType | boolean | number | bigint;
 
 export class FunctionCall {
 
@@ -171,7 +171,7 @@ export class ABICoder {
     }
 
     if (typeofArg === 'bigint') {
-      arg = new Int(arg as BigInt);
+      arg = new Int(arg as bigint);
     }
 
     let ctorName = arg.constructor.name;
