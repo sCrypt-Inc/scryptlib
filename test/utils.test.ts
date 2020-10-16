@@ -44,8 +44,8 @@ describe('utils', () => {
 
   describe('num2bin() & bin2num()', () => {
     it('support bigint type', () => {
-      //2 ** 53 - 1 is max number in Javascript
-      let bn = BigInt(2 ** 53 - 1)
+      // max number in Javascript
+      let bn = BigInt(Number.MAX_SAFE_INTEGER)
       const bnOne = BigInt(1)
       const bnHundred = BigInt(100)
       bn = bn + bnOne
@@ -61,8 +61,8 @@ describe('utils', () => {
     })
 
     it('support BN.js type', () => {
-      //2 ** 53 - 1 is max number in Javascript
-      let bn = new BN(2 ** 53 - 1)
+      // max number in Javascript
+      let bn = new BN(Number.MAX_SAFE_INTEGER)
       const bnOne = new BN(1)
       const bnHundred = new BN(100)
       bn = bn.add(bnOne)
@@ -78,13 +78,13 @@ describe('utils', () => {
     })
 
     it('HexInt with 9bytes', () => {
-      let bn = new BN('010000000000200001', 16, 'le')
+      const bn = new BN('010000000000200001', 16, 'le')
       expect(num2bin(bn, 9)).to.equal('010000000000200001')
       expect(bin2num('010000000000200001').toString()).to.equal(bn.toString())
     })
 
     it('UInt256 with 32ytes', () => {
-      let bn = new BN(
+      const bn = new BN(
         '0100000000002000010000000000200001000000000020000100000000002000',
         16,
         'le'
@@ -100,7 +100,7 @@ describe('utils', () => {
     })
 
     it('support bin2num Buffer', () => {
-      let bn = new BN('010000000000200001', 16, 'le')
+      const bn = new BN('010000000000200001', 16, 'le')
       expect(num2bin(bn, 9)).to.equal('010000000000200001')
       const buffer = bn.toBuffer({endian : 'little', size: 9})
       expect(bin2num(buffer).toString()).to.equal(bn.toString())
