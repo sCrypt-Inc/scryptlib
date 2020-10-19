@@ -14,7 +14,8 @@ function serializeBool(flag: boolean): string {
 
 function serializeInt(n: number | bigint): string {
     // special case: otherwise it returns empty string
-    if (n === 0) {
+    // use "==" not "===" since "0n === 0" returns false
+    if (n == 0) {
         return '00';
     }
 
@@ -30,7 +31,9 @@ function serializeBytes(hexStr: string): string {
 function serialize(x: boolean | number | bigint | string) {
     if (typeof x === 'boolean') {
         return serializeBool(x);
-    } if (typeof x === 'number' || typeof x === 'bigint') {
+    } if (typeof x === 'number') {
+        return serializeInt(x);
+    } if (typeof x === 'bigint') {
         return serializeInt(x);
     } else {
         return serializeBytes(x);
@@ -49,12 +52,12 @@ export function serializeState(state: State | StateArray): string {
         asms.push(str);
     });
 
-    const script = Script.fromASM(asms.join(' '))
+    const script = Script.fromASM(asms.join(' '));
 
-    const scriptHex = script.toHex()
+    const scriptHex = script.toHex();
     const stateLen = scriptHex.length/2;
 
-    // use fixed size (4 bytes) to denote state len
+    // use fixed size to denote state len
     const len = num2bin(stateLen, STATE_LEN);
     return script.toASM() + ' ' + len;
 }

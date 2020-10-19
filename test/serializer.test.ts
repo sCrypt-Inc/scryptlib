@@ -105,11 +105,11 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0a 2301 debc9a78563412 e883 11000000')
-      expect(hex).to.equal('010a02230107debc9a7856341202e8830411000000')
+      expect(serial).to.equal('00 0a 2301 debc9a78563412 e883 12000000')
+      expect(hex).to.equal('0100010a02230107debc9a7856341202e8830412000000')
     })
 
-    it('max-len bytes', () => {
+    it('pushdata 0', () => {
       const state = ['FF'.repeat(75)]
       const serial = serializeState(state)
       const script = Script.fromASM(serial)
