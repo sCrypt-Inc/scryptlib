@@ -6,6 +6,26 @@ const BN = bsv.crypto.BN
 const Script = bsv.Script
 
 describe('serializer', () => {
+  describe('BSV Script()', () => {
+    it('zero', () => {
+      const script = Script.fromASM('0')
+      const hex = script.toHex()
+      expect(hex).to.equal('00')
+    })
+
+    it('double zero', () => {
+      const script = Script.fromASM('00')
+      const hex = script.toHex()
+      expect(hex).to.equal('0100')
+    })
+
+    it('-1', () => {
+      const script = Script.fromASM('-1')
+      const hex = script.toHex()
+      expect(hex).to.equal('4f')
+    })
+  })
+
   describe('serializeState()', () => {
     it('object type', () => {
       const state = { counter: 11, bytes: '1234', flag: true }
@@ -33,8 +53,18 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0 -1 01 0b 1234 01 0b000000')
-      expect(hex).to.equal('004f0101010b0212340101040b000000')
+      expect(serial).to.equal('00 81 01 0b 1234 01 0d000000')
+      expect(hex).to.equal('010001810101010b0212340101040d000000')
+    })
+
+    it('special string', () => {
+      const state = ['0', '-1', '1', '11', '1234', true]
+      const serial = serializeState(state)
+      const script = Script.fromASM(serial)
+      const hex = script.toHex()
+
+      expect(serial).to.equal('0 -1 11 1234 01 0a000000')
+      expect(hex).to.equal('004f01110212340101040a000000')
     })
 
     it('negative number', () => {
@@ -47,14 +77,24 @@ describe('serializer', () => {
       expect(hex).to.equal('01e40402000000')
     })
 
+    it('bool', () => {
+      const state = [true, false]
+      const serial = serializeState(state)
+      const script = Script.fromASM(serial)
+      const hex = script.toHex()
+
+      expect(serial).to.equal('01 00 04000000')
+      expect(hex).to.equal('010101000404000000')
+    })
+
     it('bigint', () => {
       const state = [0n, 0x0an, 0x123n, 0x123456789abcden, -1000n]
       const serial = serializeState(state)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0 0a 2301 debc9a78563412 e883 11000000')
-      expect(hex).to.equal('00010a02230107debc9a7856341202e8830411000000')
+      expect(serial).to.equal('0a 2301 debc9a78563412 e883 11000000')
+      expect(hex).to.equal('010a02230107debc9a7856341202e8830411000000')
     })
 
     it('max-len bytes', () => {

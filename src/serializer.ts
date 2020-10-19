@@ -28,10 +28,7 @@ function serializeBytes(hexStr: string): string {
 }
 
 function serialize(x: boolean | number | bigint | string) {
-    const s = x.toString()
-    if (s === '0' || s === '-1') {
-        return x.toString()
-    } if (typeof x === 'boolean') {
+    if (typeof x === 'boolean') {
         return serializeBool(x);
     } if (typeof x === 'number' || typeof x === 'bigint') {
         return serializeInt(x);
