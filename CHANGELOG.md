@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.2.13
+
+* support serializer
+
 ## 0.2.4
 
 * support SigHashPreimage type
