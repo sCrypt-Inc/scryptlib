@@ -13,6 +13,7 @@
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
     "pretest": "ts-node test/fixture/autoCompile.ts",
+    "prepare": "npm run compile",
     "prepublishOnly": "npm run lint && npm run compile"
   },
   "repository": {

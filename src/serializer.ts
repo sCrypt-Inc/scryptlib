@@ -9,7 +9,7 @@ const BN = bsv.crypto.BN;
 const STATE_LEN = 4;
 
 function serializeBool(flag: boolean): string {
-    return flag ? '01' : '00';
+    return flag ? 'OP_TRUE' : 'OP_FALSE';
 }
 
 function serializeInt(n: number | bigint): string {
