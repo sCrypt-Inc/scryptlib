@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { num2bin, pack, unpack, bin2num, bsv } from '../src/utils'
+import { num2bin, bin2num, bsv } from '../src/utils'
 
 const BN = bsv.crypto.BN
 
@@ -28,83 +28,82 @@ describe('utils', () => {
 
   describe('bin2num()', () => {
     it('bin2num', () => {
-      expect(bin2num('00')).to.equal(0)
-      expect(bin2num('0a')).to.equal(10)
-      expect(bin2num('2301')).to.equal(0x123)
-      expect(bin2num('debc9a78563412')).to.equal(0x123456789abcde)
-      expect(bin2num('e883')).to.equal(-1000)
+      expect(bin2num('00')).to.equal(0n)
+      expect(bin2num('0a')).to.equal(0x0an)
+      expect(bin2num('2301')).to.equal(0x123n)
+      expect(bin2num('debc9a78563412')).to.equal(0x123456789abcden)
+      expect(bin2num('e883')).to.equal(-1000n)
 
-      expect(bin2num('000000')).to.equal(0)
-      expect(bin2num('0100')).to.equal(1)
-      expect(bin2num('debc9a78563412000000')).to.equal(0x123456789abcde)
-      expect(bin2num('e8030080')).to.equal(-1000)
-      expect(bin2num('15cd5b0700000080')).to.equal(-123456789)
+      expect(bin2num('000000')).to.equal(0n)
+      expect(bin2num('0100')).to.equal(1n)
+      expect(bin2num('debc9a78563412000000')).to.equal(0x123456789abcden)
+      expect(bin2num('e8030080')).to.equal(-1000n)
+      expect(bin2num('15cd5b0700000080')).to.equal(-123456789n)
     })
   })
 
-  describe('pack() & unpack()', () => {
-    it('support BigInt type', () => {
-      //2 ** 53 - 1 is max number in Javascript
-      let bn = BigInt(2 ** 53 - 1)
+  describe('num2bin() & bin2num()', () => {
+    it('support bigint type', () => {
+      // max number in Javascript
+      let bn = BigInt(Number.MAX_SAFE_INTEGER)
       const bnOne = BigInt(1)
       const bnHundred = BigInt(100)
       bn = bn + bnOne
-      expect(pack(bn, 8)).to.equal('0000000000002000')
-      expect(unpack('0000000000002000').toString()).to.equal(bn.toString())
+      expect(num2bin(bn, 8)).to.equal('0000000000002000')
+      expect(bin2num('0000000000002000')).to.equal(bn)
       bn = bn + bnHundred
-      expect(pack(bn, 8)).to.equal('6400000000002000')
-      expect(unpack('6400000000002000').toString()).to.equal(bn.toString())
+      expect(num2bin(bn, 8)).to.equal('6400000000002000')
+      expect(bin2num('6400000000002000')).to.equal(bn)
       //negative bigint
       bn = -bn
-      expect(pack(bn, 8)).to.equal('6400000000002080')
-      expect(unpack('6400000000002080').toString()).to.equal(bn.toString())
+      expect(num2bin(bn, 8)).to.equal('6400000000002080')
+      expect(bin2num('6400000000002080')).to.equal(bn)
     })
 
     it('support BN.js type', () => {
-      //2 ** 53 - 1 is max number in Javascript
-      let bn = new BN(2 ** 53 - 1)
+      // max number in Javascript
+      let bn = new BN(Number.MAX_SAFE_INTEGER)
       const bnOne = new BN(1)
       const bnHundred = new BN(100)
       bn = bn.add(bnOne)
-      expect(pack(bn, 8)).to.equal('0000000000002000')
-      expect(unpack('0000000000002000').toString()).to.equal(bn.toString())
+      expect(num2bin(bn, 8)).to.equal('0000000000002000')
+      expect(bin2num('0000000000002000').toString()).to.equal(bn.toString())
       bn = bn.add(bnHundred)
-      expect(pack(bn, 8)).to.equal('6400000000002000')
-      expect(unpack('6400000000002000').toString()).to.equal(bn.toString())
+      expect(num2bin(bn, 8)).to.equal('6400000000002000')
+      expect(bin2num('6400000000002000').toString()).to.equal(bn.toString())
       //negative bigint
       bn = bn.neg()
-      expect(pack(bn, 8)).to.equal('6400000000002080')
-      expect(unpack('6400000000002080').toString()).to.equal(bn.toString())
+      expect(num2bin(bn, 8)).to.equal('6400000000002080')
+      expect(bin2num('6400000000002080').toString()).to.equal(bn.toString())
     })
 
     it('HexInt with 9bytes', () => {
-      let bn = new BN('010000000000200001', 16, 'le')
-      expect(pack(bn, 9)).to.equal('010000000000200001')
-      expect(unpack('010000000000200001').toString()).to.equal(bn.toString())
+      const bn = new BN('010000000000200001', 16, 'le')
+      expect(num2bin(bn, 9)).to.equal('010000000000200001')
+      expect(bin2num('010000000000200001').toString()).to.equal(bn.toString())
     })
 
     it('UInt256 with 32ytes', () => {
-      let bn = new BN(
+      const bn = new BN(
         '0100000000002000010000000000200001000000000020000100000000002000',
         16,
         'le'
       )
-      expect(pack(bn, 32)).to.equal(
+      expect(num2bin(bn, 32)).to.equal(
         '0100000000002000010000000000200001000000000020000100000000002000'
       )
       expect(
-        unpack(
+        bin2num(
           '0100000000002000010000000000200001000000000020000100000000002000'
         ).toString()
       ).to.equal(bn.toString())
     })
 
-
-    it('support unpack Buffer', () => {
-      let bn = new BN('010000000000200001', 16, 'le')
-      expect(pack(bn, 9)).to.equal('010000000000200001')
+    it('support bin2num Buffer', () => {
+      const bn = new BN('010000000000200001', 16, 'le')
+      expect(num2bin(bn, 9)).to.equal('010000000000200001')
       const buffer = bn.toBuffer({endian : 'little', size: 9})
-      expect(unpack(buffer).toString()).to.equal(bn.toString())
+      expect(bin2num(buffer).toString()).to.equal(bn.toString())
     })
 
   })
