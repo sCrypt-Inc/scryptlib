@@ -6,7 +6,7 @@ import { bsv, num2bin } from './utils';
 const Script = bsv.Script;
 const BN = bsv.crypto.BN;
 // number of bytes to denote state length after serialization, exclusing varint prefix
-const STATE_LEN = 4;
+const STATE_LEN = 2;
 
 function serializeBool(flag: boolean): string {
     return flag ? 'OP_TRUE' : 'OP_FALSE';
@@ -44,7 +44,7 @@ export type State = Record<string, boolean | number | bigint | string>
 export type StateArray = Array<boolean | number | bigint | string>
 
 // serialize contract state into Script ASM
-export function serializeState(state: State | StateArray): string {
+export function serializeState(state: State | StateArray, stateBytes: number = STATE_LEN): string {
     const asms = [];
 
     Object.values(state).forEach(s => {
@@ -58,6 +58,6 @@ export function serializeState(state: State | StateArray): string {
     const stateLen = scriptHex.length/2;
 
     // use fixed size to denote state len
-    const len = num2bin(stateLen, STATE_LEN);
+    const len = num2bin(stateLen, stateBytes);
     return script.toASM() + ' ' + len;
 }

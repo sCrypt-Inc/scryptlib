@@ -45,8 +45,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 06000000')
-      expect(hex).to.equal('010b021234510406000000')
+      expect(serial).to.equal('0b 1234 OP_1 0600')
+      expect(hex).to.equal('010b02123451020600')
     })
 
     it('array type', () => {
@@ -55,8 +55,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 06000000')
-      expect(hex).to.equal('010b021234000406000000')
+      expect(serial).to.equal('0b 1234 0 0600')
+      expect(hex).to.equal('010b02123400020600')
     })
 
     it('special number', () => {
@@ -65,8 +65,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('00 81 01 0b 1234 OP_1 0c000000')
-      expect(hex).to.equal('010001810101010b02123451040c000000')
+      expect(serial).to.equal('00 81 01 0b 1234 OP_1 0c00')
+      expect(hex).to.equal('010001810101010b02123451020c00')
     })
 
     it('special string', () => {
@@ -75,8 +75,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0 -1 11 1234 OP_1 09000000')
-      expect(hex).to.equal('004f0111021234510409000000')
+      expect(serial).to.equal('0 -1 11 1234 OP_1 0900')
+      expect(hex).to.equal('004f011102123451020900')
     })
 
     it('negative number', () => {
@@ -85,8 +85,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('e4 02000000')
-      expect(hex).to.equal('01e40402000000')
+      expect(serial).to.equal('e4 0200')
+      expect(hex).to.equal('01e4020200')
     })
 
     it('bool', () => {
@@ -95,8 +95,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('OP_1 0 02000000')
-      expect(hex).to.equal('51000402000000')
+      expect(serial).to.equal('OP_1 0 0200')
+      expect(hex).to.equal('5100020200')
     })
 
     it('bigint', () => {
@@ -105,8 +105,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('00 0a 2301 debc9a78563412 e883 12000000')
-      expect(hex).to.equal('0100010a02230107debc9a7856341202e8830412000000')
+      expect(serial).to.equal('00 0a 2301 debc9a78563412 e883 1200')
+      expect(hex).to.equal('0100010a02230107debc9a7856341202e883021200')
     })
 
     it('pushdata 0', () => {
@@ -115,8 +115,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('ff'.repeat(75) + ' 4c000000')
-      expect(hex).to.equal('4b' + 'ff'.repeat(75) + '044c000000')
+      expect(serial).to.equal('ff'.repeat(75) + ' 4c00')
+      expect(hex).to.equal('4b' + 'ff'.repeat(75) + '024c00')
     })
 
     it('pushdata 1', () => {
@@ -125,8 +125,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('ff'.repeat(76) + ' 4e000000')
-      expect(hex).to.equal('4c4c' + 'ff'.repeat(76) + '044e000000')
+      expect(serial).to.equal('ff'.repeat(76) + ' 4e00')
+      expect(hex).to.equal('4c4c' + 'ff'.repeat(76) + '024e00')
     })
 
     it('pushdata 2', () => {
@@ -135,13 +135,14 @@ describe('serializer', () => {
       const script = Script.fromASM(serialize)
       const hex = script.toHex()
 
-      expect(serialize).to.equal('ff'.repeat(2 ** 8) + ' 03010000')
-      expect(hex).to.equal('4d0001' + 'ff'.repeat(2 ** 8) + '0403010000')
+      expect(serialize).to.equal('ff'.repeat(2 ** 8) + ' 0301')
+      expect(hex).to.equal('4d0001' + 'ff'.repeat(2 ** 8) + '020301')
     })
 
     it('pushdata 4', () => {
       const state = ['FF'.repeat(2 ** 16)]
-      const serial = serializeState(state)
+      // use 4 bytes to accomodate
+      const serial = serializeState(state, 4)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
