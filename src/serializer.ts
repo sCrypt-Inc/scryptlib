@@ -1,9 +1,5 @@
-import { BasePrivateKeyEncodingOptions } from 'crypto'
 import { bin2num, bsv, num2bin } from './utils'
 
-/*
- * a varint serializer into Script ASM
- */
 const Script = bsv.Script
 const Opcode = bsv.Opcode
 const BN = bsv.crypto.BN
