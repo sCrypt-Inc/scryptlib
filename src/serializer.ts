@@ -1,3 +1,4 @@
+import { BasePrivateKeyEncodingOptions } from 'crypto'
 import { bin2num, bsv, num2bin } from './utils'
 
 /*
@@ -104,11 +105,14 @@ class OpState {
 
 export type OpStateArray = Array<OpState>
 
-// deserialize Script or Script Hex to contract state array
-// DONT support ASM Code converting.
-// TODO: validate
-export function deserializeState(s: string | bsv.Script): OpStateArray {
-  const script = new Script(s)
+// deserialize Script or Script Hex or Script ASM Code to contract state array and object
+export function deserializeState(s: string | bsv.Script, stateClass: State = undefined): OpStateArray | State {
+  let script: bsv.Script;
+  try{
+    script = new Script(s)
+  } catch(e) {
+    script = Script.fromASM(s)
+  }
   const chunks = script.chunks
   const states = []
   let pos = chunks.length
@@ -121,5 +125,31 @@ export function deserializeState(s: string | bsv.Script): OpStateArray {
       states.push(new OpState(chunks[i]))
     }
   }
-  return states.reverse()
+  states.reverse();
+
+  //deserialize to an array
+  if(!stateClass) {
+    return states;
+  }
+
+  //deserialize to an object
+  const ret: State = {};
+  const keys = Object.keys(stateClass);
+  for (let i = 0; i < states.length; i++) {
+    const key = keys[i];
+    if(!key) {
+      break;
+    }
+    const val = stateClass[key];
+    if (val === 'boolean' || typeof val === 'boolean') {
+      ret[key] = states[i].toBoolean()
+    } else if (val === 'number' || typeof val === 'number') {
+      ret[key] = states[i].toNumber()
+    } else if (val === 'bigint' || typeof val === 'bigint') {
+      ret[key] = states[i].toBigInt()
+    } else {
+      ret[key] = states[i].toHex()
+    }
+  }
+  return ret;
 }
