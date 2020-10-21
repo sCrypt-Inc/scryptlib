@@ -219,6 +219,34 @@ describe('serializer', () => {
       expect(deStates[2].toBoolean()).to.equal(states[2])
     })
 
+    it('array type 2', () => {
+      const states = [11, '1234', false]
+      const serial = serializeState(states)
+      const script = Script.fromASM(serial)
+      const hex = script.toHex()
+
+      expect(serial).to.equal('0b 1234 0 0600')
+      expect(hex).to.equal('010b02123400020600')
+
+      const deStates = deserializeState(hex, states)
+      expect(deStates).to.eql(states)
+    })
+
+    it('array type 3', () => {
+      const states = [11, '1234', false]
+      const serial = serializeState(states)
+      const script = Script.fromASM(serial)
+      const hex = script.toHex()
+
+      expect(serial).to.equal('0b 1234 0 0600')
+      expect(hex).to.equal('010b02123400020600')
+
+      const deStates = deserializeState(hex, ['number', 'hex', 'boolean'])
+      expect(deStates).to.eql(states)
+    })
+
+
+
     it('OP_RETURN', () => {
       const states = [11, '1234', false]
       const serial = serializeState(states)
@@ -227,10 +255,8 @@ describe('serializer', () => {
       expect(serial).to.equal('0b 1234 0 0600')
       expect(hex).to.equal('516a010b02123400020600')
 
-      const deStates = deserializeState(hex)
-      expect(deStates[0].toNumber()).to.equal(states[0])
-      expect(deStates[1].toHex()).to.equal(states[1])
-      expect(deStates[2].toBoolean()).to.equal(states[2])
+      const deStates = deserializeState(hex, ['number', 'hex', 'boolean'])
+      expect(deStates).to.eql(states)
     })
 
     it('Script Object', () => {
@@ -242,10 +268,8 @@ describe('serializer', () => {
       expect(hex).to.equal('516a010b02123400020600')
 
       //script object
-      const deStates = deserializeState(script)
-      expect(deStates[0].toNumber()).to.equal(states[0])
-      expect(deStates[1].toHex()).to.equal(states[1])
-      expect(deStates[2].toBoolean()).to.equal(states[2])
+      const deStates = deserializeState(hex, ['number', 'hex', 'boolean'])
+      expect(deStates).to.eql(states)
     })
 
     it('Script ASM', () => {
@@ -257,10 +281,8 @@ describe('serializer', () => {
       expect(hex).to.equal('516a010b02123400020600')
 
       //script object
-      const deStates = deserializeState(script.toASM())
-      expect(deStates[0].toNumber()).to.equal(states[0])
-      expect(deStates[1].toHex()).to.equal(states[1])
-      expect(deStates[2].toBoolean()).to.equal(states[2])
+      const deStates = deserializeState(script.toASM(), ['number', 'hex', 'boolean'])
+      expect(deStates).to.eql(states)
     })
 
     it('special number', () => {

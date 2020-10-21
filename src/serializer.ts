@@ -102,7 +102,7 @@ class OpState {
 export type OpStateArray = Array<OpState>
 
 // deserialize Script or Script Hex or Script ASM Code to contract state array and object
-export function deserializeState(s: string | bsv.Script, stateClass: State = undefined): OpStateArray | State {
+export function deserializeState(s: string | bsv.Script, stateClass: State | StateArray = undefined): OpStateArray | State | StateArray {
   let script: bsv.Script;
   try{
     script = new Script(s)
@@ -129,7 +129,12 @@ export function deserializeState(s: string | bsv.Script, stateClass: State = und
   }
 
   //deserialize to an object
-  const ret: State = {};
+  let ret: State | StateArray;
+  if(Array.isArray(stateClass)) {
+    ret = [];
+  }else{
+    ret = {};
+  }
   const keys = Object.keys(stateClass);
   for (let i = 0; i < states.length; i++) {
     const key = keys[i];
@@ -138,14 +143,17 @@ export function deserializeState(s: string | bsv.Script, stateClass: State = und
     }
     const val = stateClass[key];
     if (val === 'boolean' || typeof val === 'boolean') {
-      ret[key] = states[i].toBoolean()
+      ret[key] = states[i].toBoolean();
     } else if (val === 'number' || typeof val === 'number') {
-      ret[key] = states[i].toNumber()
+      ret[key] = states[i].toNumber();
     } else if (val === 'bigint' || typeof val === 'bigint') {
-      ret[key] = states[i].toBigInt()
+      ret[key] = states[i].toBigInt();
+    } else if (val === 'string') {
+      ret[key] = states[i].toString();
     } else {
-      ret[key] = states[i].toHex()
+      ret[key] = states[i].toHex();
     }
   }
+
   return ret;
 }
