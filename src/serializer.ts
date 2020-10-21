@@ -118,10 +118,9 @@ export function deserializeState(s: string | bsv.Script, stateClass: State | Sta
     if (opcodenum === Opcode.OP_RETURN) {
       break
     } else {
-      states.push(new OpState(chunks[i]))
+      states.unshift(new OpState(chunks[i]))
     }
   }
-  states.reverse();
 
   //deserialize to an array
   if(!stateClass) {
