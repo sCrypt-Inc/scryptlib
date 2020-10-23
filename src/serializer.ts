@@ -4,7 +4,8 @@ const Script = bsv.Script
 const Opcode = bsv.Opcode
 const BN = bsv.crypto.BN
 // number of bytes to denote state length after serialization, exclusing varint prefix
-const STATE_LEN = 2
+export const STATE_LEN_2BYTES = 2
+export const STATE_LEN_4BYTES = 4
 
 function serializeBool(flag: boolean): string {
   return flag ? 'OP_TRUE' : 'OP_FALSE'
@@ -12,15 +13,38 @@ function serializeBool(flag: boolean): string {
 
 function serializeInt(n: number | bigint): string {
   const num = new BN(n)
-  if (num == 0) {
+  if (num.eqn(0)) {
     return '00'
   }
   return num.toSM({ endian: 'little' }).toString('hex')
 }
 
+function serializeString (str: string) {
+  const buf = Buffer.alloc( str.length, str, 'utf8' )
+  return buf.toString( 'hex' )
+}
+
 // TODO: validate
 function serializeBytes(hexStr: string): string {
     return hexStr
+}
+
+export type State = Record<string, boolean | number | bigint | string>
+export type StateArray = Array<boolean | number | bigint | string>
+
+function serializeWithSchema (state: State | StateArray, key: string | number, schema: State | StateArray = undefined) {
+  const type = schema[key]
+  if (type === 'boolean') {
+    return serializeBool(state[key])
+  } else if (type === 'number') {
+    return serializeInt(state[key])
+  } else if (type === 'bigint') {
+    return serializeInt(state[key])
+  } else if (type === 'string') {
+    return serializeString(state[key])
+  } else {
+    return serializeBytes(state[key])
+  }
 }
 
 function serialize(x: boolean | number | bigint | string) {
@@ -37,17 +61,20 @@ function serialize(x: boolean | number | bigint | string) {
   }
 }
 
-export type State = Record<string, boolean | number | bigint | string>
-export type StateArray = Array<boolean | number | bigint | string>
-
 // serialize contract state into Script ASM
-export function serializeState(state: State | StateArray, stateBytes: number = STATE_LEN ): string {
+export function serializeState(state: State | StateArray, stateBytes: number = STATE_LEN_2BYTES, schema: State | StateArray = undefined ): string {
   const asms = []
 
-  Object.values(state).forEach((s) => {
-    const str = serialize(s)
-    asms.push(str)
-  })
+  const keys = Object.keys(state)
+  for (const key of keys) {
+    if (schema) {
+      const str = serializeWithSchema(state, key, schema)
+      asms.push(str)
+    } else {
+      const str = serialize(state[key])
+      asms.push(str)
+    }
+  }
 
   const script = Script.fromASM(asms.join(' '))
   const scriptHex = script.toHex()
@@ -93,16 +120,16 @@ class OpState {
     return this.op.buf.toString('hex');
   }
 
-  toString(arg: string | number = undefined) : string {
-    if(!this.op.buf) throw new Error('state does not have a string representation');
-    return this.op.buf.toString(arg);
+  toString ( arg = 'utf8') {
+    if (!this.op.buf) { throw new Error('state does not have a string representation') }
+    return this.op.buf.toString( arg ).trim()
   }
 }
 
 export type OpStateArray = Array<OpState>
 
 // deserialize Script or Script Hex or Script ASM Code to contract state array and object
-export function deserializeState(s: string | bsv.Script, stateClass: State | StateArray = undefined): OpStateArray | State | StateArray {
+export function deserializeState(s: string | bsv.Script, schema: State | StateArray = undefined): OpStateArray | State | StateArray {
   let script: bsv.Script;
   try{
     script = new Script(s)
@@ -123,24 +150,24 @@ export function deserializeState(s: string | bsv.Script, stateClass: State | Sta
   }
 
   //deserialize to an array
-  if(!stateClass) {
+  if(!schema) {
     return states;
   }
 
   //deserialize to an object
   let ret: State | StateArray;
-  if(Array.isArray(stateClass)) {
+  if(Array.isArray(schema)) {
     ret = [];
   }else{
     ret = {};
   }
-  const keys = Object.keys(stateClass);
+  const keys = Object.keys(schema);
   for (let i = 0; i < states.length; i++) {
     const key = keys[i];
     if(!key) {
       break;
     }
-    const val = stateClass[key];
+    const val = schema[key];
     if (val === 'boolean' || typeof val === 'boolean') {
       ret[key] = states[i].toBoolean();
     } else if (val === 'number' || typeof val === 'number') {
