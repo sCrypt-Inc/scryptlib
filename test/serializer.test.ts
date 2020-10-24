@@ -1,6 +1,5 @@
 import { expect } from 'chai'
-import { num2bin, bin2num, bsv } from '../src/utils'
-import { serializeState, deserializeState, STATE_LEN_2BYTES, STATE_LEN_4BYTES } from '../src/serializer'
+import { bsv, serializeState, deserializeState, STATE_LEN_2BYTES, STATE_LEN_4BYTES  } from '../src/index'
 
 const BN = bsv.crypto.BN
 const Script = bsv.Script
@@ -51,15 +50,15 @@ describe('serializer', () => {
 
     it('object type with schema', () => {
       //support string type when using schema 
-      const schema = { counter: 'number', bytes: 'hex', flag: 'boolean', str: 'string' }
+      const schema = { str: 'string', counter: 'number', bytes: 'hex', flag: 'boolean' }
 
-      const state = { counter: 11, bytes: '1234', flag: true, str: 'Hello' }
+      const state = { str: 'Helloこんにちは你好', counter: 11, bytes: '1234', flag: true }
       const serial = serializeState(state, STATE_LEN_2BYTES, schema )
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 48656c6c6f 0c00')
-      expect(hex).to.equal('010b021234510548656c6c6f020c00')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 OP_1 2100')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123451022100')
     })
 
 
@@ -75,14 +74,14 @@ describe('serializer', () => {
 
     it('array type with schema', () => {
       //support string type when using schema 
-      const schema = ['number', 'hex', 'boolean', 'string' ]
-      const state = [11, '1234', false, 'Hello']
+      const schema = ['string', 'number', 'hex', 'boolean' ]
+      const state = ['Helloこんにちは你好', 11, '1234', false ]
       const serial = serializeState(state, STATE_LEN_2BYTES, schema )
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 48656c6c6f 0c00')
-      expect(hex).to.equal('010b021234000548656c6c6f020c00')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 0 2100')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123400022100')
     })
 
     it('special number', () => {
@@ -193,15 +192,15 @@ describe('serializer', () => {
 
     it('object type with schema', () => {
       //support string type when using schema 
-      const schema = { counter: 'number', bytes: 'hex', flag: 'boolean', str: 'string' }
+      const schema = { str: 'string', counter: 'number', bytes: 'hex', flag: 'boolean' }
 
-      const states = { counter: 11, bytes: '1234', flag: true, str: 'Hello' }
+      const states = { str: 'Helloこんにちは你好', counter: 11, bytes: '1234', flag: true }
       const serial = serializeState(states, STATE_LEN_2BYTES, schema )
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 48656c6c6f 0c00')
-      expect(hex).to.equal('010b021234510548656c6c6f020c00')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 OP_1 2100')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123451022100')
 
       const deStates = deserializeState(hex, schema)
       expect(deStates).to.eql(states)
@@ -252,14 +251,14 @@ describe('serializer', () => {
 
     it('array type with schema', () => {
       //support string type when using schema 
-      const schema = ['number', 'hex', 'boolean', 'string' ]
-      const states = [11, '1234', false, 'Hello']
+      const schema = ['string', 'number', 'hex', 'boolean' ]
+      const states = ['Helloこんにちは你好', 11, '1234', false ]
       const serial = serializeState(states, STATE_LEN_2BYTES, schema )
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 48656c6c6f 0c00')
-      expect(hex).to.equal('010b021234000548656c6c6f020c00')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 0 2100')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123400022100')
 
       const deStates = deserializeState(hex, schema)
       expect(deStates).to.eql(states)
