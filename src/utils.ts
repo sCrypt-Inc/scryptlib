@@ -75,9 +75,10 @@ export function literal2Asm(l: string): [string, string] {
   }
 
   // bytes
-  let m = /^b'([\da-fA-F]+)'$/.exec(l);
+  // note: special handling of empty bytes b''
+  let m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'bytes'];
+    return [m[1].length > 0 ? getValidatedHexString(m[1]) : 'OP_0', 'bytes'];
   }
 
   // PrivKey
