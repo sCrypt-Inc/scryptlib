@@ -140,7 +140,7 @@ export function literal2Asm(l: string): [string, string] {
     return [getValidatedHexString(m[1]), 'OpCodeType'];
   }
 
-  throw new Error(`<${l}> can't be casted to asm format, only support sCrypt native types`);
+  throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
 }
 
 export function bytes2Literal(bytearray: number[], type: string): string {
