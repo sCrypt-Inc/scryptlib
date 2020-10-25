@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.2.14
+
+* support empty bytes
+
 ## 0.2.13
 
 * support serializer
