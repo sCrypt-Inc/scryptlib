@@ -191,9 +191,7 @@ export function compile(
 				result.asm = JSON.parse(readFileSync(outputFilePath, 'utf8')).join(' ');
 			} else {
 				const asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
-				const sources = asmObj.sources.map((s: string) => {
-					return join(srcDir, s);
-				});
+				const sources = asmObj.sources;
 				result.debugAsm = asmObj.output.map(item => {
 					const match = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/.exec(item.src);
 
