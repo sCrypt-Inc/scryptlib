@@ -240,11 +240,10 @@ export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: numb
 // Often used to append numbers to OP_RETURN, which are read in contracts
 // Support Bigint
 export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): string {
-  if (n === 0) {
+  const num = new BN(n);
+  if (num.eqn(0)) {
     return '00'.repeat(dataLen);
   }
-
-  const num = new BN(n);
   const s = num.toSM({ endian: 'little' }).toString('hex');
 
   const byteLen_ = s.length / 2;
