@@ -20,6 +20,18 @@ describe('utils', () => {
       expect(num2bin(-123456789, 8)).to.equal('15cd5b0700000080')
     })
 
+    it('Bigint', () => {
+      expect(num2bin(0n, 1)).to.equal('00')
+      expect(num2bin(10n, 1)).to.equal('0a')
+      expect(num2bin(-1000n, 2)).to.equal('e883')
+
+      // padded
+      expect(num2bin(0n, 3)).to.equal('000000')
+      expect(num2bin(1n, 2)).to.equal('0100')
+      expect(num2bin(-1000n, 4)).to.equal('e8030080')
+      expect(num2bin(-123456789n, 8)).to.equal('15cd5b0700000080')
+    })
+
     it('should raise error if the number can not fit in certain bytes length', () => {
       expect(() => num2bin(128, 1)).to.throw('128 cannot fit in 1 byte[s]')
       expect(() => num2bin(0xffff, 2)).to.throw('65535 cannot fit in 2 byte[s]')
@@ -46,6 +58,9 @@ describe('utils', () => {
     it('support bigint type', () => {
       // max number in Javascript
       let bn = BigInt(Number.MAX_SAFE_INTEGER)
+      const bnZero = BigInt(0)
+      expect(num2bin(bnZero, 32)).to.equal('00'.repeat(32))
+      expect(bin2num('00'.repeat(32))).to.equal(0n)
       const bnOne = BigInt(1)
       const bnHundred = BigInt(100)
       bn = bn + bnOne
