@@ -151,9 +151,6 @@ export class ABICoder {
   }
 
   encodeParams(args: SupportedParamType[], scryptTypeNames: string[]): string {
-    if (args.length !== scryptTypeNames.length) {
-      throw new Error(`wrong arguments length, expected ${scryptTypeNames.length} but got ${args.length}`);
-    }
     return args.map((arg, i) => this.encodeParam(arg, scryptTypeNames[i])).join(' ');
   }
 
