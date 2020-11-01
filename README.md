@@ -111,7 +111,7 @@ Note that `parameters` in both constructor and function call are mapped to sCryp
 
 * `boolean`: mapped to sCrypt `bool`
 * `number`: mapped to sCrypt `int`
-* `new Bytes(x)` / `new Sig(x)` / `new PubKey(x)` / `new Ripemd160(x)` / … : mapped to sCrypt `bytes` / `Sig` / `PubKey` / `Ripemd160` / … , where `x` is hex string
+* `new Byte(x)` / `new Bytes(x)` / `new Sig(x)` / `new PubKey(x)` / `new Ripemd160(x)` / … : mapped to sCrypt `byte` / `bytes` / `Sig` / `PubKey` / `Ripemd160` / … , where `x` is hex string
 
 In this way, the type of parameters could be checked and potential bugs can be detected before running.
 

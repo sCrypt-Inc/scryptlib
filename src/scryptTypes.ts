@@ -52,6 +52,15 @@ export class Bool extends ScryptType {
   }
 }
 
+export class Byte extends ScryptType {
+  constructor(bytesVal: string) {
+    super(bytesVal);
+  }
+  toLiteral(): string {
+    return `'${getValidatedHexString(this._value.toString())}'`;
+  }
+}
+
 export class Bytes extends ScryptType {
   constructor(bytesVal: string) {
     super(bytesVal);

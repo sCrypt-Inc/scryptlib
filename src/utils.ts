@@ -81,6 +81,12 @@ export function literal2Asm(l: string): [string, string] {
     return [m[1].length > 0 ? getValidatedHexString(m[1]) : 'OP_0', 'bytes'];
   }
 
+  // byte
+  m = /^'([\da-fA-F]*)'$/.exec(l);
+  if (m) {
+    return [m[1], 'byte'];
+  }
+
   // PrivKey
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
