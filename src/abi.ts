@@ -20,7 +20,7 @@ export interface Script {
   toHex(): string;
 }
 
-export type SupportedParamType = ScryptType | boolean | number | bigint | number[];
+export type SupportedParamType = ScryptType | boolean | number | bigint;
 
 export class FunctionCall {
 
@@ -155,16 +155,40 @@ export class ABICoder {
     return args.map((arg, i) => this.encodeParam(arg, scryptTypeNames[i])).join(' ');
   }
 
-  encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
-    if (Array.isArray(arg)) {
-      if (arg.length === 0) {
+  encodeParamArray(args: unknown[], scryptTypeName: string): string {
+      if (args.length === 0) {
         // empty
         return 'OP_0';
       }
-      if (typeof arg[0] === 'number') {
-        return arg.map(n => num2bin(n, IntElemLen)).join('');
+
+      const t = typeof args[0];
+      if (!args.every(arg => typeof arg === t)) {
+        throw new Error('Array arguments are not of the same type');
       }
-      throw new Error(`array of ${typeof arg[0]} is not supported`);
+
+      // serialize array
+      if (t === 'number') {
+        if ('int[]' !== scryptTypeName) {
+          throw new Error(`wrong argument type, expected ${scryptTypeName} but got int[]`);
+        }
+
+        return args.map(n => num2bin(n, IntElemLen)).join('');
+      }
+
+      if (t === 'boolean') {
+        if ('bool[]' !== scryptTypeName) {
+          throw new Error(`wrong argument type, expected ${scryptTypeName} but got bool[]`);
+        }
+
+        return args.map(flag => flag ? '01' : '00').join('');
+      }
+
+      throw new Error(`array of ${t} is not supported`);
+    }
+
+  encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
+    if (Array.isArray(arg)) {
+      return this.encodeParamArray(arg, scryptTypeName);
     }
 
     const typeofArg = typeof arg;
