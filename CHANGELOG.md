@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.2.17
+
+* support byte
+* support bool and int array 
+
 ## 0.2.14
 
 * support empty bytes
