@@ -27,6 +27,10 @@ export abstract class ScryptType {
     return this._literal;
   }
 
+  get type(): string {
+    return this._type;
+  }
+
   toASM(): string {
     return this._asm;
   }
