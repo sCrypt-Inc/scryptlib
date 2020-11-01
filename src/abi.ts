@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv } from "./utils";
+import { int2Asm, bsv, num2bin, IntElemLen } from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int } from './scryptTypes';
 
@@ -20,7 +20,7 @@ export interface Script {
   toHex(): string;
 }
 
-export type SupportedParamType = ScryptType | boolean | number | bigint;
+export type SupportedParamType = ScryptType | boolean | number | bigint | number[];
 
 export class FunctionCall {
 
@@ -156,6 +156,17 @@ export class ABICoder {
   }
 
   encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
+    if (Array.isArray(arg)) {
+      if (arg.length === 0) {
+        // empty
+        return 'OP_0';
+      }
+      if (typeof arg[0] === 'number') {
+        return arg.map(n => num2bin(n, IntElemLen)).join('');
+      }
+      throw new Error(`array of ${typeof arg[0]} is not supported`);
+    }
+
     const typeofArg = typeof arg;
 
     if (typeofArg === 'boolean') {
