@@ -114,14 +114,14 @@ export class ABICoder {
     const cParams = oc(constructorABI).params([]);
 
     if (args.length !== cParams.length) {
-      throw new Error(`wrong arguments length for #constructor, expected ${cParams.length} but got ${args.length}`);
+      throw new Error(`wrong number of arguments for #constructor, expected ${cParams.length} but got ${args.length}`);
     }
 
     let lsASM = asmTemplate;
 
     cParams.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
-        throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in asm tempalte`);
+        throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
       // '$' needs doulbe '\\' to escape
       const re = new RegExp(`\\$${param.name}`, 'g');
@@ -136,10 +136,11 @@ export class ABICoder {
     for (const entity of this.abi) {
       if (entity.name === name) {
         if (entity.params.length !== args.length) {
-          throw new Error(`wrong arguments length for #${name}, expected ${entity.params.length} but got ${args.length}`);
+          throw new Error(`wrong number of arguments for #${name}, expected ${entity.params.length} but got ${args.length}`);
         }
         let asm = this.encodeParams(args, entity.params.map(p => p.type));
         if (this.abi.length > 2 && entity.index !== undefined) {
+          // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }
