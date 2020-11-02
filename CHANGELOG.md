@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.2.18
+
+* bug fix: used scrypt binary as compiler in 0.2.17 
+
 ## 0.2.17
 
 * support byte
