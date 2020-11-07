@@ -5,9 +5,6 @@ import bsv = require('bsv');
 
 export { bsv };
 
-// each element's byte length in an int array
-export const IntElemLen = 4;
-
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
 

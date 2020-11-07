@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, num2bin, IntElemLen } from "./utils";
+import { int2Asm, bsv } from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int } from './scryptTypes';
 
