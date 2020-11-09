@@ -23,6 +23,17 @@ export interface Script {
 export type SingletonParamType = ScryptType | boolean | number | bigint;
 export type SupportedParamType = SingletonParamType | SingletonParamType[];
 
+function escapeRegExp(stringToGoIntoTheRegex) {
+  return stringToGoIntoTheRegex.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function arrayTypeAndSize(arrayTypeName: string): [string, number] {
+  const group = arrayTypeName.split('[');
+  const elemTypeName = group[0];
+  const arraySize = parseInt(group[1].slice(0, -1));
+  return [elemTypeName, arraySize];
+}
+
 export class FunctionCall {
 
   readonly contract: AbstractContract;
@@ -118,15 +129,35 @@ export class ABICoder {
       throw new Error(`wrong number of arguments for #constructor, expected ${cParams.length} but got ${args.length}`);
     }
 
+    // handle array type
+    const cParams_: Array<{ name: string, type: string }> = [];
+    const args_: SupportedParamType[] = [];
+    cParams.forEach((param, index) =>{
+      const arg = args[index];
+      if (Array.isArray(arg)) {
+        const [elemTypeName, arraySize] = arrayTypeAndSize(param.type);
+        if (arraySize !== arg.length) {
+          throw new Error(`Array arguments wrong size for '${param.name}' in constructor, expected [${arraySize}] but got [${arg.length}]`);
+        }
+        // flattern array
+        arg.forEach((e, idx) => {
+          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName});
+          args_.push(e);
+        });
+      } else {
+        cParams_.push(param);
+        args_.push(arg);
+      }
+    });
+
     let lsASM = asmTemplate;
 
-    cParams.forEach((param, index) => {
+    cParams_.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
-      // '$' needs doulbe '\\' to escape
-      const re = new RegExp(`\\$${param.name}`, 'g');
-      lsASM = lsASM.replace(re, this.encodeParam(args[index], param.type));
+      const re = new RegExp(escapeRegExp(`$${param.name}`), 'g');
+      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param.type));
     });
 
     return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
@@ -166,10 +197,7 @@ export class ABICoder {
         throw new Error('Array arguments are not of the same type');
       }
 
-      // arrayTypeName example: bytes[32]
-      const group = arrayTypeName.split('[');
-      const elemTypeName = group[0];
-      const arraySize = parseInt(group[1].slice(0, -1));
+      const [elemTypeName, arraySize] = arrayTypeAndSize(arrayTypeName);
 
       if (arraySize !== args.length) {
         throw new Error(`Array arguments wrong size, expected [${arraySize}] but got [${args.length}]`);
