@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, num2bin, IntElemLen } from "./utils";
+import { int2Asm, bsv } from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int } from './scryptTypes';
 
@@ -20,7 +20,19 @@ export interface Script {
   toHex(): string;
 }
 
-export type SupportedParamType = ScryptType | boolean | number | bigint;
+export type SingletonParamType = ScryptType | boolean | number | bigint;
+export type SupportedParamType = SingletonParamType | SingletonParamType[];
+
+function escapeRegExp(stringToGoIntoTheRegex) {
+  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function arrayTypeAndSize(arrayTypeName: string): [string, number] {
+  const group = arrayTypeName.split('[');
+  const elemTypeName = group[0];
+  const arraySize = parseInt(group[1].slice(0, -1));
+  return [elemTypeName, arraySize];
+}
 
 export class FunctionCall {
 
@@ -117,15 +129,35 @@ export class ABICoder {
       throw new Error(`wrong number of arguments for #constructor, expected ${cParams.length} but got ${args.length}`);
     }
 
+    // handle array type
+    const cParams_: Array<{ name: string, type: string }> = [];
+    const args_: SupportedParamType[] = [];
+    cParams.forEach((param, index) =>{
+      const arg = args[index];
+      if (Array.isArray(arg)) {
+        const [elemTypeName, arraySize] = arrayTypeAndSize(param.type);
+        if (arraySize !== arg.length) {
+          throw new Error(`Array arguments wrong size for '${param.name}' in constructor, expected [${arraySize}] but got [${arg.length}]`);
+        }
+        // flattern array
+        arg.forEach((e, idx) => {
+          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName});
+          args_.push(e);
+        });
+      } else {
+        cParams_.push(param);
+        args_.push(arg);
+      }
+    });
+
     let lsASM = asmTemplate;
 
-    cParams.forEach((param, index) => {
+    cParams_.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
-      // '$' needs doulbe '\\' to escape
-      const re = new RegExp(`\\$${param.name}`, 'g');
-      lsASM = lsASM.replace(re, this.encodeParam(args[index], param.type));
+      const re = new RegExp(escapeRegExp(`$${param.name}`), 'g');
+      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param.type));
     });
 
     return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
@@ -155,10 +187,9 @@ export class ABICoder {
     return args.map((arg, i) => this.encodeParam(arg, scryptTypeNames[i])).join(' ');
   }
 
-  encodeParamArray(args: unknown[], scryptTypeName: string): string {
+  encodeParamArray(args: SingletonParamType[], arrayTypeName: string): string {
       if (args.length === 0) {
-        // empty
-        return 'OP_0';
+        throw new Error('Empty array not allowed');
       }
 
       const t = typeof args[0];
@@ -166,24 +197,13 @@ export class ABICoder {
         throw new Error('Array arguments are not of the same type');
       }
 
-      // serialize array
-      if (t === 'number') {
-        if ('int[]' !== scryptTypeName) {
-          throw new Error(`wrong argument type, expected ${scryptTypeName} but got int[]`);
-        }
+      const [elemTypeName, arraySize] = arrayTypeAndSize(arrayTypeName);
 
-        return args.map(n => num2bin(n, IntElemLen)).join('');
+      if (arraySize !== args.length) {
+        throw new Error(`Array arguments wrong size, expected [${arraySize}] but got [${args.length}]`);
       }
 
-      if (t === 'boolean') {
-        if ('bool[]' !== scryptTypeName) {
-          throw new Error(`wrong argument type, expected ${scryptTypeName} but got bool[]`);
-        }
-
-        return args.map(flag => flag ? '01' : '00').join('');
-      }
-
-      throw new Error(`array of ${t} is not supported`);
+      return args.map(arg => this.encodeParam(arg, elemTypeName)).join(' ');
     }
 
   encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
