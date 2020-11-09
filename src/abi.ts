@@ -24,7 +24,7 @@ export type SingletonParamType = ScryptType | boolean | number | bigint;
 export type SupportedParamType = SingletonParamType | SingletonParamType[];
 
 function escapeRegExp(stringToGoIntoTheRegex) {
-  return stringToGoIntoTheRegex.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 function arrayTypeAndSize(arrayTypeName: string): [string, number] {
