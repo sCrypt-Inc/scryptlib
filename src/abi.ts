@@ -1,7 +1,7 @@
 import { oc } from 'ts-optchain';
 import { int2Asm, bsv } from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int } from './scryptTypes';
+import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType} from './scryptTypes';
 
 export enum ABIEntityType {
   FUNCTION = 'function',
@@ -20,8 +20,7 @@ export interface Script {
   toHex(): string;
 }
 
-export type SingletonParamType = ScryptType | boolean | number | bigint;
-export type SupportedParamType = SingletonParamType | SingletonParamType[];
+
 
 function escapeRegExp(stringToGoIntoTheRegex) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');

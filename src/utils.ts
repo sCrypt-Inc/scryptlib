@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { SigHashPreimage } from "./scryptTypes";
+import {  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType } from "./scryptTypes";
 
 import bsv = require('bsv');
 
@@ -149,6 +149,116 @@ export function literal2Asm(l: string): [string, string] {
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
 }
+
+
+
+
+/**
+ * convert literals to Scrypt Type
+ */
+export function literal2ScryptType(l: string): ScryptType {
+  // bool
+  if (l === 'false') {
+    return new Bool(false);
+  }
+  if (l === 'true') {
+    return new Bool(true);
+  }
+
+  // hex int
+  if (/^0x[0-9a-fA-F]+$/.test(l)) {
+
+    const value = new BN(l, 16);
+    return new Int(value.toNumber());
+  }
+
+  // decimal int
+  if (/^-?\d+$/.test(l)) {
+    const value = new BN(l, 10);
+    return new Int(value.toNumber());
+  }
+
+  // bytes
+  // note: special handling of empty bytes b''
+  let m = /^b'([\da-fA-F]*)'$/.exec(l);
+  if (m) {
+    return new Bytes(m[1]);
+  }
+
+  // byte
+  m = /^'([\da-fA-F]*)'$/.exec(l);
+  if (m) {
+    return new Bytes(m[1]);
+  }
+
+  // PrivKey
+  // 1) decimal int
+  m = /^PrivKey\((-?\d+)\)$/.exec(l);
+  if (m) {
+    const value = new BN(m[1], 10);
+    return new PrivKey(value.toNumber());
+  }
+  // 2) hex int
+  m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
+  if (m) {
+    const value = new BN(m[1], 16);
+    return new PrivKey(value.toNumber());
+  }
+
+  // PubKey
+  m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new PubKey(getValidatedHexString(m[1]));
+  }
+
+  // Sig
+  m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new Sig(getValidatedHexString(m[1]));
+  }
+
+  // Ripemd160
+  m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new Ripemd160(getValidatedHexString(m[1]));
+  }
+
+  // Sha1
+  m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new Sha1(getValidatedHexString(m[1]));
+  }
+
+  // Sha256
+  m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new Sha256(getValidatedHexString(m[1]));
+  }
+
+  // SigHashType
+  m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    const value = new BN(getValidatedHexString(m[1]), 16);
+
+    return new SigHashType(value);
+  }
+
+  // SigHashPreimage
+  m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new SigHashPreimage(getValidatedHexString(m[1]));
+  }
+
+  // OpCodeType
+  m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    return new OpCodeType(getValidatedHexString(m[1]));
+  }
+
+  throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
+}
+
+
 
 export function bytes2Literal(bytearray: number[], type: string): string {
 

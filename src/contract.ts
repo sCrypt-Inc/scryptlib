@@ -1,6 +1,7 @@
-import { ABICoder, ABIEntity, FunctionCall, SupportedParamType, Script } from "./abi";
+import { ABICoder, ABIEntity, FunctionCall,  Script } from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS } from "./utils";
+import { SupportedParamType} from './scryptTypes';
 
 export interface TxContext {
   tx?: any;

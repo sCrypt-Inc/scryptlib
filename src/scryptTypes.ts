@@ -281,3 +281,7 @@ export class OpCodeType extends ScryptType {
     return `OpCodeType(b'${getValidatedHexString(this._value.toString())}')`;
   }
 }
+
+
+export type SingletonParamType = ScryptType | boolean | number | bigint;
+export type SupportedParamType = SingletonParamType | SingletonParamType[];
