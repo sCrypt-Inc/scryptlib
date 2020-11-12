@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import {  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType } from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType } from "./scryptTypes";
 
 import bsv = require('bsv');
 
@@ -42,59 +42,102 @@ export function int2Asm(str: string): string {
     throw new Error(`invalid str '${str}' to convert to int`);
   }
 
-  const number = new BN(str, 10);
+  return number2Asm(parseInt(str));
+}
 
+
+/**
+ * number to little-endian signed magnitude
+ */
+export function number2Asm(n: number): string {
+
+  const number = new BN(n);
   if (number.eqn(-1)) { return 'OP_1NEGATE'; }
 
-  if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
+  if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
 
   const m = number.toSM({ endian: 'little' });
   return m.toString('hex');
 }
 
 /**
- * convert literals to script ASM format
+ * hex to little-endian signed magnitude
  */
-export function literal2Asm(l: string): [string, string] {
+export function hex2Asm(str: string): string {
+  let buf = Buffer.from(str, 'hex')
+  let number = BN.fromBuffer(buf)
+  const m = number.toSM({ endian: 'little' });
+  return m.toString('hex');
+}
+
+/**
+ * hex to little-endian signed magnitude
+ */
+export function hex2number(str: string): number {
+  let buf = Buffer.from(str, 'hex')
+  let number = BN.fromBuffer(buf)
+  return number.toNumber();
+}
+
+
+export enum VariableType {
+  BOOL = 'bool',
+  INT = 'int',
+  BYTES = 'bytes',
+  PUBKEY = 'PubKey',
+  PRIVKEY = 'PrivKey',
+  SIG = 'Sig',
+  RIPEMD160 = 'Ripemd160',
+  SHA1 = 'Sha1',
+  SHA256 = 'Sha256',
+  SIGHASHTYPE = 'SigHashType',
+  SIGHASHPREIMAGE = 'SigHashPreimage',
+  OPCODETYPE = 'OpCodeType'
+}
+
+
+function literalParser(l: string): [string | number | bigint | boolean, string] {
+
+
   // bool
   if (l === 'false') {
-    return ['OP_FALSE', 'bool'];
+    return [false, VariableType.BOOL];
   }
   if (l === 'true') {
-    return ['OP_TRUE', 'bool'];
+    return [true, VariableType.BOOL];
   }
 
   // hex int
-  if (/^0x[0-9a-fA-F]+$/.test(l)) {
-    return [int2Asm(l), 'int'];
+  let m = /^0x([0-9a-fA-F]+)$/.exec(l);
+  if (m) {
+    const bn = new BN(m[1], 16);
+    return [bn.toNumber(), VariableType.INT];
   }
 
   // decimal int
-  if (/^-?\d+$/.test(l)) {
-    return [int2Asm(l), 'int'];
+  m = /^(-?\d+)$/.exec(l);
+  if (m) {
+    const bn = new BN(m[1], 10);
+    return [bn.toNumber(), VariableType.INT];
   }
 
   // bytes
   // note: special handling of empty bytes b''
-  let m = /^b'([\da-fA-F]*)'$/.exec(l);
+  m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    return [m[1].length > 0 ? getValidatedHexString(m[1]) : 'OP_0', 'bytes'];
+    return [getValidatedHexString(m[1]), VariableType.BYTES];
   }
 
-  // byte
-  m = /^'([\da-fA-F]*)'$/.exec(l);
-  if (m) {
-    return [m[1], 'byte'];
-  }
 
   // PrivKey
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
-    return [m[1], 'PrivKey'];
+    const bn = new BN(m[1], 10);
+    return [bn.toString("hex", 2), 'PrivKey'];
   }
   // 2) hex int
-  m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
+  m = /^PrivKey\(0x([0-9a-fA-F]+)\)$/.exec(l);
   if (m) {
     return [m[1], 'PrivKey'];
   }
@@ -102,52 +145,98 @@ export function literal2Asm(l: string): [string, string] {
   // PubKey
   m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'PubKey'];
+    return [getValidatedHexString(m[1]), VariableType.PUBKEY];
   }
 
   // Sig
   m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Sig'];
+    return [getValidatedHexString(m[1]), VariableType.SIG];
   }
 
   // Ripemd160
   m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Ripemd160'];
+    return [getValidatedHexString(m[1]), VariableType.RIPEMD160];
   }
 
   // Sha1
   m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Sha1'];
+    return [getValidatedHexString(m[1]), VariableType.SHA1];
   }
 
   // Sha256
   m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Sha256'];
+    return [getValidatedHexString(m[1]), VariableType.SHA256];
   }
 
   // SigHashType
   m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'SigHashType'];
+    const bn = new BN(getValidatedHexString(m[1]), 16);
+    return [bn.toNumber(), VariableType.SIGHASHTYPE];
   }
 
   // SigHashPreimage
   m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'SigHashPreimage'];
+    return [getValidatedHexString(m[1]), VariableType.SIGHASHPREIMAGE];
   }
 
   // OpCodeType
   m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'OpCodeType'];
+    return [getValidatedHexString(m[1]), VariableType.OPCODETYPE];
   }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
+
+}
+
+/**
+ * convert literals to script ASM format
+ */
+export function literal2Asm(l: string): [string, string] {
+
+  const [value, type] = literalParser(l);
+
+
+  switch (type) {
+    case VariableType.BOOL:
+      if (value as boolean === false) {
+        return ['OP_FALSE', type];
+      } else if (value as boolean === true) {
+        return ['OP_TRUE', type];
+      }
+    case VariableType.INT:
+      return [number2Asm(value as number), type];
+    case 'bytes': {
+      // we push OP_0 to mainstack when empty bytes.
+      const b = value as string;
+      return [b === '' ? 'OP_0' : b, type];
+    }
+    case VariableType.PRIVKEY:
+      return [hex2Asm(value as string), type];
+    case VariableType.PUBKEY:
+    case VariableType.SIG:
+    case VariableType.RIPEMD160:
+    case VariableType.SHA1:
+    case VariableType.SHA256:
+    case VariableType.SIGHASHPREIMAGE:
+    case VariableType.OPCODETYPE:
+      return [value as string, type];
+    case VariableType.SIGHASHTYPE: {
+      const bn = new BN(value as number);
+      let v = bn.toString("hex", 2);
+      return [v, type];
+    }
+
+    default:
+      throw new Error(`<${l}> cannot be cast to sCrypt  ASM format, only sCrypt native types supported`);
+  }
+
 }
 
 
@@ -157,105 +246,36 @@ export function literal2Asm(l: string): [string, string] {
  * convert literals to Scrypt Type
  */
 export function literal2ScryptType(l: string): ScryptType {
-  // bool
-  if (l === 'false') {
-    return new Bool(false);
-  }
-  if (l === 'true') {
-    return new Bool(true);
-  }
 
-  // hex int
-  if (/^0x[0-9a-fA-F]+$/.test(l)) {
-
-    const value = new BN(l, 16);
-    return new Int(value.toNumber());
+  const [value, type] = literalParser(l);
+  switch (type) {
+    case VariableType.BOOL:
+      return new Bool(value as boolean);
+    case VariableType.INT:
+      return new Int(value as number);
+    case VariableType.BYTES:
+      return new Bytes(value as string);
+    case VariableType.PRIVKEY:
+      return new PrivKey(hex2number(value as string));
+    case VariableType.PUBKEY:
+      return new PubKey(value as string);
+    case VariableType.SIG:
+      return new Sig(value as string);
+    case VariableType.RIPEMD160:
+      return new Ripemd160(value as string);
+    case VariableType.SHA1:
+      return new Sha1(value as string);
+    case VariableType.SHA256:
+      return new Sha256(value as string);
+    case VariableType.SIGHASHTYPE:
+      return new SigHashType(value as number);
+    case VariableType.SIGHASHPREIMAGE:
+      return new SigHashPreimage(value as string);
+    case VariableType.OPCODETYPE:
+      return new OpCodeType(value as string);
+    default:
+      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
-
-  // decimal int
-  if (/^-?\d+$/.test(l)) {
-    const value = new BN(l, 10);
-    return new Int(value.toNumber());
-  }
-
-  // bytes
-  // note: special handling of empty bytes b''
-  let m = /^b'([\da-fA-F]*)'$/.exec(l);
-  if (m) {
-    return new Bytes(m[1]);
-  }
-
-  // byte
-  m = /^'([\da-fA-F]*)'$/.exec(l);
-  if (m) {
-    return new Bytes(m[1]);
-  }
-
-  // PrivKey
-  // 1) decimal int
-  m = /^PrivKey\((-?\d+)\)$/.exec(l);
-  if (m) {
-    const value = new BN(m[1], 10);
-    return new PrivKey(value.toNumber());
-  }
-  // 2) hex int
-  m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
-  if (m) {
-    const value = new BN(m[1], 16);
-    return new PrivKey(value.toNumber());
-  }
-
-  // PubKey
-  m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new PubKey(getValidatedHexString(m[1]));
-  }
-
-  // Sig
-  m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new Sig(getValidatedHexString(m[1]));
-  }
-
-  // Ripemd160
-  m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new Ripemd160(getValidatedHexString(m[1]));
-  }
-
-  // Sha1
-  m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new Sha1(getValidatedHexString(m[1]));
-  }
-
-  // Sha256
-  m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new Sha256(getValidatedHexString(m[1]));
-  }
-
-  // SigHashType
-  m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = new BN(getValidatedHexString(m[1]), 16);
-
-    return new SigHashType(value);
-  }
-
-  // SigHashPreimage
-  m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new SigHashPreimage(getValidatedHexString(m[1]));
-  }
-
-  // OpCodeType
-  m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    return new OpCodeType(getValidatedHexString(m[1]));
-  }
-
-  throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
 }
 
 
@@ -399,7 +419,7 @@ export function bin2num(s: string | Buffer): bigint {
     nHex = '0' + nHex;
   }
   //Support negative number
-  let bn = BN.fromHex(rest + nHex, { endian: 'little' } );
+  let bn = BN.fromHex(rest + nHex, { endian: 'little' });
   if (m >> 7) {
     bn = bn.neg();
   }
