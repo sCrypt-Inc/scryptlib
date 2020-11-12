@@ -73,10 +73,16 @@ export function hex2Asm(str: string): string {
 /**
  * hex to little-endian signed magnitude
  */
-export function hex2number(str: string): number {
+export function hex2number(str: string): number | bigint{
   let buf = Buffer.from(str, 'hex')
   let number = BN.fromBuffer(buf)
-  return number.toNumber();
+  let n = number.toNumber();
+
+  if(n < Number.MAX_SAFE_INTEGER) {
+    return n;
+  } else {
+    return BigInt("0x" + str);
+  }
 }
 
 
