@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { num2bin, bin2num, bsv } from '../src/utils'
+import { num2bin, bin2num, bsv ,literal2Asm, literal2ScryptType} from '../src/utils'
 
 const BN = bsv.crypto.BN
 
@@ -121,6 +121,106 @@ describe('utils', () => {
       expect(bin2num(buffer).toString()).to.equal(bn.toString())
     })
 
+  })
+
+  describe('literal2Asm()', () => {
+
+    it('int string to asm', () => {
+      expect(literal2Asm("9007199254740991")).to.have.members(["ffffffffffff1f", "int"]);
+      expect(literal2Asm("0xdebc9a78563")).to.have.members(["6385a7c9eb0d", "int"]);
+      expect(literal2Asm("0")).to.have.members(["OP_0", "int"]);
+      expect(literal2Asm("16")).to.have.members(["OP_16", "int"]);
+      expect(literal2Asm("-1")).to.have.members(["OP_1NEGATE", "int"]);
+      expect(literal2Asm("-111111")).to.have.members(["07b281", "int"]);
+      expect(literal2Asm("false")).to.have.members(["OP_FALSE", "bool"]);
+      expect(literal2Asm("b''")).to.have.members(["OP_0", "bytes"]);
+      expect(literal2Asm("b'62f0245bb9'")).to.have.members(["62f0245bb9", "bytes"]);
+      expect(literal2Asm("PrivKey(1)")).to.have.members(["01", "PrivKey"]);
+      expect(literal2Asm("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members(["62f0245bb90aef0d18f914c3c8191d430f99fff925d981d2656c9a7626f14738", "PrivKey"]);
+      expect(literal2Asm("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members(["3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", "PubKey"]);
+      expect(literal2Asm("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members(["3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", "Sig"]);
+      expect(literal2Asm("Ripemd160(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "Ripemd160"]);
+      expect(literal2Asm("Sha1(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "Sha1"]);
+      expect(literal2Asm("Sha256(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "Sha256"]);
+      expect(literal2Asm("SigHashType(b'01')")).to.have.members(["01", "SigHashType"]);
+      expect(literal2Asm("SigHashType(b'02')")).to.have.members(["02", "SigHashType"]);
+      expect(literal2Asm("SigHashType(b'03')")).to.have.members(["03", "SigHashType"]);
+      expect(literal2Asm("SigHashType(b'40')")).to.have.members(["40", "SigHashType"]);
+      expect(literal2Asm("SigHashType(b'80')")).to.have.members(["80", "SigHashType"]);
+      expect(literal2Asm("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "SigHashPreimage"]);
+      expect(literal2Asm("OpCodeType(b'01')")).to.have.members(["01", "OpCodeType"]);
+    });
+  })
+
+
+  describe('literal2ScryptType()', () => {
+
+    console.log("literal2ScryptType")
+    it('int string to asm', () => {
+      expect(literal2ScryptType("9007199254740991").value).to.equal(9007199254740991);
+      expect(literal2ScryptType("0xdebc9a78563").value).to.equal(15306351674723);
+      expect(literal2ScryptType("0").value).to.equal(0);
+      expect(literal2ScryptType("-1").value).to.equal(-1);
+      expect(literal2ScryptType("false").value).to.equal(false);
+      expect(literal2ScryptType("b''").value).to.equal("");
+      expect(literal2ScryptType("b'62f0245bb9'").value).to.equal("62f0245bb9");
+      expect(literal2ScryptType("PrivKey(1)").value).to.equal(1);
+
+      //mocha do not  know how to serialize a BigInt, so call toString and compare it
+      expect(literal2ScryptType("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)").value.toString())
+        .to.equal("25456630020100109444707942782143792492829674412994957270434525334028981432418");
+
+      expect(literal2ScryptType("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)").toLiteral())
+        .to.equal("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)");
+
+      expect(literal2ScryptType("b'62f0245bb9'").value).to.equal("62f0245bb9");
+
+
+      expect(literal2ScryptType("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')").value)
+        .to.equal("3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062");
+      expect(literal2ScryptType("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')").toLiteral())
+        .to.equal("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')");
+
+      expect(literal2ScryptType("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')").value)
+        .to.equal("3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062");
+      expect(literal2ScryptType("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')").toLiteral())
+        .to.equal("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')");
+
+      expect(literal2ScryptType("Ripemd160(b'3847f126769a6c65d281d925f9ff99')").value)
+        .to.equal("3847f126769a6c65d281d925f9ff99");
+      expect(literal2ScryptType("Ripemd160(b'3847f126769a6c65d281d925f9ff99')").toLiteral())
+        .to.equal("Ripemd160(b'3847f126769a6c65d281d925f9ff99')");
+
+
+      expect(literal2ScryptType("Sha1(b'3847f126769a6c65d281d925f9ff99')").value)
+        .to.equal("3847f126769a6c65d281d925f9ff99");
+      expect(literal2ScryptType("Sha1(b'3847f126769a6c65d281d925f9ff99')").toLiteral())
+        .to.equal("Sha1(b'3847f126769a6c65d281d925f9ff99')");
+
+      expect(literal2ScryptType("Sha256(b'3847f126769a6c65d281d925f9ff99')").value)
+        .to.equal("3847f126769a6c65d281d925f9ff99");
+      expect(literal2ScryptType("Sha256(b'3847f126769a6c65d281d925f9ff99')").toLiteral())
+        .to.equal("Sha256(b'3847f126769a6c65d281d925f9ff99')");
+
+
+      expect(literal2ScryptType("SigHashType(b'01')").value)
+        .to.equal(0x01);
+      expect(literal2ScryptType("SigHashType(b'80')").value)
+        .to.equal(0x80);
+      expect(literal2ScryptType("SigHashType(b'01')").toLiteral())
+        .to.equal("SigHashType(b'01')");
+
+      expect(literal2ScryptType("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')").value)
+        .to.equal("3847f126769a6c65d281d925f9ff99");
+      expect(literal2ScryptType("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')").toLiteral())
+        .to.equal("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')");
+
+
+      expect(literal2ScryptType("OpCodeType(b'01')").value)
+        .to.equal("01");
+      expect(literal2ScryptType("OpCodeType(b'01')").toLiteral())
+        .to.equal("OpCodeType(b'01')");
+    });
   })
 
 })
