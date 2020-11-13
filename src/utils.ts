@@ -34,42 +34,53 @@ export function bool2Asm(str: string): string {
 }
 
 /**
- * decimal int to little-endian signed magnitude
+ * decimal or hex int to little-endian signed magnitude
  */
 export function int2Asm(str: string): string {
 
-  if (!/^-?(0x)?\d+$/.test(str)) {
+  if (/^(-?\d+)$/.test(str) ||  /^0x([0-9a-fA-F]+)$/.test(str)) {
+
+    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
+  
+    if (number.eqn(-1)) { return 'OP_1NEGATE'; }
+  
+    if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
+  
+    const m = number.toSM({ endian: 'little' });
+    return m.toString('hex');
+
+  } else {
     throw new Error(`invalid str '${str}' to convert to int`);
   }
-
-  return number2Asm(parseInt(str));
 }
-
 
 /**
- * number to little-endian signed magnitude
+ * decimal int or hex str to number or bigint
  */
-export function number2Asm(n: number): string {
+export function int2Value(str: string): number | bigint {
 
-  const number = new BN(n);
-  if (number.eqn(-1)) { return 'OP_1NEGATE'; }
+  if (/^(-?\d+)$/.test(str) ||  /^0x([0-9a-fA-F]+)$/.test(str)) {
 
-  if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
+    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
 
-  const m = number.toSM({ endian: 'little' });
-  return m.toString('hex');
+
+
+    if(number.toNumber() < Number.MAX_SAFE_INTEGER) {
+      return number.toNumber();
+    } else {
+      return BigInt(str);
+    }
+
+  } else {
+    throw new Error(`invalid str '${str}' to convert to int`);
+  }
 }
 
 
-/**
- * hex to bigint
- */
-export function str2bigint(str: string):  bigint{
-  return BigInt(str);
-}
 
-export function bigint2hex(bi: bigint):  string{
-  let hex = bi.toString(16);
+
+export function intValue2hex(val: number | bigint):  string{
+  let hex = val.toString(16);
   if(hex.length % 2 === 1) {
     hex = "0" + hex;
   }
@@ -95,7 +106,6 @@ export enum VariableType {
 
 export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableType] {
 
-
   // bool
   if (l === 'false') {
     return ["OP_FALSE", false, VariableType.BOOL];
@@ -105,17 +115,15 @@ export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableTy
   }
 
   // hex int
-  let m = /^0x([0-9a-fA-F]+)$/.exec(l);
+  let m = /^(0x[0-9a-fA-F]+)$/.exec(l);
   if (m) {
-    const bn = new BN(m[1], 16);
-    return [number2Asm(bn.toNumber()), bn.toNumber(), VariableType.INT];
+    return [int2Asm(m[1]), int2Value(m[1]), VariableType.INT];
   }
 
   // decimal int
   m = /^(-?\d+)$/.exec(l);
   if (m) {
-    const bn = new BN(m[1], 10);
-    return [number2Asm(bn.toNumber()), bn.toNumber(), VariableType.INT];
+    return [int2Asm(m[1]), int2Value(m[1]), VariableType.INT];
   }
 
   // bytes
@@ -132,14 +140,12 @@ export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableTy
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
-    const value = BigInt(m[1]);
-    return [bigint2hex(value), value, VariableType.PRIVKEY];
+    return [m[1], int2Value(m[1]), VariableType.PRIVKEY];
   }
   // 2) hex int
   m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
   if (m) {
-    const value = BigInt(m[1]);
-    return [bigint2hex(value), value, VariableType.PRIVKEY];
+    return [m[1], int2Value(m[1]), VariableType.PRIVKEY];
   }
 
   // PubKey

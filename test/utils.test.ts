@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType } from '../src/utils'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm} from '../src/utils'
 
 const BN = bsv.crypto.BN
 
@@ -123,10 +123,25 @@ describe('utils', () => {
 
   })
 
-  describe('literal2Asm()', () => {
+
+  describe('int2Asm()', () => {
 
     it('int string to asm', () => {
-      expect(parseLiteral("9007199254740991")).to.have.members(["ffffffffffff1f", 9007199254740991, "int"]);
+      expect(int2Asm("992218700866541488854030164190743727617658394826382323005192752278160641622424126616186015754450906117445668830393086070718237548341612508577988597572812"))
+      .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
+
+
+      expect(int2Asm("0x12f1dd2e0965dc433b0d32b86333b0fb432df592f6108803d7afe51a14a0e867045fe22af85862b8e744700920e0b7e430a192440a714277efb895b51120e4cc"))
+      .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
+    });
+  })
+
+
+
+  describe('parseLiteral()', () => {
+
+    it('parser Literal string', () => {
+      expect(parseLiteral("9007199254740991")).to.have.members(["ffffffffffff1f", BigInt(9007199254740991), "int"]);
       expect(parseLiteral("0xdebc9a78563")).to.have.members(["6385a7c9eb0d", 15306351674723, "int"]);
       expect(parseLiteral("0")).to.have.members(["OP_0", 0, "int"]);
       expect(parseLiteral("16")).to.have.members(["OP_16", 16, "int"]);
@@ -135,9 +150,9 @@ describe('utils', () => {
       expect(parseLiteral("false")).to.have.members(["OP_FALSE", false, "bool"]);
       expect(parseLiteral("b''")).to.have.members(["OP_0", "", "bytes"]);
       expect(parseLiteral("b'62f0245bb9'")).to.have.members(["62f0245bb9", "62f0245bb9", "bytes"]);
-      expect(parseLiteral("PrivKey(1)")).to.have.members(["01", BigInt("1"), "PrivKey"]);
+      expect(parseLiteral("PrivKey(1)")).to.have.members(["1", 1, "PrivKey"]);
       expect(parseLiteral("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members([
-          "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+          "0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
           BigInt("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062"),
           "PrivKey"
         ]);
@@ -166,16 +181,15 @@ describe('utils', () => {
 
   describe('literal2ScryptType()', () => {
 
-    console.log("literal2ScryptType")
-    it('int string to asm', () => {
-      expect(literal2ScryptType("9007199254740991").value).to.equal(9007199254740991);
+    it('literal2ScryptType', () => {
+      expect(literal2ScryptType("9007199254740991").value).to.equal(BigInt(9007199254740991));
       expect(literal2ScryptType("0xdebc9a78563").value).to.equal(15306351674723);
       expect(literal2ScryptType("0").value).to.equal(0);
       expect(literal2ScryptType("-1").value).to.equal(-1);
       expect(literal2ScryptType("false").value).to.equal(false);
       expect(literal2ScryptType("b''").value).to.equal("");
       expect(literal2ScryptType("b'62f0245bb9'").value).to.equal("62f0245bb9");
-      expect(literal2ScryptType("PrivKey(1)").value).to.equal(BigInt(1));
+      expect(literal2ScryptType("PrivKey(1)").value).to.equal(1);
       expect(literal2ScryptType("PrivKey(1)").toLiteral()).to.equal("PrivKey(0x01)");
       //mocha do not  know how to serialize a BigInt, so call toString and compare it
       expect(literal2ScryptType("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)").value.toString())

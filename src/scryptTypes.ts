@@ -1,4 +1,4 @@
-import { parseLiteral, getValidatedHexString, bsv, bigint2hex } from "./utils";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex } from "./utils";
 
 
 export type ValueType = number | bigint | boolean | string;
@@ -74,7 +74,7 @@ export class PrivKey extends ScryptType {
   }
   toLiteral(): string {
     const v = this._value as bigint;
-    return `PrivKey(0x${bigint2hex(v)})`;
+    return `PrivKey(0x${intValue2hex(v)})`;
   }
 }
 
