@@ -401,3 +401,12 @@ export function path2uri(path: string): string {
 export function uri2path(uri: string): string {
   return fileURLToPath(uri);
 }
+
+/**
+ * @deprecated
+ * convert literals to script ASM format
+ */
+export function literal2Asm(l: string): [string, string] {
+  const [asm, _, type] = parseLiteral(l);
+  return [asm, type];
+}
