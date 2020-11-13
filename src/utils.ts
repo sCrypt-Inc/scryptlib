@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { SigHashPreimage } from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType } from "./scryptTypes";
 
 import bsv = require('bsv');
 
@@ -34,121 +34,219 @@ export function bool2Asm(str: string): string {
 }
 
 /**
- * decimal int to little-endian signed magnitude
+ * decimal or hex int to little-endian signed magnitude
  */
 export function int2Asm(str: string): string {
 
-  if (!/^-?(0x)?\d+$/.test(str)) {
+  if (/^(-?\d+)$/.test(str) ||  /^0x([0-9a-fA-F]+)$/.test(str)) {
+
+    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
+  
+    if (number.eqn(-1)) { return 'OP_1NEGATE'; }
+  
+    if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
+  
+    const m = number.toSM({ endian: 'little' });
+    return m.toString('hex');
+
+  } else {
     throw new Error(`invalid str '${str}' to convert to int`);
   }
-
-  const number = new BN(str, 10);
-
-  if (number.eqn(-1)) { return 'OP_1NEGATE'; }
-
-  if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
-
-  const m = number.toSM({ endian: 'little' });
-  return m.toString('hex');
 }
 
 /**
- * convert literals to script ASM format
+ * decimal int or hex str to number or bigint
  */
-export function literal2Asm(l: string): [string, string] {
+export function int2Value(str: string): number | bigint {
+
+  if (/^(-?\d+)$/.test(str) ||  /^0x([0-9a-fA-F]+)$/.test(str)) {
+
+    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
+
+
+
+    if(number.toNumber() < Number.MAX_SAFE_INTEGER) {
+      return number.toNumber();
+    } else {
+      return BigInt(str);
+    }
+
+  } else {
+    throw new Error(`invalid str '${str}' to convert to int`);
+  }
+}
+
+
+
+
+export function intValue2hex(val: number | bigint):  string{
+  let hex = val.toString(16);
+  if(hex.length % 2 === 1) {
+    hex = "0" + hex;
+  }
+  return hex;
+}
+
+
+export enum VariableType {
+  BOOL = 'bool',
+  INT = 'int',
+  BYTES = 'bytes',
+  PUBKEY = 'PubKey',
+  PRIVKEY = 'PrivKey',
+  SIG = 'Sig',
+  RIPEMD160 = 'Ripemd160',
+  SHA1 = 'Sha1',
+  SHA256 = 'Sha256',
+  SIGHASHTYPE = 'SigHashType',
+  SIGHASHPREIMAGE = 'SigHashPreimage',
+  OPCODETYPE = 'OpCodeType'
+}
+
+
+export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableType] {
+
   // bool
   if (l === 'false') {
-    return ['OP_FALSE', 'bool'];
+    return ["OP_FALSE", false, VariableType.BOOL];
   }
   if (l === 'true') {
-    return ['OP_TRUE', 'bool'];
+    return ["OP_TRUE", true, VariableType.BOOL];
   }
 
   // hex int
-  if (/^0x[0-9a-fA-F]+$/.test(l)) {
-    return [int2Asm(l), 'int'];
+  let m = /^(0x[0-9a-fA-F]+)$/.exec(l);
+  if (m) {
+    return [int2Asm(m[1]), int2Value(m[1]), VariableType.INT];
   }
 
   // decimal int
-  if (/^-?\d+$/.test(l)) {
-    return [int2Asm(l), 'int'];
+  m = /^(-?\d+)$/.exec(l);
+  if (m) {
+    return [int2Asm(m[1]), int2Value(m[1]), VariableType.INT];
   }
 
   // bytes
   // note: special handling of empty bytes b''
-  let m = /^b'([\da-fA-F]*)'$/.exec(l);
+  m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    return [m[1].length > 0 ? getValidatedHexString(m[1]) : 'OP_0', 'bytes'];
+    const value = getValidatedHexString(m[1]);
+    const asm = value === '' ? 'OP_0' : value;
+    return [asm, value, VariableType.BYTES];
   }
 
-  // byte
-  m = /^'([\da-fA-F]*)'$/.exec(l);
-  if (m) {
-    return [m[1], 'byte'];
-  }
 
   // PrivKey
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
-    return [m[1], 'PrivKey'];
+    return [m[1], int2Value(m[1]), VariableType.PRIVKEY];
   }
   // 2) hex int
   m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
   if (m) {
-    return [m[1], 'PrivKey'];
+    return [m[1], int2Value(m[1]), VariableType.PRIVKEY];
   }
 
   // PubKey
   m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'PubKey'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.PUBKEY];
   }
 
   // Sig
   m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Sig'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SIG];
   }
 
   // Ripemd160
   m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Ripemd160'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.RIPEMD160];
   }
 
   // Sha1
   m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Sha1'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SHA1];
   }
 
   // Sha256
   m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'Sha256'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SHA256];
   }
 
   // SigHashType
   m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'SigHashType'];
+    const bn = new BN(getValidatedHexString(m[1]), 16);
+    return [bn.toString("hex", 2), bn.toNumber(), VariableType.SIGHASHTYPE];
   }
 
   // SigHashPreimage
   m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'SigHashPreimage'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SIGHASHPREIMAGE];
   }
 
   // OpCodeType
   m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), 'OpCodeType'];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.OPCODETYPE];
   }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
+
 }
+
+
+
+/**
+ * convert literals to Scrypt Type
+ */
+export function literal2ScryptType(l: string): ScryptType {
+
+  const [asm, value, type] = parseLiteral(l);
+  switch (type) {
+    case VariableType.BOOL:
+      return new Bool(value as boolean);
+    case VariableType.INT:
+      return new Int(value as number);
+    case VariableType.BYTES:
+      return new Bytes(value as string);
+    case VariableType.PRIVKEY:
+      return new PrivKey(value as bigint);
+    case VariableType.PUBKEY:
+      return new PubKey(value as string);
+    case VariableType.SIG:
+      return new Sig(value as string);
+    case VariableType.RIPEMD160:
+      return new Ripemd160(value as string);
+    case VariableType.SHA1:
+      return new Sha1(value as string);
+    case VariableType.SHA256:
+      return new Sha256(value as string);
+    case VariableType.SIGHASHTYPE:
+      return new SigHashType(value as number);
+    case VariableType.SIGHASHPREIMAGE:
+      return new SigHashPreimage(value as string);
+    case VariableType.OPCODETYPE:
+      return new OpCodeType(value as string);
+    default:
+      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  }
+}
+
+
 
 export function bytes2Literal(bytearray: number[], type: string): string {
 
@@ -289,7 +387,7 @@ export function bin2num(s: string | Buffer): bigint {
     nHex = '0' + nHex;
   }
   //Support negative number
-  let bn = BN.fromHex(rest + nHex, { endian: 'little' } );
+  let bn = BN.fromHex(rest + nHex, { endian: 'little' });
   if (m >> 7) {
     bn = bn.neg();
   }

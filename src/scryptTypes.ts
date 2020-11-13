@@ -1,17 +1,20 @@
-import { literal2Asm, getValidatedHexString, bsv } from "./utils";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex } from "./utils";
+
+
+export type ValueType = number | bigint | boolean | string;
 
 export abstract class ScryptType {
 
-  protected _value: number | bigint | boolean | string;
+  protected _value: ValueType;
   protected _literal: string;
   private _asm: string;
   private _type: string;
 
-  constructor(value: number | bigint | boolean | string) {
+  constructor(value: ValueType) {
     try {
       this._value = value;
       this._literal = this.toLiteral();
-      const [asm, scrType] = literal2Asm(this._literal);
+      const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
       this._asm = asm;
     } catch (error) {
@@ -19,7 +22,7 @@ export abstract class ScryptType {
     }
   }
 
-  get value(): number | bigint | boolean | string {
+  get value(): ValueType {
     return this._value;
   }
 
@@ -66,11 +69,12 @@ export class Bytes extends ScryptType {
 }
 
 export class PrivKey extends ScryptType {
-  constructor(intVal: number) {
+  constructor(intVal: bigint) {
     super(intVal);
   }
   toLiteral(): string {
-    return `PrivKey(${this._value})`;
+    const v = this._value as bigint;
+    return `PrivKey(0x${intValue2hex(v)})`;
   }
 }
 
@@ -281,3 +285,7 @@ export class OpCodeType extends ScryptType {
     return `OpCodeType(b'${getValidatedHexString(this._value.toString())}')`;
   }
 }
+
+
+export type SingletonParamType = ScryptType | boolean | number | bigint;
+export type SupportedParamType = SingletonParamType | SingletonParamType[];
