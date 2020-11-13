@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType } from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType } from "./scryptTypes";
 
 import bsv = require('bsv');
 
@@ -93,7 +93,7 @@ export enum VariableType {
 }
 
 
-export function parseLiteral(l: string): [string /*asm*/ , string | number | bigint | boolean /*value*/, string /*VariableType*/] {
+export function parseLiteral(l: string): [string /*asm*/ , ValueType /*value*/, VariableType /*VariableType*/] {
 
 
   // bool

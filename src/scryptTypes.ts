@@ -1,13 +1,16 @@
 import { parseLiteral, getValidatedHexString, bsv, bigint2hex } from "./utils";
 
+
+export type ValueType = number | bigint | boolean | string;
+
 export abstract class ScryptType {
 
-  protected _value: number | bigint | boolean | string;
+  protected _value: ValueType;
   protected _literal: string;
   private _asm: string;
   private _type: string;
 
-  constructor(value: number | bigint | boolean | string) {
+  constructor(value: ValueType) {
     try {
       this._value = value;
       this._literal = this.toLiteral();
@@ -19,7 +22,7 @@ export abstract class ScryptType {
     }
   }
 
-  get value(): number | bigint | boolean | string {
+  get value(): ValueType {
     return this._value;
   }
 
