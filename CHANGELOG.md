@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.2.20
+
+* add literal2ScryptType
+* add parseLiteral
+* deprecated literal2Asm
+
+
 ## 0.2.19
 
 * support new array
