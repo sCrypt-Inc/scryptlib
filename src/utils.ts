@@ -60,21 +60,20 @@ export function number2Asm(n: number): string {
   return m.toString('hex');
 }
 
-/**
- * hex to little-endian signed magnitude
- */
-export function hex2Asm(str: string): string {
-  let buf = Buffer.from(str, 'hex')
-  let number = BN.fromBuffer(buf)
-  const m = number.toSM({ endian: 'little' });
-  return m.toString('hex');
-}
 
 /**
  * hex to bigint
  */
-export function hex2bigint(str: string):  bigint{
-  return BigInt("0x" + str);
+export function str2bigint(str: string):  bigint{
+  return BigInt(str);
+}
+
+export function bigint2hex(bi: bigint):  string{
+  let hex = bi.toString(16);
+  if(hex.length % 2 == 1) {
+    hex = "0" + hex;
+  }
+  return hex;
 }
 
 
@@ -94,36 +93,38 @@ export enum VariableType {
 }
 
 
-function literalParser(l: string): [string | number | bigint | boolean, string] {
+export function parseLiteral(l: string): [string /*asm*/ , string | number | bigint | boolean /*value*/, string /*VariableType*/] {
 
 
   // bool
   if (l === 'false') {
-    return [false, VariableType.BOOL];
+    return ["OP_FALSE", false, VariableType.BOOL];
   }
   if (l === 'true') {
-    return [true, VariableType.BOOL];
+    return ["OP_TRUE", true, VariableType.BOOL];
   }
 
   // hex int
   let m = /^0x([0-9a-fA-F]+)$/.exec(l);
   if (m) {
     const bn = new BN(m[1], 16);
-    return [bn.toNumber(), VariableType.INT];
+    return [number2Asm(bn.toNumber()), bn.toNumber(), VariableType.INT];
   }
 
   // decimal int
   m = /^(-?\d+)$/.exec(l);
   if (m) {
     const bn = new BN(m[1], 10);
-    return [bn.toNumber(), VariableType.INT];
+    return [number2Asm(bn.toNumber()), bn.toNumber(), VariableType.INT];
   }
 
   // bytes
   // note: special handling of empty bytes b''
   m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.BYTES];
+    const value = getValidatedHexString(m[1]);
+    const asm = value === '' ? 'OP_0' : value;
+    return [asm, value, VariableType.BYTES];
   }
 
 
@@ -131,112 +132,75 @@ function literalParser(l: string): [string | number | bigint | boolean, string] 
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
-    const bn = new BN(m[1], 10);
-    return [bn.toString("hex", 2), 'PrivKey'];
+    const value = BigInt(m[1]);
+    return [bigint2hex(value), value, VariableType.PRIVKEY];
   }
   // 2) hex int
-  m = /^PrivKey\(0x([0-9a-fA-F]+)\)$/.exec(l);
+  m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
   if (m) {
-    return [m[1], 'PrivKey'];
+    const value = BigInt(m[1]);
+    return [bigint2hex(value), value, VariableType.PRIVKEY];
   }
 
   // PubKey
   m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.PUBKEY];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.PUBKEY];
   }
 
   // Sig
   m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.SIG];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SIG];
   }
 
   // Ripemd160
   m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.RIPEMD160];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.RIPEMD160];
   }
 
   // Sha1
   m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.SHA1];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SHA1];
   }
 
   // Sha256
   m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.SHA256];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SHA256];
   }
 
   // SigHashType
   m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const bn = new BN(getValidatedHexString(m[1]), 16);
-    return [bn.toNumber(), VariableType.SIGHASHTYPE];
+    return [bn.toString("hex", 2), bn.toNumber(), VariableType.SIGHASHTYPE];
   }
 
   // SigHashPreimage
   m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.SIGHASHPREIMAGE];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.SIGHASHPREIMAGE];
   }
 
   // OpCodeType
   m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    return [getValidatedHexString(m[1]), VariableType.OPCODETYPE];
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.OPCODETYPE];
   }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
 
 }
-
-/**
- * convert literals to script ASM format
- */
-export function literal2Asm(l: string): [string, string] {
-
-  const [value, type] = literalParser(l);
-
-
-  switch (type) {
-    case VariableType.BOOL:
-      if (value as boolean === false) {
-        return ['OP_FALSE', type];
-      } else if (value as boolean === true) {
-        return ['OP_TRUE', type];
-      }
-    case VariableType.INT:
-      return [number2Asm(value as number), type];
-    case 'bytes': {
-      // we push OP_0 to mainstack when empty bytes.
-      const b = value as string;
-      return [b === '' ? 'OP_0' : b, type];
-    }
-    case VariableType.PRIVKEY:
-      return [hex2Asm(value as string), type];
-    case VariableType.PUBKEY:
-    case VariableType.SIG:
-    case VariableType.RIPEMD160:
-    case VariableType.SHA1:
-    case VariableType.SHA256:
-    case VariableType.SIGHASHPREIMAGE:
-    case VariableType.OPCODETYPE:
-      return [value as string, type];
-    case VariableType.SIGHASHTYPE: {
-      const bn = new BN(value as number);
-      let v = bn.toString("hex", 2);
-      return [v, type];
-    }
-
-    default:
-      throw new Error(`<${l}> cannot be cast to sCrypt  ASM format, only sCrypt native types supported`);
-  }
-
-}
-
 
 
 
@@ -245,7 +209,7 @@ export function literal2Asm(l: string): [string, string] {
  */
 export function literal2ScryptType(l: string): ScryptType {
 
-  const [value, type] = literalParser(l);
+  const [asm, value, type] = parseLiteral(l);
   switch (type) {
     case VariableType.BOOL:
       return new Bool(value as boolean);
@@ -254,7 +218,7 @@ export function literal2ScryptType(l: string): ScryptType {
     case VariableType.BYTES:
       return new Bytes(value as string);
     case VariableType.PRIVKEY:
-      return new PrivKey(hex2bigint(value as string));
+      return new PrivKey(value as bigint);
     case VariableType.PUBKEY:
       return new PubKey(value as string);
     case VariableType.SIG:

@@ -1,4 +1,4 @@
-import { literal2Asm, getValidatedHexString, bsv } from "./utils";
+import { parseLiteral, getValidatedHexString, bsv, bigint2hex } from "./utils";
 
 export abstract class ScryptType {
 
@@ -11,7 +11,7 @@ export abstract class ScryptType {
     try {
       this._value = value;
       this._literal = this.toLiteral();
-      const [asm, scrType] = literal2Asm(this._literal);
+      const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
       this._asm = asm;
     } catch (error) {
@@ -71,11 +71,7 @@ export class PrivKey extends ScryptType {
   }
   toLiteral(): string {
     const v = this._value as bigint;
-    let literal = v.toString(16);
-    if(literal.length % 2 == 1) {
-      literal = "0" + literal;
-    }
-    return `PrivKey(0x${literal})`;
+    return `PrivKey(0x${bigint2hex(v)})`;
   }
 }
 

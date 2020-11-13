@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { num2bin, bin2num, bsv ,literal2Asm, literal2ScryptType} from '../src/utils'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType } from '../src/utils'
 
 const BN = bsv.crypto.BN
 
@@ -117,7 +117,7 @@ describe('utils', () => {
     it('support bin2num Buffer', () => {
       const bn = new BN('010000000000200001', 16, 'le')
       expect(num2bin(bn, 9)).to.equal('010000000000200001')
-      const buffer = bn.toBuffer({endian : 'little', size: 9})
+      const buffer = bn.toBuffer({ endian: 'little', size: 9 })
       expect(bin2num(buffer).toString()).to.equal(bn.toString())
     })
 
@@ -126,29 +126,40 @@ describe('utils', () => {
   describe('literal2Asm()', () => {
 
     it('int string to asm', () => {
-      expect(literal2Asm("9007199254740991")).to.have.members(["ffffffffffff1f", "int"]);
-      expect(literal2Asm("0xdebc9a78563")).to.have.members(["6385a7c9eb0d", "int"]);
-      expect(literal2Asm("0")).to.have.members(["OP_0", "int"]);
-      expect(literal2Asm("16")).to.have.members(["OP_16", "int"]);
-      expect(literal2Asm("-1")).to.have.members(["OP_1NEGATE", "int"]);
-      expect(literal2Asm("-111111")).to.have.members(["07b281", "int"]);
-      expect(literal2Asm("false")).to.have.members(["OP_FALSE", "bool"]);
-      expect(literal2Asm("b''")).to.have.members(["OP_0", "bytes"]);
-      expect(literal2Asm("b'62f0245bb9'")).to.have.members(["62f0245bb9", "bytes"]);
-      expect(literal2Asm("PrivKey(1)")).to.have.members(["01", "PrivKey"]);
-      expect(literal2Asm("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members(["62f0245bb90aef0d18f914c3c8191d430f99fff925d981d2656c9a7626f14738", "PrivKey"]);
-      expect(literal2Asm("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members(["3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", "PubKey"]);
-      expect(literal2Asm("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members(["3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", "Sig"]);
-      expect(literal2Asm("Ripemd160(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "Ripemd160"]);
-      expect(literal2Asm("Sha1(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "Sha1"]);
-      expect(literal2Asm("Sha256(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "Sha256"]);
-      expect(literal2Asm("SigHashType(b'01')")).to.have.members(["01", "SigHashType"]);
-      expect(literal2Asm("SigHashType(b'02')")).to.have.members(["02", "SigHashType"]);
-      expect(literal2Asm("SigHashType(b'03')")).to.have.members(["03", "SigHashType"]);
-      expect(literal2Asm("SigHashType(b'40')")).to.have.members(["40", "SigHashType"]);
-      expect(literal2Asm("SigHashType(b'80')")).to.have.members(["80", "SigHashType"]);
-      expect(literal2Asm("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "SigHashPreimage"]);
-      expect(literal2Asm("OpCodeType(b'01')")).to.have.members(["01", "OpCodeType"]);
+      expect(parseLiteral("9007199254740991")).to.have.members(["ffffffffffff1f", 9007199254740991, "int"]);
+      expect(parseLiteral("0xdebc9a78563")).to.have.members(["6385a7c9eb0d", 15306351674723, "int"]);
+      expect(parseLiteral("0")).to.have.members(["OP_0", 0, "int"]);
+      expect(parseLiteral("16")).to.have.members(["OP_16", 16, "int"]);
+      expect(parseLiteral("-1")).to.have.members(["OP_1NEGATE", -1, "int"]);
+      expect(parseLiteral("-111111")).to.have.members(["07b281", -111111, "int"]);
+      expect(parseLiteral("false")).to.have.members(["OP_FALSE", false, "bool"]);
+      expect(parseLiteral("b''")).to.have.members(["OP_0", "", "bytes"]);
+      expect(parseLiteral("b'62f0245bb9'")).to.have.members(["62f0245bb9", "62f0245bb9", "bytes"]);
+      expect(parseLiteral("PrivKey(1)")).to.have.members(["01", BigInt("1"), "PrivKey"]);
+      expect(parseLiteral("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members([
+          "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+          BigInt("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062"),
+          "PrivKey"
+        ]);
+      expect(parseLiteral("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members([
+          "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", 
+          "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", 
+          "PubKey"
+        ]);
+      expect(parseLiteral("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members([
+        "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+        "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+        "Sig"]);
+      expect(parseLiteral("Ripemd160(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "3847f126769a6c65d281d925f9ff99", "Ripemd160"]);
+      expect(parseLiteral("Sha1(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "3847f126769a6c65d281d925f9ff99", "Sha1"]);
+      expect(parseLiteral("Sha256(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "3847f126769a6c65d281d925f9ff99", "Sha256"]);
+      expect(parseLiteral("SigHashType(b'01')")).to.have.members(["01", 0x01, "SigHashType"]);
+      expect(parseLiteral("SigHashType(b'02')")).to.have.members(["02", 0x02, "SigHashType"]);
+      expect(parseLiteral("SigHashType(b'03')")).to.have.members(["03", 0x03, "SigHashType"]);
+      expect(parseLiteral("SigHashType(b'40')")).to.have.members(["40", 0x40, "SigHashType"]);
+      expect(parseLiteral("SigHashType(b'80')")).to.have.members(["80", 0x80, "SigHashType"]);
+      expect(parseLiteral("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "3847f126769a6c65d281d925f9ff99", "SigHashPreimage"]);
+      expect(parseLiteral("OpCodeType(b'01')")).to.have.members(["01", "01", "OpCodeType"]);
     });
   })
 
