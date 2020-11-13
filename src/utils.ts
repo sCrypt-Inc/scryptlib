@@ -70,7 +70,7 @@ export function str2bigint(str: string):  bigint{
 
 export function bigint2hex(bi: bigint):  string{
   let hex = bi.toString(16);
-  if(hex.length % 2 == 1) {
+  if(hex.length % 2 === 1) {
     hex = "0" + hex;
   }
   return hex;
@@ -93,7 +93,7 @@ export enum VariableType {
 }
 
 
-export function parseLiteral(l: string): [string /*asm*/ , ValueType /*value*/, VariableType /*VariableType*/] {
+export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableType] {
 
 
   // bool
