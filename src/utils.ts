@@ -71,18 +71,10 @@ export function hex2Asm(str: string): string {
 }
 
 /**
- * hex to little-endian signed magnitude
+ * hex to bigint
  */
-export function hex2number(str: string): number | bigint{
-  let buf = Buffer.from(str, 'hex')
-  let number = BN.fromBuffer(buf)
-  let n = number.toNumber();
-
-  if(n < Number.MAX_SAFE_INTEGER) {
-    return n;
-  } else {
-    return BigInt("0x" + str);
-  }
+export function hex2bigint(str: string):  bigint{
+  return BigInt("0x" + str);
 }
 
 
@@ -262,7 +254,7 @@ export function literal2ScryptType(l: string): ScryptType {
     case VariableType.BYTES:
       return new Bytes(value as string);
     case VariableType.PRIVKEY:
-      return new PrivKey(hex2number(value as string));
+      return new PrivKey(hex2bigint(value as string));
     case VariableType.PUBKEY:
       return new PubKey(value as string);
     case VariableType.SIG:

@@ -66,19 +66,12 @@ export class Bytes extends ScryptType {
 }
 
 export class PrivKey extends ScryptType {
-  constructor(intVal: number | bigint) {
+  constructor(intVal: bigint) {
     super(intVal);
   }
   toLiteral(): string {
-
-    if(this._value < Number.MAX_SAFE_INTEGER) {
-      const v = this._value as number;
-      return `PrivKey(${this._value})`;
-    } else {
-      const v = this._value as bigint;
-      return `PrivKey(0x${v.toString(16)})`;
-    }
-
+    const v = this._value as bigint;
+    return `PrivKey(0x${v.toString(16)})`;
   }
 }
 
