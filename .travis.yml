@@ -13,7 +13,7 @@ script:
   - npm test
   # integration testing with boilerplate
   - npm link
-  - git clone https://github.com/scrypt-sv/boilerplate.git
+  - git clone -b array https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
   - npm link scryptlib  # use this version
