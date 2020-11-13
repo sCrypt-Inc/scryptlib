@@ -71,7 +71,11 @@ export class PrivKey extends ScryptType {
   }
   toLiteral(): string {
     const v = this._value as bigint;
-    return `PrivKey(0x${v.toString(16)})`;
+    let literal = v.toString(16);
+    if(literal.length % 2 == 1) {
+      literal = "0" + literal;
+    }
+    return `PrivKey(0x${literal})`;
   }
 }
 

@@ -164,8 +164,8 @@ describe('utils', () => {
       expect(literal2ScryptType("false").value).to.equal(false);
       expect(literal2ScryptType("b''").value).to.equal("");
       expect(literal2ScryptType("b'62f0245bb9'").value).to.equal("62f0245bb9");
-      expect(literal2ScryptType("PrivKey(1)").value).to.equal(1);
-
+      expect(literal2ScryptType("PrivKey(1)").value).to.equal(BigInt(1));
+      expect(literal2ScryptType("PrivKey(1)").toLiteral()).to.equal("PrivKey(0x01)");
       //mocha do not  know how to serialize a BigInt, so call toString and compare it
       expect(literal2ScryptType("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)").value.toString())
         .to.equal("25456630020100109444707942782143792492829674412994957270434525334028981432418");
