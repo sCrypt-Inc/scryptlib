@@ -104,6 +104,18 @@ describe('serializer', () => {
       expect(hex).to.equal('004f51011102123451020900')
     })
 
+    it('special string with schema', () => {
+      const schema = ['string', 'string', 'string', 'string' ]
+      //emptr, space, double space, UTF8 Full-Word Space
+      const state = ['', ' ', '  ', '　' ]
+      const serial = serializeState(state, STATE_LEN_2BYTES, schema )
+      const script = Script.fromASM(serial)
+      const hex = script.toHex()
+
+      expect(serial).to.equal('00 20 2020 e38080 0b00')
+      expect(hex).to.equal('0100012002202003e38080020b00')
+    })
+
     it('negative number', () => {
       const state = [-100]
       const serial = serializeState(state)
@@ -360,6 +372,21 @@ describe('serializer', () => {
       for(let i=0; i<states.length; i++) {
         expect(deStates[i].toNumber()).to.equal(i)
       }
+    })
+
+    it('special string with schema', () => {
+      const schema = ['string', 'string', 'string', 'string', 'string' ]
+      //emptr, space, double space, UTF8 Full-Word Space, string with left & right space
+      const states = ['', ' ', '  ', '　', '  hello   ' ]
+      const serial = serializeState(states, STATE_LEN_2BYTES, schema )
+      const script = Script.fromASM(serial)
+      const hex = script.toHex()
+
+      expect(serial).to.equal('00 20 2020 e38080 202068656c6c6f202020 1600')
+      expect(hex).to.equal('0100012002202003e380800a202068656c6c6f202020021600')
+
+      const deStates = deserializeState(hex, schema)
+      expect(deStates).to.eql(states)
     })
 
     it('negative number', () => {
