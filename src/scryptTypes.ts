@@ -183,7 +183,7 @@ export class SigHashType extends ScryptType {
 
 }
 
-interface Outpoint { hash: string, index: number }
+interface Outpoint { hash: string, index: number, hex: string }
 
 export class SigHashPreimage extends ScryptType {
 
@@ -216,9 +216,14 @@ export class SigHashPreimage extends ScryptType {
 
 	// outpoint
 	get outpoint(): Outpoint {
+    const buf = this._buf.slice(68, 68 + 32 + 4);
+    const hex = buf.toString('hex');
+    const index = this.getReader(buf.slice(32, 32 + 4)).readUInt32LE();
+    const hash = Buffer.from(buf.slice(0, 32)).reverse().toString('hex');
 		return {
-			hash: this._buf.slice(68, 68 + 32).toString('hex'),
-			index: this.getReader(this._buf.slice(68 + 32, 68 + 32 + 4)).readUInt32LE()
+			hash,
+      index,
+      hex
 		};
 	}
 

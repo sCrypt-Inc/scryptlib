@@ -20,6 +20,9 @@ function serializeInt(n: number | bigint): string {
 }
 
 function serializeString (str: string) {
+  if (str==='') {
+    return '00';
+  }
   const buf = Buffer.from(str, 'utf8');
   return buf.toString( 'hex' );
 }
@@ -122,7 +125,10 @@ class OpState {
 
   toString ( arg = 'utf8') {
     if (!this.op.buf) { throw new Error('state does not have a string representation'); }
-    return this.op.buf.toString( arg ).trim();
+    if (this.op.buf[0] === 0) {
+      return '';
+    }
+    return this.op.buf.toString( arg );
   }
 }
 
