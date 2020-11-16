@@ -37,6 +37,12 @@ describe('buildContractClass()', () => {
       unlockingScriptASM = [toHex(sig), toHex(publicKey)].join(' ');
     })
 
+    it('should have an asm var', () => {
+      expect(instance.asmVars).is.not.null;
+      expect(instance.asmVars).have.key('pubKeyHash')
+      expect(instance.asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+    })
+
     it('should be an instance of AbstractContract', () => {
       assert.instanceOf(instance, AbstractContract);
     })
