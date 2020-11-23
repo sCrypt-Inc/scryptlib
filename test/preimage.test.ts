@@ -32,7 +32,7 @@ describe('Preimage', () => {
     it('scriptCode', () => {
       const scriptCode = preimage.scriptCode
       const hex = p2pkh.lockingScript.toHex()
-      expect(scriptCode).is.eq((hex.length/2).toString(16) + hex)
+      expect(scriptCode).is.eq(hex)
     })
   })
 })

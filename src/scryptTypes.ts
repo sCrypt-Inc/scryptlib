@@ -229,7 +229,7 @@ export class SigHashPreimage extends ScryptType {
 
 	// scriptCode of the input
 	get scriptCode(): string {
-		return this._buf.slice(104, this._buf.length - 52).toString('hex');
+		return this.getReader(this._buf.slice(104, this._buf.length - 52)).readVarLengthBuffer().toString('hex');
 	}
 
 	// value of the output spent by this input
