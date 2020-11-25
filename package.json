@@ -51,7 +51,6 @@
   "dependencies": {
     "bsv": "git+https://git@github.com/scrypt-sv/bsv.git#07f0d3c688a979d0b5d5cfe5e96c53f52fce6d58",
     "md5": "^2.2.1",
-    "scryptc": "^0.2.9",
     "ts-optchain": "^0.1.8"
   }
 }
