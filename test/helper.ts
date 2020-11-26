@@ -1,8 +1,8 @@
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { bsv } from '../src/utils';
 import { ContractDescription } from '../src/contract';
-
+import { compile, CompileResult, getPlatformsCryptc} from '../src/compilerWrapper';
 export function loadDescription(fileName: string): ContractDescription {
   return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_desc.json'))).toString());
 }
@@ -19,4 +19,19 @@ export function newTx(inputSatoshis: number) {
     satoshis: inputSatoshis
   };
   return new bsv.Transaction().from(utxo);
+}
+
+
+export function compileContract(fileName: string, folder: string): CompileResult {
+
+
+  const filePath = existsSync(fileName) ? fileName : join(__dirname, folder, fileName);
+  const result = compile(
+    { path: filePath },
+    {
+      desc: true, outputDir: join(__dirname, 'fixture'),
+      cmdPrefix: join(__dirname, '../', getPlatformsCryptc()),
+    }
+  );
+  return result;
 }
