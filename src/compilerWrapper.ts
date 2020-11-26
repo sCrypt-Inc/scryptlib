@@ -109,7 +109,8 @@ export function compile(
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
 		const cmdPrefix = settings.cmdPrefix || getDefaultsCryptc();
 		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-		const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
+		let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
+		output = output.split(/\r?\n/g).join('\n');
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
 				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG)].map(match => {
