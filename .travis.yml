@@ -19,4 +19,4 @@ script:
   - npm install
   - npm link scryptlib  # use this version
   #- npm ls scryptlib    # double check the latest version is used
-  - npm test
+  - npm test -- --ci=true
