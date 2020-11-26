@@ -377,7 +377,7 @@ export function getPlatformsCryptc() : string {
 			return "compiler/scryptc/win32/scryptc.exe";
 		case "linux":
 			return "compiler/scryptc/linux/scryptc";
-		case "linux":
+		case "darwin":
 			return "compiler/scryptc/mac/scryptc";
 		default:
 			throw "sCrypt don't support your OS now";
