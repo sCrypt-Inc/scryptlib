@@ -386,32 +386,40 @@ export function getPlatformScryptc() : string {
 	}
 }
 
-
-
-export function getDefaultScryptc(): string {
+function vscodeExtensionPath() : string  {
 	const homedir = os.homedir();
 	const extensions =  join(homedir, ".vscode/extensions");
 	if(!existsSync(extensions)) {
-		throw `No vscode extensions found, Please check if vscode is installed on your machine.`
+		throw `No vscode extensions found, Please check if vscode is installed on your machine.`;
 	}
+	return extensions;
+}
 
-    let sCrypt = readdirSync(extensions).filter(dir => {
+function findVscodeScrypt(extensionPath: string) : string {
+	return readdirSync(extensionPath).find(dir => {
 		if(dir.indexOf("bsv-scrypt.scrypt-") > -1 ) {
 			return true;
 		} 
 		return false;
 	});
+}
 
-	if(sCrypt.length == 0) {
-		throw `No sCrypt IDE found, Please install sCrypt IDE at vscode extensions marketplace: https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
+export function getDefaultScryptc(): string {
+
+
+	const extensionPath =  vscodeExtensionPath();
+	
+	const sCrypt = findVscodeScrypt(extensionPath);
+	if(!sCrypt) {
+		throw `No sCrypt extension found. Please install it at extension marketplace:
+		https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
 	} 
 
-	let scryptc = join(extensions, sCrypt[0], getPlatformScryptc());
+	let scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
 
 	if(!existsSync(scryptc)) {
-		throw `No scryptc found, Please update your sCrypt extension to latest version`;
+		throw `No sCrypt compiler found. Please update your sCrypt extension to the latest version`;
 	}
 
 	return scryptc;
 }
-
