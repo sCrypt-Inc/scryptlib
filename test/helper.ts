@@ -22,13 +22,18 @@ export function newTx(inputSatoshis: number) {
 }
 
 
+function getCIScryptc(): string | undefined {
+  const scryptc = join(__dirname, '../', getPlatformScryptc());
+  return existsSync(scryptc) ? scryptc : undefined;
+}
+
 export function compileContract(fileName: string, folder: string): CompileResult {
   const filePath = existsSync(fileName) ? fileName : join(__dirname, folder, fileName);
   const result = compile(
     { path: filePath },
     {
       desc: true, outputDir: join(__dirname, 'fixture'),
-      cmdPrefix: join(__dirname, '../', getPlatformScryptc()),
+      cmdPrefix: getCIScryptc()
     }
   );
   return result;
