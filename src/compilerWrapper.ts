@@ -107,7 +107,7 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmdPrefix = settings.cmdPrefix || getDefaultsCryptc();
+		const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
 		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
 		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
@@ -238,7 +238,7 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
-				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultsCryptc() ),
+				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
 				abi,
@@ -388,7 +388,7 @@ export function getPlatformScryptc() : string {
 
 
 
-export function getDefaultsCryptc(): string {
+export function getDefaultScryptc(): string {
 	const homedir = os.homedir();
 	const extensions =  join(homedir, ".vscode/extensions");
 	if(!existsSync(extensions)) {
