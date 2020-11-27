@@ -23,8 +23,6 @@ export function newTx(inputSatoshis: number) {
 
 
 export function compileContract(fileName: string, folder: string): CompileResult {
-
-
   const filePath = existsSync(fileName) ? fileName : join(__dirname, folder, fileName);
   const result = compile(
     { path: filePath },
