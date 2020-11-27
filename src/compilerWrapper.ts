@@ -388,11 +388,11 @@ export function getPlatformScryptc() : string {
 
 function vscodeExtensionPath() : string  {
 	const homedir = os.homedir();
-	const extensions =  join(homedir, ".vscode/extensions");
-	if(!existsSync(extensions)) {
-		throw `No vscode extensions found, Please check if vscode is installed on your machine.`;
+	const extensionPath =  join(homedir, ".vscode/extensions");
+	if(!existsSync(extensionPath)) {
+		throw `No Visual Studio Code extensions found. Please ensure Visual Studio Code is installed.`;
 	}
-	return extensions;
+	return extensionPath;
 }
 
 function findVscodeScrypt(extensionPath: string) : string {
@@ -415,7 +415,7 @@ export function getDefaultScryptc(): string {
 		https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
 	} 
 
-	let scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
+	const scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
 
 	if(!existsSync(scryptc)) {
 		throw `No sCrypt compiler found. Please update your sCrypt extension to the latest version`;
