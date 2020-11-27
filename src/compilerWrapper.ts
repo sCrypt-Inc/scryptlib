@@ -382,7 +382,7 @@ export function getPlatformScryptc() : string {
 		case "darwin":
 			return "compiler/scryptc/mac/scryptc";
 		default:
-			throw "sCrypt don't support your OS now";
+			throw `sCrypt doesn't support ${os.platform()}`;
 	}
 }
 
