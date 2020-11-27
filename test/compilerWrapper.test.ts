@@ -20,7 +20,7 @@ describe('compile()', () => {
     assert.include(result.errors[0].type, 'SyntaxError', 'contract has SyntaxError');
   })
   
-it('should generate description file properly', () => {
+  it('should generate description file properly', () => {
     const result = compileContract('bar.scrypt', 'fixture');
     const outputFile = path.join(__dirname, 'fixture/bar_desc.json');
 
