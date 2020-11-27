@@ -10,12 +10,13 @@ before_install:
   - npm i -g npm@latest
 
 script:
+  - git clone -b master https://github.com/sCrypt-Inc/compiler_dist.git compiler
   - npm test
   # integration testing with boilerplate
   - npm link
-  - git clone -b array https://github.com/scrypt-sv/boilerplate.git
+  - git clone -b master https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
   - npm link scryptlib  # use this version
   #- npm ls scryptlib    # double check the latest version is used
-  - npm test
+  - npm test -- --ci=true

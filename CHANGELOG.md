@@ -1,5 +1,18 @@
 # CHANGELOG
 
+
+## 0.2.22
+
+* remove scryptc dependencies
+* fixed get scripcode bug of preimage
+
+
+## 0.2.21
+
+* support get asmVars
+* bug fix: semantic errors contains end location, besides start loc
+
+
 ## 0.2.20
 
 * add literal2ScryptType

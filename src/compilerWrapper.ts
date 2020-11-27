@@ -1,9 +1,10 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, rename } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, rename, fstat, readdirSync } from 'fs';
 import { oc } from 'ts-optchain';
 import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
+import * as os from 'os';
 
 import md5 = require('md5');
 import { path2uri } from './utils';
@@ -106,9 +107,11 @@ export function compile(
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-		const cmdPrefix = settings.cmdPrefix || `npx ${npxArg} scryptc${settings.scVersion ? '@' + settings.scVersion : ''}`;
+		const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
 		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-		const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
+		let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
+		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
+		output = output.split(/\r?\n/g).join('\n');
 		if (output.startsWith('Error:')) {
 			if (output.includes('import') && output.includes('File not found')) {
 				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG)].map(match => {
@@ -235,7 +238,7 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
-				compilerVersion: compilerVersion(settings.cwd),
+				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
 				abi,
@@ -277,7 +280,7 @@ export function compile(
 }
 
 export function compilerVersion(cwd?: string): string {
-	const text = execSync(`npx --no-install scryptc version`, { cwd }).toString();
+	const text = execSync(`${cwd} version`).toString();
 	return /Version:\s*([^\s]+)\s*/.exec(text)[1];
 }
 
@@ -368,4 +371,55 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 		contract: mainContract['name'],
 		abi: interfaces
 	};
+}
+
+export function getPlatformScryptc() : string {
+	switch (os.platform()) {
+		case "win32":
+			return "compiler/scryptc/win32/scryptc.exe";
+		case "linux":
+			return "compiler/scryptc/linux/scryptc";
+		case "darwin":
+			return "compiler/scryptc/mac/scryptc";
+		default:
+			throw `sCrypt doesn't support ${os.platform()}`;
+	}
+}
+
+function vscodeExtensionPath() : string  {
+	const homedir = os.homedir();
+	const extensions =  join(homedir, ".vscode/extensions");
+	if(!existsSync(extensions)) {
+		throw `No vscode extensions found, Please check if vscode is installed on your machine.`;
+	}
+	return extensions;
+}
+
+function findVscodeScrypt(extensionPath: string) : string {
+	return readdirSync(extensionPath).find(dir => {
+		if(dir.indexOf("bsv-scrypt.scrypt-") > -1 ) {
+			return true;
+		} 
+		return false;
+	});
+}
+
+export function getDefaultScryptc(): string {
+
+
+	const extensionPath =  vscodeExtensionPath();
+	
+	const sCrypt = findVscodeScrypt(extensionPath);
+	if(!sCrypt) {
+		throw `No sCrypt extension found. Please install it at extension marketplace:
+		https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
+	} 
+
+	let scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
+
+	if(!existsSync(scryptc)) {
+		throw `No sCrypt compiler found. Please update your sCrypt extension to the latest version`;
+	}
+
+	return scryptc;
 }

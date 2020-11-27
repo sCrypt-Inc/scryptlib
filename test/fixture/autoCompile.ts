@@ -1,6 +1,6 @@
 import glob = require('glob');
 import { join } from 'path';
-import { compile } from '../../src/compilerWrapper';
+import { compileContract } from '../helper';
 import { exit } from 'process';
 
 function compileAllContracts() {
@@ -8,10 +8,7 @@ function compileAllContracts() {
   contracts.forEach(filePath => {
     console.log(`Compiling contract ${filePath} ...`)
 
-    const result = compile(
-      { path: filePath },
-      { desc: true, outputDir: __dirname }
-    );
+    const result = compileContract(filePath, ".");
 
     if (result.errors.length > 0) {
       console.log(`Contract ${filePath} compiling failed with errors:`);
