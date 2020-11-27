@@ -373,7 +373,7 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 	};
 }
 
-export function getPlatformsCryptc() : string {
+export function getPlatformScryptc() : string {
 	switch (os.platform()) {
 		case "win32":
 			return "compiler/scryptc/win32/scryptc.exe";
@@ -406,7 +406,7 @@ export function getDefaultsCryptc(): string {
 		throw `No sCrypt IDE found, Please install sCrypt IDE at vscode extensions marketplace: https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
 	} 
 
-	let scryptc = join(extensions, sCrypt[0], getPlatformsCryptc());
+	let scryptc = join(extensions, sCrypt[0], getPlatformScryptc());
 
 	if(!existsSync(scryptc)) {
 		throw `No scryptc found, Please update your sCrypt extension to latest version`;

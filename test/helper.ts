@@ -2,7 +2,7 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { bsv } from '../src/utils';
 import { ContractDescription } from '../src/contract';
-import { compile, CompileResult, getPlatformsCryptc} from '../src/compilerWrapper';
+import { compile, CompileResult, getPlatformScryptc} from '../src/compilerWrapper';
 export function loadDescription(fileName: string): ContractDescription {
   return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_desc.json'))).toString());
 }
@@ -28,7 +28,7 @@ export function compileContract(fileName: string, folder: string): CompileResult
     { path: filePath },
     {
       desc: true, outputDir: join(__dirname, 'fixture'),
-      cmdPrefix: join(__dirname, '../', getPlatformsCryptc()),
+      cmdPrefix: join(__dirname, '../', getPlatformScryptc()),
     }
   );
   return result;
