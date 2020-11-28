@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, rename, fstat, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, rename, readdirSync } from 'fs';
 import { oc } from 'ts-optchain';
 import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
