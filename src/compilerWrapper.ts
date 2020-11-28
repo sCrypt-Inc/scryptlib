@@ -5,7 +5,6 @@ import { oc } from 'ts-optchain';
 import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
 import * as os from 'os';
-
 import md5 = require('md5');
 import { path2uri } from './utils';
 
@@ -396,18 +395,26 @@ function vscodeExtensionPath() : string  {
 }
 
 function findVscodeScrypt(extensionPath: string) : string {
-	return readdirSync(extensionPath).find(dir => {
-		if(dir.indexOf("bsv-scrypt.scrypt-") > -1 ) {
-			return true;
+	const compareVersions = require('compare-versions');
+	const sCryptPrefix = "bsv-scrypt.scrypt-";
+	let versions = readdirSync(extensionPath).reduce((filtered, item) => {
+		if(item.indexOf(sCryptPrefix) > -1 ) {
+			const version = item.substring(sCryptPrefix.length);
+			if(compareVersions.validate(version)) {
+				filtered.push(version);
+			}
+			return filtered;
 		} 
-		return false;
-	});
+		return filtered;
+	}, []);
+	versions = versions.sort(compareVersions).reverse();
+	return sCryptPrefix + versions[0];	
 }
 
 export function getDefaultScryptc(): string {
 
 
-	const extensionPath =  vscodeExtensionPath();
+	const extensionPath = vscodeExtensionPath();
 	
 	const sCrypt = findVscodeScrypt(extensionPath);
 	if(!sCrypt) {
