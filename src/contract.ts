@@ -24,6 +24,22 @@ export interface ContractDescription {
 
 export type AsmVarValues = { [key: string]: string }
 
+
+const Validator = (txContext: TxContext) => {
+  if(typeof txContext.inputIndex != 'number') {
+    throw `TxContext should have member inputIndex`
+  }
+
+  if(typeof txContext.inputSatoshis != 'number') {
+    throw `TxContext should have member inputSatoshis`
+  }
+
+  if(typeof txContext.tx != 'object') {
+    throw `TxContext should have member tx`
+  }
+
+}
+
 export class AbstractContract {
 
   public static contractName: string;
@@ -44,6 +60,7 @@ export class AbstractContract {
   private _txContext?: TxContext;
 
   set txContext(txContext: TxContext) {
+    Validator(txContext);
     this._txContext = txContext;
   }
 
@@ -57,8 +74,8 @@ export class AbstractContract {
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
+    txContext && Validator(txContext);
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
-
     const us = bsv.Script.fromASM(unlockingScriptASM);
     const ls = this.lockingScript;
     const tx = txCtx.tx;
