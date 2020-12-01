@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, rename, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
 import { oc } from 'ts-optchain';
 import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
@@ -261,7 +261,7 @@ export function compile(
 				if (existsSync(file)) {
 					if (settings[outputType]) {
 						// rename all output files
-						rename(file, file.replace('stdin', basename(sourcePath, '.scrypt')), () => { return; });
+						renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
 					} else {
 						unlinkSync(file);
 					}
