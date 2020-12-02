@@ -21,10 +21,13 @@ export enum CompileErrorType {
 export interface CompileErrorBase {
 	type: string;
 	filePath: string;
-	position: {
+	position: [{
 		line: number;
 		column: number;
-	};
+	},  {
+		line: number;
+		column: number;
+	}?];
 	message: string;
 }
 
@@ -143,10 +146,10 @@ export function compile(
 						type: CompileErrorType.ImportError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
 						message: `Imported file ${oc(match.groups).fileName()} does not exist`,
-						position: {
+						position: [{
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
-						},
+						}],
 						file: oc(match.groups).fileName('')
 					};
 				});
@@ -162,10 +165,10 @@ export function compile(
 					return {
 						type: CompileErrorType.SyntaxError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						position: {
+						position: [{
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
-						},
+						}],
 						message: oc(match.groups).message(`unexpected ${unexpected}\nexpecting ${expecting}`),
 						unexpected,
 						expecting,
@@ -180,10 +183,13 @@ export function compile(
 					return {
 						type: CompileErrorType.SemanticError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						position: {
+						position:[ {
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
-						},
+						}, {
+							line: parseInt(oc(match.groups).line1('-1')),
+							column: parseInt(oc(match.groups).column1('-1')),
+						}],
 						message: oc(match.groups).message('')
 					};
 				});
