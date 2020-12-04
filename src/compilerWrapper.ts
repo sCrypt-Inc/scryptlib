@@ -2,7 +2,7 @@ import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
 import { oc } from 'ts-optchain';
-import { ABIEntity, ABIEntityType } from './abi';
+import { ABIEntity, ABIEntityType, StructEntity } from './abi';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
@@ -56,6 +56,7 @@ export interface CompileResult {
 	compilerVersion?: string;
 	contract?: string;
 	md5?: string;
+	structs?: any;
 }
 
 export enum DebugModeTag {
@@ -241,6 +242,7 @@ export function compile(
 				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
+				structs: getStructDeclaration(result.ast),
 				abi,
 				asm: result.asm
 			};
@@ -251,6 +253,7 @@ export function compile(
 			result.contract = description.contract;
 			result.md5 = description.md5;
 			result.abi = abi;
+			result.structs = description.structs;
 		}
 
 		return result;
@@ -366,12 +369,30 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 			});
 		}
 	}
-
+	
 	return {
 		contract: mainContract['name'],
 		abi: interfaces
 	};
 }
+
+
+function getStructDeclaration(astRoot): Array<StructEntity> {
+	
+	if (astRoot['structs']) {
+
+		return astRoot['structs'].map(s => { 
+			const entity: StructEntity = {
+				name: s['name'],
+				params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+			};
+			return entity;
+		});
+	}
+
+	return [];
+}
+
 
 export function getPlatformScryptc() : string {
 	switch (os.platform()) {

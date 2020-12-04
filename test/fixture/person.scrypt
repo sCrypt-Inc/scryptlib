@@ -1,0 +1,24 @@
+struct Person {
+    bytes addr;
+    bool isMale;
+    int age;
+}
+
+contract Main {
+    struct Person person;
+
+    public function main(struct Person p) {
+
+        require(p.age == 13);
+        require(! p.isMale);
+
+        struct Person c = this.incAge(p);
+        require(c.age == 14);
+    }
+
+    function incAge(struct Person p1) : struct Person {
+        p1.age = p1.age + 1;
+        return p1;
+    }
+}
+

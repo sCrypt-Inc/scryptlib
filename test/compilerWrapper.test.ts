@@ -59,4 +59,12 @@ describe('compile()', () => {
       }
     ])
   })
+
+  it('should generate structs properly', () => {
+    const result = compileContract("person.scrypt", "fixture");
+
+    assert.equal(result.structs.length, 1);
+
+  })
+
 })

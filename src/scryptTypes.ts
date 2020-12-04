@@ -293,4 +293,19 @@ export class OpCodeType extends ScryptType {
 
 
 export type SingletonParamType = ScryptType | boolean | number | bigint;
-export type SupportedParamType = SingletonParamType | SingletonParamType[];
+
+
+type MAP<T> =   {
+  [key: string]: T;
+}
+
+type StructObject = MAP<SingletonParamType>;
+
+export class struct {
+
+  constructor(o: StructObject) {
+    return new Proxy(o, {});
+  }
+}
+
+export type SupportedParamType = SingletonParamType | SingletonParamType[] | struct;
