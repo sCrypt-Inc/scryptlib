@@ -1,7 +1,8 @@
 {
-    "compilerVersion": "0.2.11+commit.8ebbf0b",
+    "compilerVersion": "0.2.11+commit.8cb3e10",
     "contract": "DemoP2PKH",
     "md5": "35bbeee99481c17c95f580e8b86d117f",
+    "structs": [],
     "abi": [
         {
             "type": "function",

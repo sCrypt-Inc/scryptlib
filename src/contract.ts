@@ -1,4 +1,4 @@
-import { ABICoder, ABIEntity, FunctionCall,  Script } from "./abi";
+import { ABICoder, ABIEntity, FunctionCall,  Script, StructEntity} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS } from "./utils";
 import { SupportedParamType} from './scryptTypes';
@@ -18,6 +18,7 @@ export interface ContractDescription {
   compilerVersion: string;
   contract: string;
   md5: string;
+  structs: Array<StructEntity>;
   abi: Array<ABIEntity>;
   asm: string;
 }
@@ -143,7 +144,7 @@ export function buildContractClass(desc: ContractDescription): any {
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm;
-  ContractClass.abiCoder = new ABICoder(desc.abi);
+  ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
 
   ContractClass.abi.forEach(entity => {
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {

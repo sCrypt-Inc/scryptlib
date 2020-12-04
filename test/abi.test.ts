@@ -1,9 +1,9 @@
-import { assert } from 'chai';
+import { assert, expect } from 'chai';
 import { loadDescription, newTx } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160 } from '../src/scryptTypes';
+import { Bytes, PubKey, Sig, Ripemd160, Bool, struct} from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -14,6 +14,17 @@ const tx = newTx(inputSatoshis);
 const jsonDescr = loadDescription('p2pkh.scrypt');
 const DemoP2PKH = buildContractClass(jsonDescr);
 const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+
+const personDescr = loadDescription('person.scrypt');
+
+const PersonContract = buildContractClass(personDescr);
+
+const person = new PersonContract(new struct({
+  isMale: false,
+  age: 33,
+  addr: new Bytes("68656c6c6f20776f726c6421")
+}));
+
 
 describe('FunctionCall', () => {
 
@@ -103,6 +114,101 @@ describe('FunctionCall', () => {
       })
     })
   })
+
+
+  describe('when constructor with struct', () => {
+
+    before(() => {
+      target = new FunctionCall('constructor', [new struct({
+        isMale: false,
+        age: 33,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      })], { contract: person, lockingScriptASM: person.lockingScript.toASM() });
+    })
+
+    describe('toHex() / toString()', () => {
+      it('should return the locking script in hex', () => {
+        assert.equal(target.toHex(), person.lockingScript.toHex());
+      })
+    })
+
+    describe('toASM()', () => {
+      it('should return the locking script in ASM', () => {
+        assert.equal(target.toASM(), person.lockingScript.toASM());
+      })
+    })
+  })
+
+
+
+  describe('when it is a contract public function with struct', () => {
+
+    
+    it('should return true when age 13', () => {
+
+      let result = person.main(new struct({
+        isMale: false,
+        age: 13,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      })).verify()
+
+      assert.isTrue(result.success, result.error);
+    })
+
+
+    it('should return false when age 14', () => {
+
+      let result = person.main(new struct({
+        isMale: false,
+        age: 14,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      })).verify()
+
+      assert.isFalse(result.success, result.error);
+    })
+
+    it('should return false when isMale true', () => {
+
+      let result = person.main(new struct({
+        isMale: true,
+        age: 14,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      })).verify()
+
+      assert.isFalse(result.success, result.error);
+    })
+
+  })
+
+  describe('struct prop check', () => {
+
+    it('should throw miss isMale ', () => {
+
+
+      expect(() => { person.main(new struct({
+        age: 14,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      })) }).to.throw('struct Person should exists member isMale');
+    })
+
+    it('should throw miss addr ', () => {
+      expect(() => { person.main(new struct({
+        isMale: false,
+        age: 13
+      })) }).to.throw('struct Person should exists member addr');
+    })
+
+    it('should throw have invalid prop weight ', () => {
+      expect(() => { person.main(new struct({
+        weight: 100,
+        isMale: false,
+        age: 13,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      })) }).to.throw('weight is not a member of struct Person');
+    })
+
+  })
+
 })
 
 describe('ABICoder', () => {
