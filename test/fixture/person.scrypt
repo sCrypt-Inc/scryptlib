@@ -12,19 +12,21 @@ struct Block {
 
 contract Main {
     struct Person person;
+    int x;
 
-
-    constructor(struct Person some) {
+    constructor(struct Person some, int x) {
         this.person = some;
+        this.x = x;
     }
 
-    public function main(struct Person p) {
+    public function main(struct Person p, int x, bool isMale) {
 
-        require(p.age == 13);
+        require(p.isMale == isMale);
+        require(p.age > x);
         require(! p.isMale);
 
         struct Person c = this.incAge(p);
-        require(c.age == 14);
+        require(c.age == 34);
     }
 
     function incAge(struct Person p1) : struct Person {

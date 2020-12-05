@@ -19,11 +19,13 @@ const personDescr = loadDescription('person.scrypt');
 
 const PersonContract = buildContractClass(personDescr);
 
-const person = new PersonContract(new Struct({
+let man: Struct = new Struct({
   isMale: false,
   age: 33,
   addr: new Bytes("68656c6c6f20776f726c6421")
-}));
+});
+
+const person = new PersonContract(man, 18);
 
 
 describe('FunctionCall', () => {
@@ -144,36 +146,24 @@ describe('FunctionCall', () => {
   describe('when it is a contract public function with struct', () => {
 
     
-    it('should return true when age 13', () => {
+    it('should return true when age 10', () => {
 
-      let result = person.main(new Struct({
-        isMale: false,
-        age: 13,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      })).verify()
+      let result = person.main(man, 10, false).verify()
 
       assert.isTrue(result.success, result.error);
     })
 
 
-    it('should return false when age 14', () => {
+    it('should return false when age 36', () => {
 
-      let result = person.main(new Struct({
-        isMale: false,
-        age: 14,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      })).verify()
+      let result = person.main(man,  36, false).verify()
 
       assert.isFalse(result.success, result.error);
     })
 
     it('should return false when isMale true', () => {
 
-      let result = person.main(new Struct({
-        isMale: true,
-        age: 14,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      })).verify()
+      let result = person.main(man,  18, true).verify()
 
       assert.isFalse(result.success, result.error);
     })
@@ -183,19 +173,17 @@ describe('FunctionCall', () => {
   describe('struct member check', () => {
 
     it('should throw with wrong members', () => {
-
-
       expect(() => { person.main(new Struct({
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
-      })) }).to.throw('argument of type struct Person missing member isMale');
+      }), 18, true) }).to.throw('argument of type struct Person missing member isMale');
     })
 
     it('should throw with wrong members', () => {
       expect(() => { person.main(new Struct({
         isMale: false,
         age: 13
-      })) }).to.throw('argument of type struct Person missing member addr');
+      }), 18, true) }).to.throw('argument of type struct Person missing member addr');
     })
 
     it('should throw with wrong members', () => {
@@ -204,7 +192,7 @@ describe('FunctionCall', () => {
         isMale: false,
         age: 13,
         addr: new Bytes("68656c6c6f20776f726c6421")
-      })) }).to.throw('weight is not a member of struct Person');
+      }), 18, true) }).to.throw('weight is not a member of struct Person');
     })
 
   })
