@@ -11,6 +11,8 @@ before_install:
 
 script:
   - git clone -b master https://github.com/sCrypt-Inc/compiler_dist.git compiler
+  - cd compiler && npm run dl
+  - cd -
   - npm test
   # integration testing with boilerplate
   - npm link
