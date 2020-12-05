@@ -188,14 +188,14 @@ describe('FunctionCall', () => {
       expect(() => { person.main(new Struct({
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
-      })) }).to.throw('struct Person should exists member isMale');
+      })) }).to.throw('argument of type struct Person missing member isMale');
     })
 
     it('should throw miss addr ', () => {
       expect(() => { person.main(new Struct({
         isMale: false,
         age: 13
-      })) }).to.throw('struct Person should exists member addr');
+      })) }).to.throw('argument of type struct Person missing member addr');
     })
 
     it('should throw have invalid prop weight ', () => {

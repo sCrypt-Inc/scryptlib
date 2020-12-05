@@ -123,27 +123,27 @@ export class FunctionCall {
 
 }
 
-function findStruct(struct: StructEntity[], name: string) {
+function findStructByName(struct: StructEntity[], name: string): StructEntity {
   return struct.find(s => {
     return s.name == name;
   })
 }
 
-function checkProperties(s: StructEntity, arg: Struct) {
+function checkStruct(s: StructEntity, arg: Struct): void {
   
-  const keysAst = s.params.map(p =>  p.name);
+  const members = s.params.map(p =>  p.name);
 
   let props: Array<string> = []
   for(let p in arg) {
-    if(!keysAst.includes(p)) {
+    if(!members.includes(p)) {
       throw new Error(`${p} is not a member of struct ${s.name}`);
     }
     props.push(p);
   }
 
-  keysAst.forEach(key => {
+  members.forEach(key => {
     if(!props.includes(key)) {
-      throw new Error(`struct ${s.name} should exists member ${key}`);
+      throw new Error(`argument of type struct ${s.name} missing member ${key}`);
     }
   })
 }
@@ -182,9 +182,9 @@ export class ABICoder {
         let m = /struct\s(\w+)\s\{\}/.exec(param.type.trim());
 
         if(m) {
-          const s = findStruct(this.structs, m[1]);
+          const s = findStructByName(this.structs, m[1]);
 
-          checkProperties(s, arg);
+          checkStruct(s, arg);
           s.params.forEach(e => {
             cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
             args_.push(arg[e.name]);
@@ -261,9 +261,9 @@ export class ABICoder {
     let m = /struct\s(\w+)\s\{\}/.exec(structTypeName.trim());
 
     if (m) {
-      const s = findStruct(this.structs, m[1]);
+      const s = findStructByName(this.structs, m[1]);
 
-      checkProperties(s, arg);
+      checkStruct(s, arg);
       return s.params.map(e => this.encodeParam(arg[e.name], e.type)).join(' ');
 
     } else {
