@@ -123,11 +123,6 @@ export class FunctionCall {
 
 }
 
-function findStructByName(struct: StructEntity[], name: string): StructEntity {
-  return struct.find(s => {
-    return s.name == name;
-  })
-}
 
 function checkStruct(s: StructEntity, arg: Struct): void {
   
@@ -148,10 +143,27 @@ function checkStruct(s: StructEntity, arg: Struct): void {
   })
 }
 
+
 export class ABICoder {
 
   constructor(public abi: ABIEntity[], public structs: StructEntity[]) { }
 
+
+  
+  findStructByName(name: string): StructEntity {
+    return this.structs.find(s => {
+      return s.name == name;
+    })
+  }
+
+
+  findStructByType(type: string): StructEntity | undefined {
+    let m = /struct\s(\w+)\s\{\}/.exec(type.trim());
+    if (m) {
+      return this.findStructByName(m[1]);
+    }
+    return undefined;
+  }
 
 
   encodeConstructorCall(contract: AbstractContract, asmTemplate: string, ...args: SupportedParamType[]): FunctionCall {
@@ -179,11 +191,10 @@ export class ABICoder {
           args_.push(e);
         });
       } else if(util.types.isProxy(arg)) {
-        let m = /struct\s(\w+)\s\{\}/.exec(param.type.trim());
 
-        if(m) {
-          const s = findStructByName(this.structs, m[1]);
+        const s = this.findStructByType(param.type);
 
+        if(s) {
           checkStruct(s, arg);
           s.params.forEach(e => {
             cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
@@ -258,14 +269,11 @@ export class ABICoder {
 
   encodeParamStruct(arg: Struct, structTypeName: string): string {
 
-    let m = /struct\s(\w+)\s\{\}/.exec(structTypeName.trim());
+    const s = this.findStructByType(structTypeName);
 
-    if (m) {
-      const s = findStructByName(this.structs, m[1]);
-
+    if (s) {
       checkStruct(s, arg);
       return s.params.map(e => this.encodeParam(arg[e.name], e.type)).join(' ');
-
     } else {
       throw new Error(`struct ${structTypeName} can't be found when encodeParamStruct ${arg}`);
     }
