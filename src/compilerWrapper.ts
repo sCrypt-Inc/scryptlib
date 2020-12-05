@@ -379,18 +379,10 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 
 function getStructDeclaration(astRoot): Array<StructEntity> {
 	
-	if (astRoot['structs']) {
-
-		return astRoot['structs'].map(s => { 
-			const entity: StructEntity = {
-				name: s['name'],
-				params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
-			};
-			return entity;
-		});
-	}
-
-	return [];
+	return oc(astRoot).structs([]).map(s => ({
+		name: s['name'],
+		params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+	}))
 }
 
 
