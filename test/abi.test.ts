@@ -182,7 +182,7 @@ describe('FunctionCall', () => {
 
   describe('struct member check', () => {
 
-    it('should throw miss isMale ', () => {
+    it('should throw with wrong members', () => {
 
 
       expect(() => { person.main(new Struct({
@@ -191,14 +191,14 @@ describe('FunctionCall', () => {
       })) }).to.throw('argument of type struct Person missing member isMale');
     })
 
-    it('should throw miss addr ', () => {
+    it('should throw with wrong members', () => {
       expect(() => { person.main(new Struct({
         isMale: false,
         age: 13
       })) }).to.throw('argument of type struct Person missing member addr');
     })
 
-    it('should throw have invalid member weight ', () => {
+    it('should throw with wrong members', () => {
       expect(() => { person.main(new Struct({
         weight: 100,
         isMale: false,
