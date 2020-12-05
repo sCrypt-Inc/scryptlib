@@ -1,7 +1,7 @@
 {
-    "compilerVersion": "0.2.11+commit.8cb3e10",
+    "compilerVersion": "0.2.11+commit.2e4fc15",
     "contract": "Main",
-    "md5": "62727be9ab46f9bc87835ffe712d2588",
+    "md5": "2239d2c68489369c3689fbd0f1589b80",
     "structs": [
         {
             "name": "Person",
@@ -16,6 +16,23 @@
                 },
                 {
                     "name": "age",
+                    "type": "int"
+                }
+            ]
+        },
+        {
+            "name": "Block",
+            "params": [
+                {
+                    "name": "hash",
+                    "type": "bytes"
+                },
+                {
+                    "name": "header",
+                    "type": "bytes"
+                },
+                {
+                    "name": "time",
                     "type": "int"
                 }
             ]
@@ -37,11 +54,11 @@
             "type": "constructor",
             "params": [
                 {
-                    "name": "person",
+                    "name": "some",
                     "type": "struct Person {}"
                 }
             ]
         }
     ],
-    "asm": "$person.addr $person.isMale $person.age OP_3 OP_PICK OP_13 OP_NUMEQUAL OP_VERIFY OP_4 OP_PICK OP_NOT OP_VERIFY OP_NOP OP_5 OP_PICK OP_5 OP_PICK OP_5 OP_PICK OP_0 OP_PICK OP_1 OP_ADD OP_1 OP_ROLL OP_DROP OP_2 OP_PICK OP_2 OP_PICK OP_2 OP_PICK OP_3 OP_ROLL OP_DROP OP_3 OP_ROLL OP_DROP OP_3 OP_ROLL OP_DROP OP_NOP OP_0 OP_PICK OP_14 OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP"
+    "asm": "OP_NOP OP_0 OP_0 OP_0 $some.addr $some.isMale $some.age OP_2 OP_PICK OP_2 OP_PICK OP_2 OP_PICK OP_8 OP_ROLL OP_8 OP_ROLL OP_8 OP_ROLL OP_DROP OP_DROP OP_DROP OP_2 OP_ROLL OP_2 OP_ROLL OP_DROP OP_DROP OP_DROP OP_NOP OP_3 OP_PICK OP_13 OP_NUMEQUAL OP_VERIFY OP_4 OP_PICK OP_NOT OP_VERIFY OP_NOP OP_5 OP_PICK OP_5 OP_PICK OP_5 OP_PICK OP_0 OP_PICK OP_1 OP_ADD OP_1 OP_ROLL OP_DROP OP_2 OP_PICK OP_2 OP_PICK OP_2 OP_PICK OP_3 OP_ROLL OP_DROP OP_3 OP_ROLL OP_DROP OP_3 OP_ROLL OP_DROP OP_NOP OP_0 OP_PICK OP_14 OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP"
 }

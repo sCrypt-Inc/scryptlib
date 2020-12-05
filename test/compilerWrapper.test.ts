@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, expect } from 'chai';
 import path = require("path");
 import { existsSync, readFileSync } from 'fs';
 import { compileContract } from './helper'
@@ -15,11 +15,11 @@ describe('compile()', () => {
 
   it('should return SyntaxError', () => {
     const result = compileContract("p2pkh_wrong.scrypt", "fixture/invalid");
-    
+
     assert.isAbove(result.errors.length, 0, "exist Errors");
     assert.include(result.errors[0].type, 'SyntaxError', 'contract has SyntaxError');
   })
-  
+
   it('should generate description file properly', () => {
     const result = compileContract('bar.scrypt', 'fixture');
     const outputFile = path.join(__dirname, 'fixture/bar_desc.json');
@@ -62,9 +62,35 @@ describe('compile()', () => {
 
   it('should generate structs properly', () => {
     const result = compileContract("person.scrypt", "fixture");
+    console.log("result", JSON.stringify(result.structs))
+    assert.equal(result.structs.length, 2);
 
-    assert.equal(result.structs.length, 1);
-
+    expect(result.structs).to.deep.include.members([{
+      name: 'Person',
+      params: [{
+        "name": "addr",
+        "type": "bytes"
+      }, {
+        "name": "isMale",
+        "type": "bool"
+      }, {
+        "name": "age",
+        "type": "int"
+      }]
+    }, {
+      name: 'Block',
+      params: [{
+        "name": "hash",
+        "type": "bytes"
+      }, {
+        "name": "header",
+        "type": "bytes"
+      }, {
+        "name": "time",
+        "type": "int"
+      }]
+    }
+    ])
   })
 
 })

@@ -4,8 +4,19 @@ struct Person {
     int age;
 }
 
+struct Block {
+    bytes hash;
+    bytes header;
+    int time;
+}
+
 contract Main {
     struct Person person;
+
+
+    constructor(struct Person some) {
+        this.person = some;
+    }
 
     public function main(struct Person p) {
 
