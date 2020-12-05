@@ -4,7 +4,6 @@ import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contr
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { strict as assert } from 'assert';
 import { type } from 'os';
-import * as util from 'util';
 
 export enum ABIEntityType {
   FUNCTION = 'function',
@@ -190,7 +189,7 @@ export class ABICoder {
           cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName});
           args_.push(e);
         });
-      } else if(util.types.isProxy(arg)) {
+      } else if(Struct.isStruct(arg)) {
 
         const s = this.findStructByType(param.type);
 
@@ -284,7 +283,7 @@ export class ABICoder {
       return this.encodeParamArray(arg, scryptTypeName);
     }
 
-    if(util.types.isProxy(arg)) {
+    if(Struct.isStruct(arg)) {
       return this.encodeParamStruct(arg, scryptTypeName);
     }
 

@@ -1,5 +1,5 @@
 import { parseLiteral, getValidatedHexString, bsv, intValue2hex } from "./utils";
-
+import * as util from 'util';
 
 export type ValueType = number | bigint | boolean | string;
 
@@ -305,6 +305,10 @@ export class Struct {
 
   constructor(o: StructObject) {
     return new Proxy(o, {});
+  }
+
+  static isStruct(arg: SupportedParamType): boolean {
+    return util.types.isProxy(arg);
   }
 }
 
