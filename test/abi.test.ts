@@ -180,7 +180,7 @@ describe('FunctionCall', () => {
 
   })
 
-  describe('struct prop check', () => {
+  describe('struct member check', () => {
 
     it('should throw miss isMale ', () => {
 
@@ -198,7 +198,7 @@ describe('FunctionCall', () => {
       })) }).to.throw('argument of type struct Person missing member addr');
     })
 
-    it('should throw have invalid prop weight ', () => {
+    it('should throw have invalid member weight ', () => {
       expect(() => { person.main(new Struct({
         weight: 100,
         isMale: false,
