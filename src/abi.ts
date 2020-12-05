@@ -202,7 +202,7 @@ export class ABICoder {
           })
 
         } else {
-          throw new Error(`constructor function not accept struct at param ${index}`);
+          throw new Error(`constructor does not accept struct at ${index}-th parameter`);
         }
       }
       else {
@@ -275,7 +275,7 @@ export class ABICoder {
       checkStruct(s, arg);
       return s.params.map(e => this.encodeParam(arg[e.name], e.type)).join(' ');
     } else {
-      throw new Error(`struct ${structTypeName} can't be found when encodeParamStruct ${arg}`);
+      throw new Error(`struct ${structTypeName} does not exist`);
     }
   }
 
