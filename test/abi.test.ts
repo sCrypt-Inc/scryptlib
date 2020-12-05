@@ -3,7 +3,7 @@ import { loadDescription, newTx } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, struct} from '../src/scryptTypes';
+import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct} from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -19,7 +19,7 @@ const personDescr = loadDescription('person.scrypt');
 
 const PersonContract = buildContractClass(personDescr);
 
-const person = new PersonContract(new struct({
+const person = new PersonContract(new Struct({
   isMale: false,
   age: 33,
   addr: new Bytes("68656c6c6f20776f726c6421")
@@ -119,7 +119,7 @@ describe('FunctionCall', () => {
   describe('when constructor with struct', () => {
 
     before(() => {
-      target = new FunctionCall('constructor', [new struct({
+      target = new FunctionCall('constructor', [new Struct({
         isMale: false,
         age: 33,
         addr: new Bytes("68656c6c6f20776f726c6421")
@@ -146,7 +146,7 @@ describe('FunctionCall', () => {
     
     it('should return true when age 13', () => {
 
-      let result = person.main(new struct({
+      let result = person.main(new Struct({
         isMale: false,
         age: 13,
         addr: new Bytes("68656c6c6f20776f726c6421")
@@ -158,7 +158,7 @@ describe('FunctionCall', () => {
 
     it('should return false when age 14', () => {
 
-      let result = person.main(new struct({
+      let result = person.main(new Struct({
         isMale: false,
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
@@ -169,7 +169,7 @@ describe('FunctionCall', () => {
 
     it('should return false when isMale true', () => {
 
-      let result = person.main(new struct({
+      let result = person.main(new Struct({
         isMale: true,
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
@@ -185,21 +185,21 @@ describe('FunctionCall', () => {
     it('should throw miss isMale ', () => {
 
 
-      expect(() => { person.main(new struct({
+      expect(() => { person.main(new Struct({
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
       })) }).to.throw('struct Person should exists member isMale');
     })
 
     it('should throw miss addr ', () => {
-      expect(() => { person.main(new struct({
+      expect(() => { person.main(new Struct({
         isMale: false,
         age: 13
       })) }).to.throw('struct Person should exists member addr');
     })
 
     it('should throw have invalid prop weight ', () => {
-      expect(() => { person.main(new struct({
+      expect(() => { person.main(new Struct({
         weight: 100,
         isMale: false,
         age: 13,

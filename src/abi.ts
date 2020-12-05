@@ -1,7 +1,7 @@
 import { oc } from 'ts-optchain';
 import { int2Asm, bsv } from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, struct} from './scryptTypes';
+import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { strict as assert } from 'assert';
 import { type } from 'os';
 import * as util from 'util';
@@ -129,7 +129,7 @@ function findStruct(struct: StructEntity[], name: string) {
   })
 }
 
-function checkProperties(s: StructEntity, arg: struct) {
+function checkProperties(s: StructEntity, arg: Struct) {
   
   const keysAst = s.params.map(p =>  p.name);
 
@@ -256,7 +256,7 @@ export class ABICoder {
       return args.map(arg => this.encodeParam(arg, elemTypeName)).join(' ');
     }
 
-  encodeParamStruct(arg: struct, structTypeName: string): string {
+  encodeParamStruct(arg: Struct, structTypeName: string): string {
 
     let m = /struct\s(\w+)\s\{\}/.exec(structTypeName.trim());
 

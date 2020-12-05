@@ -301,11 +301,12 @@ type MAP<T> =   {
 
 type StructObject = MAP<SingletonParamType>;
 
-export class struct {
+export class Struct {
 
   constructor(o: StructObject) {
     return new Proxy(o, {});
   }
 }
 
-export type SupportedParamType = SingletonParamType | SingletonParamType[] | struct;
+
+export type SupportedParamType = SingletonParamType | SingletonParamType[] | Struct;
