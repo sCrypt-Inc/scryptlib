@@ -304,6 +304,7 @@ type StructObject = MAP<SingletonParamType>;
 export class Struct {
 
   constructor(o: StructObject) {
+    // returning a Proxy make we can access all members of o directly
     return new Proxy(o, {});
   }
 
