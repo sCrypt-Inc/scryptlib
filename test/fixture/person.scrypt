@@ -27,6 +27,10 @@ contract Main {
 
         struct Person c = this.incAge(p);
         require(c.age == 34);
+        require(p.age == 33);
+
+        p = this.incAge(p);
+        require(p.age == 34);
     }
 
     function incAge(struct Person p1) : struct Person {
