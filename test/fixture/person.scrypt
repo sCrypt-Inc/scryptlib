@@ -11,21 +11,22 @@ struct Block {
 }
 
 contract Main {
-    struct Person person;
+    Person person;
     int x;
 
-    constructor(struct Person some, int x) {
+    constructor(Person some, int x) {
         this.person = some;
+        this.person.age = x;
         this.x = x;
     }
 
-    public function main(struct Person p, int x, bool isMale) {
+    public function main(Person p, int x, bool isMale) {
 
         require(p.isMale == isMale);
         require(p.age > x);
         require(! p.isMale);
 
-        struct Person c = this.incAge(p);
+        Person c = this.incAge(p);
         require(c.age == 34);
         require(p.age == 33);
 
@@ -33,7 +34,7 @@ contract Main {
         require(p.age == 34);
     }
 
-    function incAge(struct Person p1) : struct Person {
+    function incAge(Person p1) : Person {
         p1.age = p1.age + 1;
         return p1;
     }
