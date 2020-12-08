@@ -2,7 +2,6 @@ import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
 import { oc } from 'ts-optchain';
-import { ABIEntity, ABIEntityType, StructEntity } from './abi';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
@@ -75,6 +74,29 @@ export interface DebugModeAsmWord {
 	stack: string[];
 	debugTag?: DebugModeTag;
 }
+
+
+export interface ABI {
+	contract: string, abi: Array<ABIEntity>
+}
+
+export enum ABIEntityType {
+	FUNCTION = 'function',
+	CONSTRUCTOR = 'constructor'
+}
+
+export interface ABIEntity {
+	type: ABIEntityType;
+	name?: string;
+	params: Array<{ name: string, type: string }>;
+	index?: number;
+}
+
+export interface StructEntity {
+	name: string;
+	params: Array<{ name: string, type: string }>;
+}
+
 
 export function compile(
 	source: {
@@ -337,39 +359,52 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	return join(baseDir, relativePath);
 }
 
-function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> } {
-	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
-	let pubIndex = 0;
-
-	const interfaces: ABIEntity[] =
-		mainContract['functions']
-			.filter(f => f['visibility'] === 'Public')
-			.map(f => {
-				const entity: ABIEntity = {
-					type: ABIEntityType.FUNCTION,
-					name: f['name'],
-					index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-					params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-				};
-				return entity;
-			});
-
+function getConstructorDeclaration(mainContract): ABIEntity {
 	// explict constructor
 	if (mainContract['constructor']) {
-		interfaces.push({
+		return {
 			type: ABIEntityType.CONSTRUCTOR,
 			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-		});
+		};
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
-			interfaces.push({
+			return {
 				type: ABIEntityType.CONSTRUCTOR,
 				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
-			});
+			};
 		}
 	}
-	
+}
+
+
+function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
+	let pubIndex = 0;
+	const interfaces: ABIEntity[] =
+	mainContract['functions']
+		.filter(f => f['visibility'] === 'Public')
+		.map(f => {
+			const entity: ABIEntity = {
+				type: ABIEntityType.FUNCTION,
+				name: f['name'],
+				index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
+				params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+			};
+			return entity;
+		});
+	return interfaces;
+}
+
+
+
+export function getABIDeclaration(astRoot): ABI {
+	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
+
+	const interfaces: ABIEntity[] = getPublicFunctionDeclaration(mainContract);
+	const constructorABI = getConstructorDeclaration(mainContract);
+
+	interfaces.push(constructorABI);
+
 	return {
 		contract: mainContract['name'],
 		abi: interfaces
@@ -377,7 +412,7 @@ function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> }
 }
 
 
-function getStructDeclaration(astRoot): Array<StructEntity> {
+export function getStructDeclaration(astRoot): Array<StructEntity> {
 	
 	return oc(astRoot).structs([]).map(s => ({
 		name: s['name'],

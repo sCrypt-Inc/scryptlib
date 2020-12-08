@@ -1,26 +1,10 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv } from "./utils";
+import { int2Asm, bsv, findStructByType} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
+import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
 import { strict as assert } from 'assert';
 import { type } from 'os';
-
-export enum ABIEntityType {
-  FUNCTION = 'function',
-  CONSTRUCTOR = 'constructor'
-}
-
-export interface ABIEntity {
-  type: ABIEntityType;
-  name?: string;
-  params: Array<{ name: string, type: string }>;
-  index?: number;
-}
-
-export interface StructEntity {
-  name: string;
-  params: Array<{ name: string, type: string }>;
-}
 
 export interface Script {
   toASM(): string;
@@ -122,47 +106,9 @@ export class FunctionCall {
 
 }
 
-
-function checkStruct(s: StructEntity, arg: Struct): void {
-  
-  const members = s.params.map(p =>  p.name);
-
-  let props: Array<string> = []
-  for(let p in arg) {
-    if(!members.includes(p)) {
-      throw new Error(`${p} is not a member of struct ${s.name}`);
-    }
-    props.push(p);
-  }
-
-  members.forEach(key => {
-    if(!props.includes(key)) {
-      throw new Error(`argument of type struct ${s.name} missing member ${key}`);
-    }
-  })
-}
-
-
 export class ABICoder {
 
   constructor(public abi: ABIEntity[], public structs: StructEntity[]) { }
-
-
-  
-  findStructByName(name: string): StructEntity {
-    return this.structs.find(s => {
-      return s.name == name;
-    })
-  }
-
-
-  findStructByType(type: string): StructEntity | undefined {
-    let m = /struct\s(\w+)\s\{\}/.exec(type.trim());
-    if (m) {
-      return this.findStructByName(m[1]);
-    }
-    return undefined;
-  }
 
 
   encodeConstructorCall(contract: AbstractContract, asmTemplate: string, ...args: SupportedParamType[]): FunctionCall {
@@ -191,13 +137,14 @@ export class ABICoder {
         });
       } else if(Struct.isStruct(arg)) {
 
-        const s = this.findStructByType(param.type);
+        const s = findStructByType(param.type, this.structs);
 
         if(s) {
-          checkStruct(s, arg);
+          let argS = arg as Struct;
+          argS.bind(s);
           s.params.forEach(e => {
             cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
-            args_.push(arg[e.name]);
+            args_.push((arg as Struct).value[e.name]);
           })
 
         } else {
@@ -268,11 +215,10 @@ export class ABICoder {
 
   encodeParamStruct(arg: Struct, structTypeName: string): string {
 
-    const s = this.findStructByType(structTypeName);
+    const s = findStructByType(structTypeName, this.structs);
 
     if (s) {
-      checkStruct(s, arg);
-      return s.params.map(e => this.encodeParam(arg[e.name], e.type)).join(' ');
+      return s.params.map(e => this.encodeParam(arg.value[e.name], e.type)).join(' ');
     } else {
       throw new Error(`struct ${structTypeName} does not exist`);
     }
@@ -283,8 +229,17 @@ export class ABICoder {
       return this.encodeParamArray(arg, scryptTypeName);
     }
 
-    if(Struct.isStruct(arg)) {
-      return this.encodeParamStruct(arg, scryptTypeName);
+    if (Struct.isStruct(arg)) {
+
+      const s = findStructByType(scryptTypeName, this.structs);
+
+      if(s) {
+        let argS = arg as Struct;
+        argS.bind(s);
+
+      } else {
+        throw new Error(`findStructByType failed for type ${scryptTypeName}`);
+      }
     }
 
     const typeofArg = typeof arg;

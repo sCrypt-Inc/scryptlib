@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType } from "./scryptTypes";
-
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
+import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
 import bsv = require('bsv');
 
 export { bsv };
@@ -100,7 +100,8 @@ export enum VariableType {
   SHA256 = 'Sha256',
   SIGHASHTYPE = 'SigHashType',
   SIGHASHPREIMAGE = 'SigHashPreimage',
-  OPCODETYPE = 'OpCodeType'
+  OPCODETYPE = 'OpCodeType',
+  STRUCT = 'Struct'
 }
 
 
@@ -202,6 +203,13 @@ export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableTy
   if (m) {
     const value = getValidatedHexString(m[1]);
     return [value, value, VariableType.OPCODETYPE];
+  }
+
+  // Struct
+  m = /^Struct\((.*)\)$/.exec(l);
+  if (m) {
+    const value = m[1];
+    return [value, value, VariableType.STRUCT];
   }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
@@ -410,3 +418,52 @@ export function literal2Asm(l: string): [string, string] {
   const [asm, _, type] = parseLiteral(l);
   return [asm, type];
 }
+
+
+
+export function findStructByName(name: string, s: StructEntity[]): StructEntity {
+  return s.find(s => {
+    return s.name == name;
+  })
+}
+
+
+export function isStructType(type: string): boolean {
+	return /struct\s(\w+)\s\{\}/.test(type);
+}
+
+export function isArrayType(type: string) {
+	return /\w\[\d+\]/.test(type);
+}
+
+
+export function findStructByType(type: string, s: StructEntity[]): StructEntity | undefined {
+  let m = /struct\s(\w+)\s\{\}/.exec(type.trim());
+  if (m) {
+    return findStructByName(m[1], s);
+  }
+  return undefined;
+}
+
+
+
+export function checkStruct(s: StructEntity, arg: Struct): void {
+  
+  const members = s.params.map(p =>  p.name);
+
+  let props: Array<string> = []
+  for(let p in arg.value as object) {
+    if(!members.includes(p)) {
+      throw new Error(`${p} is not a member of struct ${s.name}`);
+    }
+    props.push(p);
+  }
+
+  members.forEach(key => {
+    if(!props.includes(key)) {
+      throw new Error(`argument of type struct ${s.name} missing member ${key}`);
+    }
+  })
+}
+
+
