@@ -37,6 +37,16 @@ describe('buildContractClass()', () => {
       unlockingScriptASM = [toHex(sig), toHex(publicKey)].join(' ');
     })
 
+    it('static getAsmVars method', () => {
+      let lockingScriptAsm = instance.lockingScript.toASM()
+      // let asmVars = DemoP2PKH.getAsmVars(DemoP2PKH.asm, lockingScriptAsm)
+      let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
+
+      expect(asmVars).is.not.null;
+      expect(asmVars).have.key('pubKeyHash')
+      expect(asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+    })
+  
     it('should have an asm var', () => {
       expect(instance.asmVars).is.not.null;
       expect(instance.asmVars).have.key('pubKeyHash')
