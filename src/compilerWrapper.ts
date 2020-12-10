@@ -423,7 +423,7 @@ export function getStructDeclaration(astRoot): Array<StructEntity> {
 	return oc(astRoot).structs([]).map(s => ({
 		name: s['name'],
 		params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
-	}))
+	}));
 }
 
 

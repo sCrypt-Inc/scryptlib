@@ -142,7 +142,7 @@ export function buildContractClass(desc: ContractDescription): any {
     }
 
     get asmVars(): AsmVarValues | null {
-      return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM())
+      return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM());
     }
   };
 

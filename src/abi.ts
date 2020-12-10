@@ -3,8 +3,6 @@ import { int2Asm, bsv, findStructByType} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
-import { strict as assert } from 'assert';
-import { type } from 'os';
 
 export interface Script {
   toASM(): string;
@@ -140,12 +138,12 @@ export class ABICoder {
         const s = findStructByType(param.type, this.structs);
 
         if(s) {
-          let argS = arg as Struct;
+          const argS = arg as Struct;
           argS.bind(s);
           s.params.forEach(e => {
             cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
             args_.push((arg as Struct).value[e.name]);
-          })
+          });
 
         } else {
           throw new Error(`constructor does not accept struct at ${index}-th parameter`);
@@ -234,7 +232,7 @@ export class ABICoder {
       const s = findStructByType(scryptTypeName, this.structs);
 
       if(s) {
-        let argS = arg as Struct;
+        const argS = arg as Struct;
         argS.bind(s);
 
       } else {

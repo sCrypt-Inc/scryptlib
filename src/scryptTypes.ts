@@ -1,8 +1,7 @@
 import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct} from "./utils";
 import { StructEntity } from "./compilerWrapper";
-import * as util from 'util';
 
-export type ValueType = number | bigint | boolean | string | object;
+export type ValueType = number | bigint | boolean | string | StructObject;
 
 export abstract class ScryptType {
 
@@ -302,7 +301,7 @@ export type StructObject = Record<string, SingletonParamType>;
 
 export class Struct extends ScryptType {
 
-  sorted: boolean = false;
+  sorted = false;
   constructor(o: StructObject) {
     super(o);
   }
@@ -317,7 +316,7 @@ export class Struct extends ScryptType {
         return e.name === a;
       }) - structAst.params.findIndex(e => {
         return e.name === b;
-      }))
+      }));
 
     }).forEach(function (key) {
       ordered[key] = unordered[key];
@@ -329,7 +328,7 @@ export class Struct extends ScryptType {
 
   toASM(): string {
     if(!this.sorted) {
-      throw `unbinded Struct can't call toASM`
+      throw `unbinded Struct can't call toASM`;
     }
 
     this._asm =  this.toArray().map(v => v.toASM()).join(' ');
@@ -339,7 +338,7 @@ export class Struct extends ScryptType {
 
   toArray(): ScryptType[] {
     if(!this.sorted) {
-      throw `unbinded Struct can't call toArray`
+      throw `unbinded Struct can't call toArray`;
     }
 
     const v: StructObject = this.value as StructObject;
@@ -359,7 +358,7 @@ export class Struct extends ScryptType {
 
   memberByIndex(index: number): string {
     if(!this.sorted) {
-      throw `unbinded Struct can't call memberByIndex`
+      throw `unbinded Struct can't call memberByIndex`;
     }
 
     const v: StructObject = this.value as StructObject;
@@ -372,20 +371,20 @@ export class Struct extends ScryptType {
     const v = this.value;
     const l = Object.keys(v).map((key) => {
       if(v[key] instanceof ScryptType) {
-        return `${key}=${(v[key] as ScryptType).toLiteral()}`
+        return `${key}=${(v[key] as ScryptType).toLiteral()}`;
       } else if(typeof v[key] === "boolean") {
-        return `${key}=${new Bool(v[key] as boolean).toLiteral()}`
+        return `${key}=${new Bool(v[key] as boolean).toLiteral()}`;
       } else if(typeof v[key] === "number") {
-        return `${key}=${new Int(v[key] as number).toLiteral()}`
+        return `${key}=${new Int(v[key] as number).toLiteral()}`;
       } else if(typeof v[key] === "bigint") {
-        return `${key}=${new Int(v[key] as bigint).toLiteral()}`
+        return `${key}=${new Int(v[key] as bigint).toLiteral()}`;
       }
-    })
+    });
     return `Struct(${l})`;
   }
 
   static isStruct(arg: SupportedParamType): boolean {
-    return arg instanceof Struct
+    return arg instanceof Struct;
   }
 }
 

@@ -424,7 +424,7 @@ export function literal2Asm(l: string): [string, string] {
 export function findStructByName(name: string, s: StructEntity[]): StructEntity {
   return s.find(s => {
     return s.name == name;
-  })
+  });
 }
 
 
@@ -438,7 +438,7 @@ export function isArrayType(type: string) {
 
 
 export function findStructByType(type: string, s: StructEntity[]): StructEntity | undefined {
-  let m = /struct\s(\w+)\s\{\}/.exec(type.trim());
+  const m = /struct\s(\w+)\s\{\}/.exec(type.trim());
   if (m) {
     return findStructByName(m[1], s);
   }
@@ -451,8 +451,8 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
   
   const members = s.params.map(p =>  p.name);
 
-  let props: Array<string> = []
-  for(let p in arg.value as object) {
+  const props: Array<string> = [];
+  for(const p in arg.value as Record<string, unknown>) {
     if(!members.includes(p)) {
       throw new Error(`${p} is not a member of struct ${s.name}`);
     }
@@ -463,7 +463,7 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
     if(!props.includes(key)) {
       throw new Error(`argument of type struct ${s.name} missing member ${key}`);
     }
-  })
+  });
 }
 
 
