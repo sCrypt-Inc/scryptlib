@@ -449,19 +449,19 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 export function checkStruct(s: StructEntity, arg: Struct): void {
   
-  const members = s.params.map(p =>  p.name);
-
-  const props: Array<string> = [];
-  for(const p in arg.value as Record<string, unknown>) {
-    if(!members.includes(p)) {
-      throw new Error(`${p} is not a member of struct ${s.name}`);
+  s.params.forEach(p => {
+    const type = arg.getMemberType(p.name);
+    if(type === 'undefined') {
+      throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
+    } else if(type != p.type) {
+      throw new Error(`wrong argument type, expected ${p.type} but got ${type}`);
     }
-    props.push(p);
-  }
+  })
 
-  members.forEach(key => {
-    if(!props.includes(key)) {
-      throw new Error(`argument of type struct ${s.name} missing member ${key}`);
+  const members = s.params.map(p =>  p.name);
+  arg.getMembers().forEach(key => {
+    if(!members.includes(key)) {
+      throw new Error(`${key} is not a member of struct ${s.name}`);
     }
   });
 }

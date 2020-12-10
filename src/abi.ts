@@ -211,16 +211,6 @@ export class ABICoder {
       return args.map(arg => this.encodeParam(arg, elemTypeName)).join(' ');
     }
 
-  encodeParamStruct(arg: Struct, structTypeName: string): string {
-
-    const s = findStructByType(structTypeName, this.structs);
-
-    if (s) {
-      return s.params.map(e => this.encodeParam(arg.value[e.name], e.type)).join(' ');
-    } else {
-      throw new Error(`struct ${structTypeName} does not exist`);
-    }
-  }
 
   encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
     if (Array.isArray(arg)) {

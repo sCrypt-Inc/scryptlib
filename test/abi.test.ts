@@ -195,6 +195,14 @@ describe('FunctionCall', () => {
       }), 18, true) }).to.throw('weight is not a member of struct Person');
     })
 
+    it('should throw with wrong members type', () => {
+      expect(() => { person.main(new Struct({
+        isMale: 11,
+        age: 14,
+        addr: new Bytes("68656c6c6f20776f726c6421")
+      }), 18, true) }).to.throw('wrong argument type, expected bool but got int');
+    })
+
   })
 
 })

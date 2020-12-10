@@ -366,6 +366,27 @@ export class Struct extends ScryptType {
     return  Object.keys(v)[index];
   }
 
+  getMemberType(key: string): string {
+    const v: StructObject = this.value as StructObject;
+    
+    if(v[key] instanceof ScryptType) {
+      return (v[key] as ScryptType).type;
+    } else if(typeof v[key] === "boolean") {
+      return new Bool(v[key] as boolean).type;
+    } else if(typeof v[key] === "number") {
+      return new Int(v[key] as number).type;
+    } else if(typeof v[key] === "bigint") {
+      return new Int(v[key] as bigint).type;
+    } else {
+      return typeof v[key];
+    }
+  }
+
+  getMembers(): string[]  {
+    const v: StructObject = this.value as StructObject;
+    return Object.keys(v);
+  }
+
 
   toLiteral(): string {
     const v = this.value;
