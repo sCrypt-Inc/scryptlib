@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 0.2.23
+
+* add struct support
+* add static getAsmvars fn
+* change rename to renameSync
+* return error position with start/end in SemanticError
+
 ## 0.2.22
 
 * remove scryptc dependencies
