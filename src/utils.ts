@@ -456,7 +456,7 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
     } else if(type != p.type) {
       throw new Error(`wrong argument type, expected ${p.type} but got ${type}`);
     }
-  })
+  });
 
   const members = s.params.map(p =>  p.name);
   arg.getMembers().forEach(key => {
