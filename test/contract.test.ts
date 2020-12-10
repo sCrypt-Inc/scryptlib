@@ -39,7 +39,6 @@ describe('buildContractClass()', () => {
 
     it('static getAsmVars method', () => {
       let lockingScriptAsm = instance.lockingScript.toASM()
-      // let asmVars = DemoP2PKH.getAsmVars(DemoP2PKH.asm, lockingScriptAsm)
       let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
 
       expect(asmVars).is.not.null;
