@@ -1,19 +1,10 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv } from "./utils";
+import { int2Asm, bsv, findStructByType} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType} from './scryptTypes';
-
-export enum ABIEntityType {
-  FUNCTION = 'function',
-  CONSTRUCTOR = 'constructor'
-}
-
-export interface ABIEntity {
-  type: ABIEntityType;
-  name?: string;
-  params: Array<{ name: string, type: string }>;
-  index?: number;
-}
+import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
+import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
+import { strict as assert } from 'assert';
+import { type } from 'os';
 
 export interface Script {
   toASM(): string;
@@ -117,7 +108,8 @@ export class FunctionCall {
 
 export class ABICoder {
 
-  constructor(public abi: ABIEntity[]) { }
+  constructor(public abi: ABIEntity[], public structs: StructEntity[]) { }
+
 
   encodeConstructorCall(contract: AbstractContract, asmTemplate: string, ...args: SupportedParamType[]): FunctionCall {
 
@@ -143,7 +135,23 @@ export class ABICoder {
           cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName});
           args_.push(e);
         });
-      } else {
+      } else if(Struct.isStruct(arg)) {
+
+        const s = findStructByType(param.type, this.structs);
+
+        if(s) {
+          let argS = arg as Struct;
+          argS.bind(s);
+          s.params.forEach(e => {
+            cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
+            args_.push((arg as Struct).value[e.name]);
+          })
+
+        } else {
+          throw new Error(`constructor does not accept struct at ${index}-th parameter`);
+        }
+      }
+      else {
         cParams_.push(param);
         args_.push(arg);
       }
@@ -205,9 +213,33 @@ export class ABICoder {
       return args.map(arg => this.encodeParam(arg, elemTypeName)).join(' ');
     }
 
+  encodeParamStruct(arg: Struct, structTypeName: string): string {
+
+    const s = findStructByType(structTypeName, this.structs);
+
+    if (s) {
+      return s.params.map(e => this.encodeParam(arg.value[e.name], e.type)).join(' ');
+    } else {
+      throw new Error(`struct ${structTypeName} does not exist`);
+    }
+  }
+
   encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
     if (Array.isArray(arg)) {
       return this.encodeParamArray(arg, scryptTypeName);
+    }
+
+    if (Struct.isStruct(arg)) {
+
+      const s = findStructByType(scryptTypeName, this.structs);
+
+      if(s) {
+        let argS = arg as Struct;
+        argS.bind(s);
+
+      } else {
+        throw new Error(`findStructByType failed for type ${scryptTypeName}`);
+      }
     }
 
     const typeofArg = typeof arg;

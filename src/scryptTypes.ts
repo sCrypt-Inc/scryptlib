@@ -1,14 +1,15 @@
-import { parseLiteral, getValidatedHexString, bsv, intValue2hex } from "./utils";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct} from "./utils";
+import { StructEntity } from "./compilerWrapper";
+import * as util from 'util';
 
-
-export type ValueType = number | bigint | boolean | string;
+export type ValueType = number | bigint | boolean | string | object;
 
 export abstract class ScryptType {
 
   protected _value: ValueType;
   protected _literal: string;
-  private _asm: string;
-  private _type: string;
+  protected _asm: string;
+  protected _type: string;
 
   constructor(value: ValueType) {
     try {
@@ -293,4 +294,100 @@ export class OpCodeType extends ScryptType {
 
 
 export type SingletonParamType = ScryptType | boolean | number | bigint;
+
+
+export type StructObject = Record<string, SingletonParamType>;
+
+
+
+export class Struct extends ScryptType {
+
+  sorted: boolean = false;
+  constructor(o: StructObject) {
+    super(o);
+  }
+
+
+  public bind(structAst: StructEntity): void {
+    checkStruct(structAst, this);
+    const ordered = {};
+    const unordered = this.value;
+    Object.keys(this.value).sort((a: string, b: string) => {
+      return  (structAst.params.findIndex(e => {
+        return e.name === a;
+      }) - structAst.params.findIndex(e => {
+        return e.name === b;
+      }))
+
+    }).forEach(function (key) {
+      ordered[key] = unordered[key];
+    });
+    this.sorted = true;
+    this._type = `struct ${structAst.name} {}`;
+    this._value = ordered;
+  }
+
+  toASM(): string {
+    if(!this.sorted) {
+      throw `unbinded Struct can't call toASM`
+    }
+
+    this._asm =  this.toArray().map(v => v.toASM()).join(' ');
+    return this._asm;
+  }
+
+
+  toArray(): ScryptType[] {
+    if(!this.sorted) {
+      throw `unbinded Struct can't call toArray`
+    }
+
+    const v: StructObject = this.value as StructObject;
+
+    return  Object.keys(v).map((key) => {
+      if(v[key] instanceof ScryptType) {
+        return v[key] as ScryptType;
+      } else if(typeof v[key] === "boolean") {
+        return new Bool(v[key] as boolean);
+      } else if(typeof v[key] === "number") {
+        return new Int(v[key] as number);
+      } else if(typeof v[key] === "bigint") {
+        return new Int(v[key] as bigint);
+      }
+    });
+  }
+
+  memberByIndex(index: number): string {
+    if(!this.sorted) {
+      throw `unbinded Struct can't call memberByIndex`
+    }
+
+    const v: StructObject = this.value as StructObject;
+
+    return  Object.keys(v)[index];
+  }
+
+
+  toLiteral(): string {
+    const v = this.value;
+    const l = Object.keys(v).map((key) => {
+      if(v[key] instanceof ScryptType) {
+        return `${key}=${(v[key] as ScryptType).toLiteral()}`
+      } else if(typeof v[key] === "boolean") {
+        return `${key}=${new Bool(v[key] as boolean).toLiteral()}`
+      } else if(typeof v[key] === "number") {
+        return `${key}=${new Int(v[key] as number).toLiteral()}`
+      } else if(typeof v[key] === "bigint") {
+        return `${key}=${new Int(v[key] as bigint).toLiteral()}`
+      }
+    })
+    return `Struct(${l})`;
+  }
+
+  static isStruct(arg: SupportedParamType): boolean {
+    return arg instanceof Struct
+  }
+}
+
+
 export type SupportedParamType = SingletonParamType | SingletonParamType[];

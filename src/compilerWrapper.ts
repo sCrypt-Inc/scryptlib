@@ -1,8 +1,7 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, rename, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
 import { oc } from 'ts-optchain';
-import { ABIEntity, ABIEntityType } from './abi';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
@@ -22,10 +21,13 @@ export enum CompileErrorType {
 export interface CompileErrorBase {
 	type: string;
 	filePath: string;
-	position: {
+	position: [{
 		line: number;
 		column: number;
-	};
+	},  {
+		line: number;
+		column: number;
+	}?];
 	message: string;
 }
 
@@ -56,6 +58,7 @@ export interface CompileResult {
 	compilerVersion?: string;
 	contract?: string;
 	md5?: string;
+	structs?: any;
 }
 
 export enum DebugModeTag {
@@ -74,6 +77,29 @@ export interface DebugModeAsmWord {
 	stack: string[];
 	debugTag?: DebugModeTag;
 }
+
+
+export interface ABI {
+	contract: string, abi: Array<ABIEntity>
+}
+
+export enum ABIEntityType {
+	FUNCTION = 'function',
+	CONSTRUCTOR = 'constructor'
+}
+
+export interface ABIEntity {
+	type: ABIEntityType;
+	name?: string;
+	params: Array<{ name: string, type: string }>;
+	index?: number;
+}
+
+export interface StructEntity {
+	name: string;
+	params: Array<{ name: string, type: string }>;
+}
+
 
 export function compile(
 	source: {
@@ -120,10 +146,10 @@ export function compile(
 						type: CompileErrorType.ImportError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
 						message: `Imported file ${oc(match.groups).fileName()} does not exist`,
-						position: {
+						position: [{
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
-						},
+						}],
 						file: oc(match.groups).fileName('')
 					};
 				});
@@ -139,10 +165,10 @@ export function compile(
 					return {
 						type: CompileErrorType.SyntaxError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						position: {
+						position: [{
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
-						},
+						}],
 						message: oc(match.groups).message(`unexpected ${unexpected}\nexpecting ${expecting}`),
 						unexpected,
 						expecting,
@@ -157,10 +183,13 @@ export function compile(
 					return {
 						type: CompileErrorType.SemanticError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						position: {
+						position:[ {
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
-						},
+						}, {
+							line: parseInt(oc(match.groups).line1('-1')),
+							column: parseInt(oc(match.groups).column1('-1')),
+						}],
 						message: oc(match.groups).message('')
 					};
 				});
@@ -241,6 +270,7 @@ export function compile(
 				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
+				structs: getStructDeclaration(result.ast),
 				abi,
 				asm: result.asm
 			};
@@ -251,6 +281,7 @@ export function compile(
 			result.contract = description.contract;
 			result.md5 = description.md5;
 			result.abi = abi;
+			result.structs = description.structs;
 		}
 
 		return result;
@@ -261,7 +292,7 @@ export function compile(
 				if (existsSync(file)) {
 					if (settings[outputType]) {
 						// rename all output files
-						rename(file, file.replace('stdin', basename(sourcePath, '.scrypt')), () => { return; });
+						renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
 					} else {
 						unlinkSync(file);
 					}
@@ -334,44 +365,67 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	return join(baseDir, relativePath);
 }
 
-function getABIDeclaration(astRoot): { contract: string, abi: Array<ABIEntity> } {
-	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
-	let pubIndex = 0;
-
-	const interfaces: ABIEntity[] =
-		mainContract['functions']
-			.filter(f => f['visibility'] === 'Public')
-			.map(f => {
-				const entity: ABIEntity = {
-					type: ABIEntityType.FUNCTION,
-					name: f['name'],
-					index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-					params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-				};
-				return entity;
-			});
-
+function getConstructorDeclaration(mainContract): ABIEntity {
 	// explict constructor
 	if (mainContract['constructor']) {
-		interfaces.push({
+		return {
 			type: ABIEntityType.CONSTRUCTOR,
 			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-		});
+		};
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
-			interfaces.push({
+			return {
 				type: ABIEntityType.CONSTRUCTOR,
 				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
-			});
+			};
 		}
 	}
+}
+
+
+function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
+	let pubIndex = 0;
+	const interfaces: ABIEntity[] =
+	mainContract['functions']
+		.filter(f => f['visibility'] === 'Public')
+		.map(f => {
+			const entity: ABIEntity = {
+				type: ABIEntityType.FUNCTION,
+				name: f['name'],
+				index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
+				params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+			};
+			return entity;
+		});
+	return interfaces;
+}
+
+
+
+export function getABIDeclaration(astRoot): ABI {
+	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
+
+	const interfaces: ABIEntity[] = getPublicFunctionDeclaration(mainContract);
+	const constructorABI = getConstructorDeclaration(mainContract);
+
+	interfaces.push(constructorABI);
 
 	return {
 		contract: mainContract['name'],
 		abi: interfaces
 	};
 }
+
+
+export function getStructDeclaration(astRoot): Array<StructEntity> {
+	
+	return oc(astRoot).structs([]).map(s => ({
+		name: s['name'],
+		params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+	}))
+}
+
 
 export function getPlatformScryptc() : string {
 	switch (os.platform()) {
