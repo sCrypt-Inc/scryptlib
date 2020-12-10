@@ -98,6 +98,25 @@ export class AbstractContract {
     // note: do not trim the trailing space
     return bsv.Script.fromASM(codeASM + ` OP_RETURN`);
   }
+
+  static getAsmVars(contractAsm, instAsm): AsmVarValues | null {
+    const regex = /(\$\S+)/g;
+    const vars = contractAsm.match(regex);
+    if(vars===null) {
+      return null;
+    }
+    const asmArray = contractAsm.split(/\s/g);
+    const lsASMArray = instAsm.split(/\s/g);
+    const result = {};
+    for(let i=0; i<asmArray.length; i++) {
+      for(let j=0; j<vars.length; j++) {
+        if(vars[j] === asmArray[i]) {
+          result[vars[j].replace('$','')] = lsASMArray[i];
+        }
+      }
+    }
+    return result;
+  }
 }
 
 export function buildContractClass(desc: ContractDescription): any {
@@ -121,22 +140,7 @@ export function buildContractClass(desc: ContractDescription): any {
     }
 
     get asmVars(): AsmVarValues | null {
-      const regex = /(\$\S+)/g;
-      const vars = Contract.asm.match(regex);
-      if(vars===null) {
-        return null;
-      }
-      const asmArray = Contract.asm.split(/\s/g);
-      const lsASMArray = this.scriptedConstructor.toASM().split(/\s/g);
-      const result = {};
-      for(let i=0; i<asmArray.length; i++) {
-        for(let j=0; j<vars.length; j++) {
-          if(vars[j] === asmArray[i]) {
-            result[vars[j].replace('$','')] = lsASMArray[i];
-          }
-        }
-      }
-      return result;
+      return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM())
     }
   };
 
