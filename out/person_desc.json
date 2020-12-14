@@ -1,7 +1,7 @@
 {
     "compilerVersion": "0.2.12+commit.ce592f4",
     "contract": "Main",
-    "md5": "6fe8b9c44c0698b97012355ac4a8cc47",
+    "md5": "ff247d3db7b662e5994d0da238fc60f9",
     "structs": [
         {
             "name": "Person",
