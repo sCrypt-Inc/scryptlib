@@ -2,6 +2,8 @@ import { pathToFileURL, fileURLToPath } from 'url';
 import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
 import bsv = require('bsv');
+import * as readline from 'readline';
+import * as fs from 'fs';
 
 export { bsv };
 
@@ -464,6 +466,22 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
       throw new Error(`${key} is not a member of struct ${s.name}`);
     }
   });
+}
+
+
+
+export function readFileByLine(path: string, index: number): string {
+
+  let result = "";
+  fs.readFileSync(path, 'utf8').split(/\r?\n/).every(function(line, i) {
+    if(i === (index -1)) {
+      result = line;
+      return false;
+    }
+    return true;
+  });
+
+  return result;
 }
 
 

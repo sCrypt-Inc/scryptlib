@@ -1,18 +1,22 @@
 import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS } from "./utils";
+import { bsv, DEFAULT_FLAGS, readFileByLine } from "./utils";
 import { SupportedParamType} from './scryptTypes';
-import { StructEntity, ABIEntity} from "./compilerWrapper";
-
+import { StructEntity, ABIEntity, DebugModeAsmWord, CompileResult} from "./compilerWrapper";
+import { basename } from 'path';
 export interface TxContext {
   tx?: any;
   inputIndex?: number;
   inputSatoshis?: number;
 }
 
+
+export type VerifyError = string;
+
+
 export interface VerifyResult {
   success: boolean;
-  error: string; 
+  error?: VerifyError; 
 }
 
 export interface ContractDescription {
@@ -32,6 +36,7 @@ export class AbstractContract {
   public static abi: ABIEntity[];
   public static asm: string;
   public static abiCoder: ABICoder;
+  public static debugAsm?: DebugModeAsmWord[];
 
   scriptedConstructor: FunctionCall;
 
@@ -58,21 +63,81 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
+  static findMappableAsmWord(debugAsm: DebugModeAsmWord[], pc: number): DebugModeAsmWord | undefined {
+    while (--pc > 0) {
+      if (debugAsm[pc].file && debugAsm[pc].file !== "std" && debugAsm[pc].line > 0) {
+        return debugAsm[pc];
+      }
+    }
+  }
+
+
+  static getExectFailedOpcode(opcode0: string, opcode1: string): string {
+    switch(opcode0) {
+      case 'OP_CHECKSIG':
+      case 'OP_NUMEQUAL':
+      case 'OP_EQUAL':
+      case 'OP_EQUALVERIFY':
+      case 'OP_VERIFY':
+      case 'OP_0NOTEQUAL':
+      case 'OP_NUMEQUALVERIFY':
+        return opcode0;
+      default:
+        return opcode1;
+    }
+  }
+
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
-    const us = bsv.Script.fromASM(unlockingScriptASM);
+    const us = bsv.Script.fromASM(unlockingScriptASM.trim());
     const ls = this.lockingScript;
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
-    const si = bsv.Script.Interpreter();
-    const result = si.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
+    const bsi = bsv.Script.Interpreter();
+  
+    let stepCouter = 0;
+		bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
+      stepCouter++;
+    };
+
+    
+    const debugAsm: DebugModeAsmWord[] =  Object.getPrototypeOf(this).constructor.debugAsm;
+
+    const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
+
+    let error = bsi.errstr;
+
+    const offset = unlockingScriptASM.trim().split(' ').length;
+    
+    // the complete script will have op_return and data, but debugAsm do not have, so we need to make sure the index in bound.
+    const debugAsm_pc = Math.min(stepCouter -  offset,  debugAsm.length -1);
+
+    if(!result && debugAsm && debugAsm[debugAsm_pc]) {
+
+      let asmWord = debugAsm[debugAsm_pc]; 
+
+      if(!asmWord.file || asmWord.file === "std") {
+
+        let asmWordMappable  = AbstractContract.findMappableAsmWord(debugAsm, debugAsm_pc);
+
+        asmWord.file = asmWordMappable.file;
+        asmWord.line = asmWordMappable.line;
+        asmWord.opcode = AbstractContract.getExectFailedOpcode(asmWord.opcode, asmWordMappable.opcode);
+      }
+
+      const line =  readFileByLine(asmWord.file, asmWord.line);
+
+      error = `VerifyError: message:${bsi.errstr}\n \tfile:${asmWord.file}\n \tline:${asmWord.line}:${line.trim()}\n \topcode:${asmWord.opcode}\n`;
+    }
+    
+ 
 
     return {
       success: result,
-      error: si.errstr
+      error: error
     };
   }
 
@@ -121,7 +186,7 @@ export class AbstractContract {
   }
 }
 
-export function buildContractClass(desc: ContractDescription): any {
+export function buildContractClass(desc: CompileResult): any {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');
@@ -150,6 +215,7 @@ export function buildContractClass(desc: ContractDescription): any {
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm;
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
+  ContractClass.debugAsm = desc.debugAsm;
 
   ContractClass.abi.forEach(entity => {
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {

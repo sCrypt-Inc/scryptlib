@@ -4,11 +4,15 @@ import { bsv } from '../src/utils';
 import { ContractDescription } from '../src/contract';
 import { compile, CompileResult, getPlatformScryptc} from '../src/compilerWrapper';
 export function loadDescription(fileName: string): ContractDescription {
-  return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_desc.json'))).toString());
+  return JSON.parse(readFileSync(join(__dirname, "../out/", fileName)).toString());
 }
 
 export function loadASM(fileName: string): string {
   return readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_asm.json'))).toString();
+}
+
+export function loadFile(fileName: string): string {
+  return join(__dirname, 'fixture', fileName);
 }
 
 export function newTx(inputSatoshis: number) {
@@ -27,14 +31,33 @@ function getCIScryptc(): string | undefined {
   return existsSync(scryptc) ? scryptc : undefined;
 }
 
-export function compileContract(fileName: string, folder: string): CompileResult {
-  const filePath = existsSync(fileName) ? fileName : join(__dirname, folder, fileName);
+export function compileContract(file: string) {
+  console.log(`Compiling contract ${file} ...`);
+
+
+  if(!existsSync(file)) {
+    throw(`file ${file} not exists!`);
+  }
+
+  var argv = require('minimist')(process.argv.slice(2));
+
+  let scryptc = argv.scryptc;
+  if(argv.ci) {
+    scryptc = getCIScryptc();
+  }
+
   const result = compile(
-    { path: filePath },
-    {
-      desc: true, outputDir: join(__dirname, 'fixture'),
-      cmdPrefix: getCIScryptc()
+    { path: file },
+    { desc: true, debug: true, outputDir: join(__dirname, '../out'),
+		  cmdPrefix: scryptc
     }
   );
+
+  if (result.errors.length > 0) {
+    console.log(`Contract ${file} compiling failed with errors:`);
+    console.log(result.errors);
+    throw result.errors;
+  }
+
   return result;
 }

@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { loadDescription, newTx } from './helper';
+import { compileContract, loadFile, newTx, loadDescription } from './helper';
 import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
 import { bsv, signTx, toHex } from '../src/utils';
@@ -12,11 +12,11 @@ const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 const txContext = { inputSatoshis, tx };
 
-const jsonDescr = loadDescription('p2pkh.scrypt');
+const jsonDescr = loadDescription('p2pkh_desc.json');
 
 describe('buildContractClass()', () => {
 
-  const DemoP2PKH = buildContractClass(jsonDescr);
+  const DemoP2PKH = buildContractClass(compileContract(loadFile('p2pkh.scrypt')));
 
   it('should return a reflected contract class object', () => {
     assert.typeOf(DemoP2PKH, 'function');

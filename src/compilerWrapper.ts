@@ -362,6 +362,11 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	if (relativePath.endsWith('stdin')) {
 		return join(baseDir, curFileName); // replace 'stdin' with real current compiling file name.
 	}
+
+	if (relativePath === 'std') {
+		return 'std'; // 
+	}
+
 	return join(baseDir, relativePath);
 }
 

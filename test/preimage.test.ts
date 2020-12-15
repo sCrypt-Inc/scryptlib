@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadFile, compileContract, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
 import { bsv, toHex, getPreimage, } from '../src/utils'
 import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'
@@ -10,8 +10,7 @@ const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 const inputSatoshis = 100000
 const tx = newTx(inputSatoshis)
 
-const jsonDescr = loadDescription('p2pkh.scrypt')
-const DemoP2PKH = buildContractClass(jsonDescr)
+const DemoP2PKH = buildContractClass(compileContract(loadFile('p2pkh.scrypt')))
 const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)))
 
 describe('Preimage', () => {

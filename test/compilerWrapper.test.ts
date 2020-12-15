@@ -1,37 +1,32 @@
 import { assert, expect } from 'chai';
 import path = require("path");
 import { existsSync, readFileSync } from 'fs';
-import { compileContract } from './helper'
+import { compileContract,loadDescription,loadFile } from './helper'
+import { join } from 'path';
+import { ABIEntityType } from '../src/compilerWrapper';
 
 
 describe('compile()', () => {
   it('compile successfully', () => {
-    const result = compileContract("p2pkh.scrypt", "fixture");
+    const result = compileContract(loadFile('p2pkh.scrypt'));
 
     assert.typeOf(result, 'object');
     assert.equal(result.errors.length, 0, "No Errors");
   })
 
 
-  it('should return SyntaxError', () => {
-    const result = compileContract("p2pkh_wrong.scrypt", "fixture/invalid");
-
-    assert.isAbove(result.errors.length, 0, "exist Errors");
-    assert.include(result.errors[0].type, 'SyntaxError', 'contract has SyntaxError');
-  })
 
   it('should generate description file properly', () => {
-    const result = compileContract('bar.scrypt', 'fixture');
+    const result = compileContract(loadFile('bar.scrypt'));
     const outputFile = path.join(__dirname, 'fixture/bar_desc.json');
 
     assert.typeOf(result, 'object');
-    assert.isTrue(existsSync(outputFile));
 
-    const content = JSON.parse(readFileSync(outputFile).toString());
+    const content = loadDescription('bar_desc.json');
 
-    assert.deepEqual(content['abi'], [
+    assert.deepEqual(content.abi, [
       {
-        "type": "function",
+        "type": ABIEntityType.FUNCTION,
         "name": "unlock",
         "index": 0,
         "params": [
@@ -41,7 +36,7 @@ describe('compile()', () => {
           }
         ]
       }, {
-        "type": "constructor",
+        "type": ABIEntityType.CONSTRUCTOR,
         "params": [
           {
             "name": "_x",
@@ -61,7 +56,7 @@ describe('compile()', () => {
   })
 
   it('should generate structs properly', () => {
-    const result = compileContract("person.scrypt", "fixture");
+    const result = compileContract(loadFile('person.scrypt'));
     console.log("result", JSON.stringify(result.structs))
     assert.equal(result.structs.length, 2);
 
