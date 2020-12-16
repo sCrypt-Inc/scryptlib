@@ -59,6 +59,7 @@ export interface CompileResult {
 	contract?: string;
 	md5?: string;
 	structs?: any;
+	file?: string;
 }
 
 export enum DebugModeTag {
@@ -209,7 +210,7 @@ export function compile(
 			const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
 
 			const sourceUri = path2uri(sourcePath);
-
+			result.file = sourceUri;
 			result.ast = allAst[sourceUri];
 			delete allAst[sourceUri];
 			result.dependencyAsts = allAst;

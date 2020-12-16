@@ -3,12 +3,26 @@ import { int2Asm, bsv, findStructByType} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
+import { writeFileSync } from 'fs';
 
 export interface Script {
   toASM(): string;
   toHex(): string;
 }
 
+/**
+     * Configuration for a debug session.
+     */
+export interface DebugConfiguration {
+  type: string;
+  name: string;
+  request: string;
+  program: string;
+  constructorParams: SupportedParamType[];
+  entryMethod: string;
+  entryMethodParams: SupportedParamType[];
+  txContext?: any;
+}
 
 
 function escapeRegExp(stringToGoIntoTheRegex) {
@@ -91,9 +105,48 @@ export class FunctionCall {
     return this.toScript().toHex();
   }
 
+  genLaunch(): string{
+
+
+    const constructorParams:SupportedParamType[] = this.contract.scriptedConstructor.params;
+
+      const entryMethodParams:SupportedParamType[] = this.params;
+      const entryMethod: string = this.methodName;
+      const name =  `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
+      const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
+
+      let debugConfig: DebugConfiguration = {
+        type: "scrypt",
+        request: "launch",
+        name: name,
+        program: program,
+        constructorParams: constructorParams,
+        entryMethod: entryMethod,
+        entryMethodParams: entryMethodParams
+
+      }
+
+      let launch = {
+        "version": "0.2.0",
+        "configurations": [debugConfig]
+      }
+
+
+      const filename = `${name}-${new Date().getTime()}-launch.json`
+
+      writeFileSync(filename, JSON.stringify(launch, null, 2));
+
+      return filename;
+
+  }
   verify(txContext?: TxContext): VerifyResult {
     if (this.unlockingScript) {
-      return this.contract.run_verify(this.unlockingScript.toASM(), txContext);
+      const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
+
+      if(!result.success) {
+        this.genLaunch();
+      }
+      return result;
     }
 
     return {

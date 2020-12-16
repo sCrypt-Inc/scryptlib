@@ -3,7 +3,7 @@ import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS, path2uri, readFileByLine } from "./utils";
 import { SupportedParamType} from './scryptTypes';
 import { StructEntity, ABIEntity, DebugModeAsmWord, CompileResult} from "./compilerWrapper";
-import { basename } from 'path';
+
 export interface TxContext {
   tx?: any;
   inputIndex?: number;
@@ -37,6 +37,7 @@ export class AbstractContract {
   public static asm: string;
   public static abiCoder: ABICoder;
   public static debugAsm?: DebugModeAsmWord[];
+  public static file: string;
 
   scriptedConstructor: FunctionCall;
 
@@ -130,7 +131,7 @@ export class AbstractContract {
 
       const line =  readFileByLine(asmWord.file, asmWord.line);
 
-      error = `VerifyError: message:${bsi.errstr} [link](${asmWord.file}#${asmWord.line}) failed opcode:${asmWord.opcode}\n`;
+      error = `VerifyError: message:${bsi.errstr} [link](${path2uri(asmWord.file)}#${asmWord.line}) failed opcode:${asmWord.opcode}\n`;
     }
     
  
@@ -216,6 +217,7 @@ export function buildContractClass(desc: CompileResult): any {
   ContractClass.asm = desc.asm;
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
   ContractClass.debugAsm = desc.debugAsm;
+  ContractClass.file = desc.file;
 
   ContractClass.abi.forEach(entity => {
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
