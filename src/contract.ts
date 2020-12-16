@@ -138,7 +138,18 @@ export function buildContractClass(desc: ContractDescription): any {
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
-      this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
+      if(ctorParams.length>0) {
+        this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
+      }
+    }
+    static fromASM(asm: string) {
+      const obj = new this();
+      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, asm );
+      return obj;
+    }
+
+    static fromHex(hex: string) {
+      return ContractClass.fromASM((new bsv.Script(hex)).toASM());
     }
 
     get asmVars(): AsmVarValues | null {
