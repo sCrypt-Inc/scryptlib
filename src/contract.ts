@@ -1,6 +1,6 @@
 import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS, readFileByLine } from "./utils";
+import { bsv, DEFAULT_FLAGS, path2uri, readFileByLine } from "./utils";
 import { SupportedParamType} from './scryptTypes';
 import { StructEntity, ABIEntity, DebugModeAsmWord, CompileResult} from "./compilerWrapper";
 import { basename } from 'path';
@@ -130,7 +130,7 @@ export class AbstractContract {
 
       const line =  readFileByLine(asmWord.file, asmWord.line);
 
-      error = `VerifyError: message:${bsi.errstr}\n \tfile:${asmWord.file}\n \tline:${asmWord.line}:${line.trim()}\n \topcode:${asmWord.opcode}\n`;
+      error = `VerifyError: message:${bsi.errstr} [link](${asmWord.file}#${asmWord.line}) failed opcode:${asmWord.opcode}\n`;
     }
     
  
