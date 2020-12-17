@@ -13,7 +13,7 @@ script:
   - git clone -b master https://github.com/sCrypt-Inc/compiler_dist.git compiler
   - cd compiler && npm run dl
   - cd -
-  - npm test
+  - npm test -- --ci=true
   # integration testing with boilerplate
   - npm link
   - git clone -b master https://github.com/scrypt-sv/boilerplate.git
