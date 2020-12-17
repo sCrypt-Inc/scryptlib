@@ -1,0 +1,28 @@
+{
+    "compilerVersion": "0.2.12+commit.ce592f4",
+    "contract": "Simple",
+    "md5": "f74cd11742d159c9b6b13d43c3e72b77",
+    "structs": [],
+    "abi": [
+        {
+            "type": "function",
+            "name": "main",
+            "index": 0,
+            "params": [
+                {
+                    "name": "x",
+                    "type": "int"
+                },
+                {
+                    "name": "y",
+                    "type": "int"
+                }
+            ]
+        },
+        {
+            "type": "constructor",
+            "params": []
+        }
+    ],
+    "asm": "OP_1 OP_PICK OP_1 OP_PICK OP_ADD OP_6 OP_NUMEQUAL OP_NIP OP_NIP"
+}

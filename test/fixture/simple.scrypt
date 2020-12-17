@@ -1,0 +1,6 @@
+contract Simple {
+    public function main(int x, int y) {
+        require( x + y == 6);
+    }
+}
+
