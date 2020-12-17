@@ -28,6 +28,10 @@ describe('simple scrypt', () => {
 
     beforeEach(() => {
       instance = new Simple()
+      const asmVars = {
+        'Simple.equalImpl.x': 'OP_11'
+      }
+      instance.replaceAsmVars(asmVars)
     })
 
     it('should be an instance of AbstractContract', () => {
@@ -58,6 +62,11 @@ describe('create instance from UTXO Hex', () => {
 
   beforeEach(() => {
     const simple = new Simple()
+    const asmVars = {
+      'Simple.equalImpl.x': 'OP_11'
+    }
+    simple.replaceAsmVars(asmVars)
+
     //create instance from an exist script
     instance = Simple.fromHex(simple.lockingScript.toHex())
   })
@@ -72,11 +81,15 @@ describe('create instance from UTXO Hex', () => {
     assert.isTrue(result.success, result.error)
     result = instance.main(3, 3).verify({ inputSatoshis, tx })
     assert.isTrue(result.success, result.error)
+    result = instance.equal(11).verify()
+    assert.isTrue(result.success, result.error)
 
     // can not unlock contract if any param is incorrect
     result = instance.main(2, 3).verify({ inputSatoshis, tx })
     assert.isFalse(result.success, result.error)
     result = instance.main(3, 4).verify({ inputSatoshis, tx })
+    assert.isFalse(result.success, result.error)
+    result = instance.equal(12).verify()
     assert.isFalse(result.success, result.error)
   })
 })

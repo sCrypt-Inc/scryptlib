@@ -138,7 +138,7 @@ export function buildContractClass(desc: ContractDescription): any {
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
-      if(ctorParams.length>0 || Contract.asm.match(/(\$\S+)/g) == null) {
+      if(ctorParams.length>0 || Contract.abi.find(fn => (fn.type === "constructor" && fn.params.length === 0))) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }
