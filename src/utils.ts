@@ -485,3 +485,20 @@ export function readFileByLine(path: string, index: number): string {
 }
 
 
+export function isEmpty(obj: unknown) {
+  return Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+
+
+export function isBreakOpcode(opcode: string): boolean {
+  switch(opcode) {
+    case 'OP_CHECKSIG':
+    case 'OP_EQUALVERIFY':
+    case 'OP_VERIFY':
+    case 'OP_NUMEQUALVERIFY':
+    case 'OP_NIP':
+      return true;
+    default:
+      return false;
+  }
+}

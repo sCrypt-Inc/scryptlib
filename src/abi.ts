@@ -1,9 +1,11 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
-import { writeFileSync } from 'fs';
+import { mkdtempSync, writeFileSync } from 'fs';
+import { join, sep} from 'path';
+import { tmpdir } from 'os';
 
 export interface Script {
   toASM(): string;
@@ -24,6 +26,10 @@ export interface DebugConfiguration {
   txContext?: any;
 }
 
+export interface DebugLaunch {
+  version: string;
+  configurations: DebugConfiguration[]
+}
 
 function escapeRegExp(stringToGoIntoTheRegex) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -105,7 +111,9 @@ export class FunctionCall {
     return this.toScript().toHex();
   }
 
-  genLaunch(): string{
+  
+
+  genLaunch(txContext?: TxContext): string{
 
 
     const constructorParams:SupportedParamType[] = this.contract.scriptedConstructor.params;
@@ -123,20 +131,42 @@ export class FunctionCall {
         constructorParams: constructorParams,
         entryMethod: entryMethod,
         entryMethodParams: entryMethodParams
-
-      }
-
-      let launch = {
-        "version": "0.2.0",
-        "configurations": [debugConfig]
       }
 
 
-      const filename = `${name}-${new Date().getTime()}-launch.json`
+      const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {});
 
-      writeFileSync(filename, JSON.stringify(launch, null, 2));
+      let debugTxContext = {};
 
-      return filename;
+      if(!isEmpty(txCtx)) {
+
+        const tx = txCtx.tx || '';
+        const inputIndex = txCtx.inputIndex || 0;
+        const inputSatoshis = txCtx.inputSatoshis || 0;
+        Object.assign(debugTxContext, {hex: tx.toString(), inputIndex,  inputSatoshis});
+      }
+
+      if(this.contract.dataPart) {
+        Object.assign(debugTxContext, {opReturn: this.contract.dataPart.toASM()});
+      }
+
+      if(!isEmpty(debugTxContext)) {
+        Object.assign(debugConfig, {txContext: debugTxContext});
+      }
+
+      let launch: DebugLaunch = {
+        version: "0.2.0",
+        configurations: [debugConfig]
+      }
+
+    const filename = `${name}-launch.json`
+    const file = join(mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename)
+    writeFileSync(file, JSON.stringify(launch, (key, value) => (
+      typeof value === 'bigint'
+        ? value.toString()
+        : value // return everything else unchanged
+    ), 2));
+    return path2uri(file);
 
   }
   verify(txContext?: TxContext): VerifyResult {
@@ -144,7 +174,8 @@ export class FunctionCall {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
 
       if(!result.success) {
-        this.genLaunch();
+        const debugUrl = this.genLaunch(txContext);
+        result.error = result.error + `\t[link debug](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`
       }
       return result;
     }

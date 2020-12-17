@@ -1,6 +1,6 @@
 import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS, path2uri, readFileByLine } from "./utils";
+import { bsv, DEFAULT_FLAGS, isBreakOpcode, path2uri, readFileByLine } from "./utils";
 import { SupportedParamType} from './scryptTypes';
 import { StructEntity, ABIEntity, DebugModeAsmWord, CompileResult} from "./compilerWrapper";
 
@@ -73,21 +73,6 @@ export class AbstractContract {
   }
 
 
-  static getExectFailedOpcode(opcode0: string, opcode1: string): string {
-    switch(opcode0) {
-      case 'OP_CHECKSIG':
-      case 'OP_NUMEQUAL':
-      case 'OP_EQUAL':
-      case 'OP_EQUALVERIFY':
-      case 'OP_VERIFY':
-      case 'OP_0NOTEQUAL':
-      case 'OP_NUMEQUALVERIFY':
-        return opcode0;
-      default:
-        return opcode1;
-    }
-  }
-
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
@@ -126,12 +111,13 @@ export class AbstractContract {
 
         asmWord.file = asmWordMappable.file;
         asmWord.line = asmWordMappable.line;
-        asmWord.opcode = AbstractContract.getExectFailedOpcode(asmWord.opcode, asmWordMappable.opcode);
       }
 
-      const line =  readFileByLine(asmWord.file, asmWord.line);
+      if(!isBreakOpcode(asmWord.opcode)) {
+        console.warn(`warning: stop opcode [${asmWord.opcode}] is not Break Opcode`);
+      }
 
-      error = `VerifyError: message:${bsi.errstr} [link](${path2uri(asmWord.file)}#${asmWord.line}) failed opcode:${asmWord.opcode}\n`;
+      error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(asmWord.file)}#${asmWord.line})\n`;
     }
     
  
