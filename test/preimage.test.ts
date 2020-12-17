@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { loadFile, compileContract, newTx } from './helper'
+import { loadFile,  newTx } from './helper'
 import { buildContractClass } from '../src/contract'
-import { bsv, toHex, getPreimage, } from '../src/utils'
+import { bsv, toHex, getPreimage, compileContract, } from '../src/utils'
 import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')

@@ -1,9 +1,10 @@
 import { pathToFileURL, fileURLToPath } from 'url';
 import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
-import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
+import { ABIEntityType, ABIEntity, StructEntity, compile, getPlatformScryptc} from './compilerWrapper';
 import bsv = require('bsv');
 import * as readline from 'readline';
 import * as fs from 'fs';
+import { join } from 'path';
 
 export { bsv };
 
@@ -501,4 +502,43 @@ export function isBreakOpcode(opcode: string): boolean {
     default:
       return false;
   }
+}
+
+
+
+
+function getCIScryptc(): string | undefined {
+  const scryptc = join(process.cwd(), getPlatformScryptc());
+  return fs.existsSync(scryptc) ? scryptc : undefined;
+}
+
+export function compileContract(file: string, out?: string) {
+  console.log(`Compiling contract ${file} ...`);
+
+
+  if(!fs.existsSync(file)) {
+    throw(`file ${file} not exists!`);
+  }
+
+  var argv = require('minimist')(process.argv.slice(2));
+
+  let scryptc = argv.scryptc;
+  if(argv.ci) {
+    scryptc = getCIScryptc();
+  }
+
+  const result = compile(
+    { path: file },
+    { desc: true, debug: true, outputDir: out ? out : join(__dirname, '../out'),
+		  cmdPrefix: scryptc
+    }
+  );
+
+  if (result.errors.length > 0) {
+    console.log(`Contract ${file} compiling failed with errors:`);
+    console.log(result.errors);
+    throw result.errors;
+  }
+
+  return result;
 }

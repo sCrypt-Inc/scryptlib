@@ -1,8 +1,8 @@
 import { assert, expect } from 'chai';
-import { compileContract, loadFile, newTx } from './helper';
+import { loadFile, newTx } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
-import { bsv, toHex, signTx } from '../src/utils';
+import { bsv, toHex, signTx, compileContract } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct} from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');

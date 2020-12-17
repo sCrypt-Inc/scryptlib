@@ -1,9 +1,8 @@
 import { assert, expect } from 'chai';
 import path = require("path");
-import { existsSync, readFileSync } from 'fs';
-import { compileContract,loadDescription,loadFile } from './helper'
-import { join } from 'path';
+import { loadDescription,loadFile } from './helper'
 import { ABIEntityType } from '../src/compilerWrapper';
+import { compileContract } from '../src/utils';
 
 
 describe('compile()', () => {
