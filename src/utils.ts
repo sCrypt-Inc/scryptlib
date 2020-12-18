@@ -4,7 +4,7 @@ import { ABIEntityType, ABIEntity, StructEntity, compile, getPlatformScryptc} fr
 import bsv = require('bsv');
 import * as readline from 'readline';
 import * as fs from 'fs';
-import { join } from 'path';
+import { dirname, join, resolve } from 'path';
 
 export { bsv };
 
@@ -505,10 +505,26 @@ export function isBreakOpcode(opcode: string): boolean {
 }
 
 
+function findCompiler(directory) {
+  if (!directory) {
+      directory = dirname(module.parent.filename);
+  }
+  var compiler = resolve(directory, 'compiler');
+  if (fs.existsSync(compiler) && fs.statSync(compiler).isDirectory()) {
+      const scryptc = join(compiler, '..', getPlatformScryptc());
+      return scryptc;
+  }
+  var parent = resolve(directory, '..');
+  if (parent === directory) {
+      return null;
+  }
+  return findCompiler(parent);
+}
+
 
 
 function getCIScryptc(): string | undefined {
-  const scryptc = join(process.cwd(), getPlatformScryptc());
+   const scryptc =  findCompiler(__dirname);
   return fs.existsSync(scryptc) ? scryptc : undefined;
 }
 
