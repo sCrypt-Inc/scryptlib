@@ -550,7 +550,7 @@ export function compileContract(file: string, out?: string) {
 
   const result = compile(
     { path: file },
-    { desc: true, debug: true, outputDir: out ? out : join(__dirname, '../out'),
+    { desc: true, debug: true, sourceMap:true, outputDir: out ? out : join(__dirname, '../out'),
 		  cmdPrefix: scryptc
     }
   );

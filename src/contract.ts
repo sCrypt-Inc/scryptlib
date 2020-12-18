@@ -26,6 +26,8 @@ export interface ContractDescription {
   structs: Array<StructEntity>;
   abi: Array<ABIEntity>;
   asm: string;
+  sources: Array<string>;
+  sourceMap: Array<string>;
 }
 
 export type AsmVarValues = { [key: string]: string }
@@ -196,9 +198,9 @@ export function buildContractClass(desc: CompileResult): any {
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
-  ContractClass.asm = desc.asm;
+  ContractClass.asm = desc.asm.map(item => item["opcode"].trim()).join(' ');
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
-  ContractClass.opcodes = desc.opcodes;
+  ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
 
   ContractClass.abi.forEach(entity => {

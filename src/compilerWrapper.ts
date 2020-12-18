@@ -49,8 +49,7 @@ export interface ImportError extends CompileErrorBase {
 export type CompileError = SyntaxError | SemanticError | ImportError;
 
 export interface CompileResult {
-	asm?: string;
-	opcodes?: OpCode[];
+	asm?: OpCode[];
 	ast?: Record<string, unknown>;
 	dependencyAsts?: Record<string, unknown>;
 	abi?: Array<ABIEntity>;
@@ -119,6 +118,7 @@ export function compile(
 		cwd?: string,
 		cmdPrefix?: string,
 		cmdArgs?: string,
+		sourceMap?: boolean,
 	} = {
 			asm: true,
 			debug: true
@@ -216,6 +216,8 @@ export function compile(
 			result.dependencyAsts = allAst;
 		}
 
+		let asmObj = null;
+
 		if (settings.asm || settings.desc) {
 			const outputFilePath = getOutputFilePath(outputDir, 'asm');
 			outputFiles['asm'] = outputFilePath;
@@ -223,9 +225,9 @@ export function compile(
 			if (settings.debug == false) {
 				result.asm = JSON.parse(readFileSync(outputFilePath, 'utf8')).join(' ');
 			} else {
-				const asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
+				asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
 				const sources = asmObj.sources;
-				result.opcodes = asmObj.output.map(item => {
+				result.asm = asmObj.output.map(item => {
 					const match = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/.exec(item.src);
 
 					if (match && match.groups) {
@@ -257,8 +259,6 @@ export function compile(
 					}
 					throw new Error('Compile Failed: Asm output parsing Error!');
 				});
-
-				result.asm = result.opcodes.map(item => item["opcode"].trim()).join(' ');
 			}
 		}
 
@@ -273,9 +273,17 @@ export function compile(
 				md5: md5(sourceContent),
 				structs: getStructDeclaration(result.ast),
 				abi,
-				asm: result.asm
+				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
+				sources:  [],
+				sourceMap: []
 			};
 
+			if(settings.sourceMap && asmObj) {
+				Object.assign(description, {
+					sources:  asmObj.sources.map(source => path2uri(getFullFilePath(source, srcDir, sourceFileName))),
+					sourceMap:  asmObj.output.map(item => item.src)
+				})
+			}
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
 
 			result.compilerVersion = description.compilerVersion;
