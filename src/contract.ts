@@ -1,6 +1,6 @@
 import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS, isBreakOpcode, path2uri, readFileByLine } from "./utils";
+import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult} from "./compilerWrapper";
 

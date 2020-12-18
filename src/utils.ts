@@ -490,26 +490,6 @@ export function isEmpty(obj: unknown): boolean {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 }
 
-
-export function isBreakOpcode(opcode: string): boolean {
-  switch(opcode) {
-    case 'OP_CHECKSIG':
-    case 'OP_EQUALVERIFY':
-    case 'OP_VERIFY':
-    case 'OP_NUMEQUALVERIFY':
-    case 'OP_NIP':
-    case 'OP_CHECKSIGVERIFY':
-    case 'OP_CHECKMULTISIG':
-    case 'OP_CHECKMULTISIGVERIFY':
-    case 'OP_RETURN':
-    case 'OP_ENDIF':
-      return true;
-    default:
-      return false;
-  }
-}
-
-
 function findCompiler(directory): string {
   if (!directory) {
       directory = dirname(module.parent.filename);
