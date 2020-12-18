@@ -498,6 +498,11 @@ export function isBreakOpcode(opcode: string): boolean {
     case 'OP_VERIFY':
     case 'OP_NUMEQUALVERIFY':
     case 'OP_NIP':
+    case 'OP_CHECKSIGVERIFY':
+    case 'OP_CHECKMULTISIG':
+    case 'OP_CHECKMULTISIGVERIFY':
+    case 'OP_RETURN':
+    case 'OP_ENDIF':
       return true;
     default:
       return false;
