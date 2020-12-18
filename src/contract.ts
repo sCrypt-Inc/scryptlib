@@ -64,10 +64,10 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(debugAsm: OpCode[], pc: number): OpCode | undefined {
+  static findSrcInfo(opcodes: OpCode[], pc: number): OpCode | undefined {
     while (--pc > 0) {
-      if (debugAsm[pc].file && debugAsm[pc].file !== "std" && debugAsm[pc].line > 0) {
-        return debugAsm[pc];
+      if (opcodes[pc].file && opcodes[pc].file !== "std" && opcodes[pc].line > 0) {
+        return opcodes[pc];
       }
     }
   }
@@ -90,37 +90,33 @@ export class AbstractContract {
     };
 
     
-    const debugAsm: OpCode[] =  Object.getPrototypeOf(this).constructor.debugAsm;
+    const opcodes: OpCode[] =  Object.getPrototypeOf(this).constructor.opcodes;
 
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
-    let error = bsi.errstr;
+    let error = `VerifyError: ${bsi.errstr}`;
 
-    const offset = unlockingScriptASM.trim().split(' ').length;
-    
-    // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
-    const debugAsm_pc = Math.min(stepCounter -  offset,  debugAsm.length -1);
-
-    if(!result && debugAsm && debugAsm[debugAsm_pc]) {
-
-      let asmWord = debugAsm[debugAsm_pc]; 
-
-      if(!asmWord.file || asmWord.file === "std") {
-
-        let asmWordMappable  = AbstractContract.findSrcInfo(debugAsm, debugAsm_pc);
-
-        asmWord.file = asmWordMappable.file;
-        asmWord.line = asmWordMappable.line;
+    // some time there is no opcodes, such as when sourcemap flag is closeed. 
+    if(opcodes) {
+      const offset = unlockingScriptASM.trim().split(' ').length;
+      // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
+      const pc = Math.min(stepCounter -  offset,  opcodes.length -1);
+  
+      if(!result && opcodes[pc]) {
+  
+        let opcode = opcodes[pc]; 
+  
+        if(!opcode.file || opcode.file === "std") {
+  
+          let srcInfo  = AbstractContract.findSrcInfo(opcodes, pc);
+  
+          opcode.file = srcInfo.file;
+          opcode.line = srcInfo.line;
+        }
+  
+        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}#${opcode.line}) opcode:${opcode.opcode}\n`;
       }
-
-      if(!isBreakOpcode(asmWord.opcode)) {
-        console.warn(`warning: stop opcode [${asmWord.opcode}] is not Break Opcode`);
-      }
-
-      error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(asmWord.file)}#${asmWord.line})\n`;
     }
-    
- 
 
     return {
       success: result,
