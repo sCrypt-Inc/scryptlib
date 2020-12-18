@@ -486,7 +486,7 @@ export function readFileByLine(path: string, index: number): string {
 }
 
 
-export function isEmpty(obj: unknown) {
+export function isEmpty(obj: unknown): boolean {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 }
 
@@ -510,7 +510,7 @@ export function isBreakOpcode(opcode: string): boolean {
 }
 
 
-function findCompiler(directory) {
+function findCompiler(directory): string {
   if (!directory) {
       directory = dirname(module.parent.filename);
   }
