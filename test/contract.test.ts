@@ -2,7 +2,7 @@ import { assert, expect } from 'chai';
 import { loadFile, newTx, loadDescription } from './helper';
 import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
-import { bsv, compileContract, signTx, toHex } from '../src/utils';
+import { bsv, signTx, toHex } from '../src/utils';
 import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
@@ -16,7 +16,7 @@ const jsonDescr = loadDescription('p2pkh_desc.json');
 
 describe('buildContractClass()', () => {
 
-  const DemoP2PKH = buildContractClass(compileContract(loadFile('p2pkh.scrypt')));
+  const DemoP2PKH = buildContractClass(jsonDescr);
 
   it('should return a reflected contract class object', () => {
     assert.typeOf(DemoP2PKH, 'function');
