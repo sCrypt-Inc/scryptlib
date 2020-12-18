@@ -2,7 +2,7 @@ import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS, isBreakOpcode, path2uri, readFileByLine } from "./utils";
 import { SupportedParamType} from './scryptTypes';
-import { StructEntity, ABIEntity, DebugModeAsmWord, CompileResult} from "./compilerWrapper";
+import { StructEntity, ABIEntity, OpCode, CompileResult} from "./compilerWrapper";
 
 export interface TxContext {
   tx?: any;
@@ -36,7 +36,7 @@ export class AbstractContract {
   public static abi: ABIEntity[];
   public static asm: string;
   public static abiCoder: ABICoder;
-  public static debugAsm?: DebugModeAsmWord[];
+  public static opcodes?: OpCode[];
   public static file: string;
 
   scriptedConstructor: FunctionCall;
@@ -64,7 +64,7 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findMappableAsmWord(debugAsm: DebugModeAsmWord[], pc: number): DebugModeAsmWord | undefined {
+  static findSrcInfo(debugAsm: OpCode[], pc: number): OpCode | undefined {
     while (--pc > 0) {
       if (debugAsm[pc].file && debugAsm[pc].file !== "std" && debugAsm[pc].line > 0) {
         return debugAsm[pc];
@@ -84,13 +84,13 @@ export class AbstractContract {
 
     const bsi = bsv.Script.Interpreter();
   
-    let stepCouter = 0;
+    let stepCounter = 0;
 		bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
-      stepCouter++;
+      stepCounter++;
     };
 
     
-    const debugAsm: DebugModeAsmWord[] =  Object.getPrototypeOf(this).constructor.debugAsm;
+    const debugAsm: OpCode[] =  Object.getPrototypeOf(this).constructor.debugAsm;
 
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
@@ -98,8 +98,8 @@ export class AbstractContract {
 
     const offset = unlockingScriptASM.trim().split(' ').length;
     
-    // the complete script will have op_return and data, but debugAsm do not have, so we need to make sure the index in bound.
-    const debugAsm_pc = Math.min(stepCouter -  offset,  debugAsm.length -1);
+    // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
+    const debugAsm_pc = Math.min(stepCounter -  offset,  debugAsm.length -1);
 
     if(!result && debugAsm && debugAsm[debugAsm_pc]) {
 
@@ -107,7 +107,7 @@ export class AbstractContract {
 
       if(!asmWord.file || asmWord.file === "std") {
 
-        let asmWordMappable  = AbstractContract.findMappableAsmWord(debugAsm, debugAsm_pc);
+        let asmWordMappable  = AbstractContract.findSrcInfo(debugAsm, debugAsm_pc);
 
         asmWord.file = asmWordMappable.file;
         asmWord.line = asmWordMappable.line;
@@ -202,7 +202,7 @@ export function buildContractClass(desc: CompileResult): any {
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm;
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
-  ContractClass.debugAsm = desc.debugAsm;
+  ContractClass.opcodes = desc.opcodes;
   ContractClass.file = desc.file;
 
   ContractClass.abi.forEach(entity => {

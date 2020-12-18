@@ -50,7 +50,7 @@ export type CompileError = SyntaxError | SemanticError | ImportError;
 
 export interface CompileResult {
 	asm?: string;
-	debugAsm?: DebugModeAsmWord[];
+	opcodes?: OpCode[];
 	ast?: Record<string, unknown>;
 	dependencyAsts?: Record<string, unknown>;
 	abi?: Array<ABIEntity>;
@@ -68,7 +68,7 @@ export enum DebugModeTag {
 	LoopStart = 'L0'
 }
 
-export interface DebugModeAsmWord {
+export interface OpCode {
 	file?: string;
 	line?: number;
 	endLine?: number;
@@ -225,7 +225,7 @@ export function compile(
 			} else {
 				const asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
 				const sources = asmObj.sources;
-				result.debugAsm = asmObj.output.map(item => {
+				result.opcodes = asmObj.output.map(item => {
 					const match = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/.exec(item.src);
 
 					if (match && match.groups) {
@@ -258,7 +258,7 @@ export function compile(
 					throw new Error('Compile Failed: Asm output parsing Error!');
 				});
 
-				result.asm = result.debugAsm.map(item => item["opcode"].trim()).join(' ');
+				result.asm = result.opcodes.map(item => item["opcode"].trim()).join(' ');
 			}
 		}
 
