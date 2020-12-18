@@ -2,7 +2,7 @@ import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
-import { StructEntity, ABIEntity, OpCode, CompileResult} from "./compilerWrapper";
+import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult} from "./compilerWrapper";
 
 export interface TxContext {
   tx?: any;
@@ -116,7 +116,7 @@ export class AbstractContract {
           opcode.line = srcInfo.line;
         }
   
-        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}#${opcode.line}) opcode:${opcode.opcode}\n`;
+        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}:${opcode.line}) opcode:${opcode.opcode}\n`;
       }
     }
 
@@ -171,7 +171,7 @@ export class AbstractContract {
   }
 }
 
-export function buildContractClass(desc: CompileResult): any {
+export function buildContractClass(desc: CompileResult | ContractDescription): any {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');
@@ -184,6 +184,14 @@ export function buildContractClass(desc: CompileResult): any {
   if (!desc.asm) {
     throw new Error('missing field `asm` in description');
   }
+
+  if(!desc["errors"]) {
+    desc = desc2CompileResult(desc as ContractDescription);
+  } else {
+    desc = desc as CompileResult;
+  }
+  
+
 
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {

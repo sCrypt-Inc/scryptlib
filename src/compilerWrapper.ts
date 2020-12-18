@@ -11,6 +11,8 @@ import compareVersions = require('compare-versions');
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)\n(?<message>[^\n]+)\n/g;
 const IMPORT_ERR_REG = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
+//SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
+const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
@@ -228,7 +230,7 @@ export function compile(
 				asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
 				const sources = asmObj.sources;
 				result.asm = asmObj.output.map(item => {
-					const match = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/.exec(item.src);
+					const match = SOURCE_REG.exec(item.src);
 
 					if (match && match.groups) {
 						const fileIndex = parseInt(match.groups.fileIndex);
@@ -280,7 +282,7 @@ export function compile(
 
 			if(settings.sourceMap && asmObj) {
 				Object.assign(description, {
-					sources:  asmObj.sources.map(source => path2uri(getFullFilePath(source, srcDir, sourceFileName))),
+					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
 					sourceMap:  asmObj.output.map(item => item.src)
 				})
 			}
@@ -499,3 +501,35 @@ export function getDefaultScryptc(): string {
 
 	return scryptc;
 }
+
+
+
+export function desc2CompileResult(description: ContractDescription): CompileResult  {
+	const sources = description.sources;
+	const asm = description.asm.split(' ');
+	let result: CompileResult = {
+		compilerVersion : description.compilerVersion,
+		contract : description.contract,
+		md5 : description.md5,
+		abi : description.abi,
+		structs : description.structs,
+		file: description.sources[0],
+		errors: [],
+		asm: description.sourceMap.map((item, index) => {
+			const match = SOURCE_REG.exec(item);
+			if (match && match.groups) {
+				const fileIndex = parseInt(match.groups.fileIndex);
+				return {
+					file: sources[fileIndex],
+					line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+					endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+					column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+					endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+					opcode: asm[index],
+					stack: []
+				};
+			}
+		})
+	}
+	return result;
+  }
