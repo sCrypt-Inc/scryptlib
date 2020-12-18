@@ -1,8 +1,7 @@
 import { pathToFileURL, fileURLToPath } from 'url';
 import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
-import { ABIEntityType, ABIEntity, StructEntity, compile, getPlatformScryptc} from './compilerWrapper';
+import { StructEntity, compile, getPlatformScryptc} from './compilerWrapper';
 import bsv = require('bsv');
-import * as readline from 'readline';
 import * as fs from 'fs';
 import { dirname, join, resolve } from 'path';
 
@@ -490,7 +489,7 @@ export function isEmpty(obj: unknown): boolean {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 }
 
-function findCompiler(directory): string {
+function findCompiler(directory): string | undefined {
   if (!directory) {
       directory = dirname(module.parent.filename);
   }
@@ -501,7 +500,7 @@ function findCompiler(directory): string {
   }
   var parent = resolve(directory, '..');
   if (parent === directory) {
-      return null;
+      return undefined;
   }
   return findCompiler(parent);
 }
@@ -524,7 +523,7 @@ export function compileContract(file: string, out?: string) {
   var argv = require('minimist')(process.argv.slice(2));
 
   let scryptc = argv.scryptc;
-  if(argv.ci) {
+  if(argv.ci || !scryptc) {
     scryptc = getCIScryptc();
   }
 

@@ -56,7 +56,7 @@ describe('compile()', () => {
 
   it('should generate structs properly', () => {
     const result = compileContract(loadFile('person.scrypt'));
-    console.log("result", JSON.stringify(result.structs))
+
     assert.equal(result.structs.length, 2);
 
     expect(result.structs).to.deep.include.members([{
