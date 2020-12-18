@@ -556,8 +556,6 @@ export function compileContract(file: string, out?: string) {
   );
 
   if (result.errors.length > 0) {
-    console.log(`Contract ${file} compiling failed with errors:`);
-    console.log(result.errors);
     throw result.errors;
   }
 
