@@ -142,16 +142,32 @@ export function buildContractClass(desc: ContractDescription): any {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }
+
+    //When create a contract instance using UTXO, 
+    //use fromHex or fromASM because you do not know the parameters of constructor.
+    
+    /**
+     * Create a contract instance using UTXO asm
+     * @param hex 
+     */
     static fromASM(asm: string) {
       const obj = new this();
       obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, asm );
       return obj;
     }
 
+    /**
+     * Create a contract instance using UTXO hex
+     * @param hex 
+     */
     static fromHex(hex: string) {
       return ContractClass.fromASM((new bsv.Script(hex)).toASM());
     }
 
+    /**
+     * Get the parameter of the constructor and inline asm vars,
+     * all values is hex string, need convert it to number or bytes on using
+     */
     get asmVars(): AsmVarValues | null {
       return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM());
     }
