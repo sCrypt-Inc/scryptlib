@@ -17,11 +17,11 @@ const inputSatoshis = 100000
 const tx = newTx(inputSatoshis)
 const txContext = { inputSatoshis, tx }
 
-const jsonDescr = loadDescription('p2pkh.scrypt')
+const jsonDescr = loadDescription('p2pkh_desc.json')
 
 describe('simple scrypt', () => {
   describe('new instance', () => {
-    const Simple = buildContractClass(loadDescription('simple.scrypt'))
+    const Simple = buildContractClass(loadDescription('simple_desc.json'))
 
     let instance: any
     let result: VerifyResult
@@ -55,7 +55,7 @@ describe('simple scrypt', () => {
 })
 
 describe('create instance from UTXO Hex', () => {
-  const Simple = buildContractClass(loadDescription('simple.scrypt'))
+  const Simple = buildContractClass(loadDescription('simple_desc.json'))
 
   let instance: any
   let result: VerifyResult
