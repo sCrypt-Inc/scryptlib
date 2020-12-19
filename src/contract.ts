@@ -112,8 +112,8 @@ export class AbstractContract {
   
           let srcInfo  = AbstractContract.findSrcInfo(opcodes, pc);
   
-          opcode.file = srcInfo.file;
-          opcode.line = srcInfo.line;
+          opcode.file = srcInfo?.file;
+          opcode.line = srcInfo?.line;
         }
   
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel. 
