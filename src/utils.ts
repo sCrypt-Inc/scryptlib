@@ -1,7 +1,9 @@
 import { pathToFileURL, fileURLToPath } from 'url';
 import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
-import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
+import { StructEntity, compile, getPlatformScryptc, CompileResult} from './compilerWrapper';
 import bsv = require('bsv');
+import * as fs from 'fs';
+import { dirname, join, resolve } from 'path';
 
 export { bsv };
 
@@ -467,3 +469,74 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
 }
 
 
+
+export function readFileByLine(path: string, index: number): string {
+
+  let result = "";
+  fs.readFileSync(path, 'utf8').split(/\r?\n/).every(function(line, i) {
+    if(i === (index -1)) {
+      result = line;
+      return false;
+    }
+    return true;
+  });
+
+  return result;
+}
+
+
+export function isEmpty(obj: unknown): boolean {
+  return Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+
+function findCompiler(directory): string | undefined {
+  if (!directory) {
+      directory = dirname(module.parent.filename);
+  }
+  var compiler = resolve(directory, 'compiler');
+  if (fs.existsSync(compiler) && fs.statSync(compiler).isDirectory()) {
+      const scryptc = join(compiler, '..', getPlatformScryptc());
+      return scryptc;
+  }
+  var parent = resolve(directory, '..');
+  if (parent === directory) {
+      return undefined;
+  }
+  return findCompiler(parent);
+}
+
+
+
+function getCIScryptc(): string | undefined {
+   const scryptc =  findCompiler(__dirname);
+  return fs.existsSync(scryptc) ? scryptc : undefined;
+}
+
+export function compileContract(file: string, out?: string): CompileResult {
+  console.log(`Compiling contract ${file} ...`);
+
+
+  if(!fs.existsSync(file)) {
+    throw(`file ${file} not exists!`);
+  }
+
+  var argv = require('minimist')(process.argv.slice(2));
+
+  let scryptc = argv.scryptc;
+  if(argv.ci || !scryptc) {
+    scryptc = getCIScryptc();
+  }
+
+  const result = compile(
+    { path: file },
+    { desc: true, debug: true, sourceMap:true, outputDir: out ? out : join(__dirname, '../out'),
+		  cmdPrefix: scryptc
+    }
+  );
+
+  if (result.errors.length > 0) {
+    throw result.errors;
+  }
+
+  return result;
+}

@@ -11,6 +11,8 @@ import compareVersions = require('compare-versions');
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)\n(?<message>[^\n]+)\n/g;
 const IMPORT_ERR_REG = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
+//SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
+const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
@@ -49,8 +51,7 @@ export interface ImportError extends CompileErrorBase {
 export type CompileError = SyntaxError | SemanticError | ImportError;
 
 export interface CompileResult {
-	asm?: string;
-	debugAsm?: DebugModeAsmWord[];
+	asm?: OpCode[];
 	ast?: Record<string, unknown>;
 	dependencyAsts?: Record<string, unknown>;
 	abi?: Array<ABIEntity>;
@@ -59,6 +60,7 @@ export interface CompileResult {
 	contract?: string;
 	md5?: string;
 	structs?: any;
+	file?: string;
 }
 
 export enum DebugModeTag {
@@ -67,7 +69,7 @@ export enum DebugModeTag {
 	LoopStart = 'L0'
 }
 
-export interface DebugModeAsmWord {
+export interface OpCode {
 	file?: string;
 	line?: number;
 	endLine?: number;
@@ -118,6 +120,7 @@ export function compile(
 		cwd?: string,
 		cmdPrefix?: string,
 		cmdArgs?: string,
+		sourceMap?: boolean,
 	} = {
 			asm: true,
 			debug: true
@@ -209,11 +212,13 @@ export function compile(
 			const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
 
 			const sourceUri = path2uri(sourcePath);
-
+			result.file = sourceUri;
 			result.ast = allAst[sourceUri];
 			delete allAst[sourceUri];
 			result.dependencyAsts = allAst;
 		}
+
+		let asmObj = null;
 
 		if (settings.asm || settings.desc) {
 			const outputFilePath = getOutputFilePath(outputDir, 'asm');
@@ -222,10 +227,10 @@ export function compile(
 			if (settings.debug == false) {
 				result.asm = JSON.parse(readFileSync(outputFilePath, 'utf8')).join(' ');
 			} else {
-				const asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
+				asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
 				const sources = asmObj.sources;
-				result.debugAsm = asmObj.output.map(item => {
-					const match = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/.exec(item.src);
+				result.asm = asmObj.output.map(item => {
+					const match = SOURCE_REG.exec(item.src);
 
 					if (match && match.groups) {
 						const fileIndex = parseInt(match.groups.fileIndex);
@@ -256,8 +261,6 @@ export function compile(
 					}
 					throw new Error('Compile Failed: Asm output parsing Error!');
 				});
-
-				result.asm = result.debugAsm.map(item => item["opcode"].trim()).join(' ');
 			}
 		}
 
@@ -272,9 +275,17 @@ export function compile(
 				md5: md5(sourceContent),
 				structs: getStructDeclaration(result.ast),
 				abi,
-				asm: result.asm
+				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
+				sources:  [],
+				sourceMap: []
 			};
 
+			if(settings.sourceMap && asmObj) {
+				Object.assign(description, {
+					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
+					sourceMap:  asmObj.output.map(item => item.src)
+				})
+			}
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
 
 			result.compilerVersion = description.compilerVersion;
@@ -362,6 +373,11 @@ function getFullFilePath(relativePath: string, baseDir: string, curFileName: str
 	if (relativePath.endsWith('stdin')) {
 		return join(baseDir, curFileName); // replace 'stdin' with real current compiling file name.
 	}
+
+	if (relativePath === 'std') {
+		return 'std'; // 
+	}
+
 	return join(baseDir, relativePath);
 }
 
@@ -485,3 +501,35 @@ export function getDefaultScryptc(): string {
 
 	return scryptc;
 }
+
+
+
+export function desc2CompileResult(description: ContractDescription): CompileResult  {
+	const sources = description.sources;
+	const asm = description.asm.split(' ');
+	let result: CompileResult = {
+		compilerVersion : description.compilerVersion,
+		contract : description.contract,
+		md5 : description.md5,
+		abi : description.abi,
+		structs : description.structs,
+		file: description.sources[0],
+		errors: [],
+		asm: description.sourceMap.map((item, index) => {
+			const match = SOURCE_REG.exec(item);
+			if (match && match.groups) {
+				const fileIndex = parseInt(match.groups.fileIndex);
+				return {
+					file: sources[fileIndex],
+					line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+					endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+					column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+					endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+					opcode: asm[index],
+					stack: []
+				};
+			}
+		})
+	}
+	return result;
+  }

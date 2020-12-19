@@ -1,0 +1,112 @@
+{
+    "compilerVersion": "0.2.12+commit.ce592f4",
+    "contract": "Foo",
+    "md5": "3cfc6f7d30dcb8e743fd448de3cd87e3",
+    "structs": [],
+    "abi": [
+        {
+            "type": "function",
+            "name": "equal",
+            "index": 0,
+            "params": [
+                {
+                    "name": "y",
+                    "type": "int"
+                }
+            ]
+        },
+        {
+            "type": "function",
+            "name": "equalAfterInc",
+            "index": 1,
+            "params": [
+                {
+                    "name": "y",
+                    "type": "int"
+                }
+            ]
+        },
+        {
+            "type": "constructor",
+            "params": [
+                {
+                    "name": "_x",
+                    "type": "int"
+                }
+            ]
+        }
+    ],
+    "asm": "OP_NOP OP_0 $_x OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_0 OP_EQUAL OP_IF OP_2 OP_PICK OP_1 OP_PICK OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_ELSE OP_1 OP_PICK OP_1 OP_EQUAL OP_IF OP_NOP OP_0 OP_PICK OP_1 OP_1 OP_PICK OP_1 OP_PICK OP_ADD OP_0 OP_PICK OP_1 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_ROLL OP_DROP OP_0 OP_PICK OP_3 OP_PICK OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_ELSE OP_0 OP_ENDIF OP_ENDIF",
+    "sources": [
+        "D:\\code\\scryptlib\\test\\fixture\\foo.scrypt"
+    ],
+    "sourceMap": [
+        "0:4:3:6:4#Foo.constructor:0",
+        "0:2:3:2:8",
+        "0:4:15:4:21",
+        "0:5:14:5:16",
+        "0:5:14:5:16",
+        "0:5:5:5:17",
+        "0:5:5:5:17",
+        "0:5:5:5:17",
+        "0:5:5:5:17",
+        "0:5:5:5:17",
+        "-1:1:1:1:1",
+        "0:4:3:6:4#Foo.constructor:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "0:9:13:9:14",
+        "0:9:13:9:14",
+        "0:9:22:9:23",
+        "0:9:22:9:23",
+        "0:9:15:9:18",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "0:13:14:13:33#Foo.sum:0",
+        "0:13:27:13:28",
+        "0:13:27:13:28",
+        "0:13:31:13:32",
+        "0:18:13:18:14",
+        "0:18:13:18:14",
+        "0:18:17:18:18",
+        "0:18:17:18:18",
+        "0:18:15:18:17",
+        "0:19:12:19:13",
+        "0:19:12:19:13",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "0:13:14:13:33#Foo.sum:1",
+        "0:13:5:13:34",
+        "0:13:5:13:34",
+        "0:13:5:13:34",
+        "0:14:17:14:18",
+        "0:14:17:14:18",
+        "0:14:23:14:24",
+        "0:14:23:14:24",
+        "0:14:20:14:23",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1"
+    ]
+}

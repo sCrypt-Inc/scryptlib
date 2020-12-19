@@ -1,8 +1,8 @@
 import { ABICoder, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS } from "./utils";
+import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
-import { StructEntity, ABIEntity} from "./compilerWrapper";
+import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult} from "./compilerWrapper";
 
 export interface TxContext {
   tx?: any;
@@ -10,9 +10,13 @@ export interface TxContext {
   inputSatoshis?: number;
 }
 
+
+export type VerifyError = string;
+
+
 export interface VerifyResult {
   success: boolean;
-  error: string; 
+  error?: VerifyError; 
 }
 
 export interface ContractDescription {
@@ -22,6 +26,8 @@ export interface ContractDescription {
   structs: Array<StructEntity>;
   abi: Array<ABIEntity>;
   asm: string;
+  sources: Array<string>;
+  sourceMap: Array<string>;
 }
 
 export type AsmVarValues = { [key: string]: string }
@@ -32,6 +38,8 @@ export class AbstractContract {
   public static abi: ABIEntity[];
   public static asm: string;
   public static abiCoder: ABICoder;
+  public static opcodes?: OpCode[];
+  public static file: string;
 
   scriptedConstructor: FunctionCall;
 
@@ -58,21 +66,66 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
+  static findSrcInfo(opcodes: OpCode[], pc: number): OpCode | undefined {
+    while (--pc > 0) {
+      if (opcodes[pc].file && opcodes[pc].file !== "std" && opcodes[pc].line > 0) {
+        return opcodes[pc];
+      }
+    }
+  }
+
+
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
-    const us = bsv.Script.fromASM(unlockingScriptASM);
+    const us = bsv.Script.fromASM(unlockingScriptASM.trim());
     const ls = this.lockingScript;
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
-    const si = bsv.Script.Interpreter();
-    const result = si.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
+    const bsi = bsv.Script.Interpreter();
+  
+    let stepCounter = 0;
+		bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
+      stepCounter++;
+    };
+
+    
+    const opcodes: OpCode[] =  Object.getPrototypeOf(this).constructor.opcodes;
+
+    const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
+
+    let error = `VerifyError: ${bsi.errstr}`;
+
+    // some time there is no opcodes, such as when sourcemap flag is closeed. 
+    if(opcodes) {
+      const offset = unlockingScriptASM.trim().split(' ').length;
+      // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
+      const pc = Math.min(stepCounter -  offset,  opcodes.length -1);
+  
+      if(!result && opcodes[pc]) {
+  
+        let opcode = opcodes[pc]; 
+  
+        if(!opcode.file || opcode.file === "std") {
+  
+          let srcInfo  = AbstractContract.findSrcInfo(opcodes, pc);
+
+          if(srcInfo) {
+            opcode.file = srcInfo.file;
+            opcode.line = srcInfo.line;
+          }
+        }
+  
+        // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel. 
+        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}#${opcode.line}) opcode:${opcode.opcode}\n`;
+      }
+    }
 
     return {
       success: result,
-      error: si.errstr
+      error: error
     };
   }
 
@@ -121,7 +174,7 @@ export class AbstractContract {
   }
 }
 
-export function buildContractClass(desc: ContractDescription): any {
+export function buildContractClass(desc: CompileResult | ContractDescription): any {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');
@@ -134,6 +187,14 @@ export function buildContractClass(desc: ContractDescription): any {
   if (!desc.asm) {
     throw new Error('missing field `asm` in description');
   }
+
+  if(!desc["errors"]) {
+    desc = desc2CompileResult(desc as ContractDescription);
+  } else {
+    desc = desc as CompileResult;
+  }
+  
+
 
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
@@ -175,8 +236,10 @@ export function buildContractClass(desc: ContractDescription): any {
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
-  ContractClass.asm = desc.asm;
+  ContractClass.asm = desc.asm.map(item => item["opcode"].trim()).join(' ');
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
+  ContractClass.opcodes = desc.asm;
+  ContractClass.file = desc.file;
 
   ContractClass.abi.forEach(entity => {
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
