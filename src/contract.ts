@@ -116,7 +116,8 @@ export class AbstractContract {
           opcode.line = srcInfo.line;
         }
   
-        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}:${opcode.line}) opcode:${opcode.opcode}\n`;
+        // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel. 
+        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}#${opcode.line}) opcode:${opcode.opcode}\n`;
       }
     }
 
