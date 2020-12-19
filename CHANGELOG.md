@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.2.24
+
+* add sourceMap to desc file
+* Locate sCrypt source where scrypttest fails, exactly verify failed
+* auto generate launch.json for debugging when contract verify failed
+* move desc to out dir
+
 
 ## 0.2.23
 

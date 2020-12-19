@@ -38,6 +38,10 @@ export abstract class ScryptType {
     return this._asm;
   }
 
+  toJSON(): string | unknown {
+    return this.toLiteral();
+  }
+
   abstract toLiteral(): string;
 }
 
@@ -265,7 +269,7 @@ export class SigHashPreimage extends ScryptType {
     return `SigHashPreimage(b'${getValidatedHexString(this._value.toString())}')`;
   }
 
-  toJSON() {
+  toJSONObject() {
     return {
       nVersion: this.nVersion,
       hashPrevouts: this.hashOutputs,
@@ -402,6 +406,19 @@ export class Struct extends ScryptType {
       }
     });
     return `Struct(${l})`;
+  }
+
+  toJSON() {
+
+    const v = this.value;
+    return Array.from(Object.keys(v)).reduce((obj, key) => {
+      if(v[key] instanceof ScryptType) {
+        return Object.assign(obj, {[key]:  (v[key] as ScryptType).toLiteral()}); 
+      } else {
+        return Object.assign(obj, { [key]: v[key] }); 
+      }
+    }, {});
+
   }
 
   static isStruct(arg: SupportedParamType): boolean {

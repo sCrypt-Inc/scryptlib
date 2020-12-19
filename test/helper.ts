@@ -4,11 +4,15 @@ import { bsv } from '../src/utils';
 import { ContractDescription } from '../src/contract';
 import { compile, CompileResult, getPlatformScryptc} from '../src/compilerWrapper';
 export function loadDescription(fileName: string): ContractDescription {
-  return JSON.parse(readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_desc.json'))).toString());
+  return JSON.parse(readFileSync(join(__dirname, "../out/", fileName)).toString());
 }
 
 export function loadASM(fileName: string): string {
   return readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_asm.json'))).toString();
+}
+
+export function getContractFilePath(fileName: string): string {
+  return join(__dirname, 'fixture', fileName);
 }
 
 export function newTx(inputSatoshis: number) {
@@ -19,22 +23,4 @@ export function newTx(inputSatoshis: number) {
     satoshis: inputSatoshis
   };
   return new bsv.Transaction().from(utxo);
-}
-
-
-function getCIScryptc(): string | undefined {
-  const scryptc = join(__dirname, '../', getPlatformScryptc());
-  return existsSync(scryptc) ? scryptc : undefined;
-}
-
-export function compileContract(fileName: string, folder: string): CompileResult {
-  const filePath = existsSync(fileName) ? fileName : join(__dirname, folder, fileName);
-  const result = compile(
-    { path: filePath },
-    {
-      desc: true, outputDir: join(__dirname, 'fixture'),
-      cmdPrefix: getCIScryptc()
-    }
-  );
-  return result;
 }
