@@ -29,8 +29,8 @@ export interface DebugConfiguration {
 }
 
 export interface DebugLaunch {
-  version: string;
-  configurations: DebugConfiguration[]
+  version: "0.2.0";
+  configurations: DebugConfiguration[];
 }
 
 function escapeRegExp(stringToGoIntoTheRegex) {
