@@ -215,7 +215,7 @@ describe('FunctionCall', () => {
 
       expect(result.error).to.contains("person.scrypt#26");
       expect(result.error).to.contains("Main-launch.json");
-      expect(result.error).to.contains("opcode:OP_VERIFY");
+      expect(result.error).to.contains("fails at OP_VERIFY");
     })
 
     it('stop at person.scrypt#25', () => {
@@ -224,7 +224,7 @@ describe('FunctionCall', () => {
 
       expect(result.error).to.contains("person.scrypt#25");
       expect(result.error).to.contains("Main-launch.json");
-      expect(result.error).to.contains("opcode:OP_VERIFY");
+      expect(result.error).to.contains("fails at OP_VERIFY");
 
     })
 
@@ -239,7 +239,7 @@ describe('FunctionCall', () => {
 
       expect(result.error).to.contains("p2pkh.scrypt#10");
       expect(result.error).to.contains("DemoP2PKH-launch.json");
-      expect(result.error).to.contains("opcode:OP_CHECKSIG");
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
 
     })
 

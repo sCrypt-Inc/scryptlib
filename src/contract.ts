@@ -31,6 +31,7 @@ export interface ContractDescription {
 }
 
 export type AsmVarValues = { [key: string]: string }
+export type StepIndex = number;
 
 export class AbstractContract {
 
@@ -66,10 +67,20 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(opcodes: OpCode[], pc: number): OpCode | undefined {
+  static findSrcInfo(steps: any[], opcodes: OpCode[], pc: number): OpCode | undefined {
     while (--pc > 0) {
-      if (opcodes[pc].file && opcodes[pc].file !== "std" && opcodes[pc].line > 0) {
+      if (opcodes[pc].file && opcodes[pc].file !== "std" && opcodes[pc].line > 0 && steps[pc].fExec) {
         return opcodes[pc];
+      }
+    }
+  }
+
+
+
+  static findLastfExec(steps: any[], pc: StepIndex): StepIndex {
+    while (--pc > 0) {
+      if (steps[pc].fExec) {
+        return pc;
       }
     }
   }
@@ -86,8 +97,10 @@ export class AbstractContract {
 
     const bsi = bsv.Script.Interpreter();
   
-    let stepCounter = 0;
+    let stepCounter: StepIndex = 0;
+    let steps = [];
 		bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
+      steps.push(step);
       stepCounter++;
     };
 
@@ -97,6 +110,12 @@ export class AbstractContract {
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
     let error = `VerifyError: ${bsi.errstr}`;
+
+    const lastStepfExec = steps[stepCounter - 1].fExec;
+
+    if(!lastStepfExec) {
+      stepCounter = AbstractContract.findLastfExec(steps, stepCounter);
+    }
 
     // some time there is no opcodes, such as when sourcemap flag is closeed. 
     if(opcodes) {
@@ -110,7 +129,7 @@ export class AbstractContract {
   
         if(!opcode.file || opcode.file === "std") {
   
-          const srcInfo  = AbstractContract.findSrcInfo(opcodes, pc);
+          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, pc);
 
           if(srcInfo) {
             opcode.file = srcInfo.file;
@@ -119,7 +138,7 @@ export class AbstractContract {
         }
   
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel. 
-        error = `VerifyError: ${bsi.errstr} \n\t[link source](${path2uri(opcode.file)}#${opcode.line}) opcode:${opcode.opcode}\n`;
+        error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.file)}#${opcode.line})  fails at ${opcode.opcode}\n`;
       }
     }
 

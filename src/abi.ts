@@ -177,7 +177,7 @@ export class FunctionCall {
 
       if(!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
-        result.error = result.error + `\t[link debug](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
+        result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
       }
       return result;
     }
