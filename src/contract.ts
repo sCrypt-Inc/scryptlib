@@ -106,11 +106,11 @@ export class AbstractContract {
   
       if(!result && opcodes[pc]) {
   
-        let opcode = opcodes[pc]; 
+        const opcode = opcodes[pc]; 
   
         if(!opcode.file || opcode.file === "std") {
   
-          let srcInfo  = AbstractContract.findSrcInfo(opcodes, pc);
+          const srcInfo  = AbstractContract.findSrcInfo(opcodes, pc);
 
           if(srcInfo) {
             opcode.file = srcInfo.file;

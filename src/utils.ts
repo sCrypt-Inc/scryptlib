@@ -4,6 +4,7 @@ import { StructEntity, compile, getPlatformScryptc, CompileResult} from './compi
 import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve } from 'path';
+import * as minimist from 'minimist';
 
 export { bsv };
 
@@ -493,12 +494,12 @@ function findCompiler(directory): string | undefined {
   if (!directory) {
       directory = dirname(module.parent.filename);
   }
-  var compiler = resolve(directory, 'compiler');
+  const compiler = resolve(directory, 'compiler');
   if (fs.existsSync(compiler) && fs.statSync(compiler).isDirectory()) {
       const scryptc = join(compiler, '..', getPlatformScryptc());
       return scryptc;
   }
-  var parent = resolve(directory, '..');
+  const parent = resolve(directory, '..');
   if (parent === directory) {
       return undefined;
   }
@@ -520,7 +521,7 @@ export function compileContract(file: string, out?: string): CompileResult {
     throw(`file ${file} not exists!`);
   }
 
-  var argv = require('minimist')(process.argv.slice(2));
+  const argv = minimist(process.argv.slice(2));
 
   let scryptc = argv.scryptc;
   if(argv.ci || !scryptc) {
@@ -529,8 +530,9 @@ export function compileContract(file: string, out?: string): CompileResult {
 
   const result = compile(
     { path: file },
-    { desc: true, debug: true, sourceMap:true, outputDir: out ? out : join(__dirname, '../out'),
-		  cmdPrefix: scryptc
+    {
+      desc: true, debug: true, sourceMap: true, outputDir: out ? out : join(__dirname, '../out'),
+      cmdPrefix: scryptc
     }
   );
 

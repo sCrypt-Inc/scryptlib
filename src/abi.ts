@@ -125,7 +125,7 @@ export class FunctionCall {
       const name =  `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
       const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
-      let debugConfig: DebugConfiguration = {
+      const debugConfig: DebugConfiguration = {
         type: "scrypt",
         request: "launch",
         name: name,
@@ -133,12 +133,12 @@ export class FunctionCall {
         constructorParams: constructorParams,
         entryMethod: entryMethod,
         entryMethodParams: entryMethodParams
-      }
+      };
 
 
       const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {});
 
-      let debugTxContext = {};
+      const debugTxContext = {};
 
       if(!isEmpty(txCtx)) {
 
@@ -156,13 +156,13 @@ export class FunctionCall {
         Object.assign(debugConfig, {txContext: debugTxContext});
       }
 
-      let launch: DebugLaunch = {
+      const launch: DebugLaunch = {
         version: "0.2.0",
         configurations: [debugConfig]
-      }
+      };
 
-    const filename = `${name}-launch.json`
-    const file = join(mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename)
+    const filename = `${name}-launch.json`;
+    const file = join(mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename);
     writeFileSync(file, JSON.stringify(launch, (key, value) => (
       typeof value === 'bigint'
         ? value.toString()
@@ -177,7 +177,7 @@ export class FunctionCall {
 
       if(!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
-        result.error = result.error + `\t[link debug](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`
+        result.error = result.error + `\t[link debug](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
       }
       return result;
     }

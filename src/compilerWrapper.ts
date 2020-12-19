@@ -284,7 +284,7 @@ export function compile(
 				Object.assign(description, {
 					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
 					sourceMap:  asmObj.output.map(item => item.src)
-				})
+				});
 			}
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
 
@@ -507,7 +507,7 @@ export function getDefaultScryptc(): string {
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
 	const asm = description.asm.split(' ');
-	let result: CompileResult = {
+	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,
 		contract : description.contract,
 		md5 : description.md5,
@@ -530,6 +530,6 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 				};
 			}
 		})
-	}
+	};
 	return result;
   }
