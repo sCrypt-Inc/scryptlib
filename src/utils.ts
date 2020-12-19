@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
 import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
-import { StructEntity, compile, getPlatformScryptc} from './compilerWrapper';
+import { StructEntity, compile, getPlatformScryptc, CompileResult} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve } from 'path';
@@ -512,7 +512,7 @@ function getCIScryptc(): string | undefined {
   return fs.existsSync(scryptc) ? scryptc : undefined;
 }
 
-export function compileContract(file: string, out?: string) {
+export function compileContract(file: string, out?: string): CompileResult {
   console.log(`Compiling contract ${file} ...`);
 
 
