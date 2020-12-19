@@ -1,0 +1,26 @@
+contract Simple {
+  public function main(int x, int y) {
+    require(x + y == 6);
+  }
+
+  function equalImpl(int a) : bool {
+    // mix all
+    asm {
+      $x
+      ab12
+      OP_SIZE
+      OP_NIP
+      OP_MUL
+      OP_1
+      OP_MUL
+      $x
+      OP_SUB
+      OP_EQUAL
+    }
+  }
+
+  public function equal(int a) {
+    require(this.equalImpl(a));
+  }
+}
+

@@ -254,6 +254,10 @@ export class ABICoder {
     return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
   }
 
+  encodeConstructorCallFromASM(contract: AbstractContract, lsASM: string): FunctionCall {
+    return new FunctionCall('constructor', [], { contract, lockingScriptASM: lsASM });
+  }
+
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
 
     for (const entity of this.abi) {
