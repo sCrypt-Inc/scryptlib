@@ -11,7 +11,7 @@ export function loadASM(fileName: string): string {
   return readFileSync(join(__dirname, 'fixture', fileName.replace('.scrypt', '_asm.json'))).toString();
 }
 
-export function loadFile(fileName: string): string {
+export function getContractFilePath(fileName: string): string {
   return join(__dirname, 'fixture', fileName);
 }
 

@@ -1,13 +1,13 @@
 import { assert, expect } from 'chai';
 import path = require("path");
-import { loadDescription,loadFile } from './helper'
+import { loadDescription,getContractFilePath } from './helper'
 import { ABIEntityType } from '../src/compilerWrapper';
 import { compileContract } from '../src/utils';
 
 
 describe('compile()', () => {
   it('compile successfully', () => {
-    const result = compileContract(loadFile('p2pkh.scrypt'));
+    const result = compileContract(getContractFilePath('p2pkh.scrypt'));
 
     assert.typeOf(result, 'object');
     assert.equal(result.errors.length, 0, "No Errors");
@@ -16,7 +16,7 @@ describe('compile()', () => {
 
 
   it('should generate description file properly', () => {
-    const result = compileContract(loadFile('bar.scrypt'));
+    const result = compileContract(getContractFilePath('bar.scrypt'));
     const outputFile = path.join(__dirname, 'fixture/bar_desc.json');
 
     assert.typeOf(result, 'object');
@@ -55,7 +55,7 @@ describe('compile()', () => {
   })
 
   it('should generate structs properly', () => {
-    const result = compileContract(loadFile('person.scrypt'));
+    const result = compileContract(getContractFilePath('person.scrypt'));
 
     assert.equal(result.structs.length, 2);
 

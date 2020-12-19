@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { loadFile, newTx, loadDescription } from './helper';
+import { newTx, loadDescription } from './helper';
 import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
 import { bsv, signTx, toHex } from '../src/utils';

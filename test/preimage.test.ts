@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, loadFile,  newTx } from './helper'
+import { loadDescription,  newTx } from './helper'
 import { buildContractClass } from '../src/contract'
 import { bsv, toHex, getPreimage, compileContract, } from '../src/utils'
 import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'

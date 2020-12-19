@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { loadFile, newTx, loadDescription} from './helper';
+import { getContractFilePath, newTx, loadDescription} from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx, compileContract } from '../src/utils';
