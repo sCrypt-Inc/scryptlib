@@ -12,13 +12,15 @@ export interface Script {
   toHex(): string;
 }
 
+export type FileUri = string;
+
 /**
      * Configuration for a debug session.
      */
 export interface DebugConfiguration {
-  type: string;
+  type: "scrypt";
+  request: "launch";
   name: string;
-  request: string;
   program: string;
   constructorParams: SupportedParamType[];
   entryMethod: string;
@@ -111,9 +113,9 @@ export class FunctionCall {
     return this.toScript().toHex();
   }
 
-  
 
-  genLaunch(txContext?: TxContext): string{
+
+  genLaunchConfigFile(txContext?: TxContext): FileUri{
 
 
     const constructorParams:SupportedParamType[] = this.contract.scriptedConstructor.params;
@@ -174,7 +176,7 @@ export class FunctionCall {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
 
       if(!result.success) {
-        const debugUrl = this.genLaunch(txContext);
+        const debugUrl = this.genLaunchConfigFile(txContext);
         result.error = result.error + `\t[link debug](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`
       }
       return result;
