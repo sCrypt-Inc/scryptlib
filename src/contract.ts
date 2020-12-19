@@ -98,7 +98,7 @@ export class AbstractContract {
     const bsi = bsv.Script.Interpreter();
   
     let stepCounter: StepIndex = 0;
-    let steps = [];
+    const steps = [];
 		bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
       steps.push(step);
       stepCounter++;
