@@ -513,22 +513,35 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 		md5 : description.md5,
 		abi : description.abi,
 		structs : description.structs,
-		file: description.sources[0],
+		file: sources && sources[0] ,
 		errors: [],
-		asm: description.sourceMap.map((item, index) => {
-			const match = SOURCE_REG.exec(item);
-			if (match && match.groups) {
-				const fileIndex = parseInt(match.groups.fileIndex);
-				return {
-					file: sources[fileIndex],
-					line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-					endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-					column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-					endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-					opcode: asm[index],
-					stack: []
-				};
+		asm: asm.map((opcode, index) => {
+			const item = description.sourceMap && description.sourceMap[index];
+			if(item) {
+				const match = SOURCE_REG.exec(item);
+				if (match && match.groups) {
+					const fileIndex = parseInt(match.groups.fileIndex);
+					return {
+						file: sources[fileIndex],
+						line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+						endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+						column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+						endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+						opcode: opcode,
+						stack: []
+					};
+				}
 			}
+
+			return {
+				file: undefined,
+				line: undefined,
+				endLine:undefined,
+				column: undefined,
+				endColumn: undefined,
+				opcode: opcode,
+				stack: []
+			};
 		})
 	};
 	return result;

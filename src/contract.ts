@@ -137,8 +137,10 @@ export class AbstractContract {
           }
         }
   
-        // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel. 
-        error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.file)}#${opcode.line})  fails at ${opcode.opcode}\n`;
+        // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
+        if(opcode.file && opcode.line) {
+          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.file)}#${opcode.line})  fails at ${opcode.opcode}\n`;
+        }  
       }
     }
 
