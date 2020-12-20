@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.2.25
+
+* Fix desc2CompileResult fail when sourceMap empty
+
+
 ## 0.2.24
 
 * add sourceMap to desc file
