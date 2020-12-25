@@ -123,10 +123,10 @@ export class AbstractContract {
       const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
 
       if(this._dataPart !== undefined && this._dataPart !== null) {
-        opcodes.push({opcode: 'OP_RETURN', file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]})
+        opcodes.push({opcode: 'OP_RETURN', file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]});
         this._dataPart.split(' ').forEach(data => {
-          opcodes.push({opcode: data, file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]})
-        })
+          opcodes.push({opcode: data, file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]});
+        });
       }
       let pc = lastStepIndex -  offset;
       if(stepCounter === (opcodes.length + offset)) { // all opcode  was exec
