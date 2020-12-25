@@ -3,6 +3,7 @@ import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult} from "./compilerWrapper";
+import { assert } from "console";
 
 export interface TxContext {
   tx?: any;
@@ -67,20 +68,21 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(steps: any[], opcodes: OpCode[], pc: number): OpCode | undefined {
-    while (--pc > 0) {
-      if (opcodes[pc].file && opcodes[pc].file !== "std" && opcodes[pc].line > 0 && steps[pc].fExec) {
-        return opcodes[pc];
+  static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, offset: number): OpCode | undefined {
+    while (--stepIndex > 0) {
+      const opcodesIndex = stepIndex - offset + 1;
+      if (opcodes[opcodesIndex].file && opcodes[opcodesIndex].file !== "std" && opcodes[opcodesIndex].line > 0 && steps[stepIndex].fExec) {
+        return opcodes[opcodesIndex];
       }
     }
   }
 
 
 
-  static findLastfExec(steps: any[], pc: StepIndex): StepIndex {
-    while (--pc > 0) {
-      if (steps[pc].fExec) {
-        return pc;
+  static findLastfExec(steps: any[], stepIndex: StepIndex): StepIndex {
+    while (--stepIndex > 0) {
+      if (steps[stepIndex].fExec) {
+        return stepIndex;
       }
     }
   }
@@ -111,25 +113,35 @@ export class AbstractContract {
 
     let error = `VerifyError: ${bsi.errstr}`;
 
-    const lastStepfExec = steps[stepCounter - 1].fExec;
 
-    if(!lastStepfExec) {
-      stepCounter = AbstractContract.findLastfExec(steps, stepCounter);
-    }
 
     // some time there is no opcodes, such as when sourcemap flag is closeed. 
     if(opcodes) {
       const offset = unlockingScriptASM.trim().split(' ').length;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
-      const pc = Math.min(stepCounter -  offset,  opcodes.length -1);
-  
+
+      const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
+
+      if(this._dataPart !== undefined && this._dataPart !== null) {
+        opcodes.push({opcode: 'OP_RETURN', file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]})
+        this._dataPart.split(' ').forEach(data => {
+          opcodes.push({opcode: data, file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]})
+        })
+      }
+      let pc = lastStepIndex -  offset;
+      if(stepCounter === (opcodes.length + offset)) { // all opcode  was exec
+        
+      } else { //not all opcode was exec, break like OP_VERIFY
+        pc += 1;
+      }
+
       if(!result && opcodes[pc]) {
-  
+
         const opcode = opcodes[pc]; 
   
         if(!opcode.file || opcode.file === "std") {
   
-          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, pc);
+          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, offset);
 
           if(srcInfo) {
             opcode.file = srcInfo.file;
@@ -141,7 +153,7 @@ export class AbstractContract {
         if(opcode.file && opcode.line) {
           error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.file)}#${opcode.line})  fails at ${opcode.opcode}\n`;
         }  
-      }
+      } 
     }
 
     return {
