@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import path = require("path");
 import { loadDescription,getContractFilePath } from './helper'
-import { ABIEntityType } from '../src/compilerWrapper';
+import { ABIEntityType, CompileResult, desc2CompileResult} from '../src/compilerWrapper';
 import { compileContract } from '../src/utils';
 
 
@@ -86,5 +86,28 @@ describe('compile()', () => {
     }
     ])
   })
+
+ 
+
+
+  describe('desc should be as expected', () => {
+    let desc;
+    before(() => {
+      desc = loadDescription('tokenUtxo_desc.json');
+    });
+
+    it('source should be sort as expected', () => {
+      expect(desc.sources[0]).to.contains("std");
+      expect(desc.sources[1]).to.contains("util.scrypt");
+      expect(desc.sources[2]).to.contains("tokenUtxo.scrypt");
+    })
+
+
+    it('compileResult file should be main contract', () => {
+      const compileResult: CompileResult = desc2CompileResult(desc)
+      expect(compileResult.file).to.contains("tokenUtxo.scrypt");
+    })
+
+  });
 
 })

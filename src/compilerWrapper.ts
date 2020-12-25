@@ -506,6 +506,8 @@ export function getDefaultScryptc(): string {
 
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
+	//last one is main contract.
+	const mainContractPath: string = sources && sources[sources.length - 1];
 	const asm = description.asm.split(' ');
 	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,
@@ -513,7 +515,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 		md5 : description.md5,
 		abi : description.abi,
 		structs : description.structs,
-		file: sources && sources[0] ,
+		file: mainContractPath,
 		errors: [],
 		asm: asm.map((opcode, index) => {
 			const item = description.sourceMap && description.sourceMap[index];
