@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.2.26
+
+* add gotosource test
+* Fix failed when launch debugger from test error
+* Fix source map failed on boilerplate/tests/js/tokenUtxo.scrypttest.js
+* export arrayTypeAndSize and newCall
+
+
 ## 0.2.25
 
 * Fix desc2CompileResult fail when sourceMap empty
