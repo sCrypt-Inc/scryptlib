@@ -37,7 +37,7 @@
     ],
     "asm": "OP_0 OP_PICK OP_0 OP_EQUAL OP_IF OP_2 OP_PICK OP_2 OP_PICK OP_ADD OP_6 OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_ELSE OP_0 OP_PICK OP_1 OP_EQUAL OP_IF OP_NOP OP_1 OP_PICK $Simple.equalImpl.x ab12 OP_SIZE OP_NIP OP_MUL OP_1 OP_MUL $Simple.equalImpl.x OP_SUB OP_EQUAL OP_NOP OP_NIP OP_NIP OP_ELSE OP_0 OP_ENDIF OP_ENDIF",
     "sources": [
-        "/Users/lilong/Works/scryptlib/test/fixture/simple.scrypt"
+        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\simple.scrypt"
     ],
     "sourceMap": [
         "-1:1:1:1:1",

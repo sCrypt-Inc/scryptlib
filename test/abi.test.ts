@@ -203,48 +203,6 @@ describe('FunctionCall', () => {
     })
 
   })
-
-
-
-  describe('check VerifyError', () => {
-
-    
-    it('stop at person.scrypt#26', () => {
-
-      let result = person.main(man, 44, false).verify()
-
-      expect(result.error).to.contains("person.scrypt#26");
-      expect(result.error).to.contains("Main-launch.json");
-      expect(result.error).to.contains("fails at OP_VERIFY");
-    })
-
-    it('stop at person.scrypt#25', () => {
-
-      let result = person.main(man, 10, true).verify()
-
-      expect(result.error).to.contains("person.scrypt#25");
-      expect(result.error).to.contains("Main-launch.json");
-      expect(result.error).to.contains("fails at OP_VERIFY");
-
-    })
-
-
-    it('stop at p2pkh.scrypt#10', () => {
-
-      let sig = new Sig(toHex(signTx(tx, new bsv.PrivateKey.fromRandom('testnet'), p2pkh.lockingScript.toASM(), inputSatoshis)));
-      let pubkey = new PubKey(toHex(publicKey));
-
-      p2pkh.txContext = { inputSatoshis, tx };
-      result = p2pkh.unlock(sig, pubkey).verify();
-
-      expect(result.error).to.contains("p2pkh.scrypt#10");
-      expect(result.error).to.contains("DemoP2PKH-launch.json");
-      expect(result.error).to.contains("fails at OP_CHECKSIG");
-
-    })
-
-  })
-
 })
 
 describe('ABICoder', () => {
