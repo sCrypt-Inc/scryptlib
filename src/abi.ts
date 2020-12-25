@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
@@ -35,13 +35,6 @@ export interface DebugLaunch {
 
 function escapeRegExp(stringToGoIntoTheRegex) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
-
-function arrayTypeAndSize(arrayTypeName: string): [string, number] {
-  const group = arrayTypeName.split('[');
-  const elemTypeName = group[0];
-  const arraySize = parseInt(group[1].slice(0, -1));
-  return [elemTypeName, arraySize];
 }
 
 export class FunctionCall {
