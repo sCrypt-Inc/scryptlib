@@ -48,7 +48,7 @@ export class AbstractContract {
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
-    if (this._dataPart !== undefined && this._dataPart !== null) {
+    if (this._dataPart) {
       lsASM += ` OP_RETURN ${this._dataPart}`;
     }
     return bsv.Script.fromASM(lsASM.trim());
@@ -123,7 +123,7 @@ export class AbstractContract {
 
       const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
 
-      if(this._dataPart !== undefined && this._dataPart !== null) {
+      if(this._dataPart) {
         opcodes.push({opcode: 'OP_RETURN', file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]});
         this._dataPart.split(' ').forEach(data => {
           opcodes.push({opcode: data, file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]});
