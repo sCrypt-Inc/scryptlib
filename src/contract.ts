@@ -153,7 +153,7 @@ export class AbstractContract {
           const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
 
           if(srcInfo) {
-            opcode.pos = srcInfo.pos
+            opcode.pos = srcInfo.pos;
           }
         }
   
