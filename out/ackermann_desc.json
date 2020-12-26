@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "compilerVersion": "0.2.12+commit.ce592f4",
     "contract": "Ackermann",
     "md5": "e87d728970da8a720ea50651bbf394cd",

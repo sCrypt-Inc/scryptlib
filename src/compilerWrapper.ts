@@ -13,7 +13,7 @@ const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d
 const IMPORT_ERR_REG = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
-
+const CURRENT_CONTRACTDESCRIPTION_VERSION = 1;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',
@@ -279,6 +279,7 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
+				version: CURRENT_CONTRACTDESCRIPTION_VERSION,
 				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
@@ -518,8 +519,8 @@ export function getDefaultScryptc(): string {
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
 	const asm = description.asm.split(' ');
-	if(description.file === undefined) {
-		throw `Contract description miss file property,  Please update your sCrypt extension to the latest version and recompile`;
+	if(description.version === undefined || description.version < CURRENT_CONTRACTDESCRIPTION_VERSION) {
+		throw new Error(`Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`);
 	}
 	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,

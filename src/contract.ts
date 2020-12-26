@@ -21,6 +21,7 @@ export interface VerifyResult {
 }
 
 export interface ContractDescription {
+  version: number;
   compilerVersion: string;
   contract: string;
   md5: string;

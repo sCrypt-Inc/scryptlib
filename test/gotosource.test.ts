@@ -81,6 +81,14 @@ describe('VerifyError', () => {
     });
   });
 
+  describe('should throw when missing version', () => {
+
+    it('should throw when missing version', () => {
+      const jsonDescr = loadDescription('p2pkh_desc_missing_version.json');
+      expect(() => { buildContractClass(jsonDescr); } ).to.throw('Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile');
+    });
+  });
+
 
   describe('check VerifyError tokenUtxo.scrypt', () => {
     let token, lockingScriptCodePart, result

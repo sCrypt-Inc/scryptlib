@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "compilerVersion": "0.2.12+commit.ce592f4",
     "contract": "Token",
     "md5": "bd1f9146f27737ff85ec94b5ea6fdcd2",
