@@ -49,8 +49,13 @@ export class AbstractContract {
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
-    if (this._dataPart) {
-      lsASM += ` OP_RETURN ${this._dataPart}`;
+    if (typeof this._dataPart === 'string') {
+      const dp = this._dataPart.trim();
+      if (dp) {
+        lsASM += ` OP_RETURN ${dp}`;
+      } else {
+        lsASM += ` OP_RETURN`;  // note there is no space after op_return
+      }
     }
     return bsv.Script.fromASM(lsASM.trim());
   }
@@ -123,12 +128,16 @@ export class AbstractContract {
 
       const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
 
-      if(this._dataPart) {
+      if (typeof this._dataPart === 'string') {
         opcodes.push({opcode: 'OP_RETURN',  stack:[]});
-        this._dataPart.split(' ').forEach(data => {
-          opcodes.push({opcode: data, stack:[]});
-        });
+        const dp = this._dataPart.trim();
+        if (dp) {
+          dp.split(' ').forEach(data => {
+            opcodes.push({opcode: data, stack:[]});
+          });
+        }
       }
+      
       let opcodeIndex = lastStepIndex -  offset;
       if(stepCounter < (opcodes.length + offset)) {
         // not all opcodes were executed, stopped in the middle at opcode like OP_VERIFY
