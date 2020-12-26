@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.2.27
+
+* Fix failure when launching debugger after test errors
+* add file property to ContractDescription
+* small refactor
+
 ## 0.2.26
 
 * add goto source test
