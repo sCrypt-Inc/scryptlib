@@ -1,9 +1,10 @@
 import { assert, expect } from 'chai';
-import { getContractFilePath, newTx, loadDescription} from './helper';
-import { ABICoder, FunctionCall } from '../src/abi';
-import { buildContractClass, VerifyResult } from '../src/contract';
-import { bsv, toHex, signTx, compileContract ,num2bin, getPreimage} from '../src/utils';
+import { newTx, loadDescription} from './helper';
+import { DebugLaunch} from '../src/abi';
+import { buildContractClass, VerifyError, VerifyResult } from '../src/contract';
+import { bsv, toHex, signTx, compileContract ,num2bin, getPreimage, uri2path} from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage} from '../src/scryptTypes';
+import { readFileSync } from 'fs';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -21,6 +22,8 @@ const outputAmount = 22222
 const DataLen = 1
 const dummyTxId = 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458'
 
+const LINKPATTERN = /(\[((!\[[^\]]*?\]\(\s*)([^\s\(\)]+?)\s*\)\]|(?:\\\]|[^\]])*\])\(\s*)(([^\s\(\)]|\([^\s\(\)]*?\))+)\s*(".*?")?\)/g;
+
 let man: Struct = new Struct({
   isMale: false,
   age: 33,
@@ -28,6 +31,17 @@ let man: Struct = new Struct({
 });
 
 const person = new PersonContract(man, 18);
+
+
+function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
+  for (const match of error.matchAll(LINKPATTERN)) {
+    if(match[5] && match[5].startsWith("scryptlaunch")) {
+      const file = match[5].replace(/scryptlaunch/, "file");
+      return JSON.parse(readFileSync(uri2path(file)).toString());
+    }
+  }
+  return undefined;
+}
 
 
 describe('VerifyError', () => {
@@ -43,6 +57,27 @@ describe('VerifyError', () => {
     it('stop at ackermann.scrypt#38', () => {
       result = ackermann.unlock(15).verify()
       expect(result.error).to.contains("ackermann.scrypt#38");
+    });
+  });
+
+
+  describe('check VerifyError when no sourceMap', () => {
+    let p2pkh, result;
+
+    before(() => {
+      const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+      const publicKey = privateKey.publicKey;
+      const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
+      const jsonDescr = loadDescription('p2pkh_desc_without_sourceMap.json');
+      const DemoP2PKH = buildContractClass(jsonDescr);
+      p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+    });
+  
+    it('need generate DemoP2PKH-launch.json', () => {
+      let sig: Sig = new Sig(toHex(signTx(tx, privateKey, p2pkh.lockingScript.toASM(), inputSatoshis)));
+      let pubkey: PubKey = new PubKey(toHex(publicKey));
+      result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx });
+      expect(result.error).to.equal("VerifyError: SCRIPT_ERR_VERIFY");
     });
   });
 
@@ -114,6 +149,9 @@ describe('VerifyError', () => {
       result = testSplit(privateKey1, 60, 40).verify()
       expect(result.error).to.contains("fails at 02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a");
       expect(result.error).to.contains("tokenUtxo.scrypt#43");
+      const launch = readLaunchJson(result.error);
+      expect(launch).not.undefined;
+      expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
     });
 
 
