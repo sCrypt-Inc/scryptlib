@@ -30,38 +30,8 @@
             ]
         }
     ],
-    "file": "file:///C:/Users/myland/code/scryptlib/test/fixture/p2pkh.scrypt",
+    "file": "",
     "asm": "OP_NOP OP_0 $pubKeyHash OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP",
-    "sources": [
-        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\p2pkh.scrypt"
-    ],
-    "sourceMap": [
-        "0:4:3:6:4#DemoP2PKH.constructor:0",
-        "0:2:3:2:23",
-        "0:4:15:4:35",
-        "0:5:23:5:33",
-        "0:5:23:5:33",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "-1:1:1:1:1",
-        "0:4:3:6:4#DemoP2PKH.constructor:1",
-        "0:9:23:9:29",
-        "0:9:23:9:29",
-        "-1:1:1:1:1",
-        "0:9:38:9:39",
-        "0:9:38:9:39",
-        "0:9:31:9:34",
-        "0:9:7:9:51",
-        "0:10:24:10:27",
-        "0:10:24:10:27",
-        "0:10:29:10:35",
-        "0:10:29:10:35",
-        "-1:1:1:1:1",
-        "-1:1:1:1:1",
-        "-1:1:1:1:1",
-        "-1:1:1:1:1"
-    ]
+    "sources": [],
+    "sourceMap": []
 }

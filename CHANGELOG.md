@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.2.27
+
+* Fix failure when launching debugger after test errors
+* add file property to ContractDescription
+* small refactor
+
+## 0.2.26
+
+* add goto source test
+* Fix failure when launching debugger after test errors
+* Fix source map failure on boilerplate/tests/js/tokenUtxo.scrypttest.js
+
+
 ## 0.2.25
 
 * Fix desc2CompileResult fail when sourceMap empty

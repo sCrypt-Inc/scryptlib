@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
@@ -35,13 +35,6 @@ export interface DebugLaunch {
 
 function escapeRegExp(stringToGoIntoTheRegex) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
-
-function arrayTypeAndSize(arrayTypeName: string): [string, number] {
-  const group = arrayTypeName.split('[');
-  const elemTypeName = group[0];
-  const arraySize = parseInt(group[1].slice(0, -1));
-  return [elemTypeName, arraySize];
 }
 
 export class FunctionCall {
@@ -125,6 +118,11 @@ export class FunctionCall {
       const name =  `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
       const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
+      // some desc without sourceMap will not have file property.
+      if(!program) {
+        return "";
+      }
+
       const debugConfig: DebugConfiguration = {
         type: "scrypt",
         request: "launch",
@@ -177,7 +175,9 @@ export class FunctionCall {
 
       if(!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
-        result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
+        if(debugUrl) {
+          result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
+        }
       }
       return result;
     }

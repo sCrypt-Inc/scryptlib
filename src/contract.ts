@@ -3,6 +3,7 @@ import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult} from "./compilerWrapper";
+import { assert } from "console";
 
 export interface TxContext {
   tx?: any;
@@ -20,12 +21,14 @@ export interface VerifyResult {
 }
 
 export interface ContractDescription {
+  version: number;
   compilerVersion: string;
   contract: string;
   md5: string;
   structs: Array<StructEntity>;
   abi: Array<ABIEntity>;
   asm: string;
+  file: string;
   sources: Array<string>;
   sourceMap: Array<string>;
 }
@@ -46,8 +49,13 @@ export class AbstractContract {
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
-    if (this._dataPart !== undefined && this._dataPart !== null) {
-      lsASM += ` OP_RETURN ${this._dataPart}`;
+    if (typeof this._dataPart === 'string') {
+      const dp = this._dataPart.trim();
+      if (dp) {
+        lsASM += ` OP_RETURN ${dp}`;
+      } else {
+        lsASM += ` OP_RETURN`;  // note there is no space after op_return
+      }
     }
     return bsv.Script.fromASM(lsASM.trim());
   }
@@ -67,20 +75,20 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(steps: any[], opcodes: OpCode[], pc: number): OpCode | undefined {
-    while (--pc > 0) {
-      if (opcodes[pc].file && opcodes[pc].file !== "std" && opcodes[pc].line > 0 && steps[pc].fExec) {
-        return opcodes[pc];
+  static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
+    while (--stepIndex > 0 && --opcodesIndex > 0) {
+      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== "std" && opcodes[opcodesIndex].pos.line > 0 && steps[stepIndex].fExec) {
+        return opcodes[opcodesIndex];
       }
     }
   }
 
 
 
-  static findLastfExec(steps: any[], pc: StepIndex): StepIndex {
-    while (--pc > 0) {
-      if (steps[pc].fExec) {
-        return pc;
+  static findLastfExec(steps: any[], stepIndex: StepIndex): StepIndex {
+    while (--stepIndex > 0) {
+      if (steps[stepIndex].fExec) {
+        return stepIndex;
       }
     }
   }
@@ -111,37 +119,49 @@ export class AbstractContract {
 
     let error = `VerifyError: ${bsi.errstr}`;
 
-    const lastStepfExec = steps[stepCounter - 1].fExec;
 
-    if(!lastStepfExec) {
-      stepCounter = AbstractContract.findLastfExec(steps, stepCounter);
-    }
 
     // some time there is no opcodes, such as when sourcemap flag is closeed. 
     if(opcodes) {
       const offset = unlockingScriptASM.trim().split(' ').length;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
-      const pc = Math.min(stepCounter -  offset,  opcodes.length -1);
+
+      const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
+
+      if (typeof this._dataPart === 'string') {
+        opcodes.push({opcode: 'OP_RETURN',  stack:[]});
+        const dp = this._dataPart.trim();
+        if (dp) {
+          dp.split(' ').forEach(data => {
+            opcodes.push({opcode: data, stack:[]});
+          });
+        }
+      }
+      
+      let opcodeIndex = lastStepIndex -  offset;
+      if(stepCounter < (opcodes.length + offset)) {
+        // not all opcodes were executed, stopped in the middle at opcode like OP_VERIFY
+         opcodeIndex += 1;
+      }
+
+      if(!result && opcodes[opcodeIndex]) {
+
+        const opcode = opcodes[opcodeIndex]; 
   
-      if(!result && opcodes[pc]) {
+        if(!opcode.pos || opcode.pos.file === "std") {
   
-        const opcode = opcodes[pc]; 
-  
-        if(!opcode.file || opcode.file === "std") {
-  
-          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, pc);
+          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
 
           if(srcInfo) {
-            opcode.file = srcInfo.file;
-            opcode.line = srcInfo.line;
+            opcode.pos = srcInfo.pos
           }
         }
   
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
-        if(opcode.file && opcode.line) {
-          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.file)}#${opcode.line})  fails at ${opcode.opcode}\n`;
+        if(opcode.pos) {
+          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
         }  
-      }
+      } 
     }
 
     return {

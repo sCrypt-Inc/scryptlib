@@ -13,7 +13,7 @@ const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d
 const IMPORT_ERR_REG = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
-
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 1;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',
@@ -69,14 +69,19 @@ export enum DebugModeTag {
 	LoopStart = 'L0'
 }
 
-export interface OpCode {
-	file?: string;
-	line?: number;
-	endLine?: number;
-	column?: number;
+
+export interface Pos {
+	file: string;
+	line: number;
+	endLine: number;
+	column: number;
 	endColumn: number;
+}
+
+export interface OpCode {
 	opcode: string;
 	stack: string[];
+	pos?: Pos;
 	debugTag?: DebugModeTag;
 }
 
@@ -248,14 +253,18 @@ export function compile(
 							debugTag = DebugModeTag.LoopStart;
 						}
 
-						return {
+						const pos: Pos | undefined = sources[fileIndex] ? {
 							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
 							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
 							endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
 							column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
 							endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+						} : undefined;
+
+						return {
 							opcode: item.opcode,
 							stack: item.stack,
+							pos: pos,
 							debugTag
 						};
 					}
@@ -270,11 +279,13 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
+				version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
 				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
 				structs: getStructDeclaration(result.ast),
 				abi,
+				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
 				sources:  [],
 				sourceMap: []
@@ -282,6 +293,7 @@ export function compile(
 
 			if(settings.sourceMap && asmObj) {
 				Object.assign(description, {
+					file: result.file,
 					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
 					sourceMap:  asmObj.output.map(item => item.src)
 				});
@@ -507,13 +519,16 @@ export function getDefaultScryptc(): string {
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
 	const asm = description.asm.split(' ');
+	if(description.version === undefined || description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
+		throw new Error(`Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`);
+	}
 	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,
 		contract : description.contract,
 		md5 : description.md5,
 		abi : description.abi,
 		structs : description.structs,
-		file: sources && sources[0] ,
+		file: description.file,
 		errors: [],
 		asm: asm.map((opcode, index) => {
 			const item = description.sourceMap && description.sourceMap[index];
@@ -521,12 +536,17 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 				const match = SOURCE_REG.exec(item);
 				if (match && match.groups) {
 					const fileIndex = parseInt(match.groups.fileIndex);
-					return {
+
+					const pos: Pos | undefined = sources[fileIndex] ? {
 						file: sources[fileIndex],
 						line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
 						endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
 						column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
 						endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+					} : undefined;
+
+					return {
+						pos: pos,
 						opcode: opcode,
 						stack: []
 					};
@@ -534,11 +554,6 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 			}
 
 			return {
-				file: undefined,
-				line: undefined,
-				endLine:undefined,
-				column: undefined,
-				endColumn: undefined,
 				opcode: opcode,
 				stack: []
 			};

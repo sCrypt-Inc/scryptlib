@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct} from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType} from "./scryptTypes";
 import { StructEntity, compile, getPlatformScryptc, CompileResult} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
@@ -469,6 +469,13 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
   });
 }
 
+export function arrayTypeAndSize(arrayTypeName: string): [string, number] {
+  const group = arrayTypeName.split('[');
+  const elemTypeName = group[0];
+  const arraySize = parseInt(group[1].slice(0, -1));
+  return [elemTypeName, arraySize];
+}
+
 
 
 export function readFileByLine(path: string, index: number): string {
@@ -541,4 +548,9 @@ export function compileContract(file: string, out?: string): CompileResult {
   }
 
   return result;
+}
+
+
+export function newCall(Cls, args: Array<SupportedParamType>) {
+	return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
 }

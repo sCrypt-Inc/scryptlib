@@ -6,7 +6,6 @@ import { exit } from 'process';
 function compileAllContracts() {
   const contracts = glob.sync(join(__dirname, './*.scrypt'));
   contracts.forEach(filePath => {
-    console.log(`Compiling contract ${filePath} ...`)
 
     const result = compileContract(filePath, join(__dirname, "..", "..", "out"));
 
