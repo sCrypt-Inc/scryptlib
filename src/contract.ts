@@ -27,6 +27,7 @@ export interface ContractDescription {
   structs: Array<StructEntity>;
   abi: Array<ABIEntity>;
   asm: string;
+  file: string;
   sources: Array<string>;
   sourceMap: Array<string>;
 }

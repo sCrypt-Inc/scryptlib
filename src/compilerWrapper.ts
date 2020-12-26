@@ -275,6 +275,7 @@ export function compile(
 				md5: md5(sourceContent),
 				structs: getStructDeclaration(result.ast),
 				abi,
+				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
 				sources:  [],
 				sourceMap: []
@@ -282,6 +283,7 @@ export function compile(
 
 			if(settings.sourceMap && asmObj) {
 				Object.assign(description, {
+					file: result.file,
 					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
 					sourceMap:  asmObj.output.map(item => item.src)
 				});
@@ -506,16 +508,17 @@ export function getDefaultScryptc(): string {
 
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
-	//last one is main contract.
-	const mainContractPath: string = sources && sources[sources.length - 1];
 	const asm = description.asm.split(' ');
+	if(description.file === undefined) {
+		throw `Contract description miss file property,  Please update your sCrypt extension to the latest version and recompile`;
+	}
 	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,
 		contract : description.contract,
 		md5 : description.md5,
 		abi : description.abi,
 		structs : description.structs,
-		file: mainContractPath,
+		file: description.file,
 		errors: [],
 		asm: asm.map((opcode, index) => {
 			const item = description.sourceMap && description.sourceMap[index];

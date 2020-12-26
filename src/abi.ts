@@ -118,6 +118,11 @@ export class FunctionCall {
       const name =  `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
       const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
+      // some desc without sourceMap will not have file property.
+      if(!program) {
+        return "";
+      }
+
       const debugConfig: DebugConfiguration = {
         type: "scrypt",
         request: "launch",
@@ -170,7 +175,9 @@ export class FunctionCall {
 
       if(!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
-        result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
+        if(debugUrl) {
+          result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
+        }
       }
       return result;
     }
