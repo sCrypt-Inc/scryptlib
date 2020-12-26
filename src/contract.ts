@@ -69,9 +69,8 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, offset: number): OpCode | undefined {
-    while (--stepIndex > 0) {
-      const opcodesIndex = stepIndex - offset + 1;
+  static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
+    while (--stepIndex > 0 && --opcodesIndex > 0) {
       if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== "std" && opcodes[opcodesIndex].pos.line > 0 && steps[stepIndex].fExec) {
         return opcodes[opcodesIndex];
       }
@@ -129,20 +128,19 @@ export class AbstractContract {
           opcodes.push({opcode: data, stack:[]});
         });
       }
-      let pc = lastStepIndex -  offset;
-      if(stepCounter === (opcodes.length + offset)) { // all opcode  was exec
-        
-      } else { //not all opcode was exec, break like OP_VERIFY
-        pc += 1;
+      let opcodeIndex = lastStepIndex -  offset;
+      if(stepCounter < (opcodes.length + offset)) {
+        // not all opcodes were executed, stopped in the middle at opcode like OP_VERIFY
+         opcodeIndex += 1;
       }
 
-      if(!result && opcodes[pc]) {
+      if(!result && opcodes[opcodeIndex]) {
 
-        const opcode = opcodes[pc]; 
+        const opcode = opcodes[opcodeIndex]; 
   
         if(!opcode.pos || opcode.pos.file === "std") {
   
-          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, offset);
+          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
 
           if(srcInfo) {
             opcode.pos = srcInfo.pos
