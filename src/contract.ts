@@ -72,7 +72,7 @@ export class AbstractContract {
   static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, offset: number): OpCode | undefined {
     while (--stepIndex > 0) {
       const opcodesIndex = stepIndex - offset + 1;
-      if (opcodes[opcodesIndex].file && opcodes[opcodesIndex].file !== "std" && opcodes[opcodesIndex].line > 0 && steps[stepIndex].fExec) {
+      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== "std" && opcodes[opcodesIndex].pos.line > 0 && steps[stepIndex].fExec) {
         return opcodes[opcodesIndex];
       }
     }
@@ -124,9 +124,9 @@ export class AbstractContract {
       const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
 
       if(this._dataPart) {
-        opcodes.push({opcode: 'OP_RETURN', file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]});
+        opcodes.push({opcode: 'OP_RETURN',  stack:[]});
         this._dataPart.split(' ').forEach(data => {
-          opcodes.push({opcode: data, file: undefined, line: undefined, endLine: undefined, column: undefined, endColumn: undefined, stack:[]});
+          opcodes.push({opcode: data, stack:[]});
         });
       }
       let pc = lastStepIndex -  offset;
@@ -140,19 +140,18 @@ export class AbstractContract {
 
         const opcode = opcodes[pc]; 
   
-        if(!opcode.file || opcode.file === "std") {
+        if(!opcode.pos || opcode.pos.file === "std") {
   
           const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, offset);
 
           if(srcInfo) {
-            opcode.file = srcInfo.file;
-            opcode.line = srcInfo.line;
+            opcode.pos = srcInfo.pos
           }
         }
   
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
-        if(opcode.file && opcode.line) {
-          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.file)}#${opcode.line})  fails at ${opcode.opcode}\n`;
+        if(opcode.pos) {
+          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
         }  
       } 
     }

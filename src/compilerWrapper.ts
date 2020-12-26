@@ -69,14 +69,19 @@ export enum DebugModeTag {
 	LoopStart = 'L0'
 }
 
-export interface OpCode {
-	file?: string;
-	line?: number;
-	endLine?: number;
-	column?: number;
+
+export interface Pos {
+	file: string;
+	line: number;
+	endLine: number;
+	column: number;
 	endColumn: number;
+}
+
+export interface OpCode {
 	opcode: string;
 	stack: string[];
+	pos?: Pos;
 	debugTag?: DebugModeTag;
 }
 
@@ -248,14 +253,18 @@ export function compile(
 							debugTag = DebugModeTag.LoopStart;
 						}
 
-						return {
+						const pos: Pos | undefined = sources[fileIndex] ? {
 							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
 							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
 							endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
 							column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
 							endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+						} : undefined;
+
+						return {
 							opcode: item.opcode,
 							stack: item.stack,
+							pos: pos,
 							debugTag
 						};
 					}
@@ -526,12 +535,17 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 				const match = SOURCE_REG.exec(item);
 				if (match && match.groups) {
 					const fileIndex = parseInt(match.groups.fileIndex);
-					return {
+
+					const pos: Pos | undefined = sources[fileIndex] ? {
 						file: sources[fileIndex],
 						line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
 						endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
 						column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
 						endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+					} : undefined;
+
+					return {
+						pos: pos,
 						opcode: opcode,
 						stack: []
 					};
@@ -539,11 +553,6 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 			}
 
 			return {
-				file: undefined,
-				line: undefined,
-				endLine:undefined,
-				column: undefined,
-				endColumn: undefined,
 				opcode: opcode,
 				stack: []
 			};
