@@ -1,5 +1,6 @@
 export { buildContractClass, VerifyResult } from './contract';
 export { compile, StructEntity, getStructDeclaration, getABIDeclaration, ABIEntity, ABIEntityType, ABI } from './compilerWrapper';
+export { AbiParams, AbiParam } from './abi';
 export {
     bsv, signTx, toHex, getPreimage, num2bin, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, VariableType, literal2Asm,
     findStructByType, findStructByName, checkStruct, isStructType, isArrayType, compileContract,
