@@ -37,7 +37,7 @@ function escapeRegExp(stringToGoIntoTheRegex) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-export type AbiParam = {
+export interface AbiParam {
   name: string,
   type: string,
   value: SupportedParamType

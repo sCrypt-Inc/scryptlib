@@ -1,4 +1,4 @@
-import { ABICoder, FunctionCall, Script} from "./abi";
+import { ABICoder, AbiParams, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
@@ -212,6 +212,10 @@ export class AbstractContract {
       }
     }
     return result;
+  }
+
+  public constructorParams() : AbiParams {
+    return this.scriptedConstructor.abiParams;
   }
 }
 
