@@ -37,9 +37,20 @@ function escapeRegExp(stringToGoIntoTheRegex) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+export type AbiParam = {
+  name: string,
+  type: string,
+  value: SupportedParamType
+}
+
+export type AbiParams = AbiParam[];
+
+
 export class FunctionCall {
 
   readonly contract: AbstractContract;
+
+  readonly abiParams: AbiParams = [];
 
   private _unlockingScriptAsm?: string;
 
@@ -76,6 +87,22 @@ export class FunctionCall {
     }
 
     this.contract = binding.contract;
+
+
+    this.abiParams =  Object.getPrototypeOf(this.contract).constructor.abi.filter((entity:ABIEntity)  => {
+      if('constructor' === methodName) {
+        return entity.type === 'constructor';
+      }
+      return entity.name === methodName;
+    }).map((entity: ABIEntity) => {
+      return entity.params.map((param, index) => {
+        return {
+          name: param.name,
+          type: param.type,
+          value: params[index]
+        }
+      })
+    }).flat(1);
 
     if (binding.lockingScriptASM) {
       this._lockingScriptAsm = binding.lockingScriptASM;

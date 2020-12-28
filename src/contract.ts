@@ -273,6 +273,13 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
     get asmVars(): AsmVarValues | null {
       return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM());
     }
+
+    get asmAbiParams(): AsmVarValues | null {
+      //TODO: @deprecate AbstractContract.getAsmVars , using asmAbiParams
+
+      return null;
+    }
+
   };
 
   ContractClass.contractName = desc.contract;
