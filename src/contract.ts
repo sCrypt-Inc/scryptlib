@@ -219,6 +219,9 @@ export class AbstractContract {
   }
 }
 
+
+const invalidMethodName = ["constructorParams", "setDataPart", "run_verify", "replaceAsmVars", "asmVars", "asmAbiParams", "dataPart", "lockingScript", "txContext"];
+
 export function buildContractClass(desc: CompileResult | ContractDescription): any {
 
   if (!desc.contract) {
@@ -294,6 +297,9 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
   ContractClass.file = desc.file;
 
   ContractClass.abi.forEach(entity => {
+    if(invalidMethodName.indexOf(entity.name) > -1) {
+      throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
+    }
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
       return ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
     };
