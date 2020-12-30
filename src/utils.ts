@@ -440,10 +440,19 @@ export function isArrayType(type: string) {
 }
 
 
-export function findStructByType(type: string, s: StructEntity[]): StructEntity | undefined {
+export function getStructNameByType(type: string): string  {
   const m = /struct\s(\w+)\s\{\}/.exec(type.trim());
   if (m) {
-    return findStructByName(m[1], s);
+    return m[1];
+  }
+  return "";
+}
+
+
+export function findStructByType(type: string, s: StructEntity[]): StructEntity | undefined {
+  const name = getStructNameByType(type);
+  if (name) {
+    return findStructByName(name, s);
   }
   return undefined;
 }

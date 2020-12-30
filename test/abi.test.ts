@@ -76,6 +76,20 @@ describe('FunctionCall', () => {
       })
     })
 
+    describe('check abiParams', () => {
+      it('abiParams should be correct', () => {
+        expect(target.args).to.deep.include.members([{
+          name: 'sig',
+          type: 'Sig',
+          value: sig
+        },  {
+          name: 'pubKey',
+          type: 'PubKey',
+          value: pubkey
+        }])
+      })
+    })
+
     describe('toASM()', () => {
       it('should return the unlocking script in ASM', () => {
         assert.equal(target.toASM(), [sig.toASM(), pubkey.toASM()].join(' '));
