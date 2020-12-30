@@ -78,7 +78,7 @@ describe('FunctionCall', () => {
 
     describe('check abiParams', () => {
       it('abiParams should be correct', () => {
-        expect(target.abiParams).to.deep.include.members([{
+        expect(target.args).to.deep.include.members([{
           name: 'sig',
           type: 'Sig',
           value: sig

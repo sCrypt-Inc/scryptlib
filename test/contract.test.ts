@@ -37,6 +37,15 @@ describe('buildContractClass()', () => {
       unlockingScriptASM = [toHex(sig), toHex(publicKey)].join(' ');
     })
 
+    it("test arguments", () => {
+      expect(instance.arguments('constructor')).to.deep.include.members([{
+        name: "pubKeyHash",
+        type: "Ripemd160",
+        value: new Ripemd160(toHex(pubKeyHash))
+      }]);
+      expect(instance.arguments('unlock')).to.deep.equal([]);
+    })
+
     it('static getAsmVars method', () => {
       let lockingScriptAsm = instance.lockingScript.toASM()
       let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
@@ -159,6 +168,20 @@ describe('buildContractClass()', () => {
         const validPubkey = toHex(publicKey);
         result = instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx });
         assert.isTrue(result.success, result.error);
+
+        expect(instance.arguments('unlock')).to.deep.equal([
+          {
+            name: 'sig',
+            type: 'Sig',
+            value: new Sig(validSig)
+          },
+          {
+            name: 'pubKey',
+            type: 'PubKey',
+            value: new PubKey(validPubkey)
+          }
+        ]);
+
         instance.unlock(new Sig(validSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
         assert.isTrue(result.success, result.error);
 
@@ -166,6 +189,21 @@ describe('buildContractClass()', () => {
         const invalidSig = validSig.replace('1', '0');
         const invalidPubKey = validPubkey.replace('0', '1');
         result = instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
+
+        // arguments shoud be corresponding to the lastest call
+        expect(instance.arguments('unlock')).to.deep.equal([
+          {
+            name: 'sig',
+            type: 'Sig',
+            value: new Sig(invalidSig)
+          },
+          {
+            name: 'pubKey',
+            type: 'PubKey',
+            value: new PubKey(validPubkey)
+          }
+        ]);
+
         assert.isFalse(result.success, result.error);
         result = instance.unlock(new Sig(validSig), new PubKey(invalidPubKey)).verify({ inputSatoshis, tx })
         assert.isFalse(result.success, result.error);

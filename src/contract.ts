@@ -1,4 +1,4 @@
-import { ABICoder, AbiParams, FunctionCall, Script} from "./abi";
+import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
 import { SupportedParamType} from './scryptTypes';
@@ -46,6 +46,7 @@ export class AbstractContract {
   public static file: string;
 
   scriptedConstructor: FunctionCall;
+  calls: Map<string, FunctionCall> = new Map();
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
@@ -214,8 +215,16 @@ export class AbstractContract {
     return result;
   }
 
-  public constructorParams() : AbiParams {
-    return this.scriptedConstructor.abiParams;
+  public arguments(entryName: string) : Arguments {
+    if(entryName === 'constructor') {
+      return this.scriptedConstructor.args;
+    } 
+
+    if(this.calls.has(entryName)) {
+      return this.calls.get(entryName).args;
+    }
+
+    return [];
   }
 }
 
@@ -301,7 +310,9 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
       throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
     }
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
-      return ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
+      const call = ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
+      this.calls.set(entity.name, call);
+      return call;
     };
   });
 
