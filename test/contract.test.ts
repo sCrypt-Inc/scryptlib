@@ -190,7 +190,7 @@ describe('buildContractClass()', () => {
         const invalidPubKey = validPubkey.replace('0', '1');
         result = instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
 
-        // arguments shoud be corresponding to the lastest call
+        // arguments should be corresponding to the lastest call
         expect(instance.arguments('unlock')).to.deep.equal([
           {
             name: 'sig',
