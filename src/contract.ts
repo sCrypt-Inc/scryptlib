@@ -229,7 +229,7 @@ export class AbstractContract {
 }
 
 
-const invalidMethodName = ["constructorParams", "setDataPart", "run_verify", "replaceAsmVars", "asmVars", "asmAbiParams", "dataPart", "lockingScript", "txContext"];
+const invalidMethodName = ["arguments", "setDataPart", "run_verify", "replaceAsmVars", "asmVars", "asmArguments", "dataPart", "lockingScript", "txContext"];
 
 export function buildContractClass(desc: CompileResult | ContractDescription): any {
 
@@ -290,8 +290,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
       return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM());
     }
 
-    get asmAbiParams(): AsmVarValues | null {
-      //TODO: @deprecate AbstractContract.getAsmVars , using asmAbiParams
+    get asmArguments(): AsmVarValues | null {
+      //TODO: @deprecate AbstractContract.getAsmVars , using asmArguments
 
       return null;
     }
