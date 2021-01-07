@@ -80,7 +80,7 @@ export interface Pos {
 
 export interface OpCode {
 	opcode: string;
-	stack: string[];
+	stack?: string[];
 	pos?: Pos;
 	debugTag?: DebugModeTag;
 }
@@ -126,9 +126,11 @@ export function compile(
 		cmdPrefix?: string,
 		cmdArgs?: string,
 		sourceMap?: boolean,
+		optimize?: boolean,
 	} = {
 			asm: true,
-			debug: true
+			debug: true,
+			optimize: false,
 		}
 ): CompileResult {
 	const st = Date.now();
@@ -142,7 +144,7 @@ export function compile(
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
 		const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
-		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} ${settings.optimize ? '--opt' : ''} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 		let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
 		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
 		output = output.split(/\r?\n/g).join('\n');
@@ -229,48 +231,51 @@ export function compile(
 			const outputFilePath = getOutputFilePath(outputDir, 'asm');
 			outputFiles['asm'] = outputFilePath;
 
-			if (settings.debug == false) {
-				result.asm = JSON.parse(readFileSync(outputFilePath, 'utf8')).join(' ');
-			} else {
-				asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
-				const sources = asmObj.sources;
-				result.asm = asmObj.output.map(item => {
-					const match = SOURCE_REG.exec(item.src);
+			asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
+			const sources = asmObj.sources;
+			result.asm = asmObj.output.map(item => {
 
-					if (match && match.groups) {
-						const fileIndex = parseInt(match.groups.fileIndex);
+				if (!settings.debug) {
+					return {
+						opcode: item.opcode
+					};
+				}
 
-						let debugTag: DebugModeTag | undefined;
+				const match = SOURCE_REG.exec(item.src);
 
-						const tagStr = match.groups.tagStr;
-						if (/\w+\.\w+:0/.test(tagStr)) {
-							debugTag = DebugModeTag.FuncStart;
-						}
-						if (/\w+\.\w+:1/.test(tagStr)) {
-							debugTag = DebugModeTag.FuncEnd;
-						}
-						if (/loop:0/.test(tagStr)) {
-							debugTag = DebugModeTag.LoopStart;
-						}
+				if (match && match.groups) {
+					const fileIndex = parseInt(match.groups.fileIndex);
 
-						const pos: Pos | undefined = sources[fileIndex] ? {
-							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-							endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-							column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-							endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-						} : undefined;
+					let debugTag: DebugModeTag | undefined;
 
-						return {
-							opcode: item.opcode,
-							stack: item.stack,
-							pos: pos,
-							debugTag
-						};
+					const tagStr = match.groups.tagStr;
+					if (/\w+\.\w+:0/.test(tagStr)) {
+						debugTag = DebugModeTag.FuncStart;
 					}
-					throw new Error('Compile Failed: Asm output parsing Error!');
-				});
-			}
+					if (/\w+\.\w+:1/.test(tagStr)) {
+						debugTag = DebugModeTag.FuncEnd;
+					}
+					if (/loop:0/.test(tagStr)) {
+						debugTag = DebugModeTag.LoopStart;
+					}
+
+					const pos: Pos | undefined = sources[fileIndex] ? {
+						file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+						line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+						endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+						column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+						endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+					} : undefined;
+
+					return {
+						opcode: item.opcode,
+						stack: item.stack,
+						pos: pos,
+						debugTag
+					};
+				}
+				throw new Error('Compile Failed: Asm output parsing Error!');
+			});
 		}
 
 		if (settings.desc) {
@@ -291,11 +296,11 @@ export function compile(
 				sourceMap: []
 			};
 
-			if(settings.sourceMap && asmObj) {
+			if(settings.debug && settings.sourceMap && asmObj) {
 				Object.assign(description, {
 					file: result.file,
 					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
-					sourceMap:  asmObj.output.map(item => item.src)
+					sourceMap:  asmObj.output.map(item => item.src),
 				});
 			}
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
