@@ -25,6 +25,7 @@ export interface DebugConfiguration {
   constructorArgs: SupportedParamType[];
   pubFunc: string;
   pubFuncArgs: SupportedParamType[];
+  asmArgs?: AsmVarValues;
   txContext?: any;
 }
 
@@ -56,8 +57,6 @@ export class FunctionCall {
 
   private _lockingScriptAsm?: string;
 
-  private asmArgs: AsmVarValues | null = null;
-
   get unlockingScript(): Script | undefined {
     return this._unlockingScriptAsm === undefined ? undefined : bsv.Script.fromASM(this._unlockingScriptAsm);
   }
@@ -67,7 +66,6 @@ export class FunctionCall {
   }
 
   init(asmVarValues: AsmVarValues): void {
-    this.asmArgs = asmVarValues;
     for (const key in asmVarValues) {
       const val = asmVarValues[key];
       const re = new RegExp(`\\$${key}`, 'g');
@@ -176,7 +174,7 @@ export class FunctionCall {
         Object.assign(debugTxContext, {hex: tx.toString(), inputIndex,  inputSatoshis});
       }
 
-      const asmArgs: AsmVarValues = this.asmArgs || {};
+      const asmArgs: AsmVarValues = this.contract.asmArgs || {};
 
       if(!isEmpty(asmArgs)) {
         Object.assign(debugConfig, {asmArgs: asmArgs});

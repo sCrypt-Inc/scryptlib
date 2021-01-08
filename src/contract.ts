@@ -47,6 +47,7 @@ export class AbstractContract {
 
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
+  asmArgs: AsmVarValues | null = null;
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
@@ -73,6 +74,7 @@ export class AbstractContract {
 
   // replace assembly variables with assembly values
   replaceAsmVars(asmVarValues: AsmVarValues): void {
+    this.asmArgs = asmVarValues;
     this.scriptedConstructor.init(asmVarValues);
   }
 
