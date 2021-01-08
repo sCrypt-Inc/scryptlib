@@ -205,4 +205,45 @@ describe('VerifyError', () => {
 
   })
 
+
+  describe('check asmArgs', () => {
+    let asm, result;
+  
+    before(() => {
+      const ASM = buildContractClass(loadDescription('asm_desc.json'));
+      asm = new ASM();
+    });
+  
+    it('it should success when replace correctly ', () => {
+
+      asm.replaceAsmVars({
+        'ASM.equalImpl.x': 'OP_5'
+      })
+
+      assert.deepEqual("OP_NOP 0 OP_PICK OP_5 ab12 OP_SIZE OP_NIP OP_MUL OP_1 OP_MUL OP_5 OP_SUB OP_EQUAL OP_NOP OP_NIP", asm.lockingScript.toASM())
+
+      result = asm.equal(5).verify()
+      expect(result.success, result.error).to.be.true;
+    });
+
+
+    it('it should error when replace incorrectly ', () => {
+
+      asm.replaceAsmVars({
+        'ASM.equalImpl.x': 'OP_5'
+      })
+
+      result = asm.equal(15).verify()
+      expect(result.success, result.error).to.be.false;
+
+      const launch = readLaunchJson(result.error);
+
+      assert.deepEqual(launch.configurations[0].asmArgs, {
+          'ASM.equalImpl.x': 'OP_5'
+        }
+      )
+    });
+
+  });
+
 })

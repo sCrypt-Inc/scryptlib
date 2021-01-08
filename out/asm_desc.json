@@ -1,0 +1,46 @@
+{
+    "version": 1,
+    "compilerVersion": "0.2.12+commit.ce592f4",
+    "contract": "ASM",
+    "md5": "33800168263cf957106c904547d5caf5",
+    "structs": [],
+    "abi": [
+        {
+            "type": "function",
+            "name": "equal",
+            "index": 0,
+            "params": [
+                {
+                    "name": "a",
+                    "type": "int"
+                }
+            ]
+        },
+        {
+            "type": "constructor",
+            "params": []
+        }
+    ],
+    "file": "file:///C:/Users/myland/code/scryptlib/test/fixture/asm.scrypt",
+    "asm": "OP_NOP OP_0 OP_PICK $ASM.equalImpl.x ab12 OP_SIZE OP_NIP OP_MUL OP_1 OP_MUL $ASM.equalImpl.x OP_SUB OP_EQUAL OP_NOP OP_NIP",
+    "sources": [
+        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\asm.scrypt"
+    ],
+    "sourceMap": [
+        "0:20:17:20:34#ASM.equalImpl:0",
+        "0:20:32:20:33",
+        "0:20:32:20:33",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "0:20:17:20:34#ASM.equalImpl:1",
+        "-1:1:1:1:1"
+    ]
+}
