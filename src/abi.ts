@@ -22,9 +22,9 @@ export interface DebugConfiguration {
   request: "launch";
   name: string;
   program: string;
-  constructorParams: SupportedParamType[];
-  entryMethod: string;
-  entryMethodParams: SupportedParamType[];
+  constructorArgs: SupportedParamType[];
+  pubFunc: string;
+  pubFuncArgs: SupportedParamType[];
   txContext?: any;
 }
 
@@ -56,6 +56,8 @@ export class FunctionCall {
 
   private _lockingScriptAsm?: string;
 
+  private asmArgs: AsmVarValues | null = null;
+
   get unlockingScript(): Script | undefined {
     return this._unlockingScriptAsm === undefined ? undefined : bsv.Script.fromASM(this._unlockingScriptAsm);
   }
@@ -65,6 +67,7 @@ export class FunctionCall {
   }
 
   init(asmVarValues: AsmVarValues): void {
+    this.asmArgs = asmVarValues;
     for (const key in asmVarValues) {
       const val = asmVarValues[key];
       const re = new RegExp(`\\$${key}`, 'g');
@@ -138,10 +141,10 @@ export class FunctionCall {
   genLaunchConfigFile(txContext?: TxContext): FileUri{
 
 
-    const constructorParams:SupportedParamType[] = this.contract.scriptedConstructor.params;
+    const constructorArgs:SupportedParamType[] = this.contract.scriptedConstructor.params;
 
-      const entryMethodParams:SupportedParamType[] = this.params;
-      const entryMethod: string = this.methodName;
+      const pubFuncArgs:SupportedParamType[] = this.params;
+      const pubFunc: string = this.methodName;
       const name =  `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
       const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
@@ -155,9 +158,9 @@ export class FunctionCall {
         request: "launch",
         name: name,
         program: program,
-        constructorParams: constructorParams,
-        entryMethod: entryMethod,
-        entryMethodParams: entryMethodParams
+        constructorArgs: constructorArgs,
+        pubFunc: pubFunc,
+        pubFuncArgs: pubFuncArgs
       };
 
 
@@ -171,6 +174,12 @@ export class FunctionCall {
         const inputIndex = txCtx.inputIndex || 0;
         const inputSatoshis = txCtx.inputSatoshis || 0;
         Object.assign(debugTxContext, {hex: tx.toString(), inputIndex,  inputSatoshis});
+      }
+
+      const asmArgs: AsmVarValues = this.asmArgs || {};
+
+      if(!isEmpty(asmArgs)) {
+        Object.assign(debugConfig, {asmArgs: asmArgs});
       }
 
       if(this.contract.dataPart) {
@@ -199,7 +208,7 @@ export class FunctionCall {
   verify(txContext?: TxContext): VerifyResult {
     if (this.unlockingScript) {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
-
+      
       if(!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
         if(debugUrl) {

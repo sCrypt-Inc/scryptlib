@@ -215,13 +215,13 @@ export class AbstractContract {
     return result;
   }
 
-  public arguments(entryName: string) : Arguments {
-    if(entryName === 'constructor') {
+  public arguments(pubFuncName: string) : Arguments {
+    if(pubFuncName === 'constructor') {
       return this.scriptedConstructor.args;
     } 
 
-    if(this.calls.has(entryName)) {
-      return this.calls.get(entryName).args;
+    if(this.calls.has(pubFuncName)) {
+      return this.calls.get(pubFuncName).args;
     }
 
     return [];
