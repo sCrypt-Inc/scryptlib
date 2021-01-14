@@ -346,7 +346,7 @@ export function compilerVersion(cwd?: string): string {
 function addSourceLocation(astRoot, basePath: string, curFileName: string) {
 	for (const fileName in astRoot) {
 		if (fileName === 'std') {
-			astRoot['std'] = _addSourceLocationProperty(astRoot['std'], null);
+			astRoot['std'] = _addSourceLocationProperty(astRoot['std'], "std");
 		} else {
 			const realFileName = fileName === 'stdin' ? curFileName : fileName;
 			const uri = path2uri(join(basePath, realFileName));
