@@ -2,7 +2,6 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { bsv } from '../src/utils';
 import { ContractDescription } from '../src/contract';
-import { compile, CompileResult, getPlatformScryptc} from '../src/compilerWrapper';
 export function loadDescription(fileName: string): ContractDescription {
   return JSON.parse(readFileSync(join(__dirname, "../out/", fileName)).toString());
 }
@@ -13,6 +12,10 @@ export function loadASM(fileName: string): string {
 
 export function getContractFilePath(fileName: string): string {
   return join(__dirname, 'fixture', fileName);
+}
+
+export function getInvalidContractFilePath(fileName: string): string {
+  return join(__dirname, 'fixture', 'invalid', fileName);
 }
 
 export function newTx(inputSatoshis: number) {

@@ -552,10 +552,6 @@ export function compileContract(file: string, out?: string): CompileResult {
     }
   );
 
-  if (result.errors.length > 0) {
-    throw result.errors;
-  }
-
   return result;
 }
 

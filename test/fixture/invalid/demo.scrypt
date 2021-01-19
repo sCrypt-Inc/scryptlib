@@ -1,0 +1,10 @@
+import "main0.scrypt";
+contract Demo {
+  int x;
+
+  public function add(int y) {
+    Main main = new Main(y);
+    main.main(this.x);
+    require(y > 0);
+  }
+}

@@ -1,0 +1,7 @@
+contract Lib {
+  int x;
+
+  function mirror2(int y): int {
+    return this.x*y;
+  }
+}

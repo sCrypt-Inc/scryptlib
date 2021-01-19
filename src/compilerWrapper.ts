@@ -10,7 +10,8 @@ import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)\n(?<message>[^\n]+)\n/g;
-const IMPORT_ERR_REG = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
+const IMPORT_ERR_REG_V1 = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
+const IMPORT_ERR_REG_V2 = /Error:\s*\n(?<filePath>[^:]+):(?<startline>\d+):(?<startcolumn>\d+):(?<endline>\d+):(?<endcolumn>\d+):\nFile not found:\s*"(?<fileName>.+)"\n\n/g;
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 const CURRENT_CONTRACT_DESCRIPTION_VERSION = 1;
@@ -149,21 +150,23 @@ export function compile(
 		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
 		output = output.split(/\r?\n/g).join('\n');
 		if (output.startsWith('Error:')) {
-			if (output.includes('import') && output.includes('File not found')) {
-				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG)].map(match => {
+			if (output.includes('File not found')) {
+				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG_V2)].map(match => {
 					const filePath = oc(match.groups).filePath('');
 					return {
 						type: CompileErrorType.ImportError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
 						message: `Imported file ${oc(match.groups).fileName()} does not exist`,
 						position: [{
-							line: parseInt(oc(match.groups).line('-1')),
-							column: parseInt(oc(match.groups).column('-1')),
+							line: parseInt(oc(match.groups).startline('-1')),
+							column: parseInt(oc(match.groups).startcolumn('-1')),
+						}, {
+							line: parseInt(oc(match.groups).endline('-1')),
+							column: parseInt(oc(match.groups).endcolumn('-1')),
 						}],
 						file: oc(match.groups).fileName('')
 					};
 				});
-
 				return {
 					errors: importErrors
 				};
