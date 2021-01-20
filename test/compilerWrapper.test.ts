@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
 import path = require("path");
-import { loadDescription,getContractFilePath } from './helper'
+import { loadDescription,getContractFilePath, getInvalidContractFilePath } from './helper'
 import { ABIEntityType, CompileResult, desc2CompileResult} from '../src/compilerWrapper';
 import { compileContract } from '../src/utils';
 
@@ -110,4 +110,89 @@ describe('compile()', () => {
 
   });
 
+
+  it('should compile fail with importError', () => {
+    const result = compileContract(getInvalidContractFilePath('main.scrypt'));
+
+    assert.typeOf(result.errors, 'array');
+
+    result.errors.forEach(e => {
+      e.filePath = path.basename(e.filePath);
+    })
+
+    expect(result.errors).to.deep.include.members([{
+      
+        file: " lib.scrypt",
+        filePath: "main.scrypt",
+        message: "Imported file  lib.scrypt does not exist",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 21,
+            "line": 1
+          }
+        ],
+        type: "ImportError"
+      
+    }])
+
+  })
+
+
+  it('should compile fail with importError', () => {
+    const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
+
+    assert.typeOf(result.errors, 'array');
+
+    result.errors.forEach(e => {
+      e.filePath = path.basename(e.filePath);
+    })
+
+    expect(result.errors).to.deep.include.members([{
+        file: "libx.scrypt",
+        filePath: "main0.scrypt",
+        message: "Imported file libx.scrypt does not exist",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 21,
+            "line": 1
+          }
+        ],
+        type: "ImportError"
+    }])
+  })
+
+  it('should compile fail with importError', () => {
+    const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
+
+    assert.typeOf(result.errors, 'array');
+
+    result.errors.forEach(e => {
+      e.filePath = path.basename(e.filePath);
+    })
+
+    expect(result.errors).to.deep.include.members([{
+        file: "libx.scrypt",
+        filePath: "main0.scrypt",
+        message: "Imported file libx.scrypt does not exist",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 21,
+            "line": 1
+          }
+        ],
+        type: "ImportError"
+    }])
+  })
 })

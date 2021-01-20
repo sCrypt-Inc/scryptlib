@@ -1,0 +1,16 @@
+import "libx.scrypt";
+
+contract Main {
+    int x;
+    static int CCC = 3;
+    constructor(int x) {
+        this.x = x;
+    }
+
+    //test method call
+    public function main(int x) {
+        Lib lib = new Lib(Main.CCC + x);
+        require(lib.mirror2(9) == 71);
+    }
+}
+
