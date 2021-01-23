@@ -272,7 +272,7 @@ export class SigHashPreimage extends ScryptType {
   toJSONObject() {
     return {
       nVersion: this.nVersion,
-      hashPrevouts: this.hashOutputs,
+      hashPrevouts: this.hashPrevouts,
       hashSequence: this.hashSequence,
       outpoint: this.outpoint,
       scriptCode: this.scriptCode,
