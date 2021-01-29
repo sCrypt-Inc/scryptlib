@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
@@ -342,16 +342,12 @@ export class ABICoder {
     }
 
     if (Struct.isStruct(arg)) {
-
       const s = findStructByType(scryptTypeName, this.structs);
+      const argS = arg as Struct;
+      if(s && s.name != argS.structName ) {
 
-      if(s) {
-        const argS = arg as Struct;
-        argS.bind(s);
-
-      } else {
-        throw new Error(`findStructByType failed for type ${scryptTypeName}`);
-      }
+        throw new Error(`expect struct ${s.name} but got struct ${argS.structName}`);
+      } 
     }
 
     const typeofArg = typeof arg;

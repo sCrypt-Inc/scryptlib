@@ -24,7 +24,8 @@ const dummyTxId = 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58
 
 const LINKPATTERN = /(\[((!\[[^\]]*?\]\(\s*)([^\s\(\)]+?)\s*\)\]|(?:\\\]|[^\]])*\])\(\s*)(([^\s\(\)]|\([^\s\(\)]*?\))+)\s*(".*?")?\)/g;
 
-let man: Struct = new Struct({
+const Person = PersonContract.struct('Person');
+let man: Struct = new Person({
   isMale: false,
   age: 33,
   addr: new Bytes("68656c6c6f20776f726c6421")

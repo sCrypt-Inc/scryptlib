@@ -1,9 +1,10 @@
 import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
-import { SupportedParamType} from './scryptTypes';
+import { Struct, SupportedParamType, StructObject} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult} from "./compilerWrapper";
 import { assert } from "console";
+import { type } from "os";
 
 export interface TxContext {
   tx?: any;
@@ -44,6 +45,8 @@ export class AbstractContract {
   public static abiCoder: ABICoder;
   public static opcodes?: OpCode[];
   public static file: string;
+  public static structs: StructEntity[];
+  public static struct: (name: string) => typeof Struct
 
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
@@ -306,6 +309,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
+  ContractClass.structs = desc.structs;
 
   ContractClass.abi.forEach(entity => {
     if(invalidMethodName.indexOf(entity.name) > -1) {
@@ -317,6 +321,24 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
       return call;
     };
   });
+
+
+  ContractClass.struct = function(name: string): typeof Struct {
+
+    const structs: StructEntity[] =  ContractClass.structs;
+
+    let structEntity = structs.find( s => s.name === name);
+
+    if(structEntity) {
+
+      class RealStruct extends Struct {
+        constructor(o: StructObject) {
+          super(o, structEntity);
+        }
+      }
+      return RealStruct;
+    }
+  }
 
   return ContractClass;
 }

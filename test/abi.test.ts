@@ -18,14 +18,23 @@ const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
 const personDescr = loadDescription('person_desc.json');
 const PersonContract = buildContractClass(personDescr);
 
-let man: Struct = new Struct({
+const Person = PersonContract.struct("Person");
+
+const Block = PersonContract.struct("Block");
+
+let man = new Person({
   isMale: false,
   age: 33,
   addr: new Bytes("68656c6c6f20776f726c6421")
 });
 
-const person = new PersonContract(man, 18);
+let block = new Block({
+  time: 33,
+  header: new Bytes("68656c6c6f20776f726c6421"),
+  hash: new Bytes("68656c6c6f20776f726c6421")
+});
 
+const person = new PersonContract(man, 18);
 
 describe('FunctionCall', () => {
 
@@ -134,7 +143,7 @@ describe('FunctionCall', () => {
   describe('when constructor with struct', () => {
 
     before(() => {
-      target = new FunctionCall('constructor', [new Struct({
+      target = new FunctionCall('constructor', [new Person({
         isMale: false,
         age: 33,
         addr: new Bytes("68656c6c6f20776f726c6421")
@@ -158,7 +167,7 @@ describe('FunctionCall', () => {
 
   describe('when it is a contract public function with struct', () => {
 
-    
+ 
     it('should return true when age 10', () => {
 
       let result = person.main(man, 10, false).verify()
@@ -186,21 +195,21 @@ describe('FunctionCall', () => {
   describe('struct member check', () => {
 
     it('should throw with wrong members', () => {
-      expect(() => { person.main(new Struct({
+      expect(() => { person.main(new Person({
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
       }), 18, true) }).to.throw('argument of type struct Person missing member isMale');
     })
 
     it('should throw with wrong members', () => {
-      expect(() => { person.main(new Struct({
+      expect(() => { person.main(new Person({
         isMale: false,
         age: 13
       }), 18, true) }).to.throw('argument of type struct Person missing member addr');
     })
 
     it('should throw with wrong members', () => {
-      expect(() => { person.main(new Struct({
+      expect(() => { person.main(new Person({
         weight: 100,
         isMale: false,
         age: 13,
@@ -209,13 +218,18 @@ describe('FunctionCall', () => {
     })
 
     it('should throw with wrong members type', () => {
-      expect(() => { person.main(new Struct({
+      expect(() => { person.main(new Person({
         isMale: 11,
         age: 14,
         addr: new Bytes("68656c6c6f20776f726c6421")
       }), 18, true) }).to.throw('wrong argument type, expected bool but got int');
     })
 
+  })
+
+
+  describe('struct type check', () => {
+    expect(() => { person.main(block, 18, true) }).to.throw('expect struct Person but got struct Block');
   })
 })
 

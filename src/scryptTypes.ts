@@ -306,8 +306,11 @@ export type StructObject = Record<string, SingletonParamType>;
 export class Struct extends ScryptType {
 
   sorted = false;
-  constructor(o: StructObject) {
+  structName = '';
+
+  constructor(o: StructObject, entity: StructEntity) {
     super(o);
+    this.bind(entity);
   }
 
 
@@ -328,6 +331,7 @@ export class Struct extends ScryptType {
     this.sorted = true;
     this._type = `struct ${structAst.name} {}`;
     this._value = ordered;
+    this.structName = structAst.name;
   }
 
   toASM(): string {
