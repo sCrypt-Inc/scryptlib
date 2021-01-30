@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription} from './helper';
 import { DebugLaunch} from '../src/abi';
-import { buildContractClass, VerifyError, buildStructClass } from '../src/contract';
+import { buildContractClass, VerifyError, buildStructsClass } from '../src/contract';
 import { bsv, toHex, signTx, compileContract ,num2bin, getPreimage, uri2path} from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage} from '../src/scryptTypes';
 import { readFileSync } from 'fs';
@@ -18,7 +18,7 @@ const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
 
 const personDescr = loadDescription('person_desc.json');
 const PersonContract = buildContractClass(personDescr);
-const { Person } = buildStructClass(personDescr);
+const { Person } = buildStructsClass(personDescr);
 const outputAmount = 22222
 const DataLen = 1
 const dummyTxId = 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458'

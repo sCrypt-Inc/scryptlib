@@ -46,7 +46,7 @@ export class AbstractContract {
   public static opcodes?: OpCode[];
   public static file: string;
   public static structs: StructEntity[];
-  
+
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
@@ -325,7 +325,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 }
 
 
-export function buildStructClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
+export function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
 
   let structTypes: Record<string, typeof Struct> = {};
 
