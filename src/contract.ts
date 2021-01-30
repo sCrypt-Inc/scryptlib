@@ -327,7 +327,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 
 export function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
 
-  let structTypes: Record<string, typeof Struct> = {};
+  const structTypes: Record<string, typeof Struct> = {};
 
   const structs: StructEntity[] = desc.structs || [];
   structs.forEach(element => {
@@ -336,14 +336,14 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
     class RealStruct extends Struct {
       constructor(o: StructObject) {
         super(o);
-        this.bind(element)
+        this.bind(element);
       }
     }
 
 
     Object.assign(structTypes, {
       [name]: RealStruct
-    })
+    });
 
   });
 
