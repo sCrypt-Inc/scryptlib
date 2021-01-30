@@ -308,13 +308,12 @@ export class Struct extends ScryptType {
   sorted = false;
   structName = '';
 
-  constructor(o: StructObject, entity: StructEntity) {
+  constructor(o: StructObject) {
     super(o);
-    this.bind(entity);
   }
 
 
-  private bind(structAst: StructEntity): void {
+  public bind(structAst: StructEntity): void {
     checkStruct(structAst, this);
     const ordered = {};
     const unordered = this.value;

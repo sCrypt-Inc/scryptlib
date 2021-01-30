@@ -46,8 +46,7 @@ export class AbstractContract {
   public static opcodes?: OpCode[];
   public static file: string;
   public static structs: StructEntity[];
-  public static struct: (name: string) => typeof Struct
-
+  
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
@@ -322,23 +321,31 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
     };
   });
 
-
-  ContractClass.struct = function(name: string): typeof Struct {
-
-    const structs: StructEntity[] =  ContractClass.structs;
-
-    let structEntity = structs.find( s => s.name === name);
-
-    if(structEntity) {
-
-      class RealStruct extends Struct {
-        constructor(o: StructObject) {
-          super(o, structEntity);
-        }
-      }
-      return RealStruct;
-    }
-  }
-
   return ContractClass;
+}
+
+
+export function buildStructClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
+
+  let structTypes: Record<string, typeof Struct> = {};
+
+  const structs: StructEntity[] = desc.structs || [];
+  structs.forEach(element => {
+    const name = element.name;
+
+    class RealStruct extends Struct {
+      constructor(o: StructObject) {
+        super(o);
+        this.bind(element)
+      }
+    }
+
+
+    Object.assign(structTypes, {
+      [name]: RealStruct
+    })
+
+  });
+
+  return structTypes;
 }
