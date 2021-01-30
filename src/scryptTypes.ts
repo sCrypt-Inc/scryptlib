@@ -314,7 +314,7 @@ export class Struct extends ScryptType {
   }
 
 
-  public bind(structAst: StructEntity): void {
+  private bind(structAst: StructEntity): void {
     checkStruct(structAst, this);
     const ordered = {};
     const unordered = this.value;

@@ -229,8 +229,16 @@ describe('FunctionCall', () => {
 
 
   describe('struct type check', () => {
-    expect(() => { person.main(block, 18, true) }).to.throw('expect struct Person but got struct Block');
+
+    it('should throw with wrong struct type', () => {
+      expect(() => { person.main(block, 18, true) }).to.throw('expect struct Person but got struct Block');
+    })
+
+    it('should throw with wrong struct type', () => {
+      expect(() => { new PersonContract(block, 18) }).to.throw('expect struct Person but got struct Block');
+    })
   })
+
 })
 
 describe('ABICoder', () => {

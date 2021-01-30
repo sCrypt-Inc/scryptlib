@@ -20,6 +20,7 @@ export type FileUri = string;
 export interface DebugConfiguration {
   type: "scrypt";
   request: "launch";
+  internalConsoleOptions: "openOnSessionStart",
   name: string;
   program: string;
   constructorArgs: SupportedParamType[];
@@ -154,6 +155,7 @@ export class FunctionCall {
       const debugConfig: DebugConfiguration = {
         type: "scrypt",
         request: "launch",
+        internalConsoleOptions: "openOnSessionStart",
         name: name,
         program: program,
         constructorArgs: constructorArgs,
@@ -256,17 +258,17 @@ export class ABICoder {
       } else if(Struct.isStruct(arg)) {
 
         const s = findStructByType(param.type, this.structs);
-
-        if(s) {
-          const argS = arg as Struct;
-          argS.bind(s);
+        const argS = arg as Struct;
+        if(s && s.name != argS.structName ) {
+          throw new Error(`expect struct ${s.name} but got struct ${argS.structName}`);
+        } else if(s && s.name == argS.structName) {
           s.params.forEach(e => {
             cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
             args_.push((arg as Struct).value[e.name]);
           });
 
         } else {
-          throw new Error(`constructor does not accept struct at ${index}-th parameter`);
+          throw new Error(`constructor does not accept struct ${argS.structName} at ${index}-th parameter`);
         }
       }
       else {
