@@ -14,11 +14,13 @@ const IMPORT_ERR_REG_V1 = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<c
 const IMPORT_ERR_REG_V2 = /Error:\s*\n(?<filePath>[^:]+):(?<startline>\d+):(?<startcolumn>\d+):(?<endline>\d+):(?<endcolumn>\d+):\nFile not found:\s*"(?<fileName>.+)"\n\n/g;
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
 const CURRENT_CONTRACT_DESCRIPTION_VERSION = 1;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',
-	ImportError = 'ImportError'
+	ImportError = 'ImportError',
+	InternalError = 'InternalError'
 }
 
 export interface CompileErrorBase {
@@ -49,7 +51,11 @@ export interface ImportError extends CompileErrorBase {
 	file: string;
 }
 
-export type CompileError = SyntaxError | SemanticError | ImportError;
+export interface InternalError extends CompileErrorBase {
+	type: CompileErrorType.InternalError;
+}
+
+export type CompileError = SyntaxError | SemanticError | ImportError | InternalError;
 
 export interface CompileResult {
 	asm?: OpCode[];
@@ -150,7 +156,22 @@ export function compile(
 		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
 		output = output.split(/\r?\n/g).join('\n');
 		if (output.startsWith('Error:')) {
-			if (output.includes('File not found')) {
+			if(output.match(INTERNAL_ERR_REG)) {
+				return {
+					errors: [{
+						type: CompileErrorType.InternalError,
+						filePath: getFullFilePath("stdin", srcDir, sourceFileName),
+						message: `Compiler internal error: ${oc(output.match(INTERNAL_ERR_REG).groups).message('')}`,
+						position: [{
+							line: 1,
+							column: 1
+						},  {
+							line: 1,
+							column: 1
+						}]
+					}]
+				};
+			} else if (output.includes('File not found')) {
 				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG_V2)].map(match => {
 					const filePath = oc(match.groups).filePath('');
 					return {

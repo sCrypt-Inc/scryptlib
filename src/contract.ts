@@ -10,6 +10,7 @@ export interface TxContext {
   tx?: any;
   inputIndex?: number;
   inputSatoshis?: number;
+  opReturn?: string;
 }
 
 
