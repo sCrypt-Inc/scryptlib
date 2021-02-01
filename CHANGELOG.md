@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.2.33
+
+* export genLaunchConfigFile
+* support InternalError
+
+
 ## 0.2.27
 
 * Fix failure when launching debugger after test errors
