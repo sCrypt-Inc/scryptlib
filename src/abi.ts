@@ -145,10 +145,12 @@ export class FunctionCall {
     const pubFunc: string = this.methodName;
     const name = `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
     const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
-    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {});
+
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
     const dataPart: string = this.contract.dataPart ? this.contract.dataPart.toASM() : '';
-    return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs, dataPart);
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, {opReturn: dataPart});
+
+    return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
   }
   
   verify(txContext?: TxContext): VerifyResult {

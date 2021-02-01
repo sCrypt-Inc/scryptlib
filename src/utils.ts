@@ -566,7 +566,7 @@ export function newCall(Cls, args: Array<SupportedParamType>) {
 
 
 export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFuncArgs: SupportedParamType[],
-  pubFunc: string, name: string, program: string, txContext: TxContext, asmArgs: AsmVarValues, dataPart: string): FileUri {
+  pubFunc: string, name: string, program: string, txContext: TxContext, asmArgs: AsmVarValues): FileUri {
 
   // some desc without sourceMap will not have file property.
   if (!program) {
@@ -595,6 +595,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     const inputIndex = txContext.inputIndex || 0;
     const inputSatoshis = txContext.inputSatoshis || 0;
     Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+    if (txContext.opReturn) {
+      Object.assign(debugTxContext, { opReturn: txContext.opReturn });
+    }
   }
 
 
@@ -603,9 +606,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     Object.assign(debugConfig, { asmArgs: asmArgs });
   }
 
-  if (dataPart) {
-    Object.assign(debugTxContext, { opReturn: dataPart });
-  }
+
 
   if (!isEmpty(debugTxContext)) {
     Object.assign(debugConfig, { txContext: debugTxContext });
