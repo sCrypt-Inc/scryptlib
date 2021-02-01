@@ -3,8 +3,11 @@ import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHas
 import { StructEntity, compile, getPlatformScryptc, CompileResult} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
-import { dirname, join, resolve } from 'path';
+import { dirname, join, resolve, sep } from 'path';
 import * as minimist from 'minimist';
+import { AsmVarValues, TxContext } from './contract';
+import { DebugConfiguration, DebugLaunch, FileUri } from './abi';
+import { tmpdir } from 'os';
 
 export { bsv };
 
@@ -558,4 +561,68 @@ export function compileContract(file: string, out?: string): CompileResult {
 
 export function newCall(Cls, args: Array<SupportedParamType>) {
 	return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
+}
+
+
+
+export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFuncArgs: SupportedParamType[],
+  pubFunc: string, name: string, program: string, txContext: TxContext, asmArgs: AsmVarValues, dataPart: string): FileUri {
+
+  // some desc without sourceMap will not have file property.
+  if (!program) {
+    return "";
+  }
+
+  const debugConfig: DebugConfiguration = {
+    type: "scrypt",
+    request: "launch",
+    internalConsoleOptions: "openOnSessionStart",
+    name: name,
+    program: program,
+    constructorArgs: constructorArgs,
+    pubFunc: pubFunc,
+    pubFuncArgs: pubFuncArgs
+  };
+
+
+
+
+  const debugTxContext = {};
+
+  if (!isEmpty(txContext)) {
+
+    const tx = txContext.tx || '';
+    const inputIndex = txContext.inputIndex || 0;
+    const inputSatoshis = txContext.inputSatoshis || 0;
+    Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+  }
+
+
+
+  if (!isEmpty(asmArgs)) {
+    Object.assign(debugConfig, { asmArgs: asmArgs });
+  }
+
+  if (dataPart) {
+    Object.assign(debugTxContext, { opReturn: dataPart });
+  }
+
+  if (!isEmpty(debugTxContext)) {
+    Object.assign(debugConfig, { txContext: debugTxContext });
+  }
+
+  const launch: DebugLaunch = {
+    version: "0.2.0",
+    configurations: [debugConfig]
+  };
+
+  const filename = `${name}-launch.json`;
+  const file = join(fs.mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename);
+  fs.writeFileSync(file, JSON.stringify(launch, (key, value) => (
+    typeof value === 'bigint'
+      ? value.toString()
+      : value // return everything else unchanged
+  ), 2));
+  return path2uri(file);
+
 }

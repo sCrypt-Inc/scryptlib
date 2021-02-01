@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName, genLaunchConfigFile} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
@@ -137,74 +137,20 @@ export class FunctionCall {
 
 
 
-  genLaunchConfigFile(txContext?: TxContext): FileUri{
+  genLaunchConfigFile(txContext?: TxContext): FileUri {
 
+    const constructorArgs: SupportedParamType[] = this.contract.scriptedConstructor.params;
 
-    const constructorArgs:SupportedParamType[] = this.contract.scriptedConstructor.params;
-
-      const pubFuncArgs:SupportedParamType[] = this.params;
-      const pubFunc: string = this.methodName;
-      const name =  `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
-      const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
-
-      // some desc without sourceMap will not have file property.
-      if(!program) {
-        return "";
-      }
-
-      const debugConfig: DebugConfiguration = {
-        type: "scrypt",
-        request: "launch",
-        internalConsoleOptions: "openOnSessionStart",
-        name: name,
-        program: program,
-        constructorArgs: constructorArgs,
-        pubFunc: pubFunc,
-        pubFuncArgs: pubFuncArgs
-      };
-
-
-      const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {});
-
-      const debugTxContext = {};
-
-      if(!isEmpty(txCtx)) {
-
-        const tx = txCtx.tx || '';
-        const inputIndex = txCtx.inputIndex || 0;
-        const inputSatoshis = txCtx.inputSatoshis || 0;
-        Object.assign(debugTxContext, {hex: tx.toString(), inputIndex,  inputSatoshis});
-      }
-
-      const asmArgs: AsmVarValues = this.contract.asmArgs || {};
-
-      if(!isEmpty(asmArgs)) {
-        Object.assign(debugConfig, {asmArgs: asmArgs});
-      }
-
-      if(this.contract.dataPart) {
-        Object.assign(debugTxContext, {opReturn: this.contract.dataPart.toASM()});
-      }
-
-      if(!isEmpty(debugTxContext)) {
-        Object.assign(debugConfig, {txContext: debugTxContext});
-      }
-
-      const launch: DebugLaunch = {
-        version: "0.2.0",
-        configurations: [debugConfig]
-      };
-
-    const filename = `${name}-launch.json`;
-    const file = join(mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename);
-    writeFileSync(file, JSON.stringify(launch, (key, value) => (
-      typeof value === 'bigint'
-        ? value.toString()
-        : value // return everything else unchanged
-    ), 2));
-    return path2uri(file);
-
+    const pubFuncArgs: SupportedParamType[] = this.params;
+    const pubFunc: string = this.methodName;
+    const name = `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
+    const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {});
+    const asmArgs: AsmVarValues = this.contract.asmArgs || {};
+    const dataPart: string = this.contract.dataPart ? this.contract.dataPart.toASM() : '';
+    return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs, dataPart);
   }
+  
   verify(txContext?: TxContext): VerifyResult {
     if (this.unlockingScript) {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
