@@ -67,6 +67,7 @@ export interface CompileResult {
 	contract?: string;
 	md5?: string;
 	structs?: any;
+	alias?: any;
 	file?: string;
 }
 
@@ -101,19 +102,25 @@ export enum ABIEntityType {
 	FUNCTION = 'function',
 	CONSTRUCTOR = 'constructor'
 }
-
+export type ParamEntity = {
+	name: string, type: string, finalType: string
+}
 export interface ABIEntity {
 	type: ABIEntityType;
 	name?: string;
-	params: Array<{ name: string, type: string }>;
+	params: Array<ParamEntity>;
 	index?: number;
 }
 
 export interface StructEntity {
 	name: string;
-	params: Array<{ name: string, type: string }>;
+	params: Array<ParamEntity>;
 }
 
+export interface AliasEntity {
+	name: string;
+	type: string;
+}
 
 export function compile(
 	source: {
@@ -313,6 +320,7 @@ export function compile(
 				contract: name,
 				md5: md5(sourceContent),
 				structs: getStructDeclaration(result.ast),
+				alias: getAliasDeclaration(result.ast),
 				abi,
 				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
@@ -427,14 +435,14 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 	if (mainContract['constructor']) {
 		return {
 			type: ABIEntityType.CONSTRUCTOR,
-			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
 		};
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
 			return {
 				type: ABIEntityType.CONSTRUCTOR,
-				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
+				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], finalType: p['finalType'] }; }),
 			};
 		}
 	}
@@ -451,7 +459,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 				type: ABIEntityType.FUNCTION,
 				name: f['name'],
 				index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-				params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+				params: f['params'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
 			};
 			return entity;
 		});
@@ -479,7 +487,15 @@ export function getStructDeclaration(astRoot): Array<StructEntity> {
 	
 	return oc(astRoot).structs([]).map(s => ({
 		name: s['name'],
-		params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+		params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+	}));
+}
+
+
+export function getAliasDeclaration(astRoot): Array<AliasEntity> {
+	return oc(astRoot).alias([]).map(s => ({
+		name: s['alias'],
+		type: s['type'],
 	}));
 }
 

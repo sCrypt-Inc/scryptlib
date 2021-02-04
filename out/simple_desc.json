@@ -1,9 +1,10 @@
 {
     "version": 1,
-    "compilerVersion": "0.3.0+commit.ba0d2c0",
+    "compilerVersion": "0.3.0+commit.04666e8",
     "contract": "Simple",
     "md5": "48bc2909bed8d33b31c1a92ea2ba21df",
     "structs": [],
+    "alias": [],
     "abi": [
         {
             "type": "function",
@@ -12,11 +13,13 @@
             "params": [
                 {
                     "name": "x",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "y",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         },
@@ -27,7 +30,8 @@
             "params": [
                 {
                     "name": "a",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         },

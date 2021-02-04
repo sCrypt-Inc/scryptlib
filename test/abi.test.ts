@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { getContractFilePath, newTx, loadDescription} from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
-import { buildContractClass, buildStructsClass, VerifyResult } from '../src/contract';
+import { buildContractClass, buildTypeClass, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx, compileContract } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct} from '../src/scryptTypes';
 
@@ -18,7 +18,7 @@ const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
 const personDescr = loadDescription('person_desc.json');
 const PersonContract = buildContractClass(personDescr);
 
-const {Person, Block} = buildStructsClass(personDescr);
+const {Person, Block} = buildTypeClass(personDescr);
 
 let man = new Person({
   isMale: false,

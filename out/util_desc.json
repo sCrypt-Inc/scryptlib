@@ -1,9 +1,10 @@
 {
     "version": 1,
-    "compilerVersion": "0.3.0+commit.ba0d2c0",
+    "compilerVersion": "0.3.0+commit.04666e8",
     "contract": "Util",
     "md5": "6e04c537388016e2160e53a1a20cc38e",
     "structs": [],
+    "alias": [],
     "abi": [
         {
             "type": "function",
@@ -12,7 +13,8 @@
             "params": [
                 {
                     "name": "preimage",
-                    "type": "SigHashPreimage"
+                    "type": "SigHashPreimage",
+                    "finalType": "SigHashPreimage"
                 }
             ]
         },

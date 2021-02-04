@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "compilerVersion": "0.3.0+commit.ba0d2c0",
+    "compilerVersion": "0.3.0+commit.04666e8",
     "contract": "Main",
     "md5": "6fe8b9c44c0698b97012355ac4a8cc47",
     "structs": [
@@ -9,15 +9,18 @@
             "params": [
                 {
                     "name": "addr",
-                    "type": "bytes"
+                    "type": "bytes",
+                    "finalType": "bytes"
                 },
                 {
                     "name": "isMale",
-                    "type": "bool"
+                    "type": "bool",
+                    "finalType": "bool"
                 },
                 {
                     "name": "age",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         },
@@ -26,19 +29,23 @@
             "params": [
                 {
                     "name": "hash",
-                    "type": "bytes"
+                    "type": "bytes",
+                    "finalType": "bytes"
                 },
                 {
                     "name": "header",
-                    "type": "bytes"
+                    "type": "bytes",
+                    "finalType": "bytes"
                 },
                 {
                     "name": "time",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         }
     ],
+    "alias": [],
     "abi": [
         {
             "type": "function",
@@ -47,15 +54,18 @@
             "params": [
                 {
                     "name": "p",
-                    "type": "struct Person {}"
+                    "type": "Person",
+                    "finalType": "struct Person {}"
                 },
                 {
                     "name": "x",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "isMale",
-                    "type": "bool"
+                    "type": "bool",
+                    "finalType": "bool"
                 }
             ]
         },
@@ -64,11 +74,13 @@
             "params": [
                 {
                     "name": "some",
-                    "type": "struct Person {}"
+                    "type": "Person",
+                    "finalType": "struct Person {}"
                 },
                 {
                     "name": "x",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         }

@@ -1,9 +1,10 @@
 {
     "version": 1,
-    "compilerVersion": "0.3.0+commit.ba0d2c0",
+    "compilerVersion": "0.3.0+commit.04666e8",
     "contract": "DemoP2PKH",
     "md5": "35bbeee99481c17c95f580e8b86d117f",
     "structs": [],
+    "alias": [],
     "abi": [
         {
             "type": "function",
@@ -12,11 +13,13 @@
             "params": [
                 {
                     "name": "sig",
-                    "type": "Sig"
+                    "type": "Sig",
+                    "finalType": "Sig"
                 },
                 {
                     "name": "pubKey",
-                    "type": "PubKey"
+                    "type": "PubKey",
+                    "finalType": "PubKey"
                 }
             ]
         },
@@ -25,7 +28,8 @@
             "params": [
                 {
                     "name": "pubKeyHash",
-                    "type": "Ripemd160"
+                    "type": "Ripemd160",
+                    "finalType": "Ripemd160"
                 }
             ]
         }

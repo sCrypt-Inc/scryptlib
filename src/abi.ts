@@ -1,8 +1,8 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName, genLaunchConfigFile} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
-import { ABIEntityType, ABIEntity, StructEntity} from './compilerWrapper';
+import { ABIEntityType, ABIEntity, StructEntity, ParamEntity} from './compilerWrapper';
 import { mkdtempSync, writeFileSync } from 'fs';
 import { join, sep} from 'path';
 import { tmpdir } from 'os';
@@ -189,7 +189,7 @@ export class ABICoder {
     }
 
     // handle array type
-    const cParams_: Array<{ name: string, type: string }> = [];
+    const cParams_: Array<ParamEntity> = [];
     const args_: SupportedParamType[] = [];
     cParams.forEach((param, index) =>{
       const arg = args[index];
@@ -200,23 +200,30 @@ export class ABICoder {
         }
         // flattern array
         arg.forEach((e, idx) => {
-          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName});
+          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName, finalType: param.finalType });
           args_.push(e);
         });
       } else if(Struct.isStruct(arg)) {
 
-        const s = findStructByType(param.type, this.structs);
+        
+
         const argS = arg as Struct;
-        if(s && s.name != argS.structName ) {
-          throw new Error(`expect struct ${s.name} but got struct ${argS.structName}`);
-        } else if(s && s.name == argS.structName) {
+        const finalType = getStructNameByType(param.finalType);
+
+        if(finalType != argS.finalType) {
+          throw new Error(`expect struct ${param.type} but got struct ${argS.type}`);
+        }
+
+        const s = findStructByType(param.finalType, this.structs);
+
+        if(s) {
           s.params.forEach(e => {
-            cParams_.push({ name:`${param.name}.${e.name}`, type: e.type});
+            cParams_.push({ name:`${param.name}.${e.name}`, type: e.type, finalType: e.finalType });
             args_.push((arg as Struct).value[e.name]);
           });
 
         } else {
-          throw new Error(`constructor does not accept struct ${argS.structName} at ${index}-th parameter`);
+          throw new Error(`constructor does not accept struct ${argS.type} at ${index}-th parameter`);
         }
       }
       else {
@@ -232,7 +239,7 @@ export class ABICoder {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
       const re = new RegExp(escapeRegExp(`$${param.name}`), 'g');
-      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param.type));
+      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param));
     });
 
     return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
@@ -249,7 +256,7 @@ export class ABICoder {
         if (entity.params.length !== args.length) {
           throw new Error(`wrong number of arguments for #${name}, expected ${entity.params.length} but got ${args.length}`);
         }
-        let asm = this.encodeParams(args, entity.params.map(p => p.type));
+        let asm = this.encodeParams(args, entity.params);
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
@@ -262,11 +269,11 @@ export class ABICoder {
     throw new Error(`no function named '${name}' found in abi`);
   }
 
-  encodeParams(args: SupportedParamType[], scryptTypeNames: string[]): string {
-    return args.map((arg, i) => this.encodeParam(arg, scryptTypeNames[i])).join(' ');
+  encodeParams(args: SupportedParamType[], paramsEntitys: ParamEntity[]): string {
+    return args.map((arg, i) => this.encodeParam(arg, paramsEntitys[i])).join(' ');
   }
 
-  encodeParamArray(args: SingletonParamType[], arrayTypeName: string): string {
+  encodeParamArray(args: SingletonParamType[], arrayParm: ParamEntity): string {
       if (args.length === 0) {
         throw new Error('Empty array not allowed');
       }
@@ -276,29 +283,42 @@ export class ABICoder {
         throw new Error('Array arguments are not of the same type');
       }
 
-      const [elemTypeName, arraySize] = arrayTypeAndSize(arrayTypeName);
+      const [elemTypeName, arraySize] = arrayTypeAndSize(arrayParm.finalType);
 
       if (arraySize !== args.length) {
         throw new Error(`Array arguments wrong size, expected [${arraySize}] but got [${args.length}]`);
       }
 
-      return args.map(arg => this.encodeParam(arg, elemTypeName)).join(' ');
+      return args.map(arg => this.encodeParam(arg, {name:arrayParm.name, type: elemTypeName, finalType: elemTypeName})).join(' ');
     }
 
 
-  encodeParam(arg: SupportedParamType, scryptTypeName: string): string {
-    if (Array.isArray(arg)) {
-      return this.encodeParamArray(arg, scryptTypeName);
+  encodeParam(arg: SupportedParamType, paramEntity: ParamEntity): string {
+    let finalType = paramEntity.finalType;
+    if (isArrayType(paramEntity.finalType)) {
+      if(Array.isArray(arg)) {
+        return this.encodeParamArray(arg, paramEntity);
+      } else {
+        const scryptType = (arg as ScryptType).type;
+        throw new Error(`expect param ${paramEntity.name} as Array but got ${scryptType}`);
+      }
     }
 
-    if (Struct.isStruct(arg)) {
-      const s = findStructByType(scryptTypeName, this.structs);
-      const argS = arg as Struct;
-      if(s && s.name != argS.structName ) {
+    if (isStructType(paramEntity.finalType)) {
 
-        throw new Error(`expect struct ${s.name} but got struct ${argS.structName}`);
-      } 
+      finalType = getStructNameByType(paramEntity.finalType);
+
+      if(Struct.isStruct(arg)) {
+        const argS = arg as Struct;
+        if(finalType != argS.finalType ) {
+          throw new Error(`expect struct ${finalType} but got struct ${argS.type}`);
+        } 
+      } else {
+        const scryptType = (arg as ScryptType).type;
+        throw new Error(`expect param ${paramEntity.name} as struct ${getStructNameByType(paramEntity.type)} but got ${scryptType}`);
+      }
     }
+
 
     const typeofArg = typeof arg;
 
@@ -314,9 +334,9 @@ export class ABICoder {
       arg = new Int(arg as bigint);
     }
 
-    const scryptType = (arg as ScryptType).type;
-    if (scryptType !== scryptTypeName) {
-      throw new Error(`wrong argument type, expected ${scryptTypeName} but got ${scryptType}`);
+    const scryptType = (arg as ScryptType).finalType;
+    if (scryptType != finalType) {
+      throw new Error(`wrong argument type, expected ${paramEntity.finalType} or ${paramEntity.type} but got ${scryptType}`);
     }
 
     return (arg as ScryptType).toASM();

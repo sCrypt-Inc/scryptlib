@@ -1,9 +1,10 @@
 {
     "version": 1,
-    "compilerVersion": "0.3.0+commit.ba0d2c0",
+    "compilerVersion": "0.3.0+commit.04666e8",
     "contract": "Token",
     "md5": "bd1f9146f27737ff85ec94b5ea6fdcd2",
     "structs": [],
+    "alias": [],
     "abi": [
         {
             "type": "function",
@@ -12,35 +13,43 @@
             "params": [
                 {
                     "name": "senderSig",
-                    "type": "Sig"
+                    "type": "Sig",
+                    "finalType": "Sig"
                 },
                 {
                     "name": "receiver0",
-                    "type": "PubKey"
+                    "type": "PubKey",
+                    "finalType": "PubKey"
                 },
                 {
                     "name": "tokenAmount0",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "satoshiAmount0",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "receiver1",
-                    "type": "PubKey"
+                    "type": "PubKey",
+                    "finalType": "PubKey"
                 },
                 {
                     "name": "tokenAmount1",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "satoshiAmount1",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "txPreimage",
-                    "type": "SigHashPreimage"
+                    "type": "SigHashPreimage",
+                    "finalType": "SigHashPreimage"
                 }
             ]
         },
@@ -51,27 +60,33 @@
             "params": [
                 {
                     "name": "senderSig",
-                    "type": "Sig"
+                    "type": "Sig",
+                    "finalType": "Sig"
                 },
                 {
                     "name": "receiver",
-                    "type": "PubKey"
+                    "type": "PubKey",
+                    "finalType": "PubKey"
                 },
                 {
                     "name": "prevouts",
-                    "type": "bytes"
+                    "type": "bytes",
+                    "finalType": "bytes"
                 },
                 {
                     "name": "otherTokenAmount",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "satoshiAmount",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "txPreimage",
-                    "type": "SigHashPreimage"
+                    "type": "SigHashPreimage",
+                    "finalType": "SigHashPreimage"
                 }
             ]
         },
@@ -82,19 +97,23 @@
             "params": [
                 {
                     "name": "senderSig",
-                    "type": "Sig"
+                    "type": "Sig",
+                    "finalType": "Sig"
                 },
                 {
                     "name": "receiverPkh",
-                    "type": "Ripemd160"
+                    "type": "Ripemd160",
+                    "finalType": "Ripemd160"
                 },
                 {
                     "name": "satoshiAmount",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "txPreimage",
-                    "type": "SigHashPreimage"
+                    "type": "SigHashPreimage",
+                    "finalType": "SigHashPreimage"
                 }
             ]
         },

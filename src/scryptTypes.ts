@@ -3,12 +3,13 @@ import { StructEntity } from "./compilerWrapper";
 
 export type ValueType = number | bigint | boolean | string | StructObject;
 
-export abstract class ScryptType {
+export class ScryptType {
 
   protected _value: ValueType;
   protected _literal: string;
   protected _asm: string;
   protected _type: string;
+  protected _finalType: string;
 
   constructor(value: ValueType) {
     try {
@@ -16,6 +17,7 @@ export abstract class ScryptType {
       this._literal = this.toLiteral();
       const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
+      this._finalType = scrType;
       this._asm = asm;
     } catch (error) {
       throw new Error(`can't get type from ${this._literal}, ${error.message}`);
@@ -24,6 +26,10 @@ export abstract class ScryptType {
 
   get value(): ValueType {
     return this._value;
+  }
+
+  get finalType(): string {
+    return this._finalType;
   }
 
   get literal(): string {
@@ -42,7 +48,9 @@ export abstract class ScryptType {
     return this.toLiteral();
   }
 
-  abstract toLiteral(): string;
+  toLiteral(): string {
+    return '';
+  }
 }
 
 export class Int extends ScryptType {
@@ -306,7 +314,6 @@ export type StructObject = Record<string, SingletonParamType>;
 export class Struct extends ScryptType {
 
   sorted = false;
-  structName = '';
 
   constructor(o: StructObject) {
     super(o);
@@ -328,9 +335,9 @@ export class Struct extends ScryptType {
       ordered[key] = unordered[key];
     });
     this.sorted = true;
-    this._type = `struct ${structAst.name} {}`;
+    this._type = structAst.name;
+    this._finalType = structAst.name;
     this._value = ordered;
-    this.structName = structAst.name;
   }
 
   toASM(): string {
@@ -389,6 +396,23 @@ export class Struct extends ScryptType {
     }
   }
 
+  getMemberFinalType(key: string): string {
+    const v: StructObject = this.value as StructObject;
+    
+    if(v[key] instanceof ScryptType) {
+      return (v[key] as ScryptType).finalType;
+    } else if(typeof v[key] === "boolean") {
+      return new Bool(v[key] as boolean).finalType;
+    } else if(typeof v[key] === "number") {
+      return new Int(v[key] as number).finalType;
+    } else if(typeof v[key] === "bigint") {
+      return new Int(v[key] as bigint).finalType;
+    } else {
+      return typeof v[key];
+    }
+  }
+
+
   getMembers(): string[]  {
     const v: StructObject = this.value as StructObject;
     return Object.keys(v);
@@ -408,7 +432,7 @@ export class Struct extends ScryptType {
         return `${key}=${new Int(v[key] as bigint).toLiteral()}`;
       }
     });
-    return `Struct(${l})`;
+    return `struct(${l})`;
   }
 
   toJSON() {
@@ -431,3 +455,40 @@ export class Struct extends ScryptType {
 
 
 export type SupportedParamType = SingletonParamType | SingletonParamType[];
+
+
+
+export enum VariableType {
+  BOOL = 'bool',
+  INT = 'int',
+  BYTES = 'bytes',
+  PUBKEY = 'PubKey',
+  PRIVKEY = 'PrivKey',
+  SIG = 'Sig',
+  RIPEMD160 = 'Ripemd160',
+  SHA1 = 'Sha1',
+  SHA256 = 'Sha256',
+  SIGHASHTYPE = 'SigHashType',
+  SIGHASHPREIMAGE = 'SigHashPreimage',
+  OPCODETYPE = 'OpCodeType',
+  STRUCT = 'struct'
+}
+
+
+
+export const BasicType = Object.keys(VariableType).map(key => VariableType[key]);
+
+export const BasicScryptType = {
+  [VariableType.BOOL] :  Bool,
+  [VariableType.INT] :  Int,
+  [VariableType.BYTES] :  Bytes,
+  [VariableType.PUBKEY] :  PubKey,
+  [VariableType.PRIVKEY] :  PrivKey,
+  [VariableType.SIG] :  Sig,
+  [VariableType.RIPEMD160] :  Ripemd160,
+  [VariableType.SHA1] :  Sha1,
+  [VariableType.SHA256] :  Sha256,
+  [VariableType.SIGHASHTYPE] :  SigHashType,
+  [VariableType.OPCODETYPE] :  OpCodeType
+}
+

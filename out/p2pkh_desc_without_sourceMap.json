@@ -12,11 +12,13 @@
             "params": [
                 {
                     "name": "sig",
-                    "type": "Sig"
+                    "type": "Sig",
+                    "finalType": "Sig"
                 },
                 {
                     "name": "pubKey",
-                    "type": "PubKey"
+                    "type": "PubKey",
+                    "finalType": "PubKey"
                 }
             ]
         },
@@ -25,7 +27,8 @@
             "params": [
                 {
                     "name": "pubKeyHash",
-                    "type": "Ripemd160"
+                    "type": "Ripemd160",
+                    "finalType": "Ripemd160"
                 }
             ]
         }

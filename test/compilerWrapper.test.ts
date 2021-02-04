@@ -31,7 +31,8 @@ describe('compile()', () => {
         "params": [
           {
             "name": "y",
-            "type": "int"
+            "type": "int",
+            "finalType": "int"
           }
         ]
       }, {
@@ -39,15 +40,18 @@ describe('compile()', () => {
         "params": [
           {
             "name": "_x",
-            "type": "int"
+            "type": "int",
+            "finalType": "int"
           },
           {
             "name": "y",
-            "type": "int"
+            "type": "int",
+            "finalType": "int"
           },
           {
             "name": "z",
-            "type": "int"
+            "type": "int",
+            "finalType": "int"
           }
         ]
       }
@@ -63,25 +67,31 @@ describe('compile()', () => {
       name: 'Person',
       params: [{
         "name": "addr",
-        "type": "bytes"
+        "type": "bytes",
+        "finalType": "bytes"
       }, {
         "name": "isMale",
-        "type": "bool"
+        "type": "bool",
+        "finalType": "bool"
       }, {
         "name": "age",
-        "type": "int"
+        "type": "int",
+        "finalType": "int"
       }]
     }, {
       name: 'Block',
       params: [{
         "name": "hash",
-        "type": "bytes"
+        "type": "bytes",
+        "finalType": "bytes"
       }, {
         "name": "header",
-        "type": "bytes"
+        "type": "bytes",
+        "finalType": "bytes"
       }, {
         "name": "time",
-        "type": "int"
+        "type": "int",
+        "finalType": "int"
       }]
     }
     ])
