@@ -1,4 +1,4 @@
-export { buildContractClass, VerifyResult, buildTypeClass} from './contract';
+export { buildContractClass, VerifyResult, buildTypeClasses} from './contract';
 export { compile, StructEntity, getStructDeclaration, getABIDeclaration, ABIEntity, ABIEntityType, ABI } from './compilerWrapper';
 export { Arguments , Argument } from './abi';
 export {

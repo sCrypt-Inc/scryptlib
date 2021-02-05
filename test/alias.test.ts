@@ -1,6 +1,7 @@
 import { loadDescription } from './helper';
 import { assert, expect } from 'chai';
-import { buildContractClass, buildTypeClass } from '../src/contract';
+import { buildContractClass, buildTypeClasses } from '../src/contract';
+import { Bytes, Int } from '../src/scryptTypes';
 
 const jsonDescr = loadDescription('alias_desc.json');
 
@@ -8,7 +9,7 @@ const AliasContract = buildContractClass(jsonDescr);
 
 
 
-const { Male, MaleAAA, Female, Tokens, Name, Age, Token, Person, Block, Height, Time, Coinbase } = buildTypeClass(jsonDescr);
+const { Male, MaleAAA, Female, Name, Age, Token, Person, Block, Height, Time, Coinbase } = buildTypeClasses(jsonDescr);
 
 let man = new Person({
     name: new Name("68656c6c6f20776f726c6421"),
@@ -35,6 +36,17 @@ describe('Alias type check', () => {
             name: new Name("68656c6c6f20776f726c6421"),
             age: new Age(33),
             token: new Token(101)
+        })).verify()
+        assert.isTrue(result.success, result.error);
+      
+    })
+
+    it('should success when using bytes', () => {
+
+        let result = alias.unlock(new MaleAAA({
+            name: new Bytes("68656c6c6f20776f726c6421"),
+            age: new Int(33),
+            token: new Int(101)
         })).verify()
         assert.isTrue(result.success, result.error);
       
@@ -103,8 +115,4 @@ describe('Alias type check', () => {
         assert.isTrue(result.success, result.error);
     })
 
-    // it('should success when using all int alias', () => {
-    //     let result = alias.setToken(new Tokens([new Token(10),new Token(3),new Token(3)])).verify()
-    //     assert.isTrue(result.success, result.error);
-    // })
 })

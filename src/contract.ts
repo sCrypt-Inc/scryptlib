@@ -1,6 +1,6 @@
 import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS,  findRealFinalType,  path2uri } from "./utils";
+import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri } from "./utils";
 import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity} from "./compilerWrapper";
 
@@ -349,7 +349,7 @@ function buildStructsClass(desc: CompileResult | ContractDescription): Record<st
 
 
 
-export function buildTypeClass(desc: CompileResult | ContractDescription): Record<string, typeof ScryptType> {
+export function buildTypeClasses(desc: CompileResult | ContractDescription): Record<string, typeof ScryptType> {
 
   const structClasses = buildStructsClass(desc);
   const aliasTypes: Record<string, typeof ScryptType> = {};
@@ -357,7 +357,7 @@ export function buildTypeClass(desc: CompileResult | ContractDescription): Recor
   const alias: AliasEntity[] = desc.alias || [];
 
   alias.forEach(element => {
-    const finalType = findRealFinalType(alias, structs, element.name);
+    const finalType = resolveType(alias, structs, element.name);
     const C = BasicScryptType[finalType];
     if(C) {
       const Class = C as typeof ScryptType;

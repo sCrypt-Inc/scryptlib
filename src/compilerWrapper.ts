@@ -15,7 +15,9 @@ const IMPORT_ERR_REG_V2 = /Error:\s*\n(?<filePath>[^:]+):(?<startline>\d+):(?<st
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 1;
+
+// see VERSIONLOG.md
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 2 ;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',

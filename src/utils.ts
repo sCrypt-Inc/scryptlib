@@ -612,9 +612,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 }
 
 /***
- * map alias to real type
+ * resolve type
  */
-export function findRealFinalType(alias: AliasEntity[], structs: StructEntity[], type: string): string {
+export function resolveType(alias: AliasEntity[], structs: StructEntity[], type: string): string {
 
   if(BasicType.indexOf(type) > -1) {
     return type;
@@ -627,12 +627,12 @@ export function findRealFinalType(alias: AliasEntity[], structs: StructEntity[],
 
   if(type.indexOf('[') > -1) {
     const [elemTypeName, arraySize] = arrayTypeAndSize(type);
-    return `${findRealFinalType(alias, structs, elemTypeName)}[${arraySize}]`;
+    return `${resolveType(alias, structs, elemTypeName)}[${arraySize}]`;
   }
 
   let a = alias.find(a => {
     return a.name === type;
   })
 
-  return findRealFinalType(alias, structs, a.type);
+  return resolveType(alias, structs, a.type);
 }
