@@ -344,6 +344,7 @@ export function compile(
 			result.md5 = description.md5;
 			result.abi = abi;
 			result.structs = description.structs;
+			result.alias = description.alias;
 		}
 
 		return result;
@@ -575,6 +576,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 		md5 : description.md5,
 		abi : description.abi,
 		structs : description.structs,
+		alias: description.alias,
 		file: description.file,
 		errors: [],
 		asm: asm.map((opcode, index) => {
