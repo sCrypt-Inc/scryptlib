@@ -336,7 +336,7 @@ export class Struct extends ScryptType {
     });
     this.sorted = true;
     this._type = structAst.name;
-    this._finalType = structAst.name;
+    this._finalType = `struct ${structAst.name} {}`;
     this._value = ordered;
   }
 

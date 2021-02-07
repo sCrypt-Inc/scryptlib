@@ -380,7 +380,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
           constructor(o: StructObject) {
             super(o);
             this._type = element.name;
-            this._finalType = finalType;
+            this._finalType = `struct ${finalType} {}`;
           }
         }
       });

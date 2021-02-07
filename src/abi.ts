@@ -205,12 +205,9 @@ export class ABICoder {
         });
       } else if(Struct.isStruct(arg)) {
 
-        
-
         const argS = arg as Struct;
-        const finalType = getStructNameByType(param.finalType);
 
-        if(finalType != argS.finalType) {
+        if(param.finalType != argS.finalType) {
           throw new Error(`expect struct ${param.type} but got struct ${argS.type}`);
         }
 
@@ -306,12 +303,10 @@ export class ABICoder {
 
     if (isStructType(paramEntity.finalType)) {
 
-      finalType = getStructNameByType(paramEntity.finalType);
-
       if(Struct.isStruct(arg)) {
         const argS = arg as Struct;
         if(finalType != argS.finalType ) {
-          throw new Error(`expect struct ${finalType} but got struct ${argS.type}`);
+          throw new Error(`expect struct ${paramEntity.type} but got struct ${argS.type}`);
         } 
       } else {
         const scryptType = (arg as ScryptType).type;
