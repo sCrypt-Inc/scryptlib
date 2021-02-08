@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 0.2.34
+
+* Support type alias
+* Update contract description version, see `VERSIONLOG.md`
+
+## 0.2.33
+
+* export genLaunchConfigFile
+* support InternalError
+
+
 ## 0.2.33
 
 * export genLaunchConfigFile
