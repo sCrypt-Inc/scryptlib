@@ -194,13 +194,13 @@ export class ABICoder {
     cParams.forEach((param, index) =>{
       const arg = args[index];
       if (Array.isArray(arg)) {
-        const [elemTypeName, arraySize] = arrayTypeAndSize(param.type);
+        const [elemTypeName, arraySize] = arrayTypeAndSize(param.finalType);
         if (arraySize !== arg.length) {
           throw new Error(`Array arguments wrong size for '${param.name}' in constructor, expected [${arraySize}] but got [${arg.length}]`);
         }
         // flattern array
         arg.forEach((e, idx) => {
-          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName, finalType: param.finalType });
+          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName, finalType: elemTypeName });
           args_.push(e);
         });
       } else if(Struct.isStruct(arg)) {
