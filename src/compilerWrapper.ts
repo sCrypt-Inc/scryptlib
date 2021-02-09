@@ -256,6 +256,12 @@ export function compile(
 			result.ast = allAst[sourceUri];
 			delete allAst[sourceUri];
 			result.dependencyAsts = allAst;
+
+			const { contract: name, abi } = getABIDeclaration(result.ast);
+			result.abi = abi;
+			result.contract = name;
+			result.structs = getStructDeclaration(result.ast);
+			result.alias = getAliasDeclaration(result.ast);
 		}
 
 		let asmObj = null;
@@ -311,12 +317,6 @@ export function compile(
 			});
 		}
 
-		const { contract: name, abi } = getABIDeclaration(result.ast);
-		result.abi = abi;
-		result.contract = name;
-		result.structs = getStructDeclaration(result.ast);
-		result.alias = getAliasDeclaration(result.ast);
-
 		if (settings.desc) {
 			settings.outputToFiles = true;
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
@@ -324,11 +324,11 @@ export function compile(
 			const description: ContractDescription = {
 				version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
 				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
-				contract: name,
+				contract: result.contract,
 				md5: md5(sourceContent),
-				structs: result.structs,
-				alias: result.alias,
-				abi,
+				structs: result.structs || [],
+				alias: result.alias || [],
+				abi: result.abi || [],
 				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
 				sources:  [],
