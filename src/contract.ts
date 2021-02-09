@@ -1,10 +1,8 @@
 import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS,  path2uri } from "./utils";
-import { Struct, SupportedParamType, StructObject} from './scryptTypes';
-import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult} from "./compilerWrapper";
-import { assert } from "console";
-import { type } from "os";
+import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri } from "./utils";
+import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType} from './scryptTypes';
+import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity} from "./compilerWrapper";
 
 export interface TxContext {
   tx?: any;
@@ -28,6 +26,7 @@ export interface ContractDescription {
   contract: string;
   md5: string;
   structs: Array<StructEntity>;
+  alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
   asm: string;
   file: string;
@@ -326,7 +325,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 }
 
 
-export function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
+function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
 
   const structTypes: Record<string, typeof Struct> = {};
 
@@ -334,19 +333,61 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
   structs.forEach(element => {
     const name = element.name;
 
-    class RealStruct extends Struct {
-      constructor(o: StructObject) {
-        super(o);
-        this.bind(element);
-      }
-    }
-
-
     Object.assign(structTypes, {
-      [name]: RealStruct
+      [name]: class extends Struct {
+        constructor(o: StructObject) {
+          super(o);
+          this.bind(element);
+        }
+      }
     });
 
   });
 
   return structTypes;
+}
+
+
+
+export function buildTypeClasses(desc: CompileResult | ContractDescription): Record<string, typeof ScryptType> {
+
+  const structClasses = buildStructsClass(desc);
+  const aliasTypes: Record<string, typeof ScryptType> = {};
+  const structs: StructEntity[] = desc.structs || [];
+  const alias: AliasEntity[] = desc.alias || [];
+
+  alias.forEach(element => {
+    const finalType = resolveType(alias, structs, element.name);
+    const C = BasicScryptType[finalType];
+    if(C) {
+      const Class = C as typeof ScryptType;
+      Object.assign(aliasTypes, {
+        [element.name]: class extends Class {
+          constructor(o: ValueType) {
+            super(o);
+            this._type = element.name;
+            this._finalType = finalType;
+          }
+        }
+      });
+    } else if(finalType.indexOf('[') > -1) {
+      Object.assign(aliasTypes, {
+        [element.name]: class extends Array<typeof C> {}
+      });
+     } else {
+      Object.assign(aliasTypes, {
+        [element.name]: class extends structClasses[finalType] {
+          constructor(o: StructObject) {
+            super(o);
+            this._type = element.name;
+            this._finalType = `struct ${finalType} {}`;
+          }
+        }
+      });
+    }
+  });
+
+  Object.assign(aliasTypes, structClasses);
+
+  return aliasTypes;
 }

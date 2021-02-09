@@ -6,8 +6,8 @@ os:
   - osx
   - windows
 
-before_install:
-  - npm i -g npm@latest
+#before_install:
+#  - npm i -g npm@latest
 
 script:
   - git clone -b master https://github.com/sCrypt-Inc/compiler_dist.git compiler
@@ -16,7 +16,7 @@ script:
   - npm test -- --ci=true
   # integration testing with boilerplate
   - npm link
-  - git clone -b master https://github.com/scrypt-sv/boilerplate.git
+  - git clone -b dev https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
   - npm link scryptlib  # use this version
