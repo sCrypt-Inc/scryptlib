@@ -311,9 +311,14 @@ export function compile(
 			});
 		}
 
+		const { contract: name, abi } = getABIDeclaration(result.ast);
+		result.abi = abi;
+		result.contract = name;
+		result.structs = getStructDeclaration(result.ast);
+		result.alias = getAliasDeclaration(result.ast);
+
 		if (settings.desc) {
 			settings.outputToFiles = true;
-			const { contract: name, abi } = getABIDeclaration(result.ast);
 			const outputFilePath = getOutputFilePath(outputDir, 'desc');
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
@@ -321,8 +326,8 @@ export function compile(
 				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
 				contract: name,
 				md5: md5(sourceContent),
-				structs: getStructDeclaration(result.ast),
-				alias: getAliasDeclaration(result.ast),
+				structs: result.structs,
+				alias: result.alias,
 				abi,
 				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
@@ -340,12 +345,8 @@ export function compile(
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
 
 			result.compilerVersion = description.compilerVersion;
-			result.contract = description.contract;
 			result.md5 = description.md5;
-			result.abi = abi;
-			result.structs = description.structs;
-			result.alias = description.alias;
-		}
+		} 
 
 		return result;
 	} finally {
