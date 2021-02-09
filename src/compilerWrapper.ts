@@ -15,7 +15,9 @@ const IMPORT_ERR_REG_V2 = /Error:\s*\n(?<filePath>[^:]+):(?<startline>\d+):(?<st
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 1;
+
+// see VERSIONLOG.md
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 2 ;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',
@@ -67,6 +69,7 @@ export interface CompileResult {
 	contract?: string;
 	md5?: string;
 	structs?: any;
+	alias?: any;
 	file?: string;
 }
 
@@ -101,19 +104,25 @@ export enum ABIEntityType {
 	FUNCTION = 'function',
 	CONSTRUCTOR = 'constructor'
 }
-
+export type ParamEntity = {
+	name: string, type: string, finalType: string
+}
 export interface ABIEntity {
 	type: ABIEntityType;
 	name?: string;
-	params: Array<{ name: string, type: string }>;
+	params: Array<ParamEntity>;
 	index?: number;
 }
 
 export interface StructEntity {
 	name: string;
-	params: Array<{ name: string, type: string }>;
+	params: Array<ParamEntity>;
 }
 
+export interface AliasEntity {
+	name: string;
+	type: string;
+}
 
 export function compile(
 	source: {
@@ -313,6 +322,7 @@ export function compile(
 				contract: name,
 				md5: md5(sourceContent),
 				structs: getStructDeclaration(result.ast),
+				alias: getAliasDeclaration(result.ast),
 				abi,
 				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
@@ -334,6 +344,7 @@ export function compile(
 			result.md5 = description.md5;
 			result.abi = abi;
 			result.structs = description.structs;
+			result.alias = description.alias;
 		}
 
 		return result;
@@ -427,14 +438,14 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 	if (mainContract['constructor']) {
 		return {
 			type: ABIEntityType.CONSTRUCTOR,
-			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
 		};
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
 			return {
 				type: ABIEntityType.CONSTRUCTOR,
-				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
+				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], finalType: p['finalType'] }; }),
 			};
 		}
 	}
@@ -451,7 +462,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 				type: ABIEntityType.FUNCTION,
 				name: f['name'],
 				index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-				params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+				params: f['params'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
 			};
 			return entity;
 		});
@@ -479,7 +490,15 @@ export function getStructDeclaration(astRoot): Array<StructEntity> {
 	
 	return oc(astRoot).structs([]).map(s => ({
 		name: s['name'],
-		params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+		params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+	}));
+}
+
+
+export function getAliasDeclaration(astRoot): Array<AliasEntity> {
+	return oc(astRoot).alias([]).map(s => ({
+		name: s['alias'],
+		type: s['type'],
 	}));
 }
 
@@ -557,6 +576,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 		md5 : description.md5,
 		abi : description.abi,
 		structs : description.structs,
+		alias: description.alias,
 		file: description.file,
 		errors: [],
 		asm: asm.map((opcode, index) => {

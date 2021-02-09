@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType} from "./scryptTypes";
-import { StructEntity, compile, getPlatformScryptc, CompileResult} from './compilerWrapper';
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType} from "./scryptTypes";
+import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
@@ -92,24 +92,6 @@ export function intValue2hex(val: number | bigint):  string{
   }
   return hex;
 }
-
-
-export enum VariableType {
-  BOOL = 'bool',
-  INT = 'int',
-  BYTES = 'bytes',
-  PUBKEY = 'PubKey',
-  PRIVKEY = 'PrivKey',
-  SIG = 'Sig',
-  RIPEMD160 = 'Ripemd160',
-  SHA1 = 'Sha1',
-  SHA256 = 'Sha256',
-  SIGHASHTYPE = 'SigHashType',
-  SIGHASHPREIMAGE = 'SigHashPreimage',
-  OPCODETYPE = 'OpCodeType',
-  STRUCT = 'Struct'
-}
-
 
 export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableType] {
 
@@ -212,7 +194,7 @@ export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableTy
   }
 
   // Struct
-  m = /^Struct\((.*)\)$/.exec(l);
+  m = /^struct\((.*)\)$/.exec(l);
   if (m) {
     const value = m[1];
     return [value, value, VariableType.STRUCT];
@@ -465,10 +447,11 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 export function checkStruct(s: StructEntity, arg: Struct): void {
   
   s.params.forEach(p => {
+    const finalType = arg.getMemberFinalType(p.name);
     const type = arg.getMemberType(p.name);
-    if(type === 'undefined') {
+    if(finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    } else if(type != p.type) {
+    } else if(finalType != p.finalType) {
       throw new Error(`wrong argument type, expected ${p.type} but got ${type}`);
     }
   });
@@ -626,4 +609,30 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
   ), 2));
   return path2uri(file);
 
+}
+
+/***
+ * resolve type
+ */
+export function resolveType(alias: AliasEntity[], structs: StructEntity[], type: string): string {
+
+  if(BasicType.indexOf(type) > -1) {
+    return type;
+  }
+
+
+  if(structs.map(s => s.name).indexOf(type) > -1) {
+    return type;
+  }
+
+  if(type.indexOf('[') > -1) {
+    const [elemTypeName, arraySize] = arrayTypeAndSize(type);
+    return `${resolveType(alias, structs, elemTypeName)}[${arraySize}]`;
+  }
+
+  let a = alias.find(a => {
+    return a.name === type;
+  })
+
+  return resolveType(alias, structs, a.type);
 }

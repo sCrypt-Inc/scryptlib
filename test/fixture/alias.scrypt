@@ -1,0 +1,50 @@
+
+
+type Male = Person;
+type Female = Person;
+type Integer = int;
+type Name = bytes;
+type Age = Integer;
+type Token = Integer;
+
+type Tokens = Token[3];
+
+type Coinbase = bytes;
+type Time = int;
+type Height = int;
+type MaleAAA = Male;
+struct Person {
+    Age age;
+    Name name;
+    Token token;
+}
+
+struct Block {
+    Height height;
+    Time time;
+    Coinbase coinbase;
+}
+
+contract Alias {
+  Female alice;
+ 
+  constructor(Female person) {
+    this.alice = person;
+  }
+ 
+
+ 
+  public function unlock(MaleAAA bob) {
+    Age aliceAge = bob.age;
+    Age bobAge = this.alice.age;
+
+    require(aliceAge + bobAge > 10);
+
+  }
+
+  public function setToken(Tokens tokens) {
+    this.alice.token = tokens[0];
+    require(this.alice.token == 10);
+  }
+
+}

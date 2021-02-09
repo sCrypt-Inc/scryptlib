@@ -1,9 +1,10 @@
 {
-    "version": 1,
-    "compilerVersion": "0.3.0+commit.ba0d2c0",
+    "version": 2,
+    "compilerVersion": "0.3.1+commit.1c51603",
     "contract": "Bar",
-    "md5": "a72c3d9e6f5279aa57a86aaa097cd073",
+    "md5": "1c5d6ec235d3a175f23f34af003b8f87",
     "structs": [],
+    "alias": [],
     "abi": [
         {
             "type": "function",
@@ -12,7 +13,8 @@
             "params": [
                 {
                     "name": "y",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         },
@@ -21,24 +23,27 @@
             "params": [
                 {
                     "name": "_x",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "y",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 },
                 {
                     "name": "z",
-                    "type": "int"
+                    "type": "int",
+                    "finalType": "int"
                 }
             ]
         }
     ],
-    "file": "file:///C:/Users/myland/code/scryptlib/test/fixture/bar.scrypt",
+    "file": "file:///D:/code/scryptlib/test/fixture/bar.scrypt",
     "asm": "OP_NOP OP_0 $_x $y $z OP_2 OP_PICK OP_2 OP_PICK OP_2 OP_PICK OP_MUL OP_ADD OP_4 OP_ROLL OP_DROP OP_3 OP_ROLL OP_3 OP_ROLL OP_3 OP_ROLL OP_DROP OP_DROP OP_DROP OP_NOP OP_NOP OP_0 OP_9 OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_NOP OP_1 OP_PICK OP_NOP OP_0 OP_PICK OP_NOP OP_1 OP_2 OP_1 OP_PICK OP_1 OP_PICK OP_ADD OP_0 OP_PICK OP_1 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_NIP",
     "sources": [
-        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\bar.scrypt",
-        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\foo.scrypt"
+        "D:\\code\\scryptlib\\test\\fixture\\bar.scrypt",
+        "D:\\code\\scryptlib\\test\\fixture\\foo.scrypt"
     ],
     "sourceMap": [
         "-1:1:1:1:1#Bar.constructor:0",
