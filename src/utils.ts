@@ -630,9 +630,9 @@ export function resolveType(alias: AliasEntity[], structs: StructEntity[], type:
     return `${resolveType(alias, structs, elemTypeName)}[${arraySize}]`;
   }
 
-  let a = alias.find(a => {
+  const a = alias.find(a => {
     return a.name === type;
-  })
+  });
 
   return resolveType(alias, structs, a.type);
 }

@@ -291,7 +291,7 @@ export class ABICoder {
 
 
   encodeParam(arg: SupportedParamType, paramEntity: ParamEntity): string {
-    let finalType = paramEntity.finalType;
+    const finalType = paramEntity.finalType;
     if (isArrayType(paramEntity.finalType)) {
       if(Array.isArray(arg)) {
         return this.encodeParamArray(arg, paramEntity);
