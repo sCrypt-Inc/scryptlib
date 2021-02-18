@@ -122,7 +122,7 @@ export class AbstractContract {
 
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
-    let error = `VerifyError: ${bsi.errstr}`;
+    let error = result ? '' : `VerifyError: ${bsi.errstr}`;
 
 
 
