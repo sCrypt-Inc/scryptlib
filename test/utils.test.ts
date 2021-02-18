@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm} from '../src/utils'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize} from '../src/utils'
 
 const BN = bsv.crypto.BN
 
@@ -246,6 +246,17 @@ describe('utils', () => {
       expect(literal2ScryptType("OpCodeType(b'01')").toLiteral())
         .to.equal("OpCodeType(b'01')");
     });
+  })
+
+  describe('arrayTypeAndSize()', () => {
+    expect(arrayTypeAndSize("int[2]"))
+    .to.includes.members(['int', 2])
+  })
+
+
+  describe('arrayTypeAndSize()', () => {
+    expect(arrayTypeAndSize("int[2][3]"))
+    .to.includes.members(['int', 6])
   })
 
 })

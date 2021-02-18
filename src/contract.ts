@@ -358,6 +358,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
   alias.forEach(element => {
     const finalType = resolveType(alias, structs, element.name);
+    element.finalType = finalType;
     const C = BasicScryptType[finalType];
     if(C) {
       const Class = C as typeof ScryptType;

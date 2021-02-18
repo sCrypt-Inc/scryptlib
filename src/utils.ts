@@ -465,6 +465,14 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
 }
 
 export function arrayTypeAndSize(arrayTypeName: string): [string, number] {
+
+
+  [...arrayTypeName.matchAll(/^([\w]+)(\[([\d])+\])+/gi)].map(match => {
+    console.log(match)
+  })
+
+  console.log(arrayTypeName.matchAll(/^([\w]+)(\[[\d]\])+/gi))
+
   const group = arrayTypeName.split('[');
   const elemTypeName = group[0];
   const arraySize = parseInt(group[1].slice(0, -1));
