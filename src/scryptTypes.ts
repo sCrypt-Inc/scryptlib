@@ -304,7 +304,9 @@ export class OpCodeType extends ScryptType {
 }
 
 
-export type SingletonParamType = ScryptType | boolean | number | bigint;
+export type BasicType = ScryptType | boolean | number | bigint ;
+
+export type SingletonParamType = BasicType | BasicType[];
 
 
 export type StructObject = Record<string, SingletonParamType>;

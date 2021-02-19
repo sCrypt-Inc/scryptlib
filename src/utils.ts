@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType} from "./scryptTypes";
-import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity} from './compilerWrapper';
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType} from "./scryptTypes";
+import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
@@ -464,21 +464,93 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
   });
 }
 
-export function arrayTypeAndSize(arrayTypeName: string): [string, number] {
+export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
 
 
-  [...arrayTypeName.matchAll(/^([\w]+)(\[([\d])+\])+/gi)].map(match => {
-    console.log(match)
+  let arraySizes: Array<number> = [];
+  [...arrayTypeName.matchAll(/\[([\d])+\]+/g)].map(match => {
+    arraySizes.push(parseInt(match[1]));
   })
 
-  console.log(arrayTypeName.matchAll(/^([\w]+)(\[[\d]\])+/gi))
 
   const group = arrayTypeName.split('[');
   const elemTypeName = group[0];
-  const arraySize = parseInt(group[1].slice(0, -1));
-  return [elemTypeName, arraySize];
+  return [elemTypeName, arraySizes];
 }
 
+
+export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array<number>]): boolean {
+
+  const [elemTypeName, arraySizes] = arrayInfo;
+
+  if (!Array.isArray(args)) {
+    return false;
+  }
+
+  const len = arraySizes[0];
+
+  if(!len) {
+    return false;
+  }
+
+  if (args.length !== len) {
+    return false;
+  }
+
+  if (!args.every(arg => {
+    if(Array.isArray(arg)) {
+      return checkArray(arg, [elemTypeName, arraySizes.slice(1)]);
+    } else {
+
+      const scryptType = typeOfArg(arg);
+
+      return scryptType === elemTypeName && arraySizes.length == 1;
+    }
+  })) {
+    return false;
+  }
+
+  return true;
+}
+
+export function subscript(index: number, arraySizes: Array<number>): string {
+  
+  if(arraySizes.length == 1) {
+    return `[${index}]`;
+  } else if(arraySizes.length > 1) {
+    const subArraySizes = arraySizes.slice(1);
+    const offset = subArraySizes.reduce(function(acc, val) { return acc * val; }, 1)
+    return `[${Math.floor(index / offset)}]${subscript(index % offset, subArraySizes)}`;
+  }
+}
+
+export function flatternArray(arg: SupportedParamType[]) {
+  const flattened = arg.flat(Infinity);
+  return flattened;
+}
+
+export function typeOfArg(arg: SupportedParamType) {
+
+  if(arg instanceof ScryptType) {
+    const scryptType = (arg as ScryptType).finalType;
+    return scryptType;
+  }
+
+  const typeofArg = typeof arg;
+
+  if (typeofArg === 'boolean') {
+    return 'bool';
+  }
+
+  if (typeofArg === 'number') {
+    return 'int';
+  }
+
+  if (typeofArg === 'bigint') {
+    return 'int';
+  }
+  
+}
 
 
 export function readFileByLine(path: string, index: number): string {

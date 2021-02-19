@@ -14,20 +14,31 @@ const MDArray = buildContractClass(jsonDescr);
 
 describe('MDArray test', () => {
 
-    describe('check VerifyError ackermann.scrypt', () => {
+    describe('check MDArray', () => {
       let mdArray, result;
     
       before(() => {
-        mdArray = new MDArray();
+        mdArray = new MDArray([ [
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          [9, 10, 11, 12]
+          ],
+          [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, 24]
+          ] ]);
+      });
+    
+      it('should success', () => {
+        result = mdArray.unlock([[3,1,2],[4,5,6]], [1,32]).verify()
+        expect(result.success, result.error).to.be.true
       });
 
 
-      console.log('aaaa', typeof [3,3])
-    
-      it('stop at ackermann.scrypt#38', () => {
-        result = mdArray.unlock(15, 5).verify()
-        expect(result.error).to.contains("ackermann.scrypt#38");
+      it('should fail', () => {
+        result = mdArray.unlock([[3,2,2],[4,5,6]], [1,32]).verify()
+        expect(result.success, result.error).to.be.false
       });
     });
-
 });
