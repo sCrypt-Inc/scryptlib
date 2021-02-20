@@ -417,16 +417,16 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
 
 
 export function isStructType(type: string): boolean {
-	return /struct\s(\w+)\s\{\}/.test(type);
+	return /^struct\s(\w+)\s\{\}$/.test(type);
 }
 
 export function isArrayType(type: string) {
-	return /\w\[\d+\]/.test(type);
+	return /[^\[\]]+\[\d+\]/.test(type);
 }
 
 
 export function getStructNameByType(type: string): string  {
-  const m = /struct\s(\w+)\s\{\}/.exec(type.trim());
+  const m = /^struct\s(\w+)\s\{\}$/.exec(type.trim());
   if (m) {
     return m[1];
   }

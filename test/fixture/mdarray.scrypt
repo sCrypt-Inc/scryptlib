@@ -1,43 +1,78 @@
+struct ST1 {
+  bool x;
+  bytes y;
+}
+
+
+type AliasST1 = ST1;
 
 contract MDArray {
 
     int[2][3][4] X;
-
-    constructor(int[2][3][4] XX) {
-        this.X = XX;
-    }
+    
 
     public function unlock(int[2][3] P1, int[2] P2) {
-
-        int[2][3][4] A3 = [ [
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          [9, 10, 11, 12]
-          ],
-          [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, 24]
-          ] ];
-
-        require(A3[0][0][0] == 4);
  
         int x = P1[0][1];
 
         require(x == 1);
 
+        require(P2[0] == 1);
+        require(P2[1] == 32);
+
         require(P1[0][0] == 3);
         require(P1[0][1] == 1);
         require(P1[0][2] == 2);
+        require(P1[1][0] == 4);
+        require(P1[1][1] == 5);
+        require(P1[1][2] == 6);
 
-        require(this.X[0][0][0] == 4);
+        require(P1[0] == [3,1,2]);
+        require(P1[1] == [4,5,6]);
+
+
+        require(this.X[0][0][0] == 1);
+        require(this.X[0][0][1] == 2);
+        require(this.X[0][0][2] == 3);
+        require(this.X[0][0][3] == 4);
+        require(this.X[0][1][0] == 5);
+        require(this.X[0][2][3] == 12);
+        require(this.X[1][0][0] == 13);
+        require(this.X[1][1][1] == 18);
 
         require(this.X[x][x+1][x+2] == 24);
         
         // with parens
         require((this.X[1])[2][x+2] == 24);
         require((this.X[1][2])[x+2] == 24);
-        require(P2[x] == 32);
+
+
+        require(this.X[0] == [
+            [1, 2, 3, 4],
+            [5, 6, 7, 8],
+            [9, 10, 11, 12]
+        ]);
+
+        require(this.X[0][1] == [5, 6, 7, 8]);
+    }
+
+
+    public function unlockST1(ST1[2] st1array) {
+        ST1 st0 = st1array[0];
+        ST1 st1 = st1array[1];
+        require(st0.x == false);
+        require(st1.x == true);
+        require(st0.y == b'68656c6c6f20776f726c6421');
+        require(st1.y == b'68656c6c6f20776f726c6420');
+    }
+
+    public function unlockAliasST1(AliasST1[2] st1array) {
+        AliasST1 st0 = st1array[0];
+        AliasST1 st1 = st1array[1];
+        require(st0.x == false);
+        require(st1.x == true);
+        require(st0.y == b'68656c6c6f20776f726c6421');
+        require(st1.y == b'68656c6c6f20776f726c6420');
     }
 }
 
