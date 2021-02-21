@@ -50,7 +50,7 @@ contract MixedStruct {
         require(this.bsver.friend.blk.time == 10000);
 
 
-
+        require(p.name == b'7361746f736869206e616b616d6f746f');
         require(p.isMale == true);
         require(p.age == 33);
         require(p.addr == b'68656c6c6f20776f726c6421');
