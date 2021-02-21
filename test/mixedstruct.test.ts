@@ -12,7 +12,10 @@ const jsonDescr = loadDescription('mixedstruct_desc.json');
 const MixedStruct = buildContractClass(jsonDescr);
 const { Block, Person, Token, Bsver } = buildTypeClasses(jsonDescr);
 
+const mixedDescr = loadDescription('mixed_desc.json');
 
+const MixedArrayAndStruct = buildContractClass(mixedDescr);
+const { A2, NEW_ST2, NEW_ST3, ST, ST2, ST3 } = buildTypeClasses(mixedDescr);
 
 describe('MixedStruct  test', () => {
 
@@ -217,4 +220,29 @@ describe('MixedStruct  test', () => {
     });
 
   });
+
+  describe('check mixed', () => {
+    let mixed, result;
+
+    before(() => {
+      mixed = new MixedArrayAndStruct();
+    });
+
+
+    it('unlock mixed should success', () => {
+      result = mixed.unlock(1).verify()
+      expect(result.success, result.error).to.be.true
+    });
+
+    it('unlock mixed should fail', () => {
+      result = mixed.unlock(0).verify()
+      expect(result.success, result.error).to.be.false
+    });
+
+    it('unlock mixed should fail', () => {
+      result = mixed.unlock(4).verify()
+      expect(result.success, result.error).to.be.false
+    });
+
+  })
 });
