@@ -447,12 +447,27 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 export function checkStruct(s: StructEntity, arg: Struct): void {
   
   s.params.forEach(p => {
-    const finalType = arg.getMemberFinalType(p.name);
-    const type = arg.getMemberType(p.name);
+    let member = arg.memberByKey(p.name);
+
+    const finalType = typeOfArg(member);
+
     if(finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
     } else if(finalType != p.finalType) {
-      throw new Error(`wrong argument type, expected ${p.type} but got ${type}`);
+      if(isArrayType(p.finalType)) {
+        const [elemTypeName, arraySize] = arrayTypeAndSize(p.finalType);
+        if(Array.isArray(arg.value[p.name])) {
+          if(checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
+
+          } else {
+            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${p.finalType}`);
+          }
+        } else {
+          throw new Error(`struct ${s.name} property ${p.name} should be ${p.finalType}`);
+        }
+      } else {
+        throw new Error(`wrong argument type, expected ${p.finalType} but got ${finalType}`);
+      }
     }
   });
 
@@ -524,12 +539,56 @@ export function subscript(index: number, arraySizes: Array<number>): string {
   }
 }
 
-export function flatternArray(arg: SupportedParamType[]) {
+export function flatternArray(arg: SupportedParamType[]): SupportedParamType[]  {
   const flattened = arg.flat(Infinity);
   return flattened;
 }
 
-export function typeOfArg(arg: SupportedParamType) {
+export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string, finalType: string}> {
+  if(Struct.isStruct(arg)) {
+    const argS = arg as Struct;
+    const keys = argS.getMembers();
+
+    return keys.map(key => {
+      let member = argS.memberByKey(key) ;
+      if(Struct.isStruct(member)) {
+        return flatternStruct(member as Struct, `${name}.${key}`);
+      } else if(Array.isArray(member)) {
+
+        const [elemTypeName, arraySizes] = arrayTypeAndSize(argS.getMemberAstFinalType(key));
+        return flatternArray(member as SupportedParamType[]).map((e, idx) => {
+
+          if(Struct.isStruct(e)) {
+            return flatternStruct(e as Struct, `${name}.${key}${subscript(idx, arraySizes)}`);
+          } else {
+            return {
+              value: e,
+              name: `${name}.${key}${subscript(idx, arraySizes)}`,
+              type: elemTypeName,
+              finalType: elemTypeName
+            }
+          }
+        });
+        
+      } else {
+        member = member as ScryptType;
+        return {
+          value: member,
+          name: `${name}.${key}`,
+          type: member.type,
+          finalType: member.finalType
+        }
+      }
+    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+
+  } else {
+    throw new Error(`${arg} should be struct`);
+  }
+}
+
+
+
+export function typeOfArg(arg: SupportedParamType): string {
 
   if(arg instanceof ScryptType) {
     const scryptType = (arg as ScryptType).finalType;
@@ -549,6 +608,8 @@ export function typeOfArg(arg: SupportedParamType) {
   if (typeofArg === 'bigint') {
     return 'int';
   }
+
+  return typeof arg;
   
 }
 
