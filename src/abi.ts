@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript} from "./utils";
+import { int2Asm, bsv, arrayTypeAndSize,  genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity, ParamEntity} from './compilerWrapper';
@@ -217,17 +217,10 @@ export class ABICoder {
           throw new Error(`expect struct ${param.type} but got struct ${argS.type}`);
         }
 
-        const s = findStructByType(param.finalType, this.structs);
-
-        if(s) {
-          s.params.forEach(e => {
-            cParams_.push({ name:`${param.name}.${e.name}`, type: e.type, finalType: e.finalType });
-            args_.push((arg as Struct).value[e.name]);
-          });
-
-        } else {
-          throw new Error(`constructor does not accept struct ${argS.type} at ${index}-th parameter`);
-        }
+        flatternStruct(argS, param.name).forEach(v => {
+          cParams_.push({ name:`${v.name}`, type: v.type, finalType: v.finalType });
+          args_.push(v.value);
+        })
       }
       else {
         cParams_.push(param);

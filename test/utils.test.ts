@@ -1,6 +1,14 @@
 import { expect } from 'chai'
+import { buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes} from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript} from '../src/utils'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct} from '../src/utils'
+import { loadDescription } from './helper';
+
+
+
+const mixedstructDescr = loadDescription('mixedstruct_desc.json');
+const {Person, Block, Bsver, Token} = buildTypeClasses(mixedstructDescr);
+
 
 const BN = bsv.crypto.BN
 
@@ -378,7 +386,180 @@ describe('utils', () => {
         [21, 22, 23, 24]
         ] ])).to.includes.members([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
     })
+  })
 
+
+  describe('flatternStruct()', () => {
+    it('flatternStruct Block', () => {
+      expect(flatternStruct(new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      }), "block")).to.deep.ordered.members([ {
+        value: new Bytes('68656c6c6f20776f726c6421'),
+        finalType: "bytes",
+        name: "block.hash",
+        type: "bytes"
+      }, {
+        value: new Bytes('1156'),
+        finalType: "bytes",
+        name: "block.header",
+        type: "bytes"
+      }, {
+        value: new Int(10000),
+        finalType: "int",
+        name: "block.time",
+        type: "int"
+      }])
+    })
+
+
+    it('flatternStruct Person', () => {
+      expect(flatternStruct(new Person({
+        name: new Bytes('7361746f736869206e616b616d6f746f'),
+        addr: new Bytes('6666'),
+        isMale: true,
+        age: 33,
+        blk: new Block({
+          time: 10000,
+          hash: new Bytes('68656c6c6f20776f726c6421'),
+          header: new Bytes('1156'),
+        })
+      }), "p")).to.deep.ordered.members([ {
+        value: new Bytes('7361746f736869206e616b616d6f746f'),
+        finalType: "bytes",
+        name: "p.name",
+        type: "bytes"
+      }, {
+        value: new Bytes('6666'),
+        finalType: "bytes",
+        name: "p.addr",
+        type: "bytes"
+      }, {
+        value: new Bool(true),
+        finalType: "bool",
+        name: "p.isMale",
+        type: "bool"
+      }, {
+        value: new Int(33),
+        finalType: "int",
+        name: "p.age",
+        type: "int"
+      }, {
+        value: new Bytes('68656c6c6f20776f726c6421'),
+        finalType: "bytes",
+        name: "p.blk.hash",
+        type: "bytes"
+      }, {
+        value: new Bytes('1156'),
+        finalType: "bytes",
+        name: "p.blk.header",
+        type: "bytes"
+      }, {
+        value: new Int(10000),
+        finalType: "int",
+        name: "p.blk.time",
+        type: "int"
+      }])
+    })
+
+
+    it('flatternStruct Bsver', () => {
+      expect(flatternStruct(new Bsver({
+        name: new Bytes('6666'),
+        friend: new Person({
+          name: new Bytes('7361746f736869206e616b616d6f746f'),
+          addr: new Bytes('6666'),
+          isMale: true,
+          age: 33,
+          blk: new Block({
+            time: 10000,
+            hash: new Bytes('68656c6c6f20776f726c6421'),
+            header: new Bytes('1156'),
+          })
+        }),
+        tokens: [new Token({
+          id: new Bytes('0001'),
+          createTime: 1000000
+        }), new Token({
+          id: new Bytes('0002'),
+          createTime: 1000001
+        }), new Token({
+          id: new Bytes('0003'),
+          createTime: 1000002
+        })]
+      }), "b")).to.deep.ordered.members([ {
+        value: new Bytes('6666'),
+        finalType: "bytes",
+        name: "b.name",
+        type: "bytes"
+      }, {
+        value: new Bytes('0001'),
+        finalType: "bytes",
+        name: "b.tokens[0].id",
+        type: "bytes"
+      }, {
+        value: new Int(1000000),
+        finalType: "int",
+        name: "b.tokens[0].createTime",
+        type: "int"
+      }, {
+        value: new Bytes('0002'),
+        finalType: "bytes",
+        name: "b.tokens[1].id",
+        type: "bytes"
+      }, {
+        value: new Int(1000001),
+        finalType: "int",
+        name: "b.tokens[1].createTime",
+        type: "int"
+      }, {
+        value: new Bytes('0003'),
+        finalType: "bytes",
+        name: "b.tokens[2].id",
+        type: "bytes"
+      },{
+        value: new Int(1000002),
+        finalType: "int",
+        name: "b.tokens[2].createTime",
+        type: "int"
+      }, {
+        value: new Bytes('7361746f736869206e616b616d6f746f'),
+        finalType: "bytes",
+        name: "b.friend.name",
+        type: "bytes"
+      }, {
+        value: new Bytes('6666'),
+        finalType: "bytes",
+        name: "b.friend.addr",
+        type: "bytes"
+      }, {
+        value: new Bool(true),
+        finalType: "bool",
+        name: "b.friend.isMale",
+        type: "bool"
+      }, {
+        value: new Int(33),
+        finalType: "int",
+        name: "b.friend.age",
+        type: "int"
+      }, {
+        value: new Bytes('68656c6c6f20776f726c6421'),
+        finalType: "bytes",
+        name: "b.friend.blk.hash",
+        type: "bytes"
+      }, {
+        value: new Bytes('1156'),
+        finalType: "bytes",
+        name: "b.friend.blk.header",
+        type: "bytes"
+      }, {
+        value: new Int(10000),
+        finalType: "int",
+        name: "b.friend.blk.time",
+        type: "int"
+      }])
+    })
   })
 
 
