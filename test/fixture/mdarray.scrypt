@@ -1,0 +1,43 @@
+
+contract MDArray {
+
+    int[2][3][4] X;
+
+    constructor(int[2][3][4] XX) {
+        this.X = XX;
+    }
+
+    public function unlock(int[2][3] P1, int[2] P2) {
+
+        int[2][3][4] A3 = [ [
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          [9, 10, 11, 12]
+          ],
+          [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, 24]
+          ] ];
+
+        require(A3[0][0][0] == 4);
+ 
+        int x = P1[0][1];
+
+        require(x == 1);
+
+        require(P1[0][0] == 3);
+        require(P1[0][1] == 1);
+        require(P1[0][2] == 2);
+
+        require(this.X[0][0][0] == 4);
+
+        require(this.X[x][x+1][x+2] == 24);
+        
+        // with parens
+        require((this.X[1])[2][x+2] == 24);
+        require((this.X[1][2])[x+2] == 24);
+        require(P2[x] == 32);
+    }
+}
+

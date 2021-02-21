@@ -122,6 +122,7 @@ export interface StructEntity {
 export interface AliasEntity {
 	name: string;
 	type: string;
+	finalType: string;
 }
 
 export function compile(

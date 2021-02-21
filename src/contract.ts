@@ -122,7 +122,7 @@ export class AbstractContract {
 
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
-    let error = `VerifyError: ${bsi.errstr}`;
+    let error = result ? '' : `VerifyError: ${bsi.errstr}`;
 
 
 
@@ -358,6 +358,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
   alias.forEach(element => {
     const finalType = resolveType(alias, structs, element.name);
+    element.finalType = finalType;
     const C = BasicScryptType[finalType];
     if(C) {
       const Class = C as typeof ScryptType;

@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType} from "./utils";
+import { int2Asm, bsv, findStructByType, path2uri, isEmpty, arrayTypeAndSize, findStructByName, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
 import { ABIEntityType, ABIEntity, StructEntity, ParamEntity} from './compilerWrapper';
@@ -193,17 +193,23 @@ export class ABICoder {
     const args_: SupportedParamType[] = [];
     cParams.forEach((param, index) =>{
       const arg = args[index];
-      if (Array.isArray(arg)) {
-        const [elemTypeName, arraySize] = arrayTypeAndSize(param.finalType);
-        if (arraySize !== arg.length) {
-          throw new Error(`Array arguments wrong size for '${param.name}' in constructor, expected [${arraySize}] but got [${arg.length}]`);
+      if (isArrayType(param.finalType)) {
+        const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
+
+        if(Array.isArray(arg)) {
+          if(checkArray(arg, [elemTypeName, arraySizes])) {
+            // flattern array
+            flatternArray(arg as SupportedParamType[]).forEach((e, idx) => {
+              cParams_.push({ name:`${param.name}${subscript(idx, arraySizes)}`, type: elemTypeName, finalType: elemTypeName });
+              args_.push(e);
+            });
+          } else {
+            throw new Error(`constructor ${index}-th parameter should be ${param.finalType}`);
+          }
+        } else {
+          throw new Error(`constructor ${index}-th parameter should be ${param.finalType}`);
         }
-        // flattern array
-        arg.forEach((e, idx) => {
-          cParams_.push({ name:`${param.name}[${idx}]`, type: elemTypeName, finalType: elemTypeName });
-          args_.push(e);
-        });
-      } else if(Struct.isStruct(arg)) {
+      } else if(isStructType(param.finalType)) {
 
         const argS = arg as Struct;
 
@@ -280,13 +286,13 @@ export class ABICoder {
         throw new Error('Array arguments are not of the same type');
       }
 
-      const [elemTypeName, arraySize] = arrayTypeAndSize(arrayParm.finalType);
+      const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParm.finalType);
 
-      if (arraySize !== args.length) {
-        throw new Error(`Array arguments wrong size, expected [${arraySize}] but got [${args.length}]`);
+      if(checkArray(args, [elemTypeName, arraySizes])) {
+        return flatternArray(args).map(arg => this.encodeParam(arg, {name:arrayParm.name, type: elemTypeName, finalType: elemTypeName})).join(' ');
+      } else {
+        throw new Error(`checkArray ${arrayParm.type} fail`);
       }
-
-      return args.map(arg => this.encodeParam(arg, {name:arrayParm.name, type: elemTypeName, finalType: elemTypeName})).join(' ');
     }
 
 
@@ -296,8 +302,8 @@ export class ABICoder {
       if(Array.isArray(arg)) {
         return this.encodeParamArray(arg, paramEntity);
       } else {
-        const scryptType = (arg as ScryptType).type;
-        throw new Error(`expect param ${paramEntity.name} as Array but got ${scryptType}`);
+        const scryptType = typeOfArg(arg);
+        throw new Error(`expect param ${paramEntity.name} as ${paramEntity.finalType} but got ${scryptType}`);
       }
     }
 
@@ -315,6 +321,11 @@ export class ABICoder {
     }
 
 
+    const scryptType = typeOfArg(arg);
+    if (scryptType != finalType) {
+      throw new Error(`wrong argument type, expected ${paramEntity.finalType} or ${paramEntity.type} but got ${scryptType}`);
+    }
+
     const typeofArg = typeof arg;
 
     if (typeofArg === 'boolean') {
@@ -327,11 +338,6 @@ export class ABICoder {
 
     if (typeofArg === 'bigint') {
       arg = new Int(arg as bigint);
-    }
-
-    const scryptType = (arg as ScryptType).finalType;
-    if (scryptType != finalType) {
-      throw new Error(`wrong argument type, expected ${paramEntity.finalType} or ${paramEntity.type} but got ${scryptType}`);
     }
 
     return (arg as ScryptType).toASM();

@@ -1,5 +1,6 @@
 import { expect } from 'chai'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm} from '../src/utils'
+import { Int, Bool, Bytes} from '../src/scryptTypes'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript} from '../src/utils'
 
 const BN = bsv.crypto.BN
 
@@ -246,6 +247,226 @@ describe('utils', () => {
       expect(literal2ScryptType("OpCodeType(b'01')").toLiteral())
         .to.equal("OpCodeType(b'01')");
     });
+  })
+
+  describe('arrayTypeAndSize()', () => {
+
+    it('arrayTypeAndSize int[7]', () => {
+      const [elemTypeName, arraySize] = arrayTypeAndSize("int[7]");
+      expect(elemTypeName).to.equal('int')
+      expect(arraySize).to.includes.members([7])
+    })
+
+    it('arrayTypeAndSize int[2][3]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("int[2][3]");
+      expect(elemTypeName).to.equal('int')
+      expect(arraySize).to.includes.members([2, 3])
+    })
+
+    it('arrayTypeAndSize bool[2][3][8][1]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("bool[2][3][8][1]");
+      expect(elemTypeName).to.equal('bool')
+      expect(arraySize).to.includes.members([2, 3, 8, 1])
+    })
+
+  })
+
+
+  describe('checkArray()', () => {
+
+    it('checkArray int[3]', () => {
+      expect(checkArray([3, 3, 3], ['int', [3]])).to.true;
+    })
+
+    it('checkArray int[3]', () => {
+      expect(checkArray([3, 3], ['int', [3]])).to.false;
+    })
+
+    it('checkArray int[3]', () => {
+      expect(checkArray([3, 3, 1, 3], ['int', [3]])).to.false;
+    })
+
+    it('checkArray int[3]', () => {
+      expect(checkArray([3, 3, new Int(2)], ['int', [3]])).to.true;
+    })
+
+    it('checkArray int[3]', () => {
+      expect(checkArray([3, 3, new Bool(true)], ['int', [3]])).to.false;
+    })
+
+
+    it('checkArray int[2][3]', () => {
+      expect(checkArray([[3, 3, 3], [3, 12, 3]], ['int', [2, 3]])).to.true;
+    })
+
+    it('checkArray int[2][3]', () => {
+      expect(checkArray([[3, 3, 3], [3, 12, 3], [1,1,1]], ['int', [2, 3]])).to.false;
+    })
+
+    it('checkArray int[2][3]', () => {
+      expect(checkArray([[3, 3, 3], [3, 12]], ['int', [2, 3]])).to.false;
+    })
+
+    it('checkArray int[2][1][3]', () => {
+      expect(checkArray([[[3, 3, 3]], [[3, 12, 3]]], ['int', [2, 1, 3]])).to.true;
+    })
+
+    it('checkArray int[2][1][3]', () => {
+      expect(checkArray([[[3, 3, 3], 1], [[3, 12, 3]]], ['int', [2, 1, 3]])).to.false;
+    })
+
+
+    it('checkArray int[2][2][3]', () => {
+      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], ['int', [2, 2, 3]])).to.true;
+    })
+
+
+    it('checkArray int[2][2][3]', () => {
+      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], ['int', [2, 2, 3]])).to.true;
+    })
+
+
+    it('checkArray int[2][3][4]', () => {
+      expect(checkArray([ [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12]
+        ],
+        [
+        [13, 14, 15, 16],
+        [17, 18, 19, 20],
+        [21, 22, 23, 24]
+        ]], ['int', [2, 3, 4]])).to.true;
+    })
+
+    it('checkArray int[2][3][4]', () => {
+      expect(checkArray([[1, 3, 5], [2, 4, 6]], ['int', [2, 3, 4]])).to.false;
+    })
+
+  })
+
+
+  describe('flatternArray()', () => {
+    it('flatternArray int[2][2][3]', () => {
+      expect(flatternArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]])).to.includes.members([3, 3, 3, 3, 3, 3, 3, 12, 3, 3, 3, 3])
+    })
+
+    it('flatternArray int[2][3]', () => {
+      expect(flatternArray([[3, 3, 3], [3, 12, 3]])).to.includes.members([3, 3, 3, 3, 12, 3])
+    })
+  })
+
+
+  describe('subscript() [2][3][4]', () => {
+    it('subscript should be [0][0][0] when one-dimensions index = 0', () => {
+      expect(subscript(0, [2,3,4])).to.equal('[0][0][0]')
+    })
+
+
+    it('subscript should be [0][0][1] when one-dimensions index = 1', () => {
+      expect(subscript(1, [2,3,4])).to.equal('[0][0][1]')
+    })
+
+    it('subscript should be [0][0][2] when one-dimensions index = 2', () => {
+      expect(subscript(2, [2,3,4])).to.equal('[0][0][2]')
+    })
+
+    it('subscript should be [0][0][3] when one-dimensions index = 3', () => {
+      expect(subscript(3, [2,3,4])).to.equal('[0][0][3]')
+    })
+
+    it('subscript should be [0][1][0] when one-dimensions index = 4', () => {
+      expect(subscript(4, [2,3,4])).to.equal('[0][1][0]')
+    })
+
+    it('subscript should be [0][1][1] when one-dimensions index = 5', () => {
+      expect(subscript(5, [2,3,4])).to.equal('[0][1][1]')
+    })
+
+    it('subscript should be [0][1][2] when one-dimensions index = 6', () => {
+      expect(subscript(6, [2,3,4])).to.equal('[0][1][2]')
+    })
+
+    it('subscript should be [0][1][3] when one-dimensions index = 7', () => {
+      expect(subscript(7, [2,3,4])).to.equal('[0][1][3]')
+    })
+
+    it('subscript should be [0][2][0] when  one-dimensions index = 8', () => {
+      expect(subscript(8, [2,3,4])).to.equal('[0][2][0]')
+    })
+
+    it('subscript should be [0][2][1] when one-dimensions index = 9', () => {
+      expect(subscript(9, [2,3,4])).to.equal('[0][2][1]')
+    })
+
+    it('subscript should be [0][2][2] when one-dimensions index = 10', () => {
+      expect(subscript(10, [2,3,4])).to.equal('[0][2][2]')
+    })
+
+    it('subscript should be [0][2][3] when one-dimensions index = 11', () => {
+      expect(subscript(11, [2,3,4])).to.equal('[0][2][3]')
+    })
+
+    it('subscript should be [1][0][0] when one-dimensions index = 12', () => {
+      expect(subscript(12, [2,3,4])).to.equal('[1][0][0]')
+    })
+
+
+    it('subscript should be [1][0][1] when one-dimensions index = 13', () => {
+      expect(subscript(13, [2,3,4])).to.equal('[1][0][1]')
+    })
+
+    it('subscript should be [1][0][2] when one-dimensions index = 14', () => {
+      expect(subscript(14, [2,3,4])).to.equal('[1][0][2]')
+    })
+
+    it('subscript should be [1][0][3] when one-dimensions index = 15', () => {
+      expect(subscript(15, [2,3,4])).to.equal('[1][0][3]')
+    })
+
+
+    it('subscript should be [1][1][0] when one-dimensions index = 16', () => {
+      expect(subscript(16, [2,3,4])).to.equal('[1][1][0]')
+    })
+
+    it('subscript should be [1][1][1] when one-dimensions index = 17', () => {
+      expect(subscript(17, [2,3,4])).to.equal('[1][1][1]')
+    })
+
+    it('subscript should be [1][1][2] when one-dimensions index = 18', () => {
+      expect(subscript(18, [2,3,4])).to.equal('[1][1][2]')
+    })
+
+    it('subscript should be [1][1][3] when one-dimensions index = 19', () => {
+      expect(subscript(19, [2,3,4])).to.equal('[1][1][3]')
+    })
+
+    it('subscript should be [1][2][0] when one-dimensions index = 20', () => {
+      expect(subscript(20, [2,3,4])).to.equal('[1][2][0]')
+    })
+
+    it('subscript should be [1][2][1] when one-dimensions index = 21', () => {
+      expect(subscript(21, [2,3,4])).to.equal('[1][2][1]')
+    })
+
+    it('subscript should be [1][2][2] when one-dimensions index = 22', () => {
+      expect(subscript(22, [2,3,4])).to.equal('[1][2][2]')
+    })
+
+    it('subscript should be [1][2][3] when one-dimensions index = 23', () => {
+      expect(subscript(23, [2,3,4])).to.equal('[1][2][3]')
+    })
+
+    it('subscript should be [0] when one-dimensions index = 0', () => {
+      expect(subscript(0, [2])).to.equal('[0]')
+    })
+
+    it('subscript should be [1] when one-dimensions index = 1', () => {
+      expect(subscript(1, [2])).to.equal('[1]')
+    })
+
   })
 
 })
