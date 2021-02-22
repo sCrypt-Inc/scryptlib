@@ -24,16 +24,12 @@ struct Bsver {
     Person friend;
 }
 
-
-
-
 contract MixedStruct {
 
     Bsver bsver;
 
     public function unlock(Person p) {
-
-
+        //check constructor args
         require(this.bsver.name == b'6666');
         require(this.bsver.tokens[0].id == b'0001');
         require(this.bsver.tokens[0].createTime == 1000000);
@@ -49,7 +45,7 @@ contract MixedStruct {
         require(this.bsver.friend.blk.header == b'1156');
         require(this.bsver.friend.blk.time == 10000);
 
-
+        //check unlock args
         require(p.name == b'7361746f736869206e616b616d6f746f');
         require(p.isMale == true);
         require(p.age == 33);
