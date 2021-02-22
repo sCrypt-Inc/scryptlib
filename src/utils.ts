@@ -539,9 +539,34 @@ export function subscript(index: number, arraySizes: Array<number>): string {
   }
 }
 
-export function flatternArray(arg: SupportedParamType[]): SupportedParamType[]  {
+export function flatternArray(arg: any, param: ParamEntity): Array<{value: ScryptType, name: string, type: string, finalType: string}>  {
+
+  if(!Array.isArray(arg)) {
+    throw new Error(`flatternArray only work on array`);
+  }
   const flattened = arg.flat(Infinity);
-  return flattened;
+
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
+
+  return flattened.map((item,index) => {
+
+    if(typeof item === "boolean") {
+      item = new Bool(item as boolean);
+    } else if(typeof item === "number") {
+      item = new Int(item as number);
+    } else if(typeof item === "bigint") {
+      item = new Int(item as bigint);
+    } else  {
+      item = item as ScryptType;
+    }
+
+    return {
+      value: item,
+      name: `${param.name}${subscript(index, arraySizes)}`,
+      type: elemTypeName,
+      finalType: elemTypeName
+    }
+  });
 }
 
 export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string, finalType: string}> {
@@ -554,19 +579,16 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
       if(Struct.isStruct(member)) {
         return flatternStruct(member as Struct, `${name}.${key}`);
       } else if(Array.isArray(member)) {
-
-        const [elemTypeName, arraySizes] = arrayTypeAndSize(argS.getMemberAstFinalType(key));
-        return flatternArray(member as SupportedParamType[]).map((e, idx) => {
-
-          if(Struct.isStruct(e)) {
-            return flatternStruct(e as Struct, `${name}.${key}${subscript(idx, arraySizes)}`);
+        const finalType = argS.getMemberAstFinalType(key);
+        return flatternArray(member as SupportedParamType[], {
+          name: `${name}.${key}`,
+          type: finalType,
+          finalType: finalType
+        }).map((e) => {
+          if(Struct.isStruct(e.value)) {
+            return flatternStruct(e.value as Struct, `${e.name}`);
           } else {
-            return {
-              value: e,
-              name: `${name}.${key}${subscript(idx, arraySizes)}`,
-              type: elemTypeName,
-              finalType: elemTypeName
-            }
+            return e;
           }
         });
         

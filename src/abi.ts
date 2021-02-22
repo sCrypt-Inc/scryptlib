@@ -199,9 +199,9 @@ export class ABICoder {
         if(Array.isArray(arg)) {
           if(checkArray(arg, [elemTypeName, arraySizes])) {
             // flattern array
-            flatternArray(arg as SupportedParamType[]).forEach((e, idx) => {
-              cParams_.push({ name:`${param.name}${subscript(idx, arraySizes)}`, type: elemTypeName, finalType: elemTypeName });
-              args_.push(e);
+            flatternArray(arg as SupportedParamType[], param).forEach((e, idx) => {
+              cParams_.push({ name:e.name, type: elemTypeName, finalType: elemTypeName });
+              args_.push(e.value);
             });
           } else {
             throw new Error(`constructor ${index}-th parameter should be ${param.finalType}`);
@@ -275,6 +275,7 @@ export class ABICoder {
       }
 
       const t = typeof args[0];
+      
       if (!args.every(arg => typeof arg === t)) {
         throw new Error('Array arguments are not of the same type');
       }
@@ -282,7 +283,7 @@ export class ABICoder {
       const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParm.finalType);
 
       if(checkArray(args, [elemTypeName, arraySizes])) {
-        return flatternArray(args).map(arg => this.encodeParam(arg, {name:arrayParm.name, type: elemTypeName, finalType: elemTypeName})).join(' ');
+        return flatternArray(args, arrayParm).map(arg => this.encodeParam(arg.value, {name:arrayParm.name, type: elemTypeName, finalType: elemTypeName})).join(' ');
       } else {
         throw new Error(`checkArray ${arrayParm.type} fail`);
       }
