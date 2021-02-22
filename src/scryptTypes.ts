@@ -317,15 +317,15 @@ export class Struct extends ScryptType {
 
   sorted = false;
 
-  structAst: StructEntity;
-
+  public static structAst: StructEntity;
   constructor(o: StructObject) {
     super(o);
+    this.bind();
   }
 
 
-  public bind(structAst: StructEntity): void {
-    this.structAst = structAst;
+  private bind(): void {
+    const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
     checkStruct(structAst, this);
     const ordered = {};
     const unordered = this.value;
@@ -378,8 +378,8 @@ export class Struct extends ScryptType {
       }
     });
   }
+ 
 
-  
   memberByIndex(index: number): string {
     if(!this.sorted) {
       throw `unbinded Struct can't call memberByIndex`;
@@ -421,7 +421,8 @@ export class Struct extends ScryptType {
    * Get the member type declared by the structure by structAst
    */
   getMemberAstFinalType(key: string): string {
-    let paramEntity = this.structAst.params.find(p => {
+    const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
+    let paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
     return paramEntity.finalType;
