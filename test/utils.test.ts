@@ -357,22 +357,156 @@ describe('utils', () => {
 
 
   describe('flatternArray()', () => {
+
+
     it('flatternArray int[2][2][3]', () => {
-      expect(flatternArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]])).to.includes.members([3, 3, 3, 3, 3, 3, 3, 12, 3, 3, 3, 3])
+      expect(flatternArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], {
+        name: "a", type: "int[2][2][3]", finalType: "int[2][2][3]"
+      })).to.deep.ordered.members([{
+        finalType: "int", 
+        name: "a[0][0][0]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[0][0][1]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[0][0][2]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[0][1][0]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[0][1][1]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[0][1][2]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[1][0][0]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[1][0][1]",
+        type: "int",
+        value: new Int(12)
+      }, {
+        finalType: "int", 
+        name: "a[1][0][2]",
+        type: "int",
+        value: new Int(3)
+      },  {
+        finalType: "int", 
+        name: "a[1][1][0]",
+        type: "int",
+        value: new Int(3)
+      },  {
+        finalType: "int", 
+        name: "a[1][1][1]",
+        type: "int",
+        value: new Int(3)
+      },  {
+        finalType: "int", 
+        name: "a[1][1][2]",
+        type: "int",
+        value: new Int(3)
+      }])
     })
 
     it('flatternArray int[2][3]', () => {
-      expect(flatternArray([[3, 3, 3], [3, 12, 3]])).to.includes.members([3, 3, 3, 3, 12, 3])
+      expect(flatternArray([[1, 2, 3], [4, 12, 5]], {
+        name: "a", type: "int[2][3]", finalType: "int[2][3]"
+      })).to.deep.ordered.members([{
+        finalType: "int", 
+        name: "a[0][0]",
+        type: "int",
+        value: new Int(1)
+      }, {
+        finalType: "int", 
+        name: "a[0][1]",
+        type: "int",
+        value: new Int(2)
+      }, {
+        finalType: "int", 
+        name: "a[0][2]",
+        type: "int",
+        value: new Int(3)
+      }, {
+        finalType: "int", 
+        name: "a[1][0]",
+        type: "int",
+        value: new Int(4)
+      }, {
+        finalType: "int", 
+        name: "a[1][1]",
+        type: "int",
+        value: new Int(12)
+      }, {
+        finalType: "int", 
+        name: "a[1][2]",
+        type: "int",
+        value: new Int(5)
+      }, 
+      ])
     })
 
-    it('flatternArray int[2][2][3]', () => {
-      expect(flatternArray([[[3, 3, 3], [3, 3, 3]], [[3, 3, 3], [3, 3, 3]]])).to.includes.members([3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3])
+    it('flatternArray int[1][1][1][2]', () => {
+      expect(flatternArray([[[[3,4]]]], {
+        name: "a", type: "int[1][1][1][2]", finalType: "int[1][1][1][2]"
+      })).to.deep.ordered.members([
+        {
+          finalType: "int", 
+          name: "a[0][0][0][0]",
+          type: "int",
+          value: new Int(3)
+        },
+        {
+          finalType: "int", 
+          name: "a[0][0][0][1]",
+          type: "int",
+          value: new Int(4)
+        }
+      ])
+    })
+
+    it('flatternArray int[3]', () => {
+      expect(flatternArray([1,2,3], {
+        name: "a", type: "int[3]", finalType: "int[3]"
+      })).to.deep.ordered.members([
+        {
+          finalType: "int", 
+          name: "a[0]",
+          type: "int",
+          value: new Int(1)
+        },
+        {
+          finalType: "int", 
+          name: "a[1]",
+          type: "int",
+          value: new Int(2)
+        },
+        {
+          finalType: "int", 
+          name: "a[2]",
+          type: "int",
+          value: new Int(3)
+        }
+      ])
     })
 
  
-    it('flatternArray int[2][2][3]', () => {
-      expect(flatternArray([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]])).to.includes.members([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-    })
 
     it('flatternArray int[2][3][4]', () => {
       expect(flatternArray([ [
@@ -384,9 +518,137 @@ describe('utils', () => {
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-        ] ])).to.includes.members([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
+        ] ], {
+          name: "a", type: "int[2][3][4]", finalType: "int[2][3][4]"
+        })).to.deep.ordered.members([
+          {
+            finalType: "int", 
+            name: "a[0][0][0]",
+            type: "int",
+            value: new Int(1)
+          },
+          {
+            finalType: "int", 
+            name: "a[0][0][1]",
+            type: "int",
+            value: new Int(2)
+          },
+          {
+            finalType: "int", 
+            name: "a[0][0][2]",
+            type: "int",
+            value: new Int(3)
+          },
+          {
+            finalType: "int", 
+            name: "a[0][0][3]",
+            type: "int",
+            value: new Int(4)
+          },
+          {
+            finalType: "int", 
+            name: "a[0][1][0]",
+            type: "int",
+            value: new Int(5)
+          },{
+            finalType: "int", 
+            name: "a[0][1][1]",
+            type: "int",
+            value: new Int(6)
+          },{
+            finalType: "int", 
+            name: "a[0][1][2]",
+            type: "int",
+            value: new Int(7)
+          },{
+            finalType: "int", 
+            name: "a[0][1][3]",
+            type: "int",
+            value: new Int(8)
+          },{
+            finalType: "int", 
+            name: "a[0][2][0]",
+            type: "int",
+            value: new Int(9)
+          },{
+            finalType: "int", 
+            name: "a[0][2][1]",
+            type: "int",
+            value: new Int(10)
+          },{
+            finalType: "int", 
+            name: "a[0][2][2]",
+            type: "int",
+            value: new Int(11)
+          },{
+            finalType: "int", 
+            name: "a[0][2][3]",
+            type: "int",
+            value: new Int(12)
+          },{
+            finalType: "int", 
+            name: "a[1][0][0]",
+            type: "int",
+            value: new Int(13)
+          },{
+            finalType: "int", 
+            name: "a[1][0][1]",
+            type: "int",
+            value: new Int(14)
+          },{
+            finalType: "int", 
+            name: "a[1][0][2]",
+            type: "int",
+            value: new Int(15)
+          },{
+            finalType: "int", 
+            name: "a[1][0][3]",
+            type: "int",
+            value: new Int(16)
+          },{
+            finalType: "int", 
+            name: "a[1][1][0]",
+            type: "int",
+            value: new Int(17)
+          },{
+            finalType: "int", 
+            name: "a[1][1][1]",
+            type: "int",
+            value: new Int(18)
+          },{
+            finalType: "int", 
+            name: "a[1][1][2]",
+            type: "int",
+            value: new Int(19)
+          },{
+            finalType: "int", 
+            name: "a[1][1][3]",
+            type: "int",
+            value: new Int(20)
+          },{
+            finalType: "int", 
+            name: "a[1][2][0]",
+            type: "int",
+            value: new Int(21)
+          },{
+            finalType: "int", 
+            name: "a[1][2][1]",
+            type: "int",
+            value: new Int(22)
+          },{
+            finalType: "int", 
+            name: "a[1][2][2]",
+            type: "int",
+            value: new Int(23)
+          },{
+            finalType: "int", 
+            name: "a[1][2][3]",
+            type: "int",
+            value: new Int(24)
+          }
+        ])
+      })
     })
-  })
 
 
   describe('flatternStruct()', () => {

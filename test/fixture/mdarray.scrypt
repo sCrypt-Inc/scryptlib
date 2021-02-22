@@ -1,10 +1,26 @@
 struct ST1 {
   bool x;
   bytes y;
+  int i;
 }
 
 
-type AliasST1 = ST1;
+struct ST2 {
+  bool x;
+  bytes y;
+  ST3 st2;
+}
+
+
+struct ST3 {
+  bool x;
+  int[3] y;
+}
+
+
+type AliasST2 = ST2;
+
+type MDArrayST1 = ST1[2][2][2];
 
 contract MDArray {
 
@@ -61,18 +77,53 @@ contract MDArray {
         ST1 st0 = st1array[0];
         ST1 st1 = st1array[1];
         require(st0.x == false);
-        require(st1.x == true);
         require(st0.y == b'68656c6c6f20776f726c6421');
+        require(st0.i == 1);
+        require(st1.x == true);
         require(st1.y == b'68656c6c6f20776f726c6420');
+        require(st1.i == 2);
     }
 
-    public function unlockAliasST1(AliasST1[2] st1array) {
-        AliasST1 st0 = st1array[0];
-        AliasST1 st1 = st1array[1];
+    public function unlockAliasST2(AliasST2[2] st1array) {
+        AliasST2 st0 = st1array[0];
+        AliasST2 st1 = st1array[1];
         require(st0.x == false);
-        require(st1.x == true);
         require(st0.y == b'68656c6c6f20776f726c6421');
+        require(st0.st2.x == false);
+        require(st0.st2.y[0] == 1);
+        require(st0.st2.y[1] == 2);
+        require(st0.st2.y[2] == 3);
+        require(st1.x == true);
         require(st1.y == b'68656c6c6f20776f726c6420');
+        require(st1.st2.x == true);
+        require(st1.st2.y[0] == 4);
+        require(st1.st2.y[1] == 5);
+        require(st1.st2.y[2] == 6);
+    }
+
+    public function unlockMDArrayST1(MDArrayST1 st1mdarray) {
+        require(st1mdarray[0][0][0] == {false, b'aa', 1});
+        require(st1mdarray[0][0][0].x == false);
+        require(st1mdarray[0][0][0].y == b'aa');
+        require(st1mdarray[0][0][0].i == 1);
+
+        require(st1mdarray[0][0][1] == {true, b'bb', 2});
+        require(st1mdarray[0][0][1].x == true);
+        require(st1mdarray[0][0][1].y == b'bb');
+        require(st1mdarray[0][0][1].i == 2);
+
+        require(st1mdarray[0][0] == [{false, b'aa', 1}, {true, b'bb', 2}]);
+ 
+        require(st1mdarray[0][1][0] == {false, b'cc', 3});
+        require(st1mdarray[0][1][0].x == false);
+        require(st1mdarray[0][1][0].y == b'cc');
+        require(st1mdarray[0][1][0].i == 3);
+
+
+        require(st1mdarray[1][1][1] == {true, b'11', 8});
+        require(st1mdarray[1][1][1].x == true);
+        require(st1mdarray[1][1][1].y == b'11');
+        require(st1mdarray[1][1][1].i == 8);
     }
 }
 
