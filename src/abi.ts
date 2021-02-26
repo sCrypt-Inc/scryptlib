@@ -6,6 +6,7 @@ import { ABIEntityType, ABIEntity, StructEntity, ParamEntity} from './compilerWr
 import { mkdtempSync, writeFileSync } from 'fs';
 import { join, sep} from 'path';
 import { tmpdir } from 'os';
+import { cpuUsage } from 'process';
 
 export interface Script {
   toASM(): string;
@@ -200,7 +201,7 @@ export class ABICoder {
           if(checkArray(arg, [elemTypeName, arraySizes])) {
             // flattern array
             flatternArray(arg as SupportedParamType[], param).forEach((e, idx) => {
-              cParams_.push({ name:e.name, type: elemTypeName, finalType: elemTypeName });
+              cParams_.push({ name:e.name, type: e.type, finalType: e.finalType });
               args_.push(e.value);
             });
           } else {
@@ -283,7 +284,7 @@ export class ABICoder {
       const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParm.finalType);
 
       if(checkArray(args, [elemTypeName, arraySizes])) {
-        return flatternArray(args, arrayParm).map(arg => this.encodeParam(arg.value, {name:arrayParm.name, type: elemTypeName, finalType: elemTypeName})).join(' ');
+        return flatternArray(args, arrayParm).map(arg => this.encodeParam(arg.value, {name:arg.name, type: arg.finalType, finalType: arg.finalType})).join(' ');
       } else {
         throw new Error(`checkArray ${arrayParm.type} fail`);
       }
