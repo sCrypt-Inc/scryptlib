@@ -479,8 +479,11 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
   });
 }
 
+/**
+ * return eg. int[2][3][4] => ['int', [2,3,4]]
+ * @param arrayTypeName  eg. int[2][3][4]
+ */
 export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
-
 
   let arraySizes: Array<number> = [];
   [...arrayTypeName.matchAll(/\[([\d])+\]+/g)].map(match => {
@@ -491,6 +494,15 @@ export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>]
   const group = arrayTypeName.split('[');
   const elemTypeName = group[0];
   return [elemTypeName, arraySizes];
+}
+
+/**
+ * return eg. int[2][3][4] => int[3][4]
+ * @param arrayTypeName  eg. int[2][3][4]
+ */
+export function subArrayType(arrayTypeName: string): string {
+  const [elemTypeName, sizes] = arrayTypeAndSize(arrayTypeName);
+  return [elemTypeName, sizes.slice(1).map(size => `[${size}]`).join('')].join('');
 }
 
 

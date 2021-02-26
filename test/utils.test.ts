@@ -282,6 +282,23 @@ describe('utils', () => {
   })
 
 
+  describe('subArrayType()', () => {
+
+    it('subArrayType int[7][7]', () => {
+      const [elemTypeName, arraySize] = arrayTypeAndSize("int[7]");
+      expect(elemTypeName).to.equal('int')
+      expect(arraySize).to.includes.members([7])
+    })
+
+    it('subArrayType bool[2][3][8][1]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("bool[3][8][1]");
+      expect(elemTypeName).to.equal('bool')
+      expect(arraySize).to.includes.members([3, 8, 1])
+    })
+  })
+
+
   describe('checkArray()', () => {
 
     it('checkArray int[3]', () => {
