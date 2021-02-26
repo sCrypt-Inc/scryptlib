@@ -261,8 +261,8 @@ export function compile(
 			const { contract: name, abi } = getABIDeclaration(result.ast);
 			result.abi = abi;
 			result.contract = name;
-			result.structs = getStructDeclaration(result.ast);
-			result.alias = getAliasDeclaration(result.ast);
+			result.structs = getStructDeclaration(result.ast, allAst);
+			result.alias = getAliasDeclaration(result.ast, allAst);
 		}
 
 		let asmObj = null;
@@ -488,20 +488,38 @@ export function getABIDeclaration(astRoot): ABI {
 }
 
 
-export function getStructDeclaration(astRoot): Array<StructEntity> {
+export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
+
 	
-	return oc(astRoot).structs([]).map(s => ({
-		name: s['name'],
-		params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
-	}));
+	let allAst = [astRoot];
+
+	Object.keys(dependencyAsts).forEach( key => {
+		allAst.push(dependencyAsts[key]);
+	});
+
+	return allAst.map( ast => {
+		return oc(ast).structs([]).map(s => ({
+			name: s['name'],
+			params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+		}));
+	}).flat(1);
 }
 
 
-export function getAliasDeclaration(astRoot): Array<AliasEntity> {
-	return oc(astRoot).alias([]).map(s => ({
-		name: s['alias'],
-		type: s['type'],
-	}));
+export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity> {
+
+	let allAst = [astRoot];
+
+	Object.keys(dependencyAsts).forEach( key => {
+		allAst.push(dependencyAsts[key]);
+	});
+
+	return allAst.map( ast => {
+		return oc(ast).alias([]).map(s => ({
+			name: s['alias'],
+			type: s['type'],
+		}));
+	}).flat(1);
 }
 
 
