@@ -1,5 +1,12 @@
 # CHANGELOG
 
+
+## 0.3.1
+
+* support mixed struct and array
+* CompileResult structs properties contains all dependencyAsts structs
+* Does not force an error when the DESC file version is too old
+
 ## 0.2.34
 
 * Support type alias
