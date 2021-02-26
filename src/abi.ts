@@ -221,7 +221,7 @@ export class ABICoder {
         flatternStruct(argS, param.name).forEach(v => {
           cParams_.push({ name:`${v.name}`, type: v.type, finalType: v.finalType });
           args_.push(v.value);
-        })
+        });
       }
       else {
         cParams_.push(param);

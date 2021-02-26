@@ -491,7 +491,7 @@ export function getABIDeclaration(astRoot): ABI {
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
 
 	
-	let allAst = [astRoot];
+	const allAst = [astRoot];
 
 	Object.keys(dependencyAsts).forEach( key => {
 		allAst.push(dependencyAsts[key]);
@@ -508,7 +508,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
 
 export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity> {
 
-	let allAst = [astRoot];
+	const allAst = [astRoot];
 
 	Object.keys(dependencyAsts).forEach( key => {
 		allAst.push(dependencyAsts[key]);

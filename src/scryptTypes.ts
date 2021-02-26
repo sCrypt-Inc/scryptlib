@@ -413,7 +413,7 @@ export class Struct extends ScryptType {
    * Get the real member type of the structure
    */
   getMemberFinalType(key: string): string {
-    let member = this.memberByKey(key);
+    const member = this.memberByKey(key);
     return typeOfArg(member);
   }
 
@@ -422,7 +422,7 @@ export class Struct extends ScryptType {
    */
   getMemberAstFinalType(key: string): string {
     const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
-    let paramEntity = structAst.params.find(p => {
+    const paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
     return paramEntity.finalType;
