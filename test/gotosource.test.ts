@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription} from './helper';
 import { DebugLaunch} from '../src/abi';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
 import { bsv, toHex, signTx, compileContract ,num2bin, getPreimage, uri2path} from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage} from '../src/scryptTypes';
 import { readFileSync } from 'fs';
@@ -87,20 +87,6 @@ describe('VerifyError', () => {
     });
   });
 
-  describe('should throw when missing version', () => {
-
-    it('should throw when missing version', () => {
-      const jsonDescr = loadDescription('p2pkh_desc_missing_version.json');
-      expect(() => { buildContractClass(jsonDescr); } ).to.throw('Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile');
-    });
-  });
-
-  describe('should throw when version lower', () => {
-    it('should throw when missing version', () => {
-      const jsonDescr = loadDescription('p2pkh_desc_version_lower.json');
-      expect(() => { buildContractClass(jsonDescr); } ).to.throw('Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile');
-    });
-  });
 
   describe('check VerifyError tokenUtxo.scrypt', () => {
     let token, lockingScriptCodePart, result

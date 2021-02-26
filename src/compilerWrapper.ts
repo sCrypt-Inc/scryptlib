@@ -587,9 +587,15 @@ export function getDefaultScryptc(): string {
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
 	const asm = description.asm.split(' ');
-	if(description.version === undefined || description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
-		throw new Error(`Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`);
+	const errorMessage = `Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`;
+	if(description.version === undefined) {
+		throw new Error(errorMessage);
 	}
+
+	if(description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
+		console.warn(errorMessage);
+	}
+
 	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,
 		contract : description.contract,

@@ -1,0 +1,238 @@
+{
+    "version": 2,
+    "compilerVersion": "0.3.2+commit.eb5b607",
+    "contract": "Alias",
+    "md5": "2bc293c855fbd6d6924a76c6e6e56337",
+    "structs": [
+        {
+            "name": "Person",
+            "params": [
+                {
+                    "name": "age",
+                    "type": "Age",
+                    "finalType": "int"
+                },
+                {
+                    "name": "name",
+                    "type": "Name",
+                    "finalType": "bytes"
+                },
+                {
+                    "name": "token",
+                    "type": "Token",
+                    "finalType": "int"
+                }
+            ]
+        },
+        {
+            "name": "Block",
+            "params": [
+                {
+                    "name": "height",
+                    "type": "Height",
+                    "finalType": "int"
+                },
+                {
+                    "name": "time",
+                    "type": "Time",
+                    "finalType": "int"
+                },
+                {
+                    "name": "coinbase",
+                    "type": "Coinbase",
+                    "finalType": "bytes"
+                }
+            ]
+        }
+    ],
+    "alias": [
+        {
+            "name": "Male",
+            "type": "Person"
+        },
+        {
+            "name": "Female",
+            "type": "Person"
+        },
+        {
+            "name": "Integer",
+            "type": "int"
+        },
+        {
+            "name": "Name",
+            "type": "bytes"
+        },
+        {
+            "name": "Age",
+            "type": "Integer"
+        },
+        {
+            "name": "Token",
+            "type": "Integer"
+        },
+        {
+            "name": "Tokens",
+            "type": "Token[3]"
+        },
+        {
+            "name": "Coinbase",
+            "type": "bytes"
+        },
+        {
+            "name": "Time",
+            "type": "int"
+        },
+        {
+            "name": "Height",
+            "type": "int"
+        },
+        {
+            "name": "MaleAAA",
+            "type": "Male"
+        }
+    ],
+    "abi": [
+        {
+            "type": "function",
+            "name": "unlock",
+            "index": 0,
+            "params": [
+                {
+                    "name": "bob",
+                    "type": "MaleAAA",
+                    "finalType": "struct Person {}"
+                }
+            ]
+        },
+        {
+            "type": "function",
+            "name": "setToken",
+            "index": 1,
+            "params": [
+                {
+                    "name": "tokens",
+                    "type": "Tokens",
+                    "finalType": "int[3]"
+                }
+            ]
+        },
+        {
+            "type": "constructor",
+            "params": [
+                {
+                    "name": "person",
+                    "type": "Female",
+                    "finalType": "struct Person {}"
+                }
+            ]
+        }
+    ],
+    "file": "file:///C:/Users/myland/code/scryptlib/test/fixture/alias.scrypt",
+    "asm": "OP_NOP OP_0 OP_0 OP_0 $person.age $person.name $person.token OP_2 OP_PICK OP_2 OP_PICK OP_2 OP_PICK OP_8 OP_ROLL OP_8 OP_ROLL OP_8 OP_ROLL OP_DROP OP_DROP OP_DROP OP_5 OP_ROLL OP_5 OP_ROLL OP_5 OP_ROLL OP_DROP OP_DROP OP_DROP OP_NOP OP_3 OP_PICK OP_0 OP_EQUAL OP_IF OP_6 OP_PICK OP_3 OP_PICK OP_1 OP_PICK OP_1 OP_PICK OP_ADD OP_10 OP_GREATERTHAN OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_ELSE OP_3 OP_PICK OP_1 OP_EQUAL OP_IF OP_6 OP_0 OP_DUP OP_0 OP_GREATERTHANOREQUAL OP_VERIFY OP_DUP OP_3 OP_LESSTHAN OP_VERIFY OP_1 OP_MUL OP_SUB OP_TOALTSTACK OP_FROMALTSTACK OP_DUP OP_TOALTSTACK OP_PICK OP_FROMALTSTACK OP_DROP OP_1 OP_ROLL OP_DROP OP_0 OP_PICK OP_10 OP_NUMEQUAL OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_NIP OP_ELSE OP_0 OP_ENDIF OP_ENDIF",
+    "sources": [
+        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\alias.scrypt"
+    ],
+    "sourceMap": [
+        "-1:1:1:1:1#Alias.constructor:0",
+        "0:29:3:29:15",
+        "0:29:3:29:15",
+        "0:29:3:29:15",
+        "0:31:15:31:28",
+        "0:31:15:31:28",
+        "0:31:15:31:28",
+        "0:32:18:32:24",
+        "0:32:18:32:24",
+        "0:32:18:32:24",
+        "0:32:18:32:24",
+        "0:32:18:32:24",
+        "0:32:18:32:24",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "0:32:5:32:16",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1#Alias.constructor:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "0:38:20:38:27",
+        "0:38:20:38:27",
+        "0:39:18:39:32",
+        "0:39:18:39:32",
+        "0:41:13:41:21",
+        "0:41:13:41:21",
+        "0:41:24:41:30",
+        "0:41:24:41:30",
+        "0:41:13:41:30",
+        "0:41:33:41:35",
+        "0:41:13:41:35",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "0:46:24:46:30",
+        "0:46:31:46:32",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:24:46:30",
+        "0:46:5:46:22",
+        "0:46:5:46:22",
+        "0:46:5:46:22",
+        "0:47:13:47:30",
+        "0:47:13:47:30",
+        "0:47:33:47:35",
+        "0:47:13:47:35",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1",
+        "-1:1:1:1:1"
+    ]
+}
