@@ -472,7 +472,14 @@ export class Struct extends ScryptType {
     const v = this.value;
     return Array.from(Object.keys(v)).reduce((obj, key) => {
       if(v[key] instanceof ScryptType) {
-        return Object.assign(obj, {[key]:  (v[key] as ScryptType).toLiteral()}); 
+        if(Struct.isStruct(v[key])) {
+          return Object.assign(obj, {[key]:  (v[key] as ScryptType).toJSON()}); 
+        } else if(Array.isArray(v[key])) {
+          return Object.assign(obj, {[key]:  JSON.stringify(v[key])});
+        } else {
+          return Object.assign(obj, {[key]:  (v[key] as ScryptType).toLiteral()}); 
+        }
+        
       } else {
         return Object.assign(obj, { [key]: v[key] }); 
       }
