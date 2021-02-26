@@ -421,7 +421,7 @@ export function isStructType(type: string): boolean {
 }
 
 export function isArrayType(type: string) {
-	return /[^\[\]]+\[\d+\]/.test(type);
+	return /[^[\]]+\[\d+\]/.test(type);
 }
 
 
@@ -447,7 +447,7 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 export function checkStruct(s: StructEntity, arg: Struct): void {
   
   s.params.forEach(p => {
-    let member = arg.memberByKey(p.name);
+    const member = arg.memberByKey(p.name);
 
     const finalType = typeOfArg(member);
 
@@ -457,9 +457,7 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
       if(isArrayType(p.finalType)) {
         const [elemTypeName, arraySize] = arrayTypeAndSize(p.finalType);
         if(Array.isArray(arg.value[p.name])) {
-          if(checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
-
-          } else {
+          if(!checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
             throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${p.finalType}`);
           }
         } else {
@@ -485,10 +483,10 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
  */
 export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
 
-  let arraySizes: Array<number> = [];
+  const arraySizes: Array<number> = [];
   [...arrayTypeName.matchAll(/\[([\d])+\]+/g)].map(match => {
     arraySizes.push(parseInt(match[1]));
-  })
+  });
 
 
   const group = arrayTypeName.split('[');
@@ -546,7 +544,7 @@ export function subscript(index: number, arraySizes: Array<number>): string {
     return `[${index}]`;
   } else if(arraySizes.length > 1) {
     const subArraySizes = arraySizes.slice(1);
-    const offset = subArraySizes.reduce(function(acc, val) { return acc * val; }, 1)
+    const offset = subArraySizes.reduce(function(acc, val) { return acc * val; }, 1);
     return `[${Math.floor(index / offset)}]${subscript(index % offset, subArraySizes)}`;
   }
 }
@@ -585,7 +583,7 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
       name: `${param.name}${subscript(index, arraySizes)}`,
       type: elemTypeName,
       finalType: elemTypeName
-    }
+    };
   }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
 }
 
@@ -612,7 +610,7 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
           name: `${name}.${key}`,
           type: member.type,
           finalType: member.finalType
-        }
+        };
       }
     }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
 
