@@ -556,11 +556,10 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
   if(!Array.isArray(arg)) {
     throw new Error(`flatternArray only work on array`);
   }
-  const flattened = arg.flat(Infinity);
 
   const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
 
-  return flattened.map((item,index) => {
+  return arg.map((item,index) => {
 
     if(typeof item === "boolean") {
       item = new Bool(item as boolean);
@@ -568,7 +567,16 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
       item = new Int(item as number);
     } else if(typeof item === "bigint") {
       item = new Int(item as bigint);
-    } else  {
+    } else if(Array.isArray(item)) {
+      return flatternArray(item, {
+        name: `${param.name}[${index}]`,
+        type: subArrayType(param.type),
+        finalType: subArrayType(param.finalType),
+      });
+    } else if(Struct.isStruct(item)) {
+      return flatternStruct(item, `${param.name}[${index}]`);
+    }
+    else  {
       item = item as ScryptType;
     }
 
@@ -578,7 +586,7 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
       type: elemTypeName,
       finalType: elemTypeName
     }
-  });
+  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
 }
 
 export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string, finalType: string}> {
@@ -596,14 +604,7 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
           name: `${name}.${key}`,
           type: finalType,
           finalType: finalType
-        }).map((e) => {
-          if(Struct.isStruct(e.value)) {
-            return flatternStruct(e.value as Struct, `${e.name}`);
-          } else {
-            return e;
-          }
         });
-        
       } else {
         member = member as ScryptType;
         return {
@@ -752,7 +753,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     const tx = txContext.tx || '';
     const inputIndex = txContext.inputIndex || 0;
     const inputSatoshis = txContext.inputSatoshis || 0;
-    Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+    if(tx) {
+      Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+    }
     if (txContext.opReturn) {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
     }
