@@ -35,8 +35,15 @@ describe('Contract description old version test', () => {
       const jsonDescr = loadDescription('version_2.json');
       const Contract = buildContractClass(jsonDescr)
       expect(typeof Contract  === typeof AbstractContract ).to.be.true;
+
       const Classes = buildTypeClasses(jsonDescr);
+
       expect(Object.keys(Classes)).to.includes.members(["Age", "Block", "Coinbase", "Person", "Female", "Height", "Integer", "Male", "MaleAAA", "Name", "Time", "Tokens"])
+
+      Object.keys(Classes).forEach(t => {
+        assert.isTrue(Classes[t] instanceof Function)
+      })
+      
 
     });
   });
