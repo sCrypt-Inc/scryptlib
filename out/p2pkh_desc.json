@@ -1,8 +1,8 @@
 {
     "version": 2,
-    "compilerVersion": "0.3.1+commit.1c51603",
+    "compilerVersion": "0.3.2+commit.eb5b607",
     "contract": "DemoP2PKH",
-    "md5": "d618e0965de0b2aa6618bc15d59022e1",
+    "md5": "35bbeee99481c17c95f580e8b86d117f",
     "structs": [],
     "alias": [],
     "abi": [
@@ -34,10 +34,10 @@
             ]
         }
     ],
-    "file": "file:///D:/code/scryptlib/test/fixture/p2pkh.scrypt",
+    "file": "file:///C:/Users/myland/code/scryptlib/test/fixture/p2pkh.scrypt",
     "asm": "OP_NOP OP_0 $pubKeyHash OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP",
     "sources": [
-        "D:\\code\\scryptlib\\test\\fixture\\p2pkh.scrypt"
+        "C:\\Users\\myland\\code\\scryptlib\\test\\fixture\\p2pkh.scrypt"
     ],
     "sourceMap": [
         "-1:1:1:1:1#DemoP2PKH.constructor:0",
@@ -45,11 +45,11 @@
         "0:4:15:4:35",
         "0:5:23:5:33",
         "0:5:23:5:33",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
-        "0:5:5:5:34",
+        "0:5:5:5:21",
+        "0:5:5:5:21",
+        "0:5:5:5:21",
+        "0:5:5:5:21",
+        "0:5:5:5:21",
         "-1:1:1:1:1",
         "-1:1:1:1:1#DemoP2PKH.constructor:1",
         "0:9:23:9:29",

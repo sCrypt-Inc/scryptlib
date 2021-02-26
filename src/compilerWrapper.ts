@@ -122,6 +122,7 @@ export interface StructEntity {
 export interface AliasEntity {
 	name: string;
 	type: string;
+	finalType: string;
 }
 
 export function compile(
@@ -260,8 +261,8 @@ export function compile(
 			const { contract: name, abi } = getABIDeclaration(result.ast);
 			result.abi = abi;
 			result.contract = name;
-			result.structs = getStructDeclaration(result.ast);
-			result.alias = getAliasDeclaration(result.ast);
+			result.structs = getStructDeclaration(result.ast, allAst);
+			result.alias = getAliasDeclaration(result.ast, allAst);
 		}
 
 		let asmObj = null;
@@ -487,20 +488,38 @@ export function getABIDeclaration(astRoot): ABI {
 }
 
 
-export function getStructDeclaration(astRoot): Array<StructEntity> {
+export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
+
 	
-	return oc(astRoot).structs([]).map(s => ({
-		name: s['name'],
-		params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
-	}));
+	let allAst = [astRoot];
+
+	Object.keys(dependencyAsts).forEach( key => {
+		allAst.push(dependencyAsts[key]);
+	});
+
+	return allAst.map( ast => {
+		return oc(ast).structs([]).map(s => ({
+			name: s['name'],
+			params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+		}));
+	}).flat(1);
 }
 
 
-export function getAliasDeclaration(astRoot): Array<AliasEntity> {
-	return oc(astRoot).alias([]).map(s => ({
-		name: s['alias'],
-		type: s['type'],
-	}));
+export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity> {
+
+	let allAst = [astRoot];
+
+	Object.keys(dependencyAsts).forEach( key => {
+		allAst.push(dependencyAsts[key]);
+	});
+
+	return allAst.map( ast => {
+		return oc(ast).alias([]).map(s => ({
+			name: s['alias'],
+			type: s['type'],
+		}));
+	}).flat(1);
 }
 
 
@@ -568,9 +587,15 @@ export function getDefaultScryptc(): string {
 export function desc2CompileResult(description: ContractDescription): CompileResult  {
 	const sources = description.sources;
 	const asm = description.asm.split(' ');
-	if(description.version === undefined || description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
-		throw new Error(`Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`);
+	const errorMessage = `Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`;
+	if(description.version === undefined) {
+		throw new Error(errorMessage);
 	}
+
+	if(description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
+		console.warn(errorMessage);
+	}
+
 	const result: CompileResult = {
 		compilerVersion : description.compilerVersion,
 		contract : description.contract,

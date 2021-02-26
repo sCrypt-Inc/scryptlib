@@ -1,0 +1,57 @@
+
+struct Block {
+    bytes hash;
+    bytes header;
+    int time;
+}
+
+struct Person {
+    bytes name;
+    bytes addr;
+    bool isMale;
+    int age;
+    Block blk;
+}
+
+struct Token {
+    bytes id;
+    int createTime;
+}
+
+struct Bsver {
+    bytes name;
+    Token[3] tokens;
+    Person friend;
+}
+
+contract MixedStruct {
+
+    Bsver bsver;
+
+    public function unlock(Person p) {
+        //check constructor args
+        require(this.bsver.name == b'6666');
+        require(this.bsver.tokens[0].id == b'0001');
+        require(this.bsver.tokens[0].createTime == 1000000);
+        require(this.bsver.tokens[1].id == b'0002');
+        require(this.bsver.tokens[1].createTime == 1000001);
+        require(this.bsver.tokens[2].id == b'0003');
+        require(this.bsver.tokens[2].createTime == 1000002);
+        require(this.bsver.friend.name == b'7361746f736869206e616b616d6f746f');
+        require(this.bsver.friend.isMale == true);
+        require(this.bsver.friend.age == 33);
+        require(this.bsver.friend.addr == b'6666');
+        require(this.bsver.friend.blk.hash == b'68656c6c6f20776f726c6421');
+        require(this.bsver.friend.blk.header == b'1156');
+        require(this.bsver.friend.blk.time == 10000);
+
+        //check unlock args
+        require(p.name == b'7361746f736869206e616b616d6f746f');
+        require(p.isMale == true);
+        require(p.age == 33);
+        require(p.addr == b'68656c6c6f20776f726c6421');
+        require(p.blk.hash == b'68656c6c6f20776f726c6420');
+        require(p.blk.header == b'1156');
+        require(p.blk.time == 10000);
+    }
+}

@@ -1,4 +1,4 @@
-import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct} from "./utils";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg} from "./utils";
 import { StructEntity } from "./compilerWrapper";
 
 export type ValueType = number | bigint | boolean | string | StructObject;
@@ -304,7 +304,9 @@ export class OpCodeType extends ScryptType {
 }
 
 
-export type SingletonParamType = ScryptType | boolean | number | bigint;
+export type BasicType = ScryptType | boolean | number | bigint ;
+
+export type SingletonParamType = BasicType | BasicType[];
 
 
 export type StructObject = Record<string, SingletonParamType>;
@@ -315,12 +317,15 @@ export class Struct extends ScryptType {
 
   sorted = false;
 
+  public static structAst: StructEntity;
   constructor(o: StructObject) {
     super(o);
+    this.bind();
   }
 
 
-  public bind(structAst: StructEntity): void {
+  private bind(): void {
+    const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
     checkStruct(structAst, this);
     const ordered = {};
     const unordered = this.value;
@@ -345,11 +350,15 @@ export class Struct extends ScryptType {
       throw `unbinded Struct can't call toASM`;
     }
 
-    this._asm =  this.toArray().map(v => v.toASM()).join(' ');
+    this._asm = flatternStruct(this, '').map(v => {
+      return v.value.toASM();
+    }).join(' ');
     return this._asm;
   }
 
-
+  /**
+   * @deprecated use  flatternStruct, see toASM
+   */
   toArray(): ScryptType[] {
     if(!this.sorted) {
       throw `unbinded Struct can't call toArray`;
@@ -369,6 +378,7 @@ export class Struct extends ScryptType {
       }
     });
   }
+ 
 
   memberByIndex(index: number): string {
     if(!this.sorted) {
@@ -380,6 +390,9 @@ export class Struct extends ScryptType {
     return  Object.keys(v)[index];
   }
 
+   /**
+   * @deprecated use  getMemberFinalType
+   */
   getMemberType(key: string): string {
     const v: StructObject = this.value as StructObject;
     
@@ -396,26 +409,45 @@ export class Struct extends ScryptType {
     }
   }
 
+  /**
+   * Get the real member type of the structure
+   */
   getMemberFinalType(key: string): string {
-    const v: StructObject = this.value as StructObject;
-    
-    if(v[key] instanceof ScryptType) {
-      return (v[key] as ScryptType).finalType;
-    } else if(typeof v[key] === "boolean") {
-      return new Bool(v[key] as boolean).finalType;
-    } else if(typeof v[key] === "number") {
-      return new Int(v[key] as number).finalType;
-    } else if(typeof v[key] === "bigint") {
-      return new Int(v[key] as bigint).finalType;
-    } else {
-      return typeof v[key];
-    }
+    let member = this.memberByKey(key);
+    return typeOfArg(member);
   }
 
+  /**
+   * Get the member type declared by the structure by structAst
+   */
+  getMemberAstFinalType(key: string): string {
+    const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
+    let paramEntity = structAst.params.find(p => {
+      return p.name === key;
+    });
+    return paramEntity.finalType;
+  }
 
+  
   getMembers(): string[]  {
     const v: StructObject = this.value as StructObject;
     return Object.keys(v);
+  }
+
+  memberByKey(key: string): SingletonParamType | undefined {
+    const v: StructObject = this.value as StructObject;
+
+    if(v[key] instanceof ScryptType) {
+      return v[key] as ScryptType;
+    } else if(typeof v[key] === "boolean") {
+      return new Bool(v[key] as boolean);
+    } else if(typeof v[key] === "number") {
+      return new Int(v[key] as number);
+    } else if(typeof v[key] === "bigint") {
+      return new Int(v[key] as bigint);
+    } 
+
+    return v[key];
   }
 
 
@@ -440,7 +472,14 @@ export class Struct extends ScryptType {
     const v = this.value;
     return Array.from(Object.keys(v)).reduce((obj, key) => {
       if(v[key] instanceof ScryptType) {
-        return Object.assign(obj, {[key]:  (v[key] as ScryptType).toLiteral()}); 
+        if(Struct.isStruct(v[key])) {
+          return Object.assign(obj, {[key]:  (v[key] as ScryptType).toJSON()}); 
+        } else if(Array.isArray(v[key])) {
+          return Object.assign(obj, {[key]:  JSON.stringify(v[key])});
+        } else {
+          return Object.assign(obj, {[key]:  (v[key] as ScryptType).toLiteral()}); 
+        }
+        
       } else {
         return Object.assign(obj, { [key]: v[key] }); 
       }

@@ -16,7 +16,7 @@ script:
   - npm test -- --ci=true
   # integration testing with boilerplate
   - npm link
-  - git clone -b dev https://github.com/scrypt-sv/boilerplate.git
+  - git clone -b feature/mixed https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
   - npm link scryptlib  # use this version

@@ -1,0 +1,160 @@
+type A2 = int[2];
+type NEW_ST2 = ST2;
+type NEW_ST3 = ST3;
+
+struct ST {
+  int x;
+  A2 a;
+  NEW_ST2 st2;
+}
+
+struct ST2 {
+  int x;
+  NEW_ST3[2] sa;
+  A2[3] aa;
+}
+
+struct ST3 {
+  bool x;
+  bytes y;
+}
+
+contract MixedArrayAndStruct {
+  static ST st = {1, [2, 3], {4, [{true, b'06'}, {false, b'08'}], [[9, 10], [11, 12], [13, 14]]}};
+
+  function getStruct() : NEW_ST2 {
+    return MixedArrayAndStruct.st.st2;
+  }
+
+  function getArray(NEW_ST2 st2) : ST3[2] {
+    return st2.sa;
+  }
+
+  function get3DArray(int[3][2] xs) : int[3][2] {
+    return xs;
+  }
+
+  public function unlock(int x) {
+    require(st.x == 1);
+    st.x = x;
+    require(st.x == x);
+
+    require(st.a == [2, 3]);
+    require(st.a[0] == 2);
+    require(st.a[x] == 3);
+    st.a[1] = x;
+    require(st.a[x] == x);
+    A2 a = st.a;
+    require(a[0] == 2);
+    require(a[1] == x);
+
+    ST2 st2 = st.st2;
+    require({4, [{true, b'06'}, {false, b'08'}], [[9, 10], [11, 12], [13, 14]]} == st2);
+    require(st2 == {4, [{true, b'06'}, {false, b'08'}], [[9, 10], [11, 12], [13, 14]]});
+    require(this.getStruct() == st2);
+    require((this.getStruct()).x == 4);
+    require(this.getStruct().sa[0] == {true, b'06'});
+    require(!this.getStruct().sa[1].x);
+    require((this.getStruct().sa[1]).y == b'08');
+    require(!st2.sa[1].x);
+
+    require(st.st2 == st2);
+    require(st.st2.x == 4);
+    st2.x = x;
+    require(st2.x == x);
+    st.st2.x = x + 1;
+    require(st.st2.x == x + 1);
+
+    NEW_ST3[2] st2a = this.getArray(st.st2);
+    require(st2.sa == st2a);
+    require(st2a[0] == {true, b'06'});
+    ST3 st3 = st2a[x];
+    require(!st3.x);
+    require(st3.y == b'08');
+    st3 = {true, b'22'};
+    require(st3.x);
+    require(st3.y == b'22');
+    st.st2.sa[1]; 
+    st.st2.sa[1].x = true;
+    require(st.st2.sa[1].x);
+
+    A2[3] aa = st2.aa;
+    require(aa == [[9,10], [11, 12], [13, 14]]);
+    require(aa[0] == [9, 10]);
+    require(aa[x] == [11, 12]);
+    require(st.st2.aa[x] == [11, 12]);
+    require(st.st2.aa[x][1] == 12);
+    aa[1] = [x, x+1];
+    require(aa[x] == [x, x+1]);
+    aa[2][1] = x;
+    require(aa[2][x] == x);
+    st.st2.aa[1][1] = x;
+    require(st.st2.aa[x][x] == x);
+
+    require(this.multiDarray(x)[x] == 18);
+  }
+
+  function multiDarray(int x) : int[4] {
+    int[3][2] arr = [[0x11, 0x12], [0x21, 0x22], [0x31, 0x32]];
+    require(arr == [[0x11, 0x12], [0x21, 0x22], [0x31, 0x32]]);
+    arr = [[0x11, 0x12], [0x21, 0x22], [0x41, 0x42]];
+    require(arr == [[0x11, 0x12], [0x21, 0x22], [0x41, 0x42]]);
+    arr[0] = [0x111, 0x112];
+    require(arr[0] == [0x111, 0x112]);
+    require(this.get3DArray(arr)[0] == [0x111, 0x112]);
+    arr[2][1] = 0x112;
+    require(arr[2][1] == 0x112);
+    require(arr[2*3-4][22 / 11-1] == 0x112);
+    require(this.get3DArray(arr)[2][1] == 0x112);
+    require(this.get3DArray(arr)[2*3-4][22 / 11-1] == 0x112);
+    
+    require([[0x11, 0x12], [0x21, 0x22], [0x31, 0x32]][2] == [0x31, 0x32]);
+    require([[0x11, 0x12], [0x21, 0x22], [0x31, 0x32]][11 - 2 * 5][5-4] == 0x22);
+
+    require(arr[1 + 1] == this.get3DArray(arr)[x / x + 1]);
+    require(arr[1 + 1][2 - 1] == this.get3DArray(arr)[1 + x / x][2 - x / x]);
+
+    int[2][3][4] aaa = [
+                        [
+                          [1,2,3,4],
+                          [5,6,7,8],
+                          [9,10,11,12]
+                        ],
+                        [
+                          [13,14,15,16],
+                          [17,18,19,20],
+                          [21,22,23,24]
+                        ]
+                      ];
+    require(aaa[1] == [[13,14,15,16],
+                       [17,18,19,20],
+                       [21,22,23,24]]);
+    require(aaa[1][2] == [21,22,23,24]);
+    require(aaa[x][x+1][x+2] == 24);
+    
+    // with parens
+    require((aaa[1])[2][x+2] == 24);
+    require((aaa[1][2])[x+2] == 24);
+
+    // partial assign
+    int[3][4] bbb = aaa[0]; 
+    require(bbb == [
+                    [1,2,3,4], 
+                    [5,6,7,8],
+                    [9,10,11,12]
+                   ]);
+    aaa[0][1][2] = x;
+    require(aaa[0][1][2] == x);
+    
+    // literal array
+    ST3[2] la = [[{true, b'02'}, {false, b'04'}], [{true, b'06'}, {false, b'08'}]][x];
+    require(la[x].y == b'08');
+    require(([[11, 22], [33, 44]])[x][x] == 44);
+
+    // implicit length TODO: fix
+    // int[][][] ccc = [[[1], [2]], [[3], [4]], [[5], [6]]];
+    // require(ccc[0][0][0] == 4);
+    
+    return aaa[x][x];
+  }
+}

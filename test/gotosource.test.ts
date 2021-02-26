@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription} from './helper';
 import { DebugLaunch} from '../src/abi';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
 import { bsv, toHex, signTx, compileContract ,num2bin, getPreimage, uri2path} from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage} from '../src/scryptTypes';
 import { readFileSync } from 'fs';
@@ -32,6 +32,11 @@ let man = new Person({
 });
 
 const person = new PersonContract(man, 18);
+
+
+const mdDescr = loadDescription('mdarray_desc.json');
+const MDArray = buildContractClass(mdDescr);
+const {ST1, AliasST2, ST3} = buildTypeClasses(mdDescr);
 
 
 function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
@@ -82,20 +87,6 @@ describe('VerifyError', () => {
     });
   });
 
-  describe('should throw when missing version', () => {
-
-    it('should throw when missing version', () => {
-      const jsonDescr = loadDescription('p2pkh_desc_missing_version.json');
-      expect(() => { buildContractClass(jsonDescr); } ).to.throw('Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile');
-    });
-  });
-
-  describe('should throw when version lower', () => {
-    it('should throw when missing version', () => {
-      const jsonDescr = loadDescription('p2pkh_desc_version_lower.json');
-      expect(() => { buildContractClass(jsonDescr); } ).to.throw('Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile');
-    });
-  });
 
   describe('check VerifyError tokenUtxo.scrypt', () => {
     let token, lockingScriptCodePart, result
@@ -253,4 +244,132 @@ describe('VerifyError', () => {
 
   });
 
+
+  
+  describe('check MDArray', () => {
+    let mdArray, result;
+  
+    before(() => {
+      mdArray = new MDArray([ [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12]
+        ],
+        [
+        [13, 14, 15, 16],
+        [17, 18, 19, 20],
+        [21, 22, 23, 24]
+        ] ]);
+    });
+  
+    it('LaunchJson should be right with Multidimensional Arrays ', () => {
+      result = mdArray.unlock([[3,1,2],[4,5, 5]], [1,32]).verify()
+      expect(result.success, result.error).to.be.false;
+
+      const launch = readLaunchJson(result.error);
+      expect(result.error).to.contains("mdarray.scrypt#44");
+      assert.deepEqual(launch.configurations[0].pubFuncArgs, [[[3,1,2],[4,5, 5]], [1,32]])
+    });
+
+    it('LaunchJson should be right with mixed struct', () => {
+
+      result = mdArray.unlockAliasST2([new AliasST2({
+        x: false,
+        y: new Bytes("68656c6c6f20776f726c6421"),
+        st2: new ST3({
+          x: false,
+          y: [1,2,3]
+        })
+      }), new AliasST2({
+        y: new Bytes("68656c6c6f20776f726c6420"),
+        x: true,
+        st2: new ST3({
+          x: true,
+          y: [4,5,1]
+        })
+      })]).verify()
+
+      expect(result.success, result.error).to.be.false;
+
+      const launch = readLaunchJson(result.error);
+      expect(result.error).to.contains("mdarray.scrypt#101");
+  
+      assert.deepEqual(launch.configurations[0].pubFuncArgs as object, [
+        [
+          {
+            "x": false,
+            "y": "b'68656c6c6f20776f726c6421'",
+            "st2": {
+              "x": false,
+              "y": [
+                1,
+                2,
+                3
+              ]
+            }
+          },
+          {
+            "x": true,
+            "y": "b'68656c6c6f20776f726c6420'",
+            "st2": {
+              "x": true,
+              "y": [
+                4,
+                5,
+                1
+              ]
+            }
+          }
+        ]
+      ])
+
+
+      assert.deepEqual(launch.configurations[0].constructorArgs as object,  [
+        [
+          [
+            [
+              1,
+              2,
+              3,
+              4
+            ],
+            [
+              5,
+              6,
+              7,
+              8
+            ],
+            [
+              9,
+              10,
+              11,
+              12
+            ]
+          ],
+          [
+            [
+              13,
+              14,
+              15,
+              16
+            ],
+            [
+              17,
+              18,
+              19,
+              20
+            ],
+            [
+              21,
+              22,
+              23,
+              24
+            ]
+          ]
+        ]
+      ])
+
+    });
+
+  })
 })

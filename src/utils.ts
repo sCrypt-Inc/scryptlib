@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType} from "./scryptTypes";
-import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity} from './compilerWrapper';
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType} from "./scryptTypes";
+import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
@@ -417,16 +417,16 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
 
 
 export function isStructType(type: string): boolean {
-	return /struct\s(\w+)\s\{\}/.test(type);
+	return /^struct\s(\w+)\s\{\}$/.test(type);
 }
 
 export function isArrayType(type: string) {
-	return /\w\[\d+\]/.test(type);
+	return /[^\[\]]+\[\d+\]/.test(type);
 }
 
 
 export function getStructNameByType(type: string): string  {
-  const m = /struct\s(\w+)\s\{\}/.exec(type.trim());
+  const m = /^struct\s(\w+)\s\{\}$/.exec(type.trim());
   if (m) {
     return m[1];
   }
@@ -447,12 +447,27 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 export function checkStruct(s: StructEntity, arg: Struct): void {
   
   s.params.forEach(p => {
-    const finalType = arg.getMemberFinalType(p.name);
-    const type = arg.getMemberType(p.name);
+    let member = arg.memberByKey(p.name);
+
+    const finalType = typeOfArg(member);
+
     if(finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
     } else if(finalType != p.finalType) {
-      throw new Error(`wrong argument type, expected ${p.type} but got ${type}`);
+      if(isArrayType(p.finalType)) {
+        const [elemTypeName, arraySize] = arrayTypeAndSize(p.finalType);
+        if(Array.isArray(arg.value[p.name])) {
+          if(checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
+
+          } else {
+            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${p.finalType}`);
+          }
+        } else {
+          throw new Error(`struct ${s.name} property ${p.name} should be ${p.finalType}`);
+        }
+      } else {
+        throw new Error(`wrong argument type, expected ${p.finalType} but got ${finalType}`);
+      }
     }
   });
 
@@ -464,13 +479,174 @@ export function checkStruct(s: StructEntity, arg: Struct): void {
   });
 }
 
-export function arrayTypeAndSize(arrayTypeName: string): [string, number] {
+/**
+ * return eg. int[2][3][4] => ['int', [2,3,4]]
+ * @param arrayTypeName  eg. int[2][3][4]
+ */
+export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
+
+  let arraySizes: Array<number> = [];
+  [...arrayTypeName.matchAll(/\[([\d])+\]+/g)].map(match => {
+    arraySizes.push(parseInt(match[1]));
+  })
+
+
   const group = arrayTypeName.split('[');
   const elemTypeName = group[0];
-  const arraySize = parseInt(group[1].slice(0, -1));
-  return [elemTypeName, arraySize];
+  return [elemTypeName, arraySizes];
 }
 
+/**
+ * return eg. int[2][3][4] => int[3][4]
+ * @param arrayTypeName  eg. int[2][3][4]
+ */
+export function subArrayType(arrayTypeName: string): string {
+  const [elemTypeName, sizes] = arrayTypeAndSize(arrayTypeName);
+  return [elemTypeName, sizes.slice(1).map(size => `[${size}]`).join('')].join('');
+}
+
+
+export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array<number>]): boolean {
+
+  const [elemTypeName, arraySizes] = arrayInfo;
+
+  if (!Array.isArray(args)) {
+    return false;
+  }
+
+  const len = arraySizes[0];
+
+  if(!len) {
+    return false;
+  }
+
+  if (args.length !== len) {
+    return false;
+  }
+
+  if (!args.every(arg => {
+    if(Array.isArray(arg)) {
+      return checkArray(arg, [elemTypeName, arraySizes.slice(1)]);
+    } else {
+
+      const scryptType = typeOfArg(arg);
+
+      return scryptType === elemTypeName && arraySizes.length == 1;
+    }
+  })) {
+    return false;
+  }
+
+  return true;
+}
+
+export function subscript(index: number, arraySizes: Array<number>): string {
+  
+  if(arraySizes.length == 1) {
+    return `[${index}]`;
+  } else if(arraySizes.length > 1) {
+    const subArraySizes = arraySizes.slice(1);
+    const offset = subArraySizes.reduce(function(acc, val) { return acc * val; }, 1)
+    return `[${Math.floor(index / offset)}]${subscript(index % offset, subArraySizes)}`;
+  }
+}
+
+export function flatternArray(arg: any, param: ParamEntity): Array<{value: ScryptType, name: string, type: string, finalType: string}>  {
+
+  if(!Array.isArray(arg)) {
+    throw new Error(`flatternArray only work on array`);
+  }
+
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
+
+  return arg.map((item,index) => {
+
+    if(typeof item === "boolean") {
+      item = new Bool(item as boolean);
+    } else if(typeof item === "number") {
+      item = new Int(item as number);
+    } else if(typeof item === "bigint") {
+      item = new Int(item as bigint);
+    } else if(Array.isArray(item)) {
+      return flatternArray(item, {
+        name: `${param.name}[${index}]`,
+        type: subArrayType(param.type),
+        finalType: subArrayType(param.finalType),
+      });
+    } else if(Struct.isStruct(item)) {
+      return flatternStruct(item, `${param.name}[${index}]`);
+    }
+    else  {
+      item = item as ScryptType;
+    }
+
+    return {
+      value: item,
+      name: `${param.name}${subscript(index, arraySizes)}`,
+      type: elemTypeName,
+      finalType: elemTypeName
+    }
+  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+}
+
+export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string, finalType: string}> {
+  if(Struct.isStruct(arg)) {
+    const argS = arg as Struct;
+    const keys = argS.getMembers();
+
+    return keys.map(key => {
+      let member = argS.memberByKey(key) ;
+      if(Struct.isStruct(member)) {
+        return flatternStruct(member as Struct, `${name}.${key}`);
+      } else if(Array.isArray(member)) {
+        const finalType = argS.getMemberAstFinalType(key);
+        return flatternArray(member as SupportedParamType[], {
+          name: `${name}.${key}`,
+          type: finalType,
+          finalType: finalType
+        });
+      } else {
+        member = member as ScryptType;
+        return {
+          value: member,
+          name: `${name}.${key}`,
+          type: member.type,
+          finalType: member.finalType
+        }
+      }
+    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+
+  } else {
+    throw new Error(`${arg} should be struct`);
+  }
+}
+
+
+
+export function typeOfArg(arg: SupportedParamType): string {
+
+  if(arg instanceof ScryptType) {
+    const scryptType = (arg as ScryptType).finalType;
+    return scryptType;
+  }
+
+  const typeofArg = typeof arg;
+
+  if (typeofArg === 'boolean') {
+    return 'bool';
+  }
+
+  if (typeofArg === 'number') {
+    return 'int';
+  }
+
+  if (typeofArg === 'bigint') {
+    return 'int';
+  }
+
+  return typeof arg;
+  
+}
 
 
 export function readFileByLine(path: string, index: number): string {
@@ -577,7 +753,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     const tx = txContext.tx || '';
     const inputIndex = txContext.inputIndex || 0;
     const inputSatoshis = txContext.inputSatoshis || 0;
-    Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+    if(tx) {
+      Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+    }
     if (txContext.opReturn) {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
     }

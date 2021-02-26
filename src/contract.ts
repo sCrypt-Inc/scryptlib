@@ -122,7 +122,7 @@ export class AbstractContract {
 
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
-    let error = `VerifyError: ${bsi.errstr}`;
+    let error = result ? '' : `VerifyError: ${bsi.errstr}`;
 
 
 
@@ -325,7 +325,12 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 }
 
 
-function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
+
+/**
+ * @deprecated use buildTypeClasses
+ * @param desc CompileResult or ContractDescription
+ */
+export function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
 
   const structTypes: Record<string, typeof Struct> = {};
 
@@ -337,11 +342,11 @@ function buildStructsClass(desc: CompileResult | ContractDescription): Record<st
       [name]: class extends Struct {
         constructor(o: StructObject) {
           super(o);
-          this.bind(element);
         }
       }
     });
 
+    structTypes[name].structAst = element;
   });
 
   return structTypes;
@@ -358,6 +363,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
   alias.forEach(element => {
     const finalType = resolveType(alias, structs, element.name);
+    element.finalType = finalType;
     const C = BasicScryptType[finalType];
     if(C) {
       const Class = C as typeof ScryptType;
