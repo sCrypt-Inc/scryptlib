@@ -235,5 +235,5 @@ const asmVars = {
 instance.replaceAsmVars(asmVars);
 ```
 
-You could find more examples using `scryptlib` in the [boilerplate](https://github.com/scrypt-sv/boilerplate) repository.
+You could find more examples using `scryptlib` in the [boilerplate](https://github.com/sCrypt-Inc/boilerplate) repository.
 
