@@ -3,8 +3,8 @@
 
 ## version = 1
 
-* Add SourceMap
+* Add `sourceMap`, `structs`, `file`, `version`
 
 ## version = 2 
 
-* Add type alias
+* Add `alias`
