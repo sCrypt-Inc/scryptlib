@@ -812,3 +812,8 @@ export function resolveType(alias: AliasEntity[], structs: StructEntity[], type:
 
   return resolveType(alias, structs, a.type);
 }
+
+export function printDebugUri(){
+  const argv = minimist(process.argv.slice(2));
+  return argv.debugUri === true;
+}
