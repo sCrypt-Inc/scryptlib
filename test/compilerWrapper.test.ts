@@ -121,7 +121,7 @@ describe('compile()', () => {
   });
 
 
-  it('should compile fail with importError', () => {
+  it('should compile fail with import error', () => {
     const result = compileContract(getInvalidContractFilePath('main.scrypt'));
 
     assert.typeOf(result.errors, 'array');
@@ -131,10 +131,8 @@ describe('compile()', () => {
     })
 
     expect(result.errors).to.deep.include.members([{
-      
-        file: " lib.scrypt",
         filePath: "main.scrypt",
-        message: "Imported file  lib.scrypt does not exist",
+        message: "File not found: \" lib.scrypt\"",
         position: [
           {
             "column": 8,
@@ -145,14 +143,14 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "ImportError"
+        type: "CommonError"
       
     }])
 
   })
 
 
-  it('should compile fail with importError', () => {
+  it('should compile fail with import error', () => {
     const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
 
     assert.typeOf(result.errors, 'array');
@@ -162,9 +160,8 @@ describe('compile()', () => {
     })
 
     expect(result.errors).to.deep.include.members([{
-        file: "libx.scrypt",
         filePath: "main0.scrypt",
-        message: "Imported file libx.scrypt does not exist",
+        message: "File not found: \"libx.scrypt\"",
         position: [
           {
             "column": 8,
@@ -175,11 +172,11 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "ImportError"
+        type: "CommonError"
     }])
   })
 
-  it('should compile fail with importError', () => {
+  it('should compile fail with import error', () => {
     const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
 
     assert.typeOf(result.errors, 'array');
@@ -189,9 +186,8 @@ describe('compile()', () => {
     })
 
     expect(result.errors).to.deep.include.members([{
-        file: "libx.scrypt",
         filePath: "main0.scrypt",
-        message: "Imported file libx.scrypt does not exist",
+        message: "File not found: \"libx.scrypt\"",
         position: [
           {
             "column": 8,
@@ -202,7 +198,34 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "ImportError"
+        type: "CommonError"
+    }])
+  })
+
+
+  it('should compile fail with ImportCycleError', () => {
+    const result = compileContract(getInvalidContractFilePath('importCycleA.scrypt'));
+
+    assert.typeOf(result.errors, 'array');
+
+    result.errors.forEach(e => {
+      e.filePath = path.basename(e.filePath);
+    })
+
+    expect(result.errors).to.deep.include.members([{
+        filePath: "importCycleB.scrypt",
+        message: "Dependency cycle detected: (\"importCycleB.scrypt\" -> \"importCycleC.scrypt\", \"importCycleC.scrypt\" -> \"importCycleA.scrypt\", \"importCycleA.scrypt\" -> \"importCycleB.scrypt\")",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 31,
+            "line": 1
+          }
+        ],
+        type: "CommonError"
     }])
   })
 })

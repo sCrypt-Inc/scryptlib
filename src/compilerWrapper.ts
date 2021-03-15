@@ -9,19 +9,18 @@ import { path2uri } from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
-const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)\n(?<message>[^\n]+)\n/g;
-const IMPORT_ERR_REG_V1 = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
-const IMPORT_ERR_REG_V2 = /Error:\s*\n(?<filePath>[^:]+):(?<startline>\d+):(?<startcolumn>\d+):(?<endline>\d+):(?<endcolumn>\d+):\nFile not found:\s*"(?<fileName>.+)"\n\n/g;
+const COMMON_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):\n(?<message>[^\n]+)\n/g;
+const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
+
+
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
-const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
 
 // see VERSIONLOG.md
 const CURRENT_CONTRACT_DESCRIPTION_VERSION = 2 ;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
-	SemanticError = 'SemanticError',
-	ImportError = 'ImportError',
+	CommonError = 'CommonError',
 	InternalError = 'InternalError'
 }
 
@@ -44,20 +43,15 @@ export interface SyntaxError extends CompileErrorBase {
 	expecting: string;
 }
 
-export interface SemanticError extends CompileErrorBase {
-	type: CompileErrorType.SemanticError;
-}
-
-export interface ImportError extends CompileErrorBase {
-	type: CompileErrorType.ImportError;
-	file: string;
+export interface CommonError extends CompileErrorBase {
+	type: CompileErrorType.CommonError;
 }
 
 export interface InternalError extends CompileErrorBase {
 	type: CompileErrorType.InternalError;
 }
 
-export type CompileError = SyntaxError | SemanticError | ImportError | InternalError;
+export type CompileError = SyntaxError | CommonError  | InternalError;
 
 export interface CompileResult {
 	asm?: OpCode[];
@@ -182,26 +176,6 @@ export function compile(
 						}]
 					}]
 				};
-			} else if (output.includes('File not found')) {
-				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG_V2)].map(match => {
-					const filePath = oc(match.groups).filePath('');
-					return {
-						type: CompileErrorType.ImportError,
-						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						message: `Imported file ${oc(match.groups).fileName()} does not exist`,
-						position: [{
-							line: parseInt(oc(match.groups).startline('-1')),
-							column: parseInt(oc(match.groups).startcolumn('-1')),
-						}, {
-							line: parseInt(oc(match.groups).endline('-1')),
-							column: parseInt(oc(match.groups).endcolumn('-1')),
-						}],
-						file: oc(match.groups).fileName('')
-					};
-				});
-				return {
-					errors: importErrors
-				};
 			} else if (output.includes('Syntax error:')) {
 				const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)].map(match => {
 					const filePath = oc(match.groups).filePath('');
@@ -222,11 +196,14 @@ export function compile(
 				return {
 					errors: syntaxErrors
 				};
-			} else {
-				const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
+			} 
+			else {
+
+
+				const commonErrors: CompileError[] = [...output.matchAll(COMMON_ERR_REG)].map(match => {
 					const filePath = oc(match.groups).filePath('');
 					return {
-						type: CompileErrorType.SemanticError,
+						type: CompileErrorType.CommonError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
 						position:[ {
 							line: parseInt(oc(match.groups).line('-1')),
@@ -238,9 +215,8 @@ export function compile(
 						message: oc(match.groups).message('')
 					};
 				});
-
 				return {
-					errors: semanticErrors
+					errors: commonErrors
 				};
 			}
 		}
