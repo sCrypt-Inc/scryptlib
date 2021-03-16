@@ -144,6 +144,7 @@ export function compile(
 		cmdArgs?: string,
 		sourceMap?: boolean,
 		optimize?: boolean,
+		timeout?: number  // in ms
 	} = {
 			asm: true,
 			debug: true,
@@ -151,18 +152,18 @@ export function compile(
 		}
 ): CompileResult {
 	const st = Date.now();
-	const npxArg = settings.npxArgs || '--no-install';
 	const sourcePath = source.path;
 	const srcDir = dirname(sourcePath);
 	const curWorkingDir = settings.cwd || srcDir;
 	const sourceFileName = basename(sourcePath);
 	const outputDir = settings.outputDir || srcDir;
+	const timeout = settings.timeout || 1200000;
 	const outputFiles = {};
 	try {
 		const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
 		const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
 		const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} ${settings.optimize ? '--opt' : ''} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-		let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir }).toString();
+		let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
 		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
 		output = output.split(/\r?\n/g).join('\n');
 		if (output.startsWith('Error:')) {
