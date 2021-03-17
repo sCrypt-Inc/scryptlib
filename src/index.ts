@@ -7,7 +7,10 @@ export {
   arrayTypeAndSize, newCall, getStructNameByType, genLaunchConfigFile, subArrayType
 } from './utils';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES } from './serializer';
+
 export {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType,
   Struct, StructObject, VariableType, TypeResolver
 } from './scryptTypes';
+
+export { web3, provider } from './web3';
