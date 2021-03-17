@@ -101,11 +101,11 @@ class OpState {
 
   toBigInt() : bigint {
     if (this.op.opcodenum === Opcode.OP_1) {
-      return 1n;
+      return BigInt(1);
     } else if (this.op.opcodenum === Opcode.OP_0) {
-      return 0n;
+      return BigInt(0);
     } else if (this.op.opcodenum === Opcode.OP_1NEGATE) {
-      return -1n;
+      return BigInt(-1);
     } else if (this.op.opcodenum >= Opcode.OP_2 && this.op.opcodenum <= Opcode.OP_16) {
       return BigInt(this.op.opcodenum - Opcode.OP_2 + 2);
     } else {
@@ -115,7 +115,7 @@ class OpState {
   }
 
   toBoolean() : boolean {
-    return this.toBigInt() !== 0n;
+    return this.toBigInt() !== BigInt(0);
   }
 
   toHex() : string {
