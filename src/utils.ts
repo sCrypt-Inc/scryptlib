@@ -292,11 +292,11 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
   }
 
   if (ret.length % 2) {
-    throw new Error('should have even length');
+    throw new Error(`${ret} should have even length`);
   }
 
   if (ret.length > 0 && !(/^[\da-f]+$/i.test(ret))) {
-    throw new Error('should only contain [0-9] or characters [a-fA-F]');
+    throw new Error(`${ret} should only contain [0-9] or characters [a-fA-F]`);
   }
 
   return ret;
