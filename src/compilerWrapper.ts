@@ -9,7 +9,7 @@ import { path2uri } from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
-const COMMON_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):\n(?<message>[^\n]+)\n/g;
+const COMMON_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
 
 
@@ -198,7 +198,6 @@ export function compile(
 				};
 			} 
 			else {
-
 
 				const commonErrors: CompileError[] = [...output.matchAll(COMMON_ERR_REG)].map(match => {
 					const filePath = oc(match.groups).filePath('');

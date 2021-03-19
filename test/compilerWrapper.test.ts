@@ -133,111 +133,144 @@ describe('compile()', () => {
   });
 
 
-  it('should compile fail with import error', () => {
-    const result = compileContract(getInvalidContractFilePath('main.scrypt'));
-
-    assert.typeOf(result.errors, 'array');
-
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
+  describe('compile error test', () => {
+    it('should compile fail with import error', () => {
+      const result = compileContract(getInvalidContractFilePath('main.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "main.scrypt",
+          message: "File not found: \" lib.scrypt\"",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 21,
+              "line": 1
+            }
+          ],
+          type: "CommonError"
+        
+      }])
+  
+    })
+  
+  
+    it('should compile fail with import error', () => {
+      const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "main0.scrypt",
+          message: "File not found: \"libx.scrypt\"",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 21,
+              "line": 1
+            }
+          ],
+          type: "CommonError"
+      }])
+    })
+  
+    it('should compile fail with import error', () => {
+      const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "main0.scrypt",
+          message: "File not found: \"libx.scrypt\"",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 21,
+              "line": 1
+            }
+          ],
+          type: "CommonError"
+      }])
+    })
+  
+  
+    it('should compile fail with ImportCycleError', () => {
+      const result = compileContract(getInvalidContractFilePath('importCycleA.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "importCycleB.scrypt",
+          message: "Dependency cycle detected: (\"importCycleB.scrypt\" -> \"importCycleC.scrypt\", \"importCycleC.scrypt\" -> \"importCycleA.scrypt\", \"importCycleA.scrypt\" -> \"importCycleB.scrypt\")",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 31,
+              "line": 1
+            }
+          ],
+          type: "CommonError"
+      }])
     })
 
-    expect(result.errors).to.deep.include.members([{
-        filePath: "main.scrypt",
-        message: "File not found: \" lib.scrypt\"",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 21,
-            "line": 1
-          }
-        ],
-        type: "CommonError"
-      
-    }])
+
+    it('must have at least one public function', () => {
+      const result = compileContract(getInvalidContractFilePath('lib.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "lib.scrypt",
+          message: "Contact `Lib` must have at least one public function",
+          position: [
+            {
+              "column": 10,
+              "line": 1
+            },
+            {
+              "column": 13,
+              "line": 1
+            }
+          ],
+          type: "CommonError"
+      }])
+    })
 
   })
 
 
-  it('should compile fail with import error', () => {
-    const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
-
-    assert.typeOf(result.errors, 'array');
-
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
-    })
-
-    expect(result.errors).to.deep.include.members([{
-        filePath: "main0.scrypt",
-        message: "File not found: \"libx.scrypt\"",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 21,
-            "line": 1
-          }
-        ],
-        type: "CommonError"
-    }])
-  })
-
-  it('should compile fail with import error', () => {
-    const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
-
-    assert.typeOf(result.errors, 'array');
-
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
-    })
-
-    expect(result.errors).to.deep.include.members([{
-        filePath: "main0.scrypt",
-        message: "File not found: \"libx.scrypt\"",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 21,
-            "line": 1
-          }
-        ],
-        type: "CommonError"
-    }])
-  })
-
-
-  it('should compile fail with ImportCycleError', () => {
-    const result = compileContract(getInvalidContractFilePath('importCycleA.scrypt'));
-
-    assert.typeOf(result.errors, 'array');
-
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
-    })
-
-    expect(result.errors).to.deep.include.members([{
-        filePath: "importCycleB.scrypt",
-        message: "Dependency cycle detected: (\"importCycleB.scrypt\" -> \"importCycleC.scrypt\", \"importCycleC.scrypt\" -> \"importCycleA.scrypt\", \"importCycleA.scrypt\" -> \"importCycleB.scrypt\")",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 31,
-            "line": 1
-          }
-        ],
-        type: "CommonError"
-    }])
-  })
+  
 })
