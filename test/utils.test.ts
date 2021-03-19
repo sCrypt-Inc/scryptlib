@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes} from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct} from '../src/utils'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType} from '../src/utils'
 import { loadDescription } from './helper';
 
 
@@ -948,6 +948,74 @@ describe('utils', () => {
 
     it('subscript should be [1] when one-dimensions index = 1', () => {
       expect(subscript(1, [2])).to.equal('[1]')
+    })
+
+  })
+
+  describe('isArrayType()', () => {
+
+    it('isArrayType should success when test int[1]', () => {
+      expect(isArrayType('int[1]')).to.be.true
+    })
+
+    it('isArrayType should success when test bytes[1][2][1]', () => {
+      expect(isArrayType('bytes[1][2][1]')).to.be.true
+    })
+
+
+    it('isArrayType should success when test st.y[1][2][1]', () => {
+      expect(isArrayType('st.y[1][2][1]')).to.be.true
+    })
+
+    it('isArrayType should success when test struct Token {}[3]', () => {
+      expect(isArrayType('struct Token {}[3]')).to.be.true
+    })
+
+
+    it('isArrayType should fail when test bytes[1][2][1', () => {
+      expect(isArrayType('int[1][2][1')).to.be.false
+    })
+
+    it('isArrayType should fail when start with space', () => {
+      expect(isArrayType(' int[1][2][1]')).to.be.false
+    })
+
+    it('isArrayType should fail when start with aa', () => {
+      expect(isArrayType('aa')).to.be.false
+    })
+
+  })
+
+
+  describe('isStructType()', () => {
+
+    it('isStructType should success when test struct Token {}', () => {
+      expect(isStructType('struct Token {}')).to.be.true
+    })
+
+
+    it('isStructType should fail when test struct Token {}[3]', () => {
+      expect(isStructType('struct Token {}[3]')).to.be.false
+    })
+
+    it('isStructType should fail when test struct Token {', () => {
+      expect(isStructType('struct Token {')).to.be.false
+    })
+
+    it('isStructType should fail when test struct Token }', () => {
+      expect(isStructType('struct Token }')).to.be.false
+    })
+
+    it('isStructType should fail when test struct Token{}', () => {
+      expect(isStructType('struct Token{}')).to.be.false
+    })
+
+    it('isStructType should fail when test aa', () => {
+      expect(isStructType('aa')).to.be.false
+    })
+
+    it('isStructType should fail when test int[3]', () => {
+      expect(isStructType('int[3]')).to.be.false
     })
 
   })
