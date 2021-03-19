@@ -1,9 +1,9 @@
 import { assert, expect } from 'chai';
 import path = require("path");
 import { loadDescription,getContractFilePath, getInvalidContractFilePath } from './helper'
-import { ABIEntityType, CompileResult, desc2CompileResult} from '../src/compilerWrapper';
-import { compileContract } from '../src/utils';
-
+import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion} from '../src/compilerWrapper';
+import { compileContract, getCIScryptc } from '../src/utils';
+import * as minimist from 'minimist';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -97,6 +97,18 @@ describe('compile()', () => {
     ])
   })
 
+  describe('test compilerVersion', () => {
+    const argv = minimist(process.argv.slice(2));
+
+    let scryptc = argv.scryptc;
+    if(argv.ci || !scryptc) {
+      scryptc = getCIScryptc();
+    }
+
+    const version = compilerVersion(scryptc);
+    console.log('compilerVersion', version)
+    expect(/^(\d)+\.(\d)+\.(\d)+\+commit\./.test(version)).to.be.true
+  })
  
 
 

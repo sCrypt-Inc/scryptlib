@@ -684,7 +684,7 @@ function findCompiler(directory): string | undefined {
 
 
 
-function getCIScryptc(): string | undefined {
+export function getCIScryptc(): string | undefined {
    const scryptc =  findCompiler(__dirname);
   return fs.existsSync(scryptc) ? scryptc : undefined;
 }
