@@ -1,2 +1,3 @@
-export {web3} from './web3';
-export {provider} from './provider'
+export { web3 } from './web3';
+export { wallet } from './wallet'
+export { LocalWallet } from './localwallet'

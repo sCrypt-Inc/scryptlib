@@ -5,7 +5,7 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 module.exports = {
     mode: "production",
     entry: {
-        web3: "./dist/index.js",
+        scryptlib: "./dist/index.js",
     },
     plugins: [
         new CleanWebpackPlugin(),
@@ -47,7 +47,7 @@ module.exports = {
     output: {
         filename: "[name].min.js",
         path: path.resolve(__dirname, "build"),
-        library: "scryptlib.web3",
+        library: "scryptlib",
         libraryTarget: "umd",
     },
 };
