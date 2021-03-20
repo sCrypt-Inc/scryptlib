@@ -362,9 +362,9 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
   const structClasses = buildStructsClass(desc);
   const aliasTypes: Record<string, typeof ScryptType> = {};
   const alias: AliasEntity[] = desc.alias || [];
-
+  const finalTypeResolver = buildTypeResolver(alias);
   alias.forEach(element => {
-    const finalType = resolveType(alias, element.name);
+    const finalType = finalTypeResolver(element.name);
     if(isStructType(finalType)) {
       const type = getStructNameByType(finalType);
       Object.assign(aliasTypes, {
@@ -416,4 +416,38 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
   Object.assign(aliasTypes, structClasses);
 
   return aliasTypes;
+}
+
+
+export type TypeResolver = (type: string) => string;
+export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
+  const resolvedTypes: Record<string, string> = {};
+  alias.forEach(element => {
+    const finalType = resolveType(alias, element.name);
+    resolvedTypes[element.name] = finalType;
+  })
+  return (alias: string) => {
+
+    if (isStructType(alias)) {
+      alias = getStructNameByType(alias);
+    }
+
+    let arrayType = '';
+    if(isArrayType(alias)) {
+      const [elemTypeName, sizes] = arrayTypeAndSize(alias);
+      alias = elemTypeName;
+      arrayType = sizes.map(size => `[${size}]`).join('')
+    }
+
+
+    if(BasicScryptType[alias]) {
+      return `${alias}${arrayType}`;
+    }
+
+    if(resolvedTypes[alias]) {
+      return `${resolvedTypes[alias]}${arrayType}`;
+    }
+
+    return `struct ${alias} {}${arrayType}`;
+  }
 }

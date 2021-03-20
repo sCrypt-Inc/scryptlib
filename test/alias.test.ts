@@ -1,6 +1,6 @@
 import { loadDescription } from './helper';
 import { assert, expect } from 'chai';
-import { buildContractClass, buildTypeClasses } from '../src/contract';
+import { buildContractClass, buildTypeClasses, buildTypeResolver } from '../src/contract';
 import { Bytes, Int } from '../src/scryptTypes';
 
 const jsonDescr = loadDescription('alias_desc.json');
@@ -115,4 +115,61 @@ describe('Alias type check', () => {
         assert.isTrue(result.success, result.error);
     })
 
+
+
+    describe('Alias buildTypeResolver', () => {
+
+
+        it('should success when call buildTypeResolver', () => {
+
+            const finalTypeResolver = buildTypeResolver(jsonDescr.alias)
+            expect(finalTypeResolver("Age")).to.equal('int')
+            expect(finalTypeResolver("Time")).to.equal('int')
+            expect(finalTypeResolver("Name")).to.equal('bytes')
+            expect(finalTypeResolver("Token")).to.equal('int')
+            expect(finalTypeResolver("Tokens")).to.equal('int[3]')
+            expect(finalTypeResolver("MaleAAA")).to.equal('struct Person {}')
+            expect(finalTypeResolver("Male")).to.equal('struct Person {}')
+            expect(finalTypeResolver("Female")).to.equal('struct Person {}')
+            expect(finalTypeResolver("Block")).to.equal('struct Block {}')
+            expect(finalTypeResolver("Coinbase")).to.equal('bytes')
+            expect(finalTypeResolver("Integer")).to.equal('int')
+            expect(finalTypeResolver("Height")).to.equal('int')
+
+            expect(finalTypeResolver("int")).to.equal('int')
+            expect(finalTypeResolver("PubKey")).to.equal('PubKey')
+            expect(finalTypeResolver("PrivKey")).to.equal('PrivKey')
+            expect(finalTypeResolver("SigHashPreimage")).to.equal('SigHashPreimage')
+            expect(finalTypeResolver("bool")).to.equal('bool')
+            expect(finalTypeResolver("bytes")).to.equal('bytes')
+            expect(finalTypeResolver("Sig")).to.equal('Sig')
+            expect(finalTypeResolver("Ripemd160")).to.equal('Ripemd160')
+            expect(finalTypeResolver("Sha1")).to.equal('Sha1')
+            expect(finalTypeResolver("Sha256")).to.equal('Sha256')
+            expect(finalTypeResolver("SigHashType")).to.equal('SigHashType')
+            expect(finalTypeResolver("OpCodeType")).to.equal('OpCodeType')
+
+        })
+
+        it('should success when call buildTypeResolver', () => {
+
+            const finalTypeResolver = buildTypeResolver([])
+            expect(finalTypeResolver("Person")).to.equal('struct Person {}')
+            expect(finalTypeResolver("Block")).to.equal('struct Block {}')
+
+            expect(finalTypeResolver("int")).to.equal('int')
+            expect(finalTypeResolver("PubKey")).to.equal('PubKey')
+            expect(finalTypeResolver("PrivKey")).to.equal('PrivKey')
+            expect(finalTypeResolver("SigHashPreimage")).to.equal('SigHashPreimage')
+            expect(finalTypeResolver("bool")).to.equal('bool')
+            expect(finalTypeResolver("bytes")).to.equal('bytes')
+            expect(finalTypeResolver("Sig")).to.equal('Sig')
+            expect(finalTypeResolver("Ripemd160")).to.equal('Ripemd160')
+            expect(finalTypeResolver("Sha1")).to.equal('Sha1')
+            expect(finalTypeResolver("Sha256")).to.equal('Sha256')
+            expect(finalTypeResolver("SigHashType")).to.equal('SigHashType')
+            expect(finalTypeResolver("OpCodeType")).to.equal('OpCodeType')
+
+        })
+    })
 })

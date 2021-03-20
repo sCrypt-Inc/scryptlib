@@ -536,6 +536,7 @@ export const BasicScryptType = {
   [VariableType.SHA1] :  Sha1,
   [VariableType.SHA256] :  Sha256,
   [VariableType.SIGHASHTYPE] :  SigHashType,
-  [VariableType.OPCODETYPE] :  OpCodeType
+  [VariableType.OPCODETYPE] :  OpCodeType,
+  [VariableType.SIGHASHPREIMAGE] :  SigHashPreimage
 };
 

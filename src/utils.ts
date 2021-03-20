@@ -795,6 +795,10 @@ export function resolveType(alias: AliasEntity[], type: string): string {
     return `${resolveType(alias, elemTypeName)}${sizes.map(size => `[${size}]`).join('')}`;
   }
 
+  if(isStructType(type)) {
+    return resolveType(alias, getStructNameByType(type));
+  }
+
   const a = alias.find(a => {
     return a.name === type;
   });
