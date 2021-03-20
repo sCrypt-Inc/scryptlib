@@ -1,5 +1,5 @@
 import { Account, NetWork, UTXO, wallet } from "./wallet";
-import { toHex, bsv } from '../../src/utils';
+import { toHex, bsv } from '../utils';
 import { signInput} from './wutils';
 import axios from 'axios';
 
@@ -60,14 +60,18 @@ export class LocalWallet extends wallet {
             timeout: 10000
         }).then(res => {
             return res.data.map(utxo => {
-                return Object.assign(utxo, {
+                return  {
+                    txHash: utxo.tx_hash,
+                    outputIndex: utxo.tx_pos,
+                    sats: utxo.value,
                     script: bsv.Script.buildPublicKeyHashOut(this.privKey.toAddress()).toHex(),
-                })
+                } as UTXO;
             });
         })
     }
     changeAddress(options?: { purpose?: string; }): Promise<string> {
-        return this.privKey.toAddress();
+
+        return new Promise(resolve => resolve(this.privKey.toAddress() + ''));
     }
 
 }

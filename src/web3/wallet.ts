@@ -2,10 +2,14 @@
 
 
 export interface UTXO {
-    height: number,
-    tx_pos: number,
-    tx_hash: string;
-    value: number;
+    txHash: number,
+    outputIndex: string;
+    sats: number;
+    script: string;
+}
+
+export interface Output {
+    sats: number,
     script: string;
 }
 

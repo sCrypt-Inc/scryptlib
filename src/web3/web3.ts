@@ -1,9 +1,9 @@
 import { promises } from "dns";
 import { AbstractContract, buildContractClass, buildTypeClasses } from "../contract";
 import { ScryptType, SupportedParamType } from "../scryptTypes";
-import { wallet } from "./wallet";
+import { Output, UTXO, wallet } from "./wallet";
 import { bsv } from "../utils";
-
+import { Call } from "./call";
 import axios from 'axios';
 const WEB3_VERSION = "0.0.1";
 
@@ -54,11 +54,11 @@ export class web3 {
         let changeAddress = await web3.wallet.changeAddress();
         return web3.wallet.queryUtxos(amountInContract, {
             purpose: 'change'
-        }).then(async utxos => {
+        }).then(async (utxos: UTXO[]) => {
             const tx = new bsv.Transaction().from(utxos.map(utxo => ({
-                txId: utxo.tx_hash,
-                outputIndex: utxo.tx_pos,
-                satoshis: utxo.value,
+                txId: utxo.txHash,
+                outputIndex: utxo.outputIndex,
+                satoshis: utxo.sats,
                 script: utxo.script
             })))
 
@@ -79,13 +79,15 @@ export class web3 {
     }
 
 
-    static call(contract: AbstractContract, params: SupportedParamType[], method: string): Promise<string> {
+    static call(calls: Call[], utxos: UTXO[],
+        outputs: Output[]): Promise<string> {
 
-
-        
         return null;
     }
 
 }
+
+
+
 
 console.log(`hello, this is scryptlib web3 ${WEB3_VERSION}.`)

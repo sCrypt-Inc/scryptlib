@@ -1,5 +1,5 @@
 
-import { toHex, bsv } from '../../src/utils';
+import { toHex, bsv } from '..//utils';
 import { UTXO } from "./wallet";
 
 
@@ -7,13 +7,13 @@ export function signInput(privateKey: any, tx: any, inputIndex: number, sigHashT
 	
     tx.inputs[inputIndex].output =  new bsv.Transaction.Output({
         script: utxo.script,
-        satoshis: utxo.value
+        satoshis: utxo.sats
     });
 
     const sig = new bsv.Transaction.Signature({
 		publicKey: privateKey.publicKey,
-		prevTxId: utxo.tx_hash,
-		outputIndex:  utxo.tx_pos,
+		prevTxId: utxo.txHash,
+		outputIndex:  utxo.outputIndex,
 		inputIndex,
 		signature: bsv.Transaction.Sighash.sign(tx, privateKey, sigHashType,
 			inputIndex,
