@@ -1,6 +1,6 @@
 import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri } from "./utils";
+import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize} from "./utils";
 import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity} from "./compilerWrapper";
 
@@ -46,6 +46,7 @@ export class AbstractContract {
   public static opcodes?: OpCode[];
   public static file: string;
   public static structs: StructEntity[];
+  public static alias: AliasEntity[];
 
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
@@ -305,10 +306,11 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm.map(item => item["opcode"].trim()).join(' ');
-  ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
+  ContractClass.abiCoder = new ABICoder(desc.abi, desc.alias || []);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
   ContractClass.structs = desc.structs;
+
 
   ContractClass.abi.forEach(entity => {
     if(invalidMethodName.indexOf(entity.name) > -1) {
@@ -346,6 +348,7 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
       }
     });
 
+    structTypes[name].alias = desc.alias || [];
     structTypes[name].structAst = element;
   });
 
@@ -358,38 +361,55 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
   const structClasses = buildStructsClass(desc);
   const aliasTypes: Record<string, typeof ScryptType> = {};
-  const structs: StructEntity[] = desc.structs || [];
   const alias: AliasEntity[] = desc.alias || [];
 
   alias.forEach(element => {
-    const finalType = resolveType(alias, structs, element.name);
-    element.finalType = finalType;
-    const C = BasicScryptType[finalType];
-    if(C) {
-      const Class = C as typeof ScryptType;
+    const finalType = resolveType(alias, element.name);
+    if(isStructType(finalType)) {
+      const type = getStructNameByType(finalType);
       Object.assign(aliasTypes, {
-        [element.name]: class extends Class {
-          constructor(o: ValueType) {
-            super(o);
-            this._type = element.name;
-            this._finalType = finalType;
-          }
-        }
-      });
-    } else if(finalType.indexOf('[') > -1) {
-      Object.assign(aliasTypes, {
-        [element.name]: class extends Array<typeof C> {}
-      });
-     } else {
-      Object.assign(aliasTypes, {
-        [element.name]: class extends structClasses[finalType] {
+        [element.name]: class extends structClasses[type] {
           constructor(o: StructObject) {
             super(o);
             this._type = element.name;
-            this._finalType = `struct ${finalType} {}`;
           }
         }
       });
+    } else if(isArrayType(finalType)) {
+      const [elemTypeName, _] = arrayTypeAndSize(finalType);
+
+      const C = BasicScryptType[elemTypeName];
+      if(C) {
+        Object.assign(aliasTypes, {
+          [element.name]: class extends Array<typeof C> {}
+        });
+      } else if(isStructType(elemTypeName)) {
+        const type = getStructNameByType(elemTypeName);
+        const C = structClasses[type];
+        Object.assign(aliasTypes, {
+          [element.name]: class extends Array<typeof C> {}
+        });
+      } 
+
+    } else {
+      const C = BasicScryptType[finalType];
+      if(C) {
+        const Class = C as typeof ScryptType;
+        const aliasClass = class extends Class {
+          constructor(o: ValueType) {
+            super(o);
+            this._type = element.name;
+          }
+        }
+
+        aliasClass.alias = desc.alias || [];
+
+        Object.assign(aliasTypes, {
+          [element.name]: aliasClass
+        });
+      } else {
+        throw new Error(`can not resolve type alias ${element.name} ${element.type}`)
+      }
     }
   });
 

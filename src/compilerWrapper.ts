@@ -17,7 +17,7 @@ const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
 const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 2 ;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3 ;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	CommonError = 'CommonError',
@@ -99,7 +99,7 @@ export enum ABIEntityType {
 	CONSTRUCTOR = 'constructor'
 }
 export type ParamEntity = {
-	name: string, type: string, finalType: string
+	name: string, type: string
 }
 export interface ABIEntity {
 	type: ABIEntityType;
@@ -116,7 +116,6 @@ export interface StructEntity {
 export interface AliasEntity {
 	name: string;
 	type: string;
-	finalType: string;
 }
 
 export function compile(
@@ -476,7 +475,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
 	return allAst.map( ast => {
 		return oc(ast).structs([]).map(s => ({
 			name: s['name'],
-			params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+			params: s['fields'].map(p => { return { name: p['name'], type: p['type']}; }),
 		}));
 	}).flat(1);
 }

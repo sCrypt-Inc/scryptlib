@@ -377,65 +377,51 @@ describe('utils', () => {
 
 
     it('flatternArray int[2][2][3]', () => {
-      expect(flatternArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], {
-        name: "a", type: "int[2][2][3]", finalType: "int[2][2][3]"
-      })).to.deep.ordered.members([{
-        finalType: "int", 
+      expect(flatternArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], "a", "int[2][2][3]")).to.deep.ordered.members([{
         name: "a[0][0][0]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[0][0][1]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[0][0][2]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[0][1][0]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[0][1][1]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[0][1][2]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[1][0][0]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[1][0][1]",
         type: "int",
         value: new Int(12)
       }, {
-        finalType: "int", 
         name: "a[1][0][2]",
         type: "int",
         value: new Int(3)
       },  {
-        finalType: "int", 
         name: "a[1][1][0]",
         type: "int",
         value: new Int(3)
       },  {
-        finalType: "int", 
         name: "a[1][1][1]",
         type: "int",
         value: new Int(3)
       },  {
-        finalType: "int", 
         name: "a[1][1][2]",
         type: "int",
         value: new Int(3)
@@ -443,35 +429,27 @@ describe('utils', () => {
     })
 
     it('flatternArray int[2][3]', () => {
-      expect(flatternArray([[1, 2, 3], [4, 12, 5]], {
-        name: "a", type: "int[2][3]", finalType: "int[2][3]"
-      })).to.deep.ordered.members([{
-        finalType: "int", 
+      expect(flatternArray([[1, 2, 3], [4, 12, 5]],  "a", "int[2][3]")).to.deep.ordered.members([{
         name: "a[0][0]",
         type: "int",
         value: new Int(1)
       }, {
-        finalType: "int", 
         name: "a[0][1]",
         type: "int",
         value: new Int(2)
       }, {
-        finalType: "int", 
         name: "a[0][2]",
         type: "int",
         value: new Int(3)
       }, {
-        finalType: "int", 
         name: "a[1][0]",
         type: "int",
         value: new Int(4)
       }, {
-        finalType: "int", 
         name: "a[1][1]",
         type: "int",
         value: new Int(12)
       }, {
-        finalType: "int", 
         name: "a[1][2]",
         type: "int",
         value: new Int(5)
@@ -480,17 +458,13 @@ describe('utils', () => {
     })
 
     it('flatternArray int[1][1][1][2]', () => {
-      expect(flatternArray([[[[3,4]]]], {
-        name: "a", type: "int[1][1][1][2]", finalType: "int[1][1][1][2]"
-      })).to.deep.ordered.members([
+      expect(flatternArray([[[[3,4]]]], "a", "int[1][1][1][2]")).to.deep.ordered.members([
         {
-          finalType: "int", 
           name: "a[0][0][0][0]",
           type: "int",
           value: new Int(3)
         },
         {
-          finalType: "int", 
           name: "a[0][0][0][1]",
           type: "int",
           value: new Int(4)
@@ -499,23 +473,18 @@ describe('utils', () => {
     })
 
     it('flatternArray int[3]', () => {
-      expect(flatternArray([1,2,3], {
-        name: "a", type: "int[3]", finalType: "int[3]"
-      })).to.deep.ordered.members([
+      expect(flatternArray([1,2,3], "a", "int[3]")).to.deep.ordered.members([
         {
-          finalType: "int", 
           name: "a[0]",
           type: "int",
           value: new Int(1)
         },
         {
-          finalType: "int", 
           name: "a[1]",
           type: "int",
           value: new Int(2)
         },
         {
-          finalType: "int", 
           name: "a[2]",
           type: "int",
           value: new Int(3)
@@ -535,130 +504,104 @@ describe('utils', () => {
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-        ] ], {
-          name: "a", type: "int[2][3][4]", finalType: "int[2][3][4]"
-        })).to.deep.ordered.members([
+        ] ], "a", "int[2][3][4]")).to.deep.ordered.members([
           {
-            finalType: "int", 
             name: "a[0][0][0]",
             type: "int",
             value: new Int(1)
           },
           {
-            finalType: "int", 
             name: "a[0][0][1]",
             type: "int",
             value: new Int(2)
           },
           {
-            finalType: "int", 
             name: "a[0][0][2]",
             type: "int",
             value: new Int(3)
           },
           {
-            finalType: "int", 
             name: "a[0][0][3]",
             type: "int",
             value: new Int(4)
           },
           {
-            finalType: "int", 
             name: "a[0][1][0]",
             type: "int",
             value: new Int(5)
           },{
-            finalType: "int", 
             name: "a[0][1][1]",
             type: "int",
             value: new Int(6)
           },{
-            finalType: "int", 
             name: "a[0][1][2]",
             type: "int",
             value: new Int(7)
           },{
-            finalType: "int", 
             name: "a[0][1][3]",
             type: "int",
             value: new Int(8)
           },{
-            finalType: "int", 
             name: "a[0][2][0]",
             type: "int",
             value: new Int(9)
           },{
-            finalType: "int", 
             name: "a[0][2][1]",
             type: "int",
             value: new Int(10)
           },{
-            finalType: "int", 
             name: "a[0][2][2]",
             type: "int",
             value: new Int(11)
           },{
-            finalType: "int", 
             name: "a[0][2][3]",
             type: "int",
             value: new Int(12)
           },{
-            finalType: "int", 
             name: "a[1][0][0]",
             type: "int",
             value: new Int(13)
           },{
-            finalType: "int", 
             name: "a[1][0][1]",
             type: "int",
             value: new Int(14)
           },{
-            finalType: "int", 
             name: "a[1][0][2]",
             type: "int",
             value: new Int(15)
           },{
-            finalType: "int", 
             name: "a[1][0][3]",
             type: "int",
             value: new Int(16)
           },{
-            finalType: "int", 
             name: "a[1][1][0]",
             type: "int",
             value: new Int(17)
           },{
-            finalType: "int", 
             name: "a[1][1][1]",
             type: "int",
             value: new Int(18)
           },{
-            finalType: "int", 
             name: "a[1][1][2]",
             type: "int",
             value: new Int(19)
           },{
-            finalType: "int", 
             name: "a[1][1][3]",
             type: "int",
             value: new Int(20)
           },{
-            finalType: "int", 
             name: "a[1][2][0]",
             type: "int",
             value: new Int(21)
           },{
-            finalType: "int", 
             name: "a[1][2][1]",
             type: "int",
             value: new Int(22)
           },{
-            finalType: "int", 
             name: "a[1][2][2]",
             type: "int",
             value: new Int(23)
           },{
-            finalType: "int", 
             name: "a[1][2][3]",
             type: "int",
             value: new Int(24)
@@ -676,17 +619,14 @@ describe('utils', () => {
         header: new Bytes('1156'),
       }), "block")).to.deep.ordered.members([ {
         value: new Bytes('68656c6c6f20776f726c6421'),
-        finalType: "bytes",
         name: "block.hash",
         type: "bytes"
       }, {
         value: new Bytes('1156'),
-        finalType: "bytes",
         name: "block.header",
         type: "bytes"
       }, {
         value: new Int(10000),
-        finalType: "int",
         name: "block.time",
         type: "int"
       }])
@@ -706,37 +646,30 @@ describe('utils', () => {
         })
       }), "p")).to.deep.ordered.members([ {
         value: new Bytes('7361746f736869206e616b616d6f746f'),
-        finalType: "bytes",
         name: "p.name",
         type: "bytes"
       }, {
         value: new Bytes('6666'),
-        finalType: "bytes",
         name: "p.addr",
         type: "bytes"
       }, {
         value: new Bool(true),
-        finalType: "bool",
         name: "p.isMale",
         type: "bool"
       }, {
         value: new Int(33),
-        finalType: "int",
         name: "p.age",
         type: "int"
       }, {
         value: new Bytes('68656c6c6f20776f726c6421'),
-        finalType: "bytes",
         name: "p.blk.hash",
         type: "bytes"
       }, {
         value: new Bytes('1156'),
-        finalType: "bytes",
         name: "p.blk.header",
         type: "bytes"
       }, {
         value: new Int(10000),
-        finalType: "int",
         name: "p.blk.time",
         type: "int"
       }])
@@ -769,72 +702,58 @@ describe('utils', () => {
         })]
       }), "b")).to.deep.ordered.members([ {
         value: new Bytes('6666'),
-        finalType: "bytes",
         name: "b.name",
         type: "bytes"
       }, {
         value: new Bytes('0001'),
-        finalType: "bytes",
         name: "b.tokens[0].id",
         type: "bytes"
       }, {
         value: new Int(1000000),
-        finalType: "int",
         name: "b.tokens[0].createTime",
         type: "int"
       }, {
         value: new Bytes('0002'),
-        finalType: "bytes",
         name: "b.tokens[1].id",
         type: "bytes"
       }, {
         value: new Int(1000001),
-        finalType: "int",
         name: "b.tokens[1].createTime",
         type: "int"
       }, {
         value: new Bytes('0003'),
-        finalType: "bytes",
         name: "b.tokens[2].id",
         type: "bytes"
       },{
         value: new Int(1000002),
-        finalType: "int",
         name: "b.tokens[2].createTime",
         type: "int"
       }, {
         value: new Bytes('7361746f736869206e616b616d6f746f'),
-        finalType: "bytes",
         name: "b.friend.name",
         type: "bytes"
       }, {
         value: new Bytes('6666'),
-        finalType: "bytes",
         name: "b.friend.addr",
         type: "bytes"
       }, {
         value: new Bool(true),
-        finalType: "bool",
         name: "b.friend.isMale",
         type: "bool"
       }, {
         value: new Int(33),
-        finalType: "int",
         name: "b.friend.age",
         type: "int"
       }, {
         value: new Bytes('68656c6c6f20776f726c6421'),
-        finalType: "bytes",
         name: "b.friend.blk.hash",
         type: "bytes"
       }, {
         value: new Bytes('1156'),
-        finalType: "bytes",
         name: "b.friend.blk.header",
         type: "bytes"
       }, {
         value: new Int(10000),
-        finalType: "int",
         name: "b.friend.blk.time",
         type: "int"
       }])

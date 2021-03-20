@@ -1,5 +1,5 @@
-import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg} from "./utils";
-import { StructEntity } from "./compilerWrapper";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg, resolveType} from "./utils";
+import { AliasEntity, StructEntity } from "./compilerWrapper";
 
 export type ValueType = number | bigint | boolean | string | StructObject;
 
@@ -9,7 +9,7 @@ export class ScryptType {
   protected _literal: string;
   protected _asm: string;
   protected _type: string;
-  protected _finalType: string;
+  public static alias: AliasEntity[] = [];
 
   constructor(value: ValueType) {
     try {
@@ -17,7 +17,6 @@ export class ScryptType {
       this._literal = this.toLiteral();
       const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
-      this._finalType = scrType;
       this._asm = asm;
     } catch (error) {
       throw new Error(`can't get type from ${this._literal}, ${error.message}`);
@@ -29,7 +28,10 @@ export class ScryptType {
   }
 
   get finalType(): string {
-    return this._finalType;
+    const alias: AliasEntity[] =  Object.getPrototypeOf(this).constructor.alias;
+    if(alias)
+      return resolveType(alias, this.type);
+    return this.type;
   }
 
   get literal(): string {
@@ -326,7 +328,8 @@ export class Struct extends ScryptType {
 
   private bind(): void {
     const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
-    checkStruct(structAst, this);
+    const alias: AliasEntity[] =  Object.getPrototypeOf(this).constructor.alias;
+    checkStruct(structAst, alias, this);
     const ordered = {};
     const unordered = this.value;
     Object.keys(this.value).sort((a: string, b: string) => {
@@ -341,7 +344,6 @@ export class Struct extends ScryptType {
     });
     this.sorted = true;
     this._type = structAst.name;
-    this._finalType = `struct ${structAst.name} {}`;
     this._value = ordered;
   }
 
@@ -422,10 +424,16 @@ export class Struct extends ScryptType {
    */
   getMemberAstFinalType(key: string): string {
     const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
+    const alias: AliasEntity[] =  Object.getPrototypeOf(this).constructor.alias;
     const paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
-    return paramEntity.finalType;
+
+    if(!paramEntity) {
+      throw new Error(`${key} is member of struct ${structAst.name}`);
+    }
+
+    return resolveType(alias, paramEntity.type);
   }
 
   

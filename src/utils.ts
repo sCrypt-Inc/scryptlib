@@ -449,27 +449,29 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 
-export function checkStruct(s: StructEntity, arg: Struct): void {
+export function checkStruct(s: StructEntity, alias: AliasEntity[], arg: Struct): void {
   
   s.params.forEach(p => {
     const member = arg.memberByKey(p.name);
 
     const finalType = typeOfArg(member);
 
+    const paramFinalType = resolveType(alias, p.type);
+
     if(finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    } else if(finalType != p.finalType) {
-      if(isArrayType(p.finalType)) {
-        const [elemTypeName, arraySize] = arrayTypeAndSize(p.finalType);
+    } else if(finalType != paramFinalType) {
+      if(isArrayType(paramFinalType)) {
+        const [elemTypeName, arraySize] = arrayTypeAndSize(paramFinalType);
         if(Array.isArray(arg.value[p.name])) {
           if(!checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
-            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${p.finalType}`);
+            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
           }
         } else {
-          throw new Error(`struct ${s.name} property ${p.name} should be ${p.finalType}`);
+          throw new Error(`struct ${s.name} property ${p.name} should be ${paramFinalType}`);
         }
       } else {
-        throw new Error(`wrong argument type, expected ${p.finalType} but got ${finalType}`);
+        throw new Error(`wrong argument type, expected ${paramFinalType} but got ${finalType}`);
       }
     }
   });
@@ -554,13 +556,13 @@ export function subscript(index: number, arraySizes: Array<number>): string {
   }
 }
 
-export function flatternArray(arg: any, param: ParamEntity): Array<{value: ScryptType, name: string, type: string, finalType: string}>  {
+export function flatternArray(arg: Array<any>, name: string, finalType: string): Array<{value: ScryptType, name: string, type: string}>  {
 
   if(!Array.isArray(arg)) {
     throw new Error(`flatternArray only work on array`);
   }
 
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
   return arg.map((item,index) => {
 
@@ -571,13 +573,9 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
     } else if(typeof item === "bigint") {
       item = new Int(item as bigint);
     } else if(Array.isArray(item)) {
-      return flatternArray(item, {
-        name: `${param.name}[${index}]`,
-        type: subArrayType(param.type),
-        finalType: subArrayType(param.finalType),
-      });
+      return flatternArray(item, `${name}[${index}]`, subArrayType(finalType));
     } else if(Struct.isStruct(item)) {
-      return flatternStruct(item, `${param.name}[${index}]`);
+      return flatternStruct(item, `${name}[${index}]`);
     }
     else  {
       item = item as ScryptType;
@@ -585,14 +583,13 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
 
     return {
       value: item,
-      name: `${param.name}${subscript(index, arraySizes)}`,
-      type: elemTypeName,
-      finalType: elemTypeName
+      name: `${name}${subscript(index, arraySizes)}`,
+      type: elemTypeName
     };
-  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string}>;
 }
 
-export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string, finalType: string}> {
+export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string}> {
   if(Struct.isStruct(arg)) {
     const argS = arg as Struct;
     const keys = argS.getMembers();
@@ -603,21 +600,16 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
         return flatternStruct(member as Struct, `${name}.${key}`);
       } else if(Array.isArray(member)) {
         const finalType = argS.getMemberAstFinalType(key);
-        return flatternArray(member as SupportedParamType[], {
-          name: `${name}.${key}`,
-          type: finalType,
-          finalType: finalType
-        });
+        return flatternArray(member, `${name}.${key}`, finalType);
       } else {
         member = member as ScryptType;
         return {
           value: member,
           name: `${name}.${key}`,
-          type: member.type,
-          finalType: member.finalType
+          type: member.type
         };
       }
-    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string}>;
 
   } else {
     throw new Error(`${arg} should be struct`);
@@ -795,27 +787,27 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 /***
  * resolve type
  */
-export function resolveType(alias: AliasEntity[], structs: StructEntity[], type: string): string {
-
-  if(BasicType.indexOf(type) > -1) {
-    return type;
-  }
+export function resolveType(alias: AliasEntity[], type: string): string {
 
 
-  if(structs.map(s => s.name).indexOf(type) > -1) {
-    return type;
-  }
-
-  if(type.indexOf('[') > -1) {
-    const [elemTypeName, arraySize] = arrayTypeAndSize(type);
-    return `${resolveType(alias, structs, elemTypeName)}[${arraySize}]`;
+  if(isArrayType(type)) {
+    const [elemTypeName, sizes] = arrayTypeAndSize(type);
+    return `${resolveType(alias, elemTypeName)}${sizes.map(size => `[${size}]`).join('')}`;
   }
 
   const a = alias.find(a => {
     return a.name === type;
   });
 
-  return resolveType(alias, structs, a.type);
+  if(a) {
+    return resolveType(alias, a.type);
+  } else {
+    if(BasicType.indexOf(type) > -1) {
+      return type;
+    } else { // should be struct if it is not basic type
+      return `struct ${type} {}`;
+    }
+  }
 }
 
 export function printDebugUri(){

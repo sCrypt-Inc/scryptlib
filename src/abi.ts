@@ -1,12 +1,9 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, arrayTypeAndSize,  genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, printDebugUri} from "./utils";
+import { int2Asm, bsv, arrayTypeAndSize,  genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, printDebugUri, resolveType} from "./utils";
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int , SingletonParamType, SupportedParamType, Struct} from './scryptTypes';
-import { ABIEntityType, ABIEntity, StructEntity, ParamEntity} from './compilerWrapper';
-import { mkdtempSync, writeFileSync } from 'fs';
-import { join, sep} from 'path';
-import { tmpdir } from 'os';
-import { cpuUsage } from 'process';
+import { ABIEntityType, ABIEntity,  ParamEntity, AliasEntity} from './compilerWrapper';
+
 
 export interface Script {
   toASM(): string;
@@ -177,7 +174,7 @@ export class FunctionCall {
 
 export class ABICoder {
 
-  constructor(public abi: ABIEntity[], public structs: StructEntity[]) { }
+  constructor(public abi: ABIEntity[], public alias: AliasEntity[]) { }
 
 
   encodeConstructorCall(contract: AbstractContract, asmTemplate: string, ...args: SupportedParamType[]): FunctionCall {
@@ -194,32 +191,33 @@ export class ABICoder {
     const args_: SupportedParamType[] = [];
     cParams.forEach((param, index) =>{
       const arg = args[index];
-      if (isArrayType(param.finalType)) {
-        const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
+      const finalType = resolveType(this.alias, param.type);
+      if (isArrayType(finalType)) {
+        const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
         if(Array.isArray(arg)) {
           if(checkArray(arg, [elemTypeName, arraySizes])) {
             // flattern array
-            flatternArray(arg as SupportedParamType[], param).forEach((e, idx) => {
-              cParams_.push({ name:e.name, type: e.type, finalType: e.finalType });
+            flatternArray(arg, param.name, finalType).forEach((e, idx) => {
+              cParams_.push({ name:e.name, type: e.type });
               args_.push(e.value);
             });
           } else {
-            throw new Error(`constructor ${index}-th parameter should be ${param.finalType}`);
+            throw new Error(`constructor ${index}-th parameter should be ${finalType}`);
           }
         } else {
-          throw new Error(`constructor ${index}-th parameter should be ${param.finalType}`);
+          throw new Error(`constructor ${index}-th parameter should be ${finalType}`);
         }
-      } else if(isStructType(param.finalType)) {
+      } else if(isStructType(finalType)) {
 
         const argS = arg as Struct;
 
-        if(param.finalType != argS.finalType) {
+        if(finalType != argS.finalType) {
           throw new Error(`expect struct ${param.type} but got struct ${argS.type}`);
         }
 
         flatternStruct(argS, param.name).forEach(v => {
-          cParams_.push({ name:`${v.name}`, type: v.type, finalType: v.finalType });
+          cParams_.push({ name:`${v.name}`, type: v.type});
           args_.push(v.value);
         });
       }
@@ -280,11 +278,13 @@ export class ABICoder {
       if (!args.every(arg => typeof arg === t)) {
         throw new Error('Array arguments are not of the same type');
       }
+      const finalType = resolveType(this.alias, arrayParm.type);
 
-      const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParm.finalType);
-
+      const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
       if(checkArray(args, [elemTypeName, arraySizes])) {
-        return flatternArray(args, arrayParm).map(arg => this.encodeParam(arg.value, {name:arg.name, type: arg.finalType, finalType: arg.finalType})).join(' ');
+        return flatternArray(args, arrayParm.name, finalType).map(arg => {
+          return this.encodeParam(arg.value, {name:arg.name, type: arg.type})
+        }).join(' ');
       } else {
         throw new Error(`checkArray ${arrayParm.type} fail`);
       }
@@ -292,17 +292,18 @@ export class ABICoder {
 
 
   encodeParam(arg: SupportedParamType, paramEntity: ParamEntity): string {
-    const finalType = paramEntity.finalType;
-    if (isArrayType(paramEntity.finalType)) {
+
+    const finalType = resolveType(this.alias, paramEntity.type);
+    if (isArrayType(finalType)) {
       if(Array.isArray(arg)) {
         return this.encodeParamArray(arg, paramEntity);
       } else {
         const scryptType = typeOfArg(arg);
-        throw new Error(`expect param ${paramEntity.name} as ${paramEntity.finalType} but got ${scryptType}`);
+        throw new Error(`expect param ${paramEntity.name} as ${finalType} but got ${scryptType}`);
       }
     }
 
-    if (isStructType(paramEntity.finalType)) {
+    if (isStructType(finalType)) {
 
       if(Struct.isStruct(arg)) {
         const argS = arg as Struct;
@@ -318,7 +319,7 @@ export class ABICoder {
 
     const scryptType = typeOfArg(arg);
     if (scryptType != finalType) {
-      throw new Error(`wrong argument type, expected ${paramEntity.finalType} or ${paramEntity.type} but got ${scryptType}`);
+      throw new Error(`wrong argument type, expected ${finalType} or ${paramEntity.type} but got ${scryptType}`);
     }
 
     const typeofArg = typeof arg;
