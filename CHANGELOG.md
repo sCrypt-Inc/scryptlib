@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.3.2
+* support being required in browser env
+* update desc file version, remove finalType field
+* add buildTypeResolver
+* no more ImportError, using SemanticError
+* git ignore desc fils
+* add debugUri command option
+* add timeout option for compile function
+
+
 
 ## 0.3.1
 
