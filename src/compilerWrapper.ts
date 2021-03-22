@@ -9,19 +9,18 @@ import { path2uri } from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
-const SEMANTIC_ERR_REG = /Error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)\n(?<message>[^\n]+)\n/g;
-const IMPORT_ERR_REG_V1 = /Syntax error:\s*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}File not found: (?<fileName>[^\s]+)/g;
-const IMPORT_ERR_REG_V2 = /Error:\s*\n(?<filePath>[^:]+):(?<startline>\d+):(?<startcolumn>\d+):(?<endline>\d+):(?<endcolumn>\d+):\nFile not found:\s*"(?<fileName>.+)"\n\n/g;
-//SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
-const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
 
+
+//SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
+const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 2 ;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3 ;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',
-	ImportError = 'ImportError',
 	InternalError = 'InternalError'
 }
 
@@ -48,16 +47,11 @@ export interface SemanticError extends CompileErrorBase {
 	type: CompileErrorType.SemanticError;
 }
 
-export interface ImportError extends CompileErrorBase {
-	type: CompileErrorType.ImportError;
-	file: string;
-}
-
 export interface InternalError extends CompileErrorBase {
 	type: CompileErrorType.InternalError;
 }
 
-export type CompileError = SyntaxError | SemanticError | ImportError | InternalError;
+export type CompileError = SyntaxError | SemanticError  | InternalError;
 
 export interface CompileResult {
 	asm?: OpCode[];
@@ -71,6 +65,7 @@ export interface CompileResult {
 	structs?: any;
 	alias?: any;
 	file?: string;
+	autoTypedVars?: AutoTypedVar[];
 }
 
 export enum DebugModeTag {
@@ -95,6 +90,11 @@ export interface OpCode {
 	debugTag?: DebugModeTag;
 }
 
+export interface AutoTypedVar {
+	name: string;
+	pos: Pos;
+	type: string;
+}
 
 export interface ABI {
 	contract: string, abi: Array<ABIEntity>
@@ -105,7 +105,8 @@ export enum ABIEntityType {
 	CONSTRUCTOR = 'constructor'
 }
 export type ParamEntity = {
-	name: string, type: string, finalType: string
+	name: string;
+	type: string;
 }
 export interface ABIEntity {
 	type: ABIEntityType;
@@ -122,7 +123,6 @@ export interface StructEntity {
 export interface AliasEntity {
 	name: string;
 	type: string;
-	finalType: string;
 }
 
 export function compile(
@@ -182,26 +182,6 @@ export function compile(
 						}]
 					}]
 				};
-			} else if (output.includes('File not found')) {
-				const importErrors: ImportError[] = [...output.matchAll(IMPORT_ERR_REG_V2)].map(match => {
-					const filePath = oc(match.groups).filePath('');
-					return {
-						type: CompileErrorType.ImportError,
-						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						message: `Imported file ${oc(match.groups).fileName()} does not exist`,
-						position: [{
-							line: parseInt(oc(match.groups).startline('-1')),
-							column: parseInt(oc(match.groups).startcolumn('-1')),
-						}, {
-							line: parseInt(oc(match.groups).endline('-1')),
-							column: parseInt(oc(match.groups).endcolumn('-1')),
-						}],
-						file: oc(match.groups).fileName('')
-					};
-				});
-				return {
-					errors: importErrors
-				};
 			} else if (output.includes('Syntax error:')) {
 				const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)].map(match => {
 					const filePath = oc(match.groups).filePath('');
@@ -222,7 +202,9 @@ export function compile(
 				return {
 					errors: syntaxErrors
 				};
-			} else {
+			} 
+			else {
+
 				const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
 					const filePath = oc(match.groups).filePath('');
 					return {
@@ -238,7 +220,6 @@ export function compile(
 						message: oc(match.groups).message('')
 					};
 				});
-
 				return {
 					errors: semanticErrors
 				};
@@ -317,6 +298,29 @@ export function compile(
 				}
 				throw new Error('Compile Failed: Asm output parsing Error!');
 			});
+
+
+			if (settings.debug) {
+				result.autoTypedVars = asmObj.autoTypedVars.map(item => {
+					const match = SOURCE_REG.exec(item.src);
+					if (match && match.groups) {
+						const fileIndex = parseInt(match.groups.fileIndex);
+	
+						const pos: Pos | undefined = sources[fileIndex] ? {
+							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+							endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+							column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+							endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+						} : undefined;
+						return {
+							name: item.name,
+							type: item.type,
+							pos: pos
+						};
+					}
+				});
+			}
 		}
 
 		if (settings.desc) {
@@ -501,7 +505,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
 	return allAst.map( ast => {
 		return oc(ast).structs([]).map(s => ({
 			name: s['name'],
-			params: s['fields'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+			params: s['fields'].map(p => { return { name: p['name'], type: p['type']}; }),
 		}));
 	}).flat(1);
 }

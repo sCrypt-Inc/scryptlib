@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType} from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver} from "./scryptTypes";
 import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
@@ -292,11 +292,11 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
   }
 
   if (ret.length % 2) {
-    throw new Error('should have even length');
+    throw new Error(`${ret} should have even length`);
   }
 
   if (ret.length > 0 && !(/^[\da-f]+$/i.test(ret))) {
-    throw new Error('should only contain [0-9] or characters [a-fA-F]');
+    throw new Error(`${ret} should only contain [0-9] or characters [a-fA-F]`);
   }
 
   return ret;
@@ -420,8 +420,11 @@ export function isStructType(type: string): boolean {
 	return /^struct\s(\w+)\s\{\}$/.test(type);
 }
 
-export function isArrayType(type: string) {
-	return /[^[\]]+\[\d+\]/.test(type);
+
+
+// test struct Token {}[3], int[3], st.b.c[3]
+export function isArrayType(type: string): boolean {
+	return /^\w[\w.\s{}]+(\[\d+\])+$/.test(type);
 }
 
 
@@ -444,27 +447,29 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 
-export function checkStruct(s: StructEntity, arg: Struct): void {
+export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeResolver): void {
   
   s.params.forEach(p => {
     const member = arg.memberByKey(p.name);
 
     const finalType = typeOfArg(member);
 
+    const paramFinalType = typeResolver(p.type);
+
     if(finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    } else if(finalType != p.finalType) {
-      if(isArrayType(p.finalType)) {
-        const [elemTypeName, arraySize] = arrayTypeAndSize(p.finalType);
+    } else if(finalType != paramFinalType) {
+      if(isArrayType(paramFinalType)) {
+        const [elemTypeName, arraySize] = arrayTypeAndSize(paramFinalType);
         if(Array.isArray(arg.value[p.name])) {
           if(!checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
-            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${p.finalType}`);
+            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
           }
         } else {
-          throw new Error(`struct ${s.name} property ${p.name} should be ${p.finalType}`);
+          throw new Error(`struct ${s.name} property ${p.name} should be ${paramFinalType}`);
         }
       } else {
-        throw new Error(`wrong argument type, expected ${p.finalType} but got ${finalType}`);
+        throw new Error(`wrong argument type, expected ${paramFinalType} but got ${finalType}`);
       }
     }
   });
@@ -549,13 +554,13 @@ export function subscript(index: number, arraySizes: Array<number>): string {
   }
 }
 
-export function flatternArray(arg: any, param: ParamEntity): Array<{value: ScryptType, name: string, type: string, finalType: string}>  {
+export function flatternArray(arg: Array<any>, name: string, finalType: string): Array<{value: ScryptType, name: string, type: string}>  {
 
   if(!Array.isArray(arg)) {
     throw new Error(`flatternArray only work on array`);
   }
 
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(param.finalType);
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
   return arg.map((item,index) => {
 
@@ -566,13 +571,9 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
     } else if(typeof item === "bigint") {
       item = new Int(item as bigint);
     } else if(Array.isArray(item)) {
-      return flatternArray(item, {
-        name: `${param.name}[${index}]`,
-        type: subArrayType(param.type),
-        finalType: subArrayType(param.finalType),
-      });
+      return flatternArray(item, `${name}[${index}]`, subArrayType(finalType));
     } else if(Struct.isStruct(item)) {
-      return flatternStruct(item, `${param.name}[${index}]`);
+      return flatternStruct(item, `${name}[${index}]`);
     }
     else  {
       item = item as ScryptType;
@@ -580,14 +581,13 @@ export function flatternArray(arg: any, param: ParamEntity): Array<{value: Scryp
 
     return {
       value: item,
-      name: `${param.name}${subscript(index, arraySizes)}`,
-      type: elemTypeName,
-      finalType: elemTypeName
+      name: `${name}${subscript(index, arraySizes)}`,
+      type: elemTypeName
     };
-  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string}>;
 }
 
-export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string, finalType: string}> {
+export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string}> {
   if(Struct.isStruct(arg)) {
     const argS = arg as Struct;
     const keys = argS.getMembers();
@@ -598,21 +598,16 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
         return flatternStruct(member as Struct, `${name}.${key}`);
       } else if(Array.isArray(member)) {
         const finalType = argS.getMemberAstFinalType(key);
-        return flatternArray(member as SupportedParamType[], {
-          name: `${name}.${key}`,
-          type: finalType,
-          finalType: finalType
-        });
+        return flatternArray(member, `${name}.${key}`, finalType);
       } else {
         member = member as ScryptType;
         return {
           value: member,
           name: `${name}.${key}`,
-          type: member.type,
-          finalType: member.finalType
+          type: member.type
         };
       }
-    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string, finalType: string}>;
+    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string}>;
 
   } else {
     throw new Error(`${arg} should be struct`);
@@ -684,7 +679,7 @@ function findCompiler(directory): string | undefined {
 
 
 
-function getCIScryptc(): string | undefined {
+export function getCIScryptc(): string | undefined {
    const scryptc =  findCompiler(__dirname);
   return fs.existsSync(scryptc) ? scryptc : undefined;
 }
@@ -790,25 +785,34 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 /***
  * resolve type
  */
-export function resolveType(alias: AliasEntity[], structs: StructEntity[], type: string): string {
+export function resolveType(alias: AliasEntity[], type: string): string {
 
-  if(BasicType.indexOf(type) > -1) {
-    return type;
+
+  if(isArrayType(type)) {
+    const [elemTypeName, sizes] = arrayTypeAndSize(type);
+    return `${resolveType(alias, elemTypeName)}${sizes.map(size => `[${size}]`).join('')}`;
   }
 
-
-  if(structs.map(s => s.name).indexOf(type) > -1) {
-    return type;
-  }
-
-  if(type.indexOf('[') > -1) {
-    const [elemTypeName, arraySize] = arrayTypeAndSize(type);
-    return `${resolveType(alias, structs, elemTypeName)}[${arraySize}]`;
+  if(isStructType(type)) {
+    return resolveType(alias, getStructNameByType(type));
   }
 
   const a = alias.find(a => {
     return a.name === type;
   });
 
-  return resolveType(alias, structs, a.type);
+  if(a) {
+    return resolveType(alias, a.type);
+  } else {
+    if(BasicType.indexOf(type) > -1) {
+      return type;
+    } else { // should be struct if it is not basic type
+      return `struct ${type} {}`;
+    }
+  }
+}
+
+export function printDebugUri(){
+  const argv = minimist(process.argv.slice(2));
+  return argv.debugUri === true;
 }

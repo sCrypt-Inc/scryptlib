@@ -1,0 +1,7 @@
+import "./importCycleC.scrypt";
+
+contract B {
+  public function main() {
+    require(true);
+  }
+}

@@ -8,3 +8,7 @@
 ## version = 2 
 
 * Add `alias`
+
+## version = 3
+
+* remove `finalType`

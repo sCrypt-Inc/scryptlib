@@ -1,9 +1,9 @@
 import { assert, expect } from 'chai';
 import path = require("path");
 import { loadDescription,getContractFilePath, getInvalidContractFilePath } from './helper'
-import { ABIEntityType, CompileResult, desc2CompileResult} from '../src/compilerWrapper';
-import { compileContract } from '../src/utils';
-
+import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion} from '../src/compilerWrapper';
+import { compileContract, getCIScryptc } from '../src/utils';
+import * as minimist from 'minimist';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -31,8 +31,7 @@ describe('compile()', () => {
         "params": [
           {
             "name": "y",
-            "type": "int",
-            "finalType": "int"
+            "type": "int"
           }
         ]
       }, {
@@ -40,18 +39,15 @@ describe('compile()', () => {
         "params": [
           {
             "name": "_x",
-            "type": "int",
-            "finalType": "int"
+            "type": "int"
           },
           {
             "name": "y",
-            "type": "int",
-            "finalType": "int"
+            "type": "int"
           },
           {
             "name": "z",
-            "type": "int",
-            "finalType": "int"
+            "type": "int"
           }
         ]
       }
@@ -67,36 +63,42 @@ describe('compile()', () => {
       name: 'Person',
       params: [{
         "name": "addr",
-        "type": "bytes",
-        "finalType": "bytes"
+        "type": "bytes"
       }, {
         "name": "isMale",
-        "type": "bool",
-        "finalType": "bool"
+        "type": "bool"
       }, {
         "name": "age",
-        "type": "int",
-        "finalType": "int"
+        "type": "int"
       }]
     }, {
       name: 'Block',
       params: [{
         "name": "hash",
-        "type": "bytes",
-        "finalType": "bytes"
+        "type": "bytes"
       }, {
         "name": "header",
-        "type": "bytes",
-        "finalType": "bytes"
+        "type": "bytes"
       }, {
         "name": "time",
-        "type": "int",
-        "finalType": "int"
+        "type": "int"
       }]
     }
     ])
   })
 
+  describe('test compilerVersion', () => {
+    const argv = minimist(process.argv.slice(2));
+
+    let scryptc = argv.scryptc;
+    if(argv.ci || !scryptc) {
+      scryptc = getCIScryptc();
+    }
+
+    const version = compilerVersion(scryptc);
+    console.log('compilerVersion', version)
+    expect(/^(\d)+\.(\d)+\.(\d)+\+commit\./.test(version)).to.be.true
+  })
  
 
 
@@ -121,88 +123,177 @@ describe('compile()', () => {
   });
 
 
-  it('should compile fail with importError', () => {
-    const result = compileContract(getInvalidContractFilePath('main.scrypt'));
-
-    assert.typeOf(result.errors, 'array');
-
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
+  describe('compile error test', () => {
+    it('should compile fail with import error', () => {
+      const result = compileContract(getInvalidContractFilePath('main.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "main.scrypt",
+          message: "File not found: \" lib.scrypt\"",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 21,
+              "line": 1
+            }
+          ],
+          type: "SemanticError"
+        
+      }])
+  
+    })
+  
+  
+    it('should compile fail with import error', () => {
+      const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "main0.scrypt",
+          message: "File not found: \"libx.scrypt\"",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 21,
+              "line": 1
+            }
+          ],
+          type: "SemanticError"
+      }])
+    })
+  
+    it('should compile fail with import error', () => {
+      const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "main0.scrypt",
+          message: "File not found: \"libx.scrypt\"",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 21,
+              "line": 1
+            }
+          ],
+          type: "SemanticError"
+      }])
+    })
+  
+  
+    it('should compile fail with ImportCycleError', () => {
+      const result = compileContract(getInvalidContractFilePath('importCycleA.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "importCycleB.scrypt",
+          message: "Dependency cycle detected: (\"importCycleB.scrypt\" -> \"importCycleC.scrypt\", \"importCycleC.scrypt\" -> \"importCycleA.scrypt\", \"importCycleA.scrypt\" -> \"importCycleB.scrypt\")",
+          position: [
+            {
+              "column": 8,
+              "line": 1
+            },
+            {
+              "column": 31,
+              "line": 1
+            }
+          ],
+          type: "SemanticError"
+      }])
     })
 
-    expect(result.errors).to.deep.include.members([{
-      
-        file: " lib.scrypt",
-        filePath: "main.scrypt",
-        message: "Imported file  lib.scrypt does not exist",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 21,
-            "line": 1
-          }
-        ],
-        type: "ImportError"
-      
-    }])
+
+    it('must have at least one public function', () => {
+      const result = compileContract(getInvalidContractFilePath('lib.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "lib.scrypt",
+          message: "Contact `Lib` must have at least one public function",
+          position: [
+            {
+              "column": 10,
+              "line": 1
+            },
+            {
+              "column": 13,
+              "line": 1
+            }
+          ],
+          type: "SemanticError"
+      }])
+    })
 
   })
 
 
-  it('should compile fail with importError', () => {
-    const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
+  describe('compile result with autoTypedVars', () => {
+    const result = compileContract(getContractFilePath('autoTyped.scrypt'));
 
-    assert.typeOf(result.errors, 'array');
+    it('autoTypedVars', () => {
 
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
+      expect(result.autoTypedVars[0]).to.deep.property("name", "Main.y");
+      expect(result.autoTypedVars[0]).to.deep.property("type", "int");
+
+
+      expect(result.autoTypedVars[1]).to.deep.property("name", "y");
+      expect(result.autoTypedVars[1]).to.deep.property("type", "int");
+
+
+      expect(result.autoTypedVars[2]).to.deep.property("name", "z");
+      expect(result.autoTypedVars[2]).to.deep.property("type", "int");
+
+
+      expect(result.autoTypedVars[3]).to.deep.property("name", "aa");
+      expect(result.autoTypedVars[3]).to.deep.property("type", "int[2]");
+
+
+      expect(result.autoTypedVars[4]).to.deep.property("name", "ss");
+      expect(result.autoTypedVars[4]).to.deep.property("type", "struct ST1 {}[2]");
+
+      expect(result.autoTypedVars[5]).to.deep.property("name", "evel");
+      expect(result.autoTypedVars[5]).to.deep.property("type", "int");
+
+      expect(result.autoTypedVars[6]).to.deep.property("name", "ss1");
+      expect(result.autoTypedVars[6]).to.deep.property("type", "struct ST1 {}[2]");
+
     })
 
-    expect(result.errors).to.deep.include.members([{
-        file: "libx.scrypt",
-        filePath: "main0.scrypt",
-        message: "Imported file libx.scrypt does not exist",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 21,
-            "line": 1
-          }
-        ],
-        type: "ImportError"
-    }])
   })
 
-  it('should compile fail with importError', () => {
-    const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
-
-    assert.typeOf(result.errors, 'array');
-
-    result.errors.forEach(e => {
-      e.filePath = path.basename(e.filePath);
-    })
-
-    expect(result.errors).to.deep.include.members([{
-        file: "libx.scrypt",
-        filePath: "main0.scrypt",
-        message: "Imported file libx.scrypt does not exist",
-        position: [
-          {
-            "column": 8,
-            "line": 1
-          },
-          {
-            "column": 21,
-            "line": 1
-          }
-        ],
-        type: "ImportError"
-    }])
-  })
 })

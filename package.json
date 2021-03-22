@@ -15,7 +15,7 @@
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "lint": "eslint src --ext .ts,.js --cache --fix",
-    "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
+    "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000 --debugUri",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "npm run compile",
     "publishcheck": "sh ./publishcheck.sh",

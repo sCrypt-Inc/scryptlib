@@ -1,6 +1,8 @@
 import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg} from "./utils";
 import { StructEntity } from "./compilerWrapper";
 
+export type TypeResolver = (type: string) => string;
+
 export type ValueType = number | bigint | boolean | string | StructObject;
 
 export class ScryptType {
@@ -9,7 +11,7 @@ export class ScryptType {
   protected _literal: string;
   protected _asm: string;
   protected _type: string;
-  protected _finalType: string;
+  protected _typeResolver: TypeResolver;
 
   constructor(value: ValueType) {
     try {
@@ -17,7 +19,6 @@ export class ScryptType {
       this._literal = this.toLiteral();
       const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
-      this._finalType = scrType;
       this._asm = asm;
     } catch (error) {
       throw new Error(`can't get type from ${this._literal}, ${error.message}`);
@@ -29,7 +30,9 @@ export class ScryptType {
   }
 
   get finalType(): string {
-    return this._finalType;
+    if(this._typeResolver)
+      return this._typeResolver(this.type);
+    return this.type;
   }
 
   get literal(): string {
@@ -320,13 +323,12 @@ export class Struct extends ScryptType {
   public static structAst: StructEntity;
   constructor(o: StructObject) {
     super(o);
-    this.bind();
   }
 
 
-  private bind(): void {
+  protected bind(): void {
     const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
-    checkStruct(structAst, this);
+    checkStruct(structAst,  this, this._typeResolver);
     const ordered = {};
     const unordered = this.value;
     Object.keys(this.value).sort((a: string, b: string) => {
@@ -341,7 +343,6 @@ export class Struct extends ScryptType {
     });
     this.sorted = true;
     this._type = structAst.name;
-    this._finalType = `struct ${structAst.name} {}`;
     this._value = ordered;
   }
 
@@ -425,7 +426,12 @@ export class Struct extends ScryptType {
     const paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
-    return paramEntity.finalType;
+
+    if(!paramEntity) {
+      throw new Error(`${key} is member of struct ${structAst.name}`);
+    }
+
+    return this._typeResolver(paramEntity.type);
   }
 
   
@@ -528,6 +534,7 @@ export const BasicScryptType = {
   [VariableType.SHA1] :  Sha1,
   [VariableType.SHA256] :  Sha256,
   [VariableType.SIGHASHTYPE] :  SigHashType,
-  [VariableType.OPCODETYPE] :  OpCodeType
+  [VariableType.OPCODETYPE] :  OpCodeType,
+  [VariableType.SIGHASHPREIMAGE] :  SigHashPreimage
 };
 

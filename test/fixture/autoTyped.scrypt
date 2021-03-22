@@ -1,0 +1,26 @@
+
+struct  ST1 {
+  int m1;
+  bytes m2;
+}
+contract Main {
+  int x;
+  static auto y = 2;
+
+  public function main(int x) {
+    auto y = 3;
+    auto z = y + this.x + Main.y;
+
+    int[2][2] a = [[1,3],[2,4]];
+    auto aa = a[0];
+
+    ST1[2][2] s = [[{1, b'11'},{2, b'22'}],[{3, b'33'},{4, b'44'}]];
+    auto ss = s[0];
+
+    loop(3) {
+      auto evel = x + y;
+      auto ss1 = s[0];
+    }
+    require(y == z);
+  }
+}

@@ -1,7 +1,7 @@
 import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri } from "./utils";
-import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType} from './scryptTypes';
+import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize} from "./utils";
+import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity} from "./compilerWrapper";
 
 export interface TxContext {
@@ -305,10 +305,11 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm.map(item => item["opcode"].trim()).join(' ');
-  ContractClass.abiCoder = new ABICoder(desc.abi, desc.structs);
+  ContractClass.abiCoder = new ABICoder(desc.abi, desc.alias || []);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
   ContractClass.structs = desc.structs;
+
 
   ContractClass.abi.forEach(entity => {
     if(invalidMethodName.indexOf(entity.name) > -1) {
@@ -335,6 +336,8 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
   const structTypes: Record<string, typeof Struct> = {};
 
   const structs: StructEntity[] = desc.structs || [];
+  const alias: AliasEntity[] = desc.alias || [];
+  const finalTypeResolver = buildTypeResolver(alias);
   structs.forEach(element => {
     const name = element.name;
 
@@ -342,6 +345,8 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
       [name]: class extends Struct {
         constructor(o: StructObject) {
           super(o);
+          this._typeResolver = finalTypeResolver; //we should assign this before bind
+          this.bind();
         }
       }
     });
@@ -358,42 +363,94 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
   const structClasses = buildStructsClass(desc);
   const aliasTypes: Record<string, typeof ScryptType> = {};
-  const structs: StructEntity[] = desc.structs || [];
   const alias: AliasEntity[] = desc.alias || [];
-
+  const finalTypeResolver = buildTypeResolver(alias);
   alias.forEach(element => {
-    const finalType = resolveType(alias, structs, element.name);
-    element.finalType = finalType;
-    const C = BasicScryptType[finalType];
-    if(C) {
-      const Class = C as typeof ScryptType;
+    const finalType = finalTypeResolver(element.name);
+    if(isStructType(finalType)) {
+      const type = getStructNameByType(finalType);
       Object.assign(aliasTypes, {
-        [element.name]: class extends Class {
-          constructor(o: ValueType) {
-            super(o);
-            this._type = element.name;
-            this._finalType = finalType;
-          }
-        }
-      });
-    } else if(finalType.indexOf('[') > -1) {
-      Object.assign(aliasTypes, {
-        [element.name]: class extends Array<typeof C> {}
-      });
-     } else {
-      Object.assign(aliasTypes, {
-        [element.name]: class extends structClasses[finalType] {
+        [element.name]: class extends structClasses[type] {
           constructor(o: StructObject) {
             super(o);
             this._type = element.name;
-            this._finalType = `struct ${finalType} {}`;
+            this._typeResolver = finalTypeResolver;
           }
         }
       });
+    } else if(isArrayType(finalType)) {
+      //TODO: just return some class, but they are useless
+      const [elemTypeName, _] = arrayTypeAndSize(finalType);
+
+      const C = BasicScryptType[elemTypeName];
+      if(C) {
+        Object.assign(aliasTypes, {
+          [element.name]: class extends Array<typeof C> {}
+        });
+      } else if(isStructType(elemTypeName)) {
+        const type = getStructNameByType(elemTypeName);
+        const C = structClasses[type];
+        Object.assign(aliasTypes, {
+          [element.name]: class extends Array<typeof C> {}
+        });
+      } 
+
+    } else {
+      const C = BasicScryptType[finalType];
+      if(C) {
+        const Class = C as typeof ScryptType;
+        const aliasClass = class extends Class {
+          constructor(o: ValueType) {
+            super(o);
+            this._type = element.name;
+            this._typeResolver = finalTypeResolver;
+          }
+        };
+
+        Object.assign(aliasTypes, {
+          [element.name]: aliasClass
+        });
+      } else {
+        throw new Error(`can not resolve type alias ${element.name} ${element.type}`);
+      }
     }
   });
 
   Object.assign(aliasTypes, structClasses);
 
   return aliasTypes;
+}
+
+
+
+export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
+  const resolvedTypes: Record<string, string> = {};
+  alias.forEach(element => {
+    const finalType = resolveType(alias, element.name);
+    resolvedTypes[element.name] = finalType;
+  });
+  return (alias: string) => {
+
+    if (isStructType(alias)) {
+      alias = getStructNameByType(alias);
+    }
+
+    let arrayType = '';
+    if(isArrayType(alias)) {
+      const [elemTypeName, sizes] = arrayTypeAndSize(alias);
+      alias = elemTypeName;
+      arrayType = sizes.map(size => `[${size}]`).join('');
+    }
+
+
+    if(BasicScryptType[alias]) {
+      return `${alias}${arrayType}`;
+    }
+
+    if(resolvedTypes[alias]) {
+      return `${resolvedTypes[alias]}${arrayType}`;
+    }
+
+    return `struct ${alias} {}${arrayType}`;
+  };
 }
