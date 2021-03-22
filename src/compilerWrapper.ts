@@ -5,7 +5,7 @@ import { oc } from 'ts-optchain';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri } from './utils';
+import { path2uri, isArrayType, arrayTypeAndSizeStr, joinArrayTypeAndSize} from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -240,7 +240,9 @@ export function compile(
 			delete allAst[sourceUri];
 			result.dependencyAsts = allAst;
 
-			const { contract: name, abi } = getABIDeclaration(result.ast);
+			const staticConstInt = getStaticConstIntDeclaration(result.ast, allAst);
+			const { contract: name, abi } = getABIDeclaration(result.ast, staticConstInt);
+
 			result.abi = abi;
 			result.contract = name;
 			result.structs = getStructDeclaration(result.ast, allAst);
@@ -445,19 +447,18 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 	if (mainContract['constructor']) {
 		return {
 			type: ABIEntityType.CONSTRUCTOR,
-			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+			params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
 		};
 	} else {
 		// implicit constructor
 		if (mainContract['properties']) {
 			return {
 				type: ABIEntityType.CONSTRUCTOR,
-				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], finalType: p['finalType'] }; }),
+				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type']}; }),
 			};
 		}
 	}
 }
-
 
 function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 	let pubIndex = 0;
@@ -469,7 +470,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 				type: ABIEntityType.FUNCTION,
 				name: f['name'],
 				index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-				params: f['params'].map(p => { return { name: p['name'], type: p['type'], finalType: p['finalType'] }; }),
+				params: f['params'].map(p => { return { name: p['name'], type: p['type']}; }),
 			};
 			return entity;
 		});
@@ -478,7 +479,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 
 
 
-export function getABIDeclaration(astRoot): ABI {
+export function getABIDeclaration(astRoot, staticConstInt: Record<string, number>): ABI {
 	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
 
 	const interfaces: ABIEntity[] = getPublicFunctionDeclaration(mainContract);
@@ -486,10 +487,36 @@ export function getABIDeclaration(astRoot): ABI {
 
 	interfaces.push(constructorABI);
 
+	interfaces.forEach(abi => {
+		abi.params = abi.params.map(p => {
+			return Object.assign(p, {
+				type: resolverArrayTypeWithConstInt(p.type, staticConstInt)
+			});
+		})
+	})
+
 	return {
 		contract: mainContract['name'],
 		abi: interfaces
 	};
+}
+
+export function resolverArrayTypeWithConstInt(type: string, staticConstInt: Record<string, number>): string {
+
+	if(isArrayType(type)) {
+		const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
+
+		const sizes = arraySizes.map(size => {
+			if(/^(\d)+$/.test(size)) {
+				return parseInt(size);
+			} else {
+				return staticConstInt[size];
+			}
+		});
+
+		return joinArrayTypeAndSize(elemTypeName, sizes)
+	} 
+	return type;
 }
 
 
@@ -525,6 +552,21 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
 			type: s['type'],
 		}));
 	}).flat(1);
+}
+
+export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
+
+	const allAst = [astRoot];
+	Object.keys(dependencyAsts).forEach( key => {
+		allAst.push(dependencyAsts[key]);
+	});
+	return allAst.map( ast => {
+		return oc(ast).contracts([]).map(contract => {
+			return oc(contract).statics([]).filter(s => (
+				s.const === true  && s.expr.nodeType === 'IntLiteral'
+			))
+		})
+	}).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.expr.value, acc), {} as Record<string, number>)
 }
 
 

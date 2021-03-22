@@ -296,4 +296,44 @@ describe('compile()', () => {
 
   })
 
+
+  describe('compile result with intConstVars', () => {
+    const result = compileContract(getContractFilePath('const.scrypt'));
+
+
+
+    it('result.abi all const var should be replace with IntLiteral', () => {
+
+      expect(result.abi).to.deep.include.members([
+        {
+          "type": "function",
+          "name": "unlock",
+          "index": 0,
+          "params": [
+            {
+              "name": "y",
+              "type": "int[5]"
+            },
+            {
+              "name": "x",
+              "type": "int[3][3]"
+            },
+            {
+              "name": "amounts",
+              "type": "Amount[1]"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "params": [
+            {
+              "name": "memberx",
+              "type": "int[1]"
+            }
+          ]
+        }
+      ])
+    })
+  })
 })

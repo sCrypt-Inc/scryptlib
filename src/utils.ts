@@ -424,9 +424,8 @@ export function isStructType(type: string): boolean {
 
 // test struct Token {}[3], int[3], st.b.c[3]
 export function isArrayType(type: string): boolean {
-	return /^\w[\w.\s{}]+(\[\d+\])+$/.test(type);
+	return /^\w[\w.\s{}]+(\[[\w.]+\])+$/.test(type);
 }
-
 
 export function getStructNameByType(type: string): string  {
   const m = /^struct\s(\w+)\s\{\}$/.exec(type.trim());
@@ -482,22 +481,37 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
   });
 }
 
+
 /**
- * return eg. int[2][3][4] => ['int', [2,3,4]]
- * @param arrayTypeName  eg. int[2][3][4]
+ * return eg. int[N][N][4] => ['int', ["N","N","4"]]
+ * @param arrayTypeName 
  */
-export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
+ export function arrayTypeAndSizeStr(arrayTypeName: string): [string, Array<string>] {
 
-  const arraySizes: Array<number> = [];
-  [...arrayTypeName.matchAll(/\[([\d])+\]+/g)].map(match => {
-    arraySizes.push(parseInt(match[1]));
+  const arraySizes: Array<string> = [];
+  [...arrayTypeName.matchAll(/\[([\w.]+)\]+/g)].map(match => {
+    arraySizes.push(match[1]);
   });
-
 
   const group = arrayTypeName.split('[');
   const elemTypeName = group[0];
   return [elemTypeName, arraySizes];
 }
+
+
+/**
+ * return eg. int[2][3][4] => ['int', [2,3,4]]
+ * @param arrayTypeName  eg. int[2][3][4]
+ */
+export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
+  const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(arrayTypeName);
+  return [elemTypeName, arraySizes.map(size => parseInt(size))];
+}
+
+export function joinArrayTypeAndSize(elemTypeName: string, sizes: Array<number>): string {
+  return [elemTypeName, sizes.map(size => `[${size}]`).join('')].join('');
+}
+
 
 /**
  * return eg. int[2][3][4] => int[3][4]
@@ -505,7 +519,7 @@ export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>]
  */
 export function subArrayType(arrayTypeName: string): string {
   const [elemTypeName, sizes] = arrayTypeAndSize(arrayTypeName);
-  return [elemTypeName, sizes.slice(1).map(size => `[${size}]`).join('')].join('');
+  return joinArrayTypeAndSize(elemTypeName, sizes.slice(1));
 }
 
 
@@ -790,7 +804,7 @@ export function resolveType(alias: AliasEntity[], type: string): string {
 
   if(isArrayType(type)) {
     const [elemTypeName, sizes] = arrayTypeAndSize(type);
-    return `${resolveType(alias, elemTypeName)}${sizes.map(size => `[${size}]`).join('')}`;
+    return joinArrayTypeAndSize(resolveType(alias, elemTypeName), sizes);
   }
 
   if(isStructType(type)) {
