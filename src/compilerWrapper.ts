@@ -5,7 +5,7 @@ import { oc } from 'ts-optchain';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri, isArrayType, arrayTypeAndSizeStr, joinArrayTypeAndSize} from './utils';
+import { path2uri, isArrayType, arrayTypeAndSizeStr, joinArrayTypeAndSize, resolveType, isStructType, getStructNameByType, arrayTypeAndSize} from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -239,14 +239,15 @@ export function compile(
 			result.ast = allAst[sourceUri];
 			delete allAst[sourceUri];
 			result.dependencyAsts = allAst;
+			result.alias = getAliasDeclaration(result.ast, allAst);
 
 			const staticConstInt = getStaticConstIntDeclaration(result.ast, allAst);
-			const { contract: name, abi } = getABIDeclaration(result.ast, staticConstInt);
+			const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, staticConstInt);
 
 			result.abi = abi;
 			result.contract = name;
 			result.structs = getStructDeclaration(result.ast, allAst);
-			result.alias = getAliasDeclaration(result.ast, allAst);
+	
 		}
 
 		let asmObj = null;
@@ -479,7 +480,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 
 
 
-export function getABIDeclaration(astRoot, staticConstInt: Record<string, number>): ABI {
+export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt: Record<string, number>): ABI {
 	const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
 
 	const interfaces: ABIEntity[] = getPublicFunctionDeclaration(mainContract);
@@ -488,9 +489,9 @@ export function getABIDeclaration(astRoot, staticConstInt: Record<string, number
 	interfaces.push(constructorABI);
 
 	interfaces.forEach(abi => {
-		abi.params = abi.params.map(p => {
-			return Object.assign(p, {
-				type: resolverArrayTypeWithConstInt(p.type, staticConstInt)
+		abi.params = abi.params.map(param => {
+			return Object.assign(param, {
+				type: resolverAbiParamType(param.type, alias, staticConstInt)
 			});
 		})
 	})
@@ -499,6 +500,22 @@ export function getABIDeclaration(astRoot, staticConstInt: Record<string, number
 		contract: mainContract['name'],
 		abi: interfaces
 	};
+}
+
+
+function resolverAbiParamType(type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
+	const resolvedConstIntType = resolverArrayTypeWithConstInt(type, staticConstInt);
+	let resolvedAliasType = resolveType(alias, resolvedConstIntType);
+
+	if(isStructType(resolvedAliasType)) {
+		return getStructNameByType(resolvedAliasType);
+	} else if(isArrayType(resolvedAliasType)) {
+		const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedAliasType);
+		let elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
+		return joinArrayTypeAndSize(elemType, arraySizes);
+	}
+
+	return resolvedAliasType;
 }
 
 export function resolverArrayTypeWithConstInt(type: string, staticConstInt: Record<string, number>): string {

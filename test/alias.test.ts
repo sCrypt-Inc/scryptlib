@@ -91,7 +91,7 @@ describe('Alias type check', () => {
                 time: new Time(333),
                 coinbase: new Coinbase("68656c6c6f20776f726c6421")
               }))
-        }).to.throw('expect struct MaleAAA but got struct Block');
+        }).to.throw('expect struct Person but got struct Block');
     })
 
     it('should success when using Female', () => {
