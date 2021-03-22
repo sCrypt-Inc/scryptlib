@@ -283,7 +283,7 @@ export class ABICoder {
       const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
       if(checkArray(args, [elemTypeName, arraySizes])) {
         return flatternArray(args, arrayParm.name, finalType).map(arg => {
-          return this.encodeParam(arg.value, {name:arg.name, type: arg.type})
+          return this.encodeParam(arg.value, {name:arg.name, type: arg.type});
         }).join(' ');
       } else {
         throw new Error(`checkArray ${arrayParm.type} fail`);

@@ -405,13 +405,13 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
             this._type = element.name;
             this._typeResolver = finalTypeResolver;
           }
-        }
+        };
 
         Object.assign(aliasTypes, {
           [element.name]: aliasClass
         });
       } else {
-        throw new Error(`can not resolve type alias ${element.name} ${element.type}`)
+        throw new Error(`can not resolve type alias ${element.name} ${element.type}`);
       }
     }
   });
@@ -428,7 +428,7 @@ export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
   alias.forEach(element => {
     const finalType = resolveType(alias, element.name);
     resolvedTypes[element.name] = finalType;
-  })
+  });
   return (alias: string) => {
 
     if (isStructType(alias)) {
@@ -439,7 +439,7 @@ export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
     if(isArrayType(alias)) {
       const [elemTypeName, sizes] = arrayTypeAndSize(alias);
       alias = elemTypeName;
-      arrayType = sizes.map(size => `[${size}]`).join('')
+      arrayType = sizes.map(size => `[${size}]`).join('');
     }
 
 
@@ -452,5 +452,5 @@ export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
     }
 
     return `struct ${alias} {}${arrayType}`;
-  }
+  };
 }
