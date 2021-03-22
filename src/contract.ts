@@ -1,7 +1,7 @@
 import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
 import { serializeState, State } from "./serializer";
 import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize} from "./utils";
-import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType} from './scryptTypes';
+import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver} from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity} from "./compilerWrapper";
 
 export interface TxContext {
@@ -337,6 +337,8 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
   const structTypes: Record<string, typeof Struct> = {};
 
   const structs: StructEntity[] = desc.structs || [];
+  const alias: AliasEntity[] = desc.alias || [];
+  const finalTypeResolver = buildTypeResolver(alias);
   structs.forEach(element => {
     const name = element.name;
 
@@ -344,11 +346,12 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
       [name]: class extends Struct {
         constructor(o: StructObject) {
           super(o);
+          this._typeResolver = finalTypeResolver; //we should assign this before bind
+          this.bind();
         }
       }
     });
 
-    structTypes[name].alias = desc.alias || [];
     structTypes[name].structAst = element;
   });
 
@@ -372,10 +375,12 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
           constructor(o: StructObject) {
             super(o);
             this._type = element.name;
+            this._typeResolver = finalTypeResolver;
           }
         }
       });
     } else if(isArrayType(finalType)) {
+      //TODO: just return some class, but they are useless
       const [elemTypeName, _] = arrayTypeAndSize(finalType);
 
       const C = BasicScryptType[elemTypeName];
@@ -399,10 +404,9 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
           constructor(o: ValueType) {
             super(o);
             this._type = element.name;
+            this._typeResolver = finalTypeResolver;
           }
         }
-
-        aliasClass.alias = desc.alias || [];
 
         Object.assign(aliasTypes, {
           [element.name]: aliasClass
@@ -419,7 +423,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 }
 
 
-export type TypeResolver = (type: string) => string;
+
 export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
   const resolvedTypes: Record<string, string> = {};
   alias.forEach(element => {

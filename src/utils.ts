@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType} from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver} from "./scryptTypes";
 import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity} from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
@@ -449,14 +449,14 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 
-export function checkStruct(s: StructEntity, alias: AliasEntity[], arg: Struct): void {
+export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeResolver): void {
   
   s.params.forEach(p => {
     const member = arg.memberByKey(p.name);
 
     const finalType = typeOfArg(member);
 
-    const paramFinalType = resolveType(alias, p.type);
+    const paramFinalType = typeResolver(p.type);
 
     if(finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
