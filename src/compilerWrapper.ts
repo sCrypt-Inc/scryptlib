@@ -9,7 +9,7 @@ import { path2uri } from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
-const COMMON_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
+const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
 
 
@@ -20,7 +20,7 @@ const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d
 const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3 ;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
-	CommonError = 'CommonError',
+	SemanticError = 'SemanticError',
 	InternalError = 'InternalError'
 }
 
@@ -43,15 +43,15 @@ export interface SyntaxError extends CompileErrorBase {
 	expecting: string;
 }
 
-export interface CommonError extends CompileErrorBase {
-	type: CompileErrorType.CommonError;
+export interface SemanticError extends CompileErrorBase {
+	type: CompileErrorType.SemanticError;
 }
 
 export interface InternalError extends CompileErrorBase {
 	type: CompileErrorType.InternalError;
 }
 
-export type CompileError = SyntaxError | CommonError  | InternalError;
+export type CompileError = SyntaxError | SemanticError  | InternalError;
 
 export interface CompileResult {
 	asm?: OpCode[];
@@ -105,7 +105,8 @@ export enum ABIEntityType {
 	CONSTRUCTOR = 'constructor'
 }
 export type ParamEntity = {
-	name: string, type: string
+	name: string;
+	type: string;
 }
 export interface ABIEntity {
 	type: ABIEntityType;
@@ -204,10 +205,10 @@ export function compile(
 			} 
 			else {
 
-				const commonErrors: CompileError[] = [...output.matchAll(COMMON_ERR_REG)].map(match => {
+				const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
 					const filePath = oc(match.groups).filePath('');
 					return {
-						type: CompileErrorType.CommonError,
+						type: CompileErrorType.SemanticError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
 						position:[ {
 							line: parseInt(oc(match.groups).line('-1')),
@@ -220,7 +221,7 @@ export function compile(
 					};
 				});
 				return {
-					errors: commonErrors
+					errors: semanticErrors
 				};
 			}
 		}

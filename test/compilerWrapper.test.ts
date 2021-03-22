@@ -146,7 +146,7 @@ describe('compile()', () => {
               "line": 1
             }
           ],
-          type: "CommonError"
+          type: "SemanticError"
         
       }])
   
@@ -175,7 +175,7 @@ describe('compile()', () => {
               "line": 1
             }
           ],
-          type: "CommonError"
+          type: "SemanticError"
       }])
     })
   
@@ -201,7 +201,7 @@ describe('compile()', () => {
               "line": 1
             }
           ],
-          type: "CommonError"
+          type: "SemanticError"
       }])
     })
   
@@ -228,7 +228,7 @@ describe('compile()', () => {
               "line": 1
             }
           ],
-          type: "CommonError"
+          type: "SemanticError"
       }])
     })
 
@@ -255,7 +255,7 @@ describe('compile()', () => {
               "line": 1
             }
           ],
-          type: "CommonError"
+          type: "SemanticError"
       }])
     })
 

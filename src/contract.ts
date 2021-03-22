@@ -46,7 +46,6 @@ export class AbstractContract {
   public static opcodes?: OpCode[];
   public static file: string;
   public static structs: StructEntity[];
-  public static alias: AliasEntity[];
 
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();

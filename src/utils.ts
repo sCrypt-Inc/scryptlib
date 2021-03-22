@@ -420,11 +420,9 @@ export function isStructType(type: string): boolean {
 	return /^struct\s(\w+)\s\{\}$/.test(type);
 }
 
-/**
- * 
- * @param type test struct Token {}[3], int[3], st.b.c[3]
- * @returns 
- */
+
+
+// test struct Token {}[3], int[3], st.b.c[3]
 export function isArrayType(type: string): boolean {
 	return /^\w[\w\.\s\{\}]+(\[\d+\])+$/.test(type);
 }
