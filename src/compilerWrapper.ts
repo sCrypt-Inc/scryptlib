@@ -65,6 +65,7 @@ export interface CompileResult {
 	structs?: any;
 	alias?: any;
 	file?: string;
+	autoTypedVars?: AutoTypedVar[];
 }
 
 export enum DebugModeTag {
@@ -89,6 +90,11 @@ export interface OpCode {
 	debugTag?: DebugModeTag;
 }
 
+export interface AutoTypedVar {
+	name: string;
+	pos: Pos;
+	type: string;
+}
 
 export interface ABI {
 	contract: string, abi: Array<ABIEntity>
@@ -291,6 +297,29 @@ export function compile(
 				}
 				throw new Error('Compile Failed: Asm output parsing Error!');
 			});
+
+
+			if (settings.debug) {
+				result.autoTypedVars = asmObj.autoTypedVars.map(item => {
+					const match = SOURCE_REG.exec(item.src);
+					if (match && match.groups) {
+						const fileIndex = parseInt(match.groups.fileIndex);
+	
+						const pos: Pos | undefined = sources[fileIndex] ? {
+							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+							endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+							column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+							endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+						} : undefined;
+						return {
+							name: item.name,
+							type: item.type,
+							pos: pos
+						};
+					}
+				});
+			}
 		}
 
 		if (settings.desc) {

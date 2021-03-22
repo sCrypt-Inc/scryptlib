@@ -262,5 +262,38 @@ describe('compile()', () => {
   })
 
 
-  
+  describe('compile result with autoTypedVars', () => {
+    const result = compileContract(getContractFilePath('autoTyped.scrypt'));
+
+    it('autoTypedVars', () => {
+
+      expect(result.autoTypedVars[0]).to.deep.property("name", "Main.y");
+      expect(result.autoTypedVars[0]).to.deep.property("type", "int");
+
+
+      expect(result.autoTypedVars[1]).to.deep.property("name", "y");
+      expect(result.autoTypedVars[1]).to.deep.property("type", "int");
+
+
+      expect(result.autoTypedVars[2]).to.deep.property("name", "z");
+      expect(result.autoTypedVars[2]).to.deep.property("type", "int");
+
+
+      expect(result.autoTypedVars[3]).to.deep.property("name", "aa");
+      expect(result.autoTypedVars[3]).to.deep.property("type", "int[2]");
+
+
+      expect(result.autoTypedVars[4]).to.deep.property("name", "ss");
+      expect(result.autoTypedVars[4]).to.deep.property("type", "struct ST1 {}[2]");
+
+      expect(result.autoTypedVars[5]).to.deep.property("name", "evel");
+      expect(result.autoTypedVars[5]).to.deep.property("type", "int");
+
+      expect(result.autoTypedVars[6]).to.deep.property("name", "ss1");
+      expect(result.autoTypedVars[6]).to.deep.property("type", "struct ST1 {}[2]");
+
+    })
+
+  })
+
 })
