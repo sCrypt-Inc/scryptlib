@@ -296,4 +296,108 @@ describe('compile()', () => {
 
   })
 
+
+  describe('compile result with intConstVars', () => {
+
+
+
+
+    it('result.abi all param type with const var should be replace with IntLiteral', () => {
+      const result = compileContract(getContractFilePath('const.scrypt'));
+      expect(result.abi).to.deep.include.members([
+        {
+          "type": "function",
+          "name": "unlock",
+          "index": 0,
+          "params": [
+            {
+              "name": "y",
+              "type": "int[5]"
+            },
+            {
+              "name": "x",
+              "type": "int[3][3]"
+            },
+            {
+              "name": "amounts",
+              "type": "int[1]"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "params": [
+            {
+              "name": "memberx",
+              "type": "int[1]"
+            }
+          ]
+        }
+      ])
+    })
+
+
+    it('result.abi all param type with alias should be replace with final type', () => {
+      const result = compileContract(getContractFilePath('mdarray.scrypt'));
+      expect(result.abi).to.deep.include.members([
+        {
+          "type": "function",
+          "name": "unlock",
+          "index": 0,
+          "params": [
+            {
+              "name": "P1",
+              "type": "int[2][3]"
+            },
+            {
+              "name": "P2",
+              "type": "int[2]"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "unlockST1",
+          "index": 1,
+          "params": [
+            {
+              "name": "st1array",
+              "type": "ST1[2]"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "unlockAliasST2",
+          "index": 2,
+          "params": [
+            {
+              "name": "st1array",
+              "type": "ST2[2]"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "unlockMDArrayST1",
+          "index": 3,
+          "params": [
+            {
+              "name": "st1mdarray",
+              "type": "ST1[2][2][2]"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "params": [
+            {
+              "name": "X",
+              "type": "int[2][3][4]"
+            }
+          ]
+        }
+      ])
+    })
+  })
 })
