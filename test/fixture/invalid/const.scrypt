@@ -1,0 +1,17 @@
+contract ConstContract {
+
+
+  public function add(int y) {
+
+    const int N = 3;
+
+    loop(N) {
+
+    }
+
+    int[N] array = [1,3,3];
+
+    require(y > 0);
+    
+  }
+}
