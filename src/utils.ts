@@ -508,7 +508,7 @@ export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>]
   return [elemTypeName, arraySizes.map(size => parseInt(size))];
 }
 
-export function joinArrayTypeAndSize(elemTypeName: string, sizes: Array<number>): string {
+export function toLiteralArrayType(elemTypeName: string, sizes: Array<number>): string {
   return [elemTypeName, sizes.map(size => `[${size}]`).join('')].join('');
 }
 
@@ -519,7 +519,7 @@ export function joinArrayTypeAndSize(elemTypeName: string, sizes: Array<number>)
  */
 export function subArrayType(arrayTypeName: string): string {
   const [elemTypeName, sizes] = arrayTypeAndSize(arrayTypeName);
-  return joinArrayTypeAndSize(elemTypeName, sizes.slice(1));
+  return toLiteralArrayType(elemTypeName, sizes.slice(1));
 }
 
 
@@ -804,7 +804,7 @@ export function resolveType(alias: AliasEntity[], type: string): string {
 
   if(isArrayType(type)) {
     const [elemTypeName, sizes] = arrayTypeAndSize(type);
-    return joinArrayTypeAndSize(resolveType(alias, elemTypeName), sizes);
+    return toLiteralArrayType(resolveType(alias, elemTypeName), sizes);
   }
 
   if(isStructType(type)) {

@@ -5,7 +5,7 @@ import { oc } from 'ts-optchain';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri, isArrayType, arrayTypeAndSizeStr, joinArrayTypeAndSize, resolveType, isStructType, getStructNameByType, arrayTypeAndSize} from './utils';
+import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize} from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -491,10 +491,10 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 	interfaces.forEach(abi => {
 		abi.params = abi.params.map(param => {
 			return Object.assign(param, {
-				type: resolverAbiParamType(param.type, alias, staticConstInt)
+				type: resolveAbiParamType(param.type, alias, staticConstInt)
 			});
-		})
-	})
+		});
+	});
 
 	return {
 		contract: mainContract['name'],
@@ -503,22 +503,22 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 }
 
 
-function resolverAbiParamType(type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
-	const resolvedConstIntType = resolverArrayTypeWithConstInt(type, staticConstInt);
-	let resolvedAliasType = resolveType(alias, resolvedConstIntType);
+function resolveAbiParamType(type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
+	const resolvedConstIntType = resolveArrayTypeWithConstInt(type, staticConstInt);
+	const resolvedAliasType = resolveType(alias, resolvedConstIntType);
 
 	if(isStructType(resolvedAliasType)) {
 		return getStructNameByType(resolvedAliasType);
 	} else if(isArrayType(resolvedAliasType)) {
 		const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedAliasType);
-		let elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
-		return joinArrayTypeAndSize(elemType, arraySizes);
+		const elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
+		return toLiteralArrayType(elemType, arraySizes);
 	}
 
 	return resolvedAliasType;
 }
 
-export function resolverArrayTypeWithConstInt(type: string, staticConstInt: Record<string, number>): string {
+export function resolveArrayTypeWithConstInt(type: string, staticConstInt: Record<string, number>): string {
 
 	if(isArrayType(type)) {
 		const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
@@ -531,7 +531,7 @@ export function resolverArrayTypeWithConstInt(type: string, staticConstInt: Reco
 			}
 		});
 
-		return joinArrayTypeAndSize(elemTypeName, sizes)
+		return toLiteralArrayType(elemTypeName, sizes);
 	} 
 	return type;
 }
@@ -581,9 +581,9 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
 		return oc(ast).contracts([]).map(contract => {
 			return oc(contract).statics([]).filter(s => (
 				s.const === true  && s.expr.nodeType === 'IntLiteral'
-			))
-		})
-	}).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.expr.value, acc), {} as Record<string, number>)
+			));
+		});
+	}).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.expr.value, acc), {} as Record<string, number>);
 }
 
 
