@@ -259,6 +259,47 @@ describe('compile()', () => {
       }])
     })
 
+
+    it('Expecting a compile time constant', () => {
+      const result = compileContract(getInvalidContractFilePath('const.scrypt'));
+  
+      assert.typeOf(result.errors, 'array');
+  
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+  
+      expect(result.errors).to.deep.include.members([{
+          filePath: "const.scrypt",
+          message: "Expecting a compile time constant",
+          position: [
+            {
+              "column": 10,
+              "line": 8
+            },
+            {
+              "column": 11,
+              "line": 8
+            }
+          ],
+          type: "SemanticError"
+      },{
+        filePath: "const.scrypt",
+        message: "Expecting a compile time constant",
+        position: [
+          {
+            "column": 5,
+            "line": 12
+          },
+          {
+            "column": 17,
+            "line": 12
+          }
+        ],
+        type: "SemanticError"
+    }])
+    })
+
   })
 
 
@@ -297,8 +338,7 @@ describe('compile()', () => {
   })
 
 
-  describe('compile result with intConstVars', () => {
-
+  describe('all param type with const var should be replace with IntLiteral', () => {
 
 
 
@@ -316,7 +356,7 @@ describe('compile()', () => {
             },
             {
               "name": "x",
-              "type": "int[3][3]"
+              "type": "int[3][5]"
             },
             {
               "name": "amounts",
@@ -330,6 +370,10 @@ describe('compile()', () => {
             {
               "name": "memberx",
               "type": "int[1]"
+            },
+            {
+              "name": "membery",
+              "type": "int[5]"
             }
           ]
         }

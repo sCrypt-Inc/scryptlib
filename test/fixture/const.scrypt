@@ -1,6 +1,10 @@
 
 type Amount = int;
 
+library Util {
+    static const int DATALEN = 5;
+}
+
 contract ConstTest {
     static const bool aaa = true && false;
     static const bytes bb = b'aaaa';
@@ -12,7 +16,9 @@ contract ConstTest {
 
     int[amount] memberx;
 
-    public function unlock(int[UU] y, int[N][N] x, Amount[amount] amounts) {
+    int[Util.DATALEN] membery;
+
+    public function unlock(int[UU] y, int[N][Util.DATALEN] x, Amount[amount] amounts) {
         const bool aaa = true;
         const bytes bb = b'aaaa';
         const int cc = 555;

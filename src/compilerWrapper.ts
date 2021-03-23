@@ -491,7 +491,7 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 	interfaces.forEach(abi => {
 		abi.params = abi.params.map(param => {
 			return Object.assign(param, {
-				type: resolveAbiParamType(param.type, alias, staticConstInt)
+				type: resolveAbiParamType(mainContract['name'], param.type, alias, staticConstInt)
 			});
 		});
 	});
@@ -503,8 +503,8 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 }
 
 
-function resolveAbiParamType(type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
-	const resolvedConstIntType = resolveArrayTypeWithConstInt(type, staticConstInt);
+function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
+	const resolvedConstIntType = resolveArrayTypeWithConstInt(contract, type, staticConstInt);
 	const resolvedAliasType = resolveType(alias, resolvedConstIntType);
 
 	if(isStructType(resolvedAliasType)) {
@@ -518,7 +518,7 @@ function resolveAbiParamType(type: string, alias: AliasEntity[], staticConstInt:
 	return resolvedAliasType;
 }
 
-export function resolveArrayTypeWithConstInt(type: string, staticConstInt: Record<string, number>): string {
+export function resolveArrayTypeWithConstInt(contract: string, type: string, staticConstInt: Record<string, number>): string {
 
 	if(isArrayType(type)) {
 		const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
@@ -527,7 +527,11 @@ export function resolveArrayTypeWithConstInt(type: string, staticConstInt: Recor
 			if(/^(\d)+$/.test(size)) {
 				return parseInt(size);
 			} else {
-				return staticConstInt[size];
+				if(size.indexOf('.') > 0) {
+					return staticConstInt[size];
+				} else {
+					return staticConstInt[`${contract}.${size}`];
+				}
 			}
 		});
 
@@ -577,13 +581,20 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
 	Object.keys(dependencyAsts).forEach( key => {
 		allAst.push(dependencyAsts[key]);
 	});
-	return allAst.map( ast => {
+
+	return allAst.map( (ast, index) => {
 		return oc(ast).contracts([]).map(contract => {
 			return oc(contract).statics([]).filter(s => (
 				s.const === true  && s.expr.nodeType === 'IntLiteral'
-			));
+			)).map(s => {
+
+				return {
+					name: `${contract.name}.${s.name}`,
+					value: s.expr.value
+				}
+			})
 		});
-	}).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.expr.value, acc), {} as Record<string, number>);
+	}).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
 }
 
 
