@@ -591,8 +591,8 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
 				return {
 					name: `${contract.name}.${s.name}`,
 					value: s.expr.value
-				}
-			})
+				};
+			});
 		});
 	}).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
 }
