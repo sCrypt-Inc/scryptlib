@@ -338,8 +338,7 @@ describe('compile()', () => {
   })
 
 
-  describe('compile result with intConstVars', () => {
-
+  describe('all param type with const var should be replace with IntLiteral', () => {
 
 
 
@@ -357,7 +356,7 @@ describe('compile()', () => {
             },
             {
               "name": "x",
-              "type": "int[3][3]"
+              "type": "int[3][5]"
             },
             {
               "name": "amounts",
@@ -371,6 +370,10 @@ describe('compile()', () => {
             {
               "name": "memberx",
               "type": "int[1]"
+            },
+            {
+              "name": "membery",
+              "type": "int[5]"
             }
           ]
         }
