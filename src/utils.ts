@@ -194,10 +194,10 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // Struct
-  m = /^struct\((.*)\)$/.exec(l);
+  m = /^\{([\w(){}[\],\s']+)\}$/.exec(l);
   if (m) {
-    const value = m[1];
-    return [value, value, VariableType.STRUCT];
+    // we use object to constructor a struct, no use literal, so here we return empty
+    return ['', '', VariableType.STRUCT];
   }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
