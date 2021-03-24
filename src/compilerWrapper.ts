@@ -5,19 +5,19 @@ import { oc } from 'ts-optchain';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize} from './utils';
+import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize } from './utils';
 import compareVersions = require('compare-versions');
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
-const INTERNAL_ERR_REG =  /Internal error:(?<message>.+)/;
+const INTERNAL_ERR_REG = /Internal error:(?<message>.+)/;
 
 
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
-const SOURCE_REG =  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3 ;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3;
 export enum CompileErrorType {
 	SyntaxError = 'SyntaxError',
 	SemanticError = 'SemanticError',
@@ -30,7 +30,7 @@ export interface CompileErrorBase {
 	position: [{
 		line: number;
 		column: number;
-	},  {
+	}, {
 		line: number;
 		column: number;
 	}?];
@@ -51,7 +51,7 @@ export interface InternalError extends CompileErrorBase {
 	type: CompileErrorType.InternalError;
 }
 
-export type CompileError = SyntaxError | SemanticError  | InternalError;
+export type CompileError = SyntaxError | SemanticError | InternalError;
 
 export interface CompileResult {
 	asm?: OpCode[];
@@ -167,7 +167,7 @@ export function compile(
 		// Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
 		output = output.split(/\r?\n/g).join('\n');
 		if (output.startsWith('Error:')) {
-			if(output.match(INTERNAL_ERR_REG)) {
+			if (output.match(INTERNAL_ERR_REG)) {
 				return {
 					errors: [{
 						type: CompileErrorType.InternalError,
@@ -176,7 +176,7 @@ export function compile(
 						position: [{
 							line: 1,
 							column: 1
-						},  {
+						}, {
 							line: 1,
 							column: 1
 						}]
@@ -202,7 +202,7 @@ export function compile(
 				return {
 					errors: syntaxErrors
 				};
-			} 
+			}
 			else {
 
 				const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
@@ -210,7 +210,7 @@ export function compile(
 					return {
 						type: CompileErrorType.SemanticError,
 						filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-						position:[ {
+						position: [{
 							line: parseInt(oc(match.groups).line('-1')),
 							column: parseInt(oc(match.groups).column('-1')),
 						}, {
@@ -247,7 +247,7 @@ export function compile(
 			result.abi = abi;
 			result.contract = name;
 			result.structs = getStructDeclaration(result.ast, allAst);
-	
+
 		}
 
 		let asmObj = null;
@@ -308,7 +308,7 @@ export function compile(
 					const match = SOURCE_REG.exec(item.src);
 					if (match && match.groups) {
 						const fileIndex = parseInt(match.groups.fileIndex);
-	
+
 						const pos: Pos | undefined = sources[fileIndex] ? {
 							file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
 							line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
@@ -332,7 +332,7 @@ export function compile(
 			outputFiles['desc'] = outputFilePath;
 			const description: ContractDescription = {
 				version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
-				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc() ),
+				compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc()),
 				contract: result.contract,
 				md5: md5(sourceContent),
 				structs: result.structs || [],
@@ -340,22 +340,22 @@ export function compile(
 				abi: result.abi || [],
 				file: "",
 				asm: result.asm.map(item => item["opcode"].trim()).join(' '),
-				sources:  [],
+				sources: [],
 				sourceMap: []
 			};
 
-			if(settings.debug && settings.sourceMap && asmObj) {
+			if (settings.debug && settings.sourceMap && asmObj) {
 				Object.assign(description, {
 					file: result.file,
-					sources:  asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
-					sourceMap:  asmObj.output.map(item => item.src),
+					sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
+					sourceMap: asmObj.output.map(item => item.src),
 				});
 			}
 			writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
 
 			result.compilerVersion = description.compilerVersion;
 			result.md5 = description.md5;
-		} 
+		}
 
 		return result;
 	} finally {
@@ -455,7 +455,7 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 		if (mainContract['properties']) {
 			return {
 				type: ABIEntityType.CONSTRUCTOR,
-				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type']}; }),
+				params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
 			};
 		}
 	}
@@ -464,17 +464,17 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 	let pubIndex = 0;
 	const interfaces: ABIEntity[] =
-	mainContract['functions']
-		.filter(f => f['visibility'] === 'Public')
-		.map(f => {
-			const entity: ABIEntity = {
-				type: ABIEntityType.FUNCTION,
-				name: f['name'],
-				index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-				params: f['params'].map(p => { return { name: p['name'], type: p['type']}; }),
-			};
-			return entity;
-		});
+		mainContract['functions']
+			.filter(f => f['visibility'] === 'Public')
+			.map(f => {
+				const entity: ABIEntity = {
+					type: ABIEntityType.FUNCTION,
+					name: f['name'],
+					index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
+					params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+				};
+				return entity;
+			});
 	return interfaces;
 }
 
@@ -507,9 +507,9 @@ function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[
 	const resolvedConstIntType = resolveArrayTypeWithConstInt(contract, type, staticConstInt);
 	const resolvedAliasType = resolveType(alias, resolvedConstIntType);
 
-	if(isStructType(resolvedAliasType)) {
+	if (isStructType(resolvedAliasType)) {
 		return getStructNameByType(resolvedAliasType);
-	} else if(isArrayType(resolvedAliasType)) {
+	} else if (isArrayType(resolvedAliasType)) {
 		const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedAliasType);
 		const elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
 		return toLiteralArrayType(elemType, arraySizes);
@@ -520,14 +520,14 @@ function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[
 
 export function resolveArrayTypeWithConstInt(contract: string, type: string, staticConstInt: Record<string, number>): string {
 
-	if(isArrayType(type)) {
+	if (isArrayType(type)) {
 		const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
 
 		const sizes = arraySizes.map(size => {
-			if(/^(\d)+$/.test(size)) {
+			if (/^(\d)+$/.test(size)) {
 				return parseInt(size);
 			} else {
-				if(size.indexOf('.') > 0) {
+				if (size.indexOf('.') > 0) {
 					return staticConstInt[size];
 				} else {
 					return staticConstInt[`${contract}.${size}`];
@@ -536,24 +536,24 @@ export function resolveArrayTypeWithConstInt(contract: string, type: string, sta
 		});
 
 		return toLiteralArrayType(elemTypeName, sizes);
-	} 
+	}
 	return type;
 }
 
 
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
 
-	
+
 	const allAst = [astRoot];
 
-	Object.keys(dependencyAsts).forEach( key => {
+	Object.keys(dependencyAsts).forEach(key => {
 		allAst.push(dependencyAsts[key]);
 	});
 
-	return allAst.map( ast => {
+	return allAst.map(ast => {
 		return oc(ast).structs([]).map(s => ({
 			name: s['name'],
-			params: s['fields'].map(p => { return { name: p['name'], type: p['type']}; }),
+			params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
 		}));
 	}).flat(1);
 }
@@ -563,11 +563,11 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
 
 	const allAst = [astRoot];
 
-	Object.keys(dependencyAsts).forEach( key => {
+	Object.keys(dependencyAsts).forEach(key => {
 		allAst.push(dependencyAsts[key]);
 	});
 
-	return allAst.map( ast => {
+	return allAst.map(ast => {
 		return oc(ast).alias([]).map(s => ({
 			name: s['alias'],
 			type: s['type'],
@@ -578,14 +578,14 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
 export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
 
 	const allAst = [astRoot];
-	Object.keys(dependencyAsts).forEach( key => {
+	Object.keys(dependencyAsts).forEach(key => {
 		allAst.push(dependencyAsts[key]);
 	});
 
-	return allAst.map( (ast, index) => {
+	return allAst.map((ast, index) => {
 		return oc(ast).contracts([]).map(contract => {
 			return oc(contract).statics([]).filter(s => (
-				s.const === true  && s.expr.nodeType === 'IntLiteral'
+				s.const === true && s.expr.nodeType === 'IntLiteral'
 			)).map(s => {
 
 				return {
@@ -598,7 +598,7 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
 }
 
 
-export function getPlatformScryptc() : string {
+export function getPlatformScryptc(): string {
 	switch (os.platform()) {
 		case "win32":
 			return "compiler/scryptc/win32/scryptc.exe";
@@ -611,46 +611,46 @@ export function getPlatformScryptc() : string {
 	}
 }
 
-function vscodeExtensionPath() : string  {
+function vscodeExtensionPath(): string {
 	const homedir = os.homedir();
-	const extensionPath =  join(homedir, ".vscode/extensions");
-	if(!existsSync(extensionPath)) {
+	const extensionPath = join(homedir, ".vscode/extensions");
+	if (!existsSync(extensionPath)) {
 		throw `No Visual Studio Code extensions found. Please ensure Visual Studio Code is installed.`;
 	}
 	return extensionPath;
 }
 
-function findVscodeScrypt(extensionPath: string) : string {
+function findVscodeScrypt(extensionPath: string): string {
 	const sCryptPrefix = "bsv-scrypt.scrypt-";
 	let versions = readdirSync(extensionPath).reduce((filtered, item) => {
-		if(item.indexOf(sCryptPrefix) > -1 ) {
+		if (item.indexOf(sCryptPrefix) > -1) {
 			const version = item.substring(sCryptPrefix.length);
-			if(compareVersions.validate(version)) {
+			if (compareVersions.validate(version)) {
 				filtered.push(version);
 			}
-		} 
+		}
 		return filtered;
 	}, []);
 
 	// compareVersions is ascending, so reverse.
 	versions = versions.sort(compareVersions).reverse();
-	return sCryptPrefix + versions[0];	
+	return sCryptPrefix + versions[0];
 }
 
 export function getDefaultScryptc(): string {
 
 
 	const extensionPath = vscodeExtensionPath();
-	
+
 	const sCrypt = findVscodeScrypt(extensionPath);
-	if(!sCrypt) {
+	if (!sCrypt) {
 		throw `No sCrypt extension found. Please install it at extension marketplace:
 		https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
-	} 
+	}
 
 	const scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
 
-	if(!existsSync(scryptc)) {
+	if (!existsSync(scryptc)) {
 		throw `No sCrypt compiler found. Please update your sCrypt extension to the latest version`;
 	}
 
@@ -659,30 +659,30 @@ export function getDefaultScryptc(): string {
 
 
 
-export function desc2CompileResult(description: ContractDescription): CompileResult  {
+export function desc2CompileResult(description: ContractDescription): CompileResult {
 	const sources = description.sources;
 	const asm = description.asm.split(' ');
 	const errorMessage = `Contract description version deprecated,  Please update your sCrypt extension to the latest version and recompile`;
-	if(description.version === undefined) {
+	if (description.version === undefined) {
 		throw new Error(errorMessage);
 	}
 
-	if(description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
+	if (description.version < CURRENT_CONTRACT_DESCRIPTION_VERSION) {
 		console.warn(errorMessage);
 	}
 
 	const result: CompileResult = {
-		compilerVersion : description.compilerVersion,
-		contract : description.contract,
-		md5 : description.md5,
-		abi : description.abi,
-		structs : description.structs,
+		compilerVersion: description.compilerVersion,
+		contract: description.contract,
+		md5: description.md5,
+		abi: description.abi,
+		structs: description.structs,
 		alias: description.alias,
 		file: description.file,
 		errors: [],
 		asm: asm.map((opcode, index) => {
 			const item = description.sourceMap && description.sourceMap[index];
-			if(item) {
+			if (item) {
 				const match = SOURCE_REG.exec(item);
 				if (match && match.groups) {
 					const fileIndex = parseInt(match.groups.fileIndex);
@@ -710,4 +710,4 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 		})
 	};
 	return result;
-  }
+}

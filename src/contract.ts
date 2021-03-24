@@ -1,8 +1,8 @@
-import { ABICoder, Arguments, FunctionCall, Script} from "./abi";
+import { ABICoder, Arguments, FunctionCall, Script } from "./abi";
 import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS,  resolveType,  path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize} from "./utils";
-import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver} from './scryptTypes';
-import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity} from "./compilerWrapper";
+import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize } from "./utils";
+import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver } from './scryptTypes';
+import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity } from "./compilerWrapper";
 
 export interface TxContext {
   tx?: any;
@@ -17,7 +17,7 @@ export type VerifyError = string;
 
 export interface VerifyResult {
   success: boolean;
-  error?: VerifyError; 
+  error?: VerifyError;
 }
 
 export interface ContractDescription {
@@ -109,16 +109,16 @@ export class AbstractContract {
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
     const bsi = bsv.Script.Interpreter();
-  
+
     let stepCounter: StepIndex = 0;
     const steps = [];
-		bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
+    bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
       steps.push(step);
       stepCounter++;
     };
 
-    
-    const opcodes: OpCode[] =  Object.getPrototypeOf(this).constructor.opcodes;
+
+    const opcodes: OpCode[] = Object.getPrototypeOf(this).constructor.opcodes;
 
     const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
 
@@ -127,46 +127,46 @@ export class AbstractContract {
 
 
     // some time there is no opcodes, such as when sourcemap flag is closeed. 
-    if(opcodes) {
+    if (opcodes) {
       const offset = unlockingScriptASM.trim().split(' ').length;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
 
       const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
 
       if (typeof this._dataPart === 'string') {
-        opcodes.push({opcode: 'OP_RETURN',  stack:[]});
+        opcodes.push({ opcode: 'OP_RETURN', stack: [] });
         const dp = this._dataPart.trim();
         if (dp) {
           dp.split(' ').forEach(data => {
-            opcodes.push({opcode: data, stack:[]});
+            opcodes.push({ opcode: data, stack: [] });
           });
         }
       }
-      
-      let opcodeIndex = lastStepIndex -  offset;
-      if(stepCounter < (opcodes.length + offset)) {
+
+      let opcodeIndex = lastStepIndex - offset;
+      if (stepCounter < (opcodes.length + offset)) {
         // not all opcodes were executed, stopped in the middle at opcode like OP_VERIFY
-         opcodeIndex += 1;
+        opcodeIndex += 1;
       }
 
-      if(!result && opcodes[opcodeIndex]) {
+      if (!result && opcodes[opcodeIndex]) {
 
-        const opcode = opcodes[opcodeIndex]; 
-  
-        if(!opcode.pos || opcode.pos.file === "std") {
-  
-          const srcInfo  = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
+        const opcode = opcodes[opcodeIndex];
 
-          if(srcInfo) {
+        if (!opcode.pos || opcode.pos.file === "std") {
+
+          const srcInfo = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
+
+          if (srcInfo) {
             opcode.pos = srcInfo.pos;
           }
         }
-  
+
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
-        if(opcode.pos) {
+        if (opcode.pos) {
           error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
-        }  
-      } 
+        }
+      }
     }
 
     return {
@@ -180,7 +180,7 @@ export class AbstractContract {
   set dataPart(dataInScript: Script | undefined) {
     throw new Error('Setter for dataPart is not available. Please use: setDataPart() instead');
   }
-  
+
   get dataPart(): Script | undefined {
     return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
@@ -203,28 +203,28 @@ export class AbstractContract {
   static getAsmVars(contractAsm, instAsm): AsmVarValues | null {
     const regex = /(\$\S+)/g;
     const vars = contractAsm.match(regex);
-    if(vars===null) {
+    if (vars === null) {
       return null;
     }
     const asmArray = contractAsm.split(/\s/g);
     const lsASMArray = instAsm.split(/\s/g);
     const result = {};
-    for(let i=0; i<asmArray.length; i++) {
-      for(let j=0; j<vars.length; j++) {
-        if(vars[j] === asmArray[i]) {
-          result[vars[j].replace('$','')] = lsASMArray[i];
+    for (let i = 0; i < asmArray.length; i++) {
+      for (let j = 0; j < vars.length; j++) {
+        if (vars[j] === asmArray[i]) {
+          result[vars[j].replace('$', '')] = lsASMArray[i];
         }
       }
     }
     return result;
   }
 
-  public arguments(pubFuncName: string) : Arguments {
-    if(pubFuncName === 'constructor') {
+  public arguments(pubFuncName: string): Arguments {
+    if (pubFuncName === 'constructor') {
       return this.scriptedConstructor.args;
-    } 
+    }
 
-    if(this.calls.has(pubFuncName)) {
+    if (this.calls.has(pubFuncName)) {
       return this.calls.get(pubFuncName).args;
     }
 
@@ -249,32 +249,32 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
     throw new Error('missing field `asm` in description');
   }
 
-  if(!desc["errors"]) {
+  if (!desc["errors"]) {
     desc = desc2CompileResult(desc as ContractDescription);
   } else {
     desc = desc as CompileResult;
   }
-  
+
 
 
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
-      if(ctorParams.length>0 || Contract.abi.find(fn => (fn.type === "constructor" && fn.params.length === 0))) {
+      if (ctorParams.length > 0 || Contract.abi.find(fn => (fn.type === "constructor" && fn.params.length === 0))) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }
 
     //When create a contract instance using UTXO, 
     //use fromHex or fromASM because you do not know the parameters of constructor.
-    
+
     /**
      * Create a contract instance using UTXO asm
      * @param hex 
      */
     static fromASM(asm: string) {
       const obj = new this();
-      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, asm );
+      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, asm);
       return obj;
     }
 
@@ -312,7 +312,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 
 
   ContractClass.abi.forEach(entity => {
-    if(invalidMethodName.indexOf(entity.name) > -1) {
+    if (invalidMethodName.indexOf(entity.name) > -1) {
       throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
     }
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
@@ -367,7 +367,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
   const finalTypeResolver = buildTypeResolver(alias);
   alias.forEach(element => {
     const finalType = finalTypeResolver(element.name);
-    if(isStructType(finalType)) {
+    if (isStructType(finalType)) {
       const type = getStructNameByType(finalType);
       Object.assign(aliasTypes, {
         [element.name]: class extends structClasses[type] {
@@ -378,26 +378,26 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
           }
         }
       });
-    } else if(isArrayType(finalType)) {
+    } else if (isArrayType(finalType)) {
       //TODO: just return some class, but they are useless
       const [elemTypeName, _] = arrayTypeAndSize(finalType);
 
       const C = BasicScryptType[elemTypeName];
-      if(C) {
+      if (C) {
         Object.assign(aliasTypes, {
-          [element.name]: class extends Array<typeof C> {}
+          [element.name]: class extends Array<typeof C> { }
         });
-      } else if(isStructType(elemTypeName)) {
+      } else if (isStructType(elemTypeName)) {
         const type = getStructNameByType(elemTypeName);
         const C = structClasses[type];
         Object.assign(aliasTypes, {
-          [element.name]: class extends Array<typeof C> {}
+          [element.name]: class extends Array<typeof C> { }
         });
-      } 
+      }
 
     } else {
       const C = BasicScryptType[finalType];
-      if(C) {
+      if (C) {
         const Class = C as typeof ScryptType;
         const aliasClass = class extends Class {
           constructor(o: ValueType) {
@@ -423,7 +423,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
 
 
-export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
+export function buildTypeResolver(alias: AliasEntity[]): TypeResolver {
   const resolvedTypes: Record<string, string> = {};
   alias.forEach(element => {
     const finalType = resolveType(alias, element.name);
@@ -436,18 +436,18 @@ export function buildTypeResolver( alias: AliasEntity[]): TypeResolver {
     }
 
     let arrayType = '';
-    if(isArrayType(alias)) {
+    if (isArrayType(alias)) {
       const [elemTypeName, sizes] = arrayTypeAndSize(alias);
       alias = elemTypeName;
       arrayType = sizes.map(size => `[${size}]`).join('');
     }
 
 
-    if(BasicScryptType[alias]) {
+    if (BasicScryptType[alias]) {
       return `${alias}${arrayType}`;
     }
 
-    if(resolvedTypes[alias]) {
+    if (resolvedTypes[alias]) {
       return `${resolvedTypes[alias]}${arrayType}`;
     }
 

@@ -1,4 +1,4 @@
-import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg} from "./utils";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg } from "./utils";
 import { StructEntity } from "./compilerWrapper";
 
 export type TypeResolver = (type: string) => string;
@@ -30,7 +30,7 @@ export class ScryptType {
   }
 
   get finalType(): string {
-    if(this._typeResolver)
+    if (this._typeResolver)
       return this._typeResolver(this.type);
     return this.type;
   }
@@ -207,74 +207,74 @@ export class SigHashPreimage extends ScryptType {
     this._buf = Buffer.from(bytesVal, 'hex');
   }
 
-	// raw data
-	private _buf: Buffer;
+  // raw data
+  private _buf: Buffer;
 
-	private getReader(buf: Buffer) {
-		return new bsv.encoding.BufferReader(buf);
-	}
+  private getReader(buf: Buffer) {
+    return new bsv.encoding.BufferReader(buf);
+  }
 
-	// nVersion of the transaction
-	get nVersion(): number {
-		return this.getReader(this._buf.slice(0, 4)).readUInt32LE();
-	}
+  // nVersion of the transaction
+  get nVersion(): number {
+    return this.getReader(this._buf.slice(0, 4)).readUInt32LE();
+  }
 
-	// hashPrevouts
-	get hashPrevouts(): string {
-		return this._buf.slice(4, 4 + 32).toString('hex');
-	}
+  // hashPrevouts
+  get hashPrevouts(): string {
+    return this._buf.slice(4, 4 + 32).toString('hex');
+  }
 
-	// hashSequence
-	get hashSequence(): string {
-		return this._buf.slice(36, 36 + 32).toString('hex');
-	}
+  // hashSequence
+  get hashSequence(): string {
+    return this._buf.slice(36, 36 + 32).toString('hex');
+  }
 
-	// outpoint
-	get outpoint(): Outpoint {
+  // outpoint
+  get outpoint(): Outpoint {
     const buf = this._buf.slice(68, 68 + 32 + 4);
     const hex = buf.toString('hex');
     const index = this.getReader(buf.slice(32, 32 + 4)).readUInt32LE();
     const hash = Buffer.from(buf.slice(0, 32)).reverse().toString('hex');
-		return {
-			hash,
+    return {
+      hash,
       index,
       hex
-		};
-	}
+    };
+  }
 
-	// scriptCode of the input
-	get scriptCode(): string {
-		return this.getReader(this._buf.slice(104, this._buf.length - 52)).readVarLengthBuffer().toString('hex');
-	}
+  // scriptCode of the input
+  get scriptCode(): string {
+    return this.getReader(this._buf.slice(104, this._buf.length - 52)).readVarLengthBuffer().toString('hex');
+  }
 
-	// value of the output spent by this input
-	get amount(): number {
-		return this.getReader(this._buf.slice(this._buf.length - 44 - 8, this._buf.length - 44)).readUInt32LE();
-	}
+  // value of the output spent by this input
+  get amount(): number {
+    return this.getReader(this._buf.slice(this._buf.length - 44 - 8, this._buf.length - 44)).readUInt32LE();
+  }
 
-	// nSequence of the input
-	get nSequence(): number {
-		return this.getReader(this._buf.slice(this._buf.length - 40 - 4, this._buf.length - 40)).readUInt32LE();
-	}
+  // nSequence of the input
+  get nSequence(): number {
+    return this.getReader(this._buf.slice(this._buf.length - 40 - 4, this._buf.length - 40)).readUInt32LE();
+  }
 
-	// hashOutputs
-	get hashOutputs(): string {
-		return this._buf.slice(this._buf.length - 8 - 32, this._buf.length - 8).toString('hex');
-	}
+  // hashOutputs
+  get hashOutputs(): string {
+    return this._buf.slice(this._buf.length - 8 - 32, this._buf.length - 8).toString('hex');
+  }
 
-	// nLocktime of the transaction
-	get nLocktime(): number {
-		return this.getReader(this._buf.slice(this._buf.length - 4 - 4, this._buf.length - 4)).readUInt32LE();
-	}
+  // nLocktime of the transaction
+  get nLocktime(): number {
+    return this.getReader(this._buf.slice(this._buf.length - 4 - 4, this._buf.length - 4)).readUInt32LE();
+  }
 
-	// sighash type of the signature
-	get sighashType(): number {
-		return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
-	}
+  // sighash type of the signature
+  get sighashType(): number {
+    return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
+  }
 
-	toString(format = 'hex'): string {
-		return this._buf.toString(format);
-	}
+  toString(format = 'hex'): string {
+    return this._buf.toString(format);
+  }
 
   toLiteral(): string {
     return `SigHashPreimage(b'${getValidatedHexString(this._value.toString())}')`;
@@ -307,7 +307,7 @@ export class OpCodeType extends ScryptType {
 }
 
 
-export type BasicType = ScryptType | boolean | number | bigint ;
+export type BasicType = ScryptType | boolean | number | bigint;
 
 export type SingletonParamType = BasicType | BasicType[];
 
@@ -327,12 +327,12 @@ export class Struct extends ScryptType {
 
 
   protected bind(): void {
-    const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
-    checkStruct(structAst,  this, this._typeResolver);
+    const structAst: StructEntity = Object.getPrototypeOf(this).constructor.structAst;
+    checkStruct(structAst, this, this._typeResolver);
     const ordered = {};
     const unordered = this.value;
     Object.keys(this.value).sort((a: string, b: string) => {
-      return  (structAst.params.findIndex(e => {
+      return (structAst.params.findIndex(e => {
         return e.name === a;
       }) - structAst.params.findIndex(e => {
         return e.name === b;
@@ -347,7 +347,7 @@ export class Struct extends ScryptType {
   }
 
   toASM(): string {
-    if(!this.sorted) {
+    if (!this.sorted) {
       throw `unbinded Struct can't call toASM`;
     }
 
@@ -361,49 +361,49 @@ export class Struct extends ScryptType {
    * @deprecated use  flatternStruct, see toASM
    */
   toArray(): ScryptType[] {
-    if(!this.sorted) {
+    if (!this.sorted) {
       throw `unbinded Struct can't call toArray`;
     }
 
     const v: StructObject = this.value as StructObject;
 
-    return  Object.keys(v).map((key) => {
-      if(v[key] instanceof ScryptType) {
+    return Object.keys(v).map((key) => {
+      if (v[key] instanceof ScryptType) {
         return v[key] as ScryptType;
-      } else if(typeof v[key] === "boolean") {
+      } else if (typeof v[key] === "boolean") {
         return new Bool(v[key] as boolean);
-      } else if(typeof v[key] === "number") {
+      } else if (typeof v[key] === "number") {
         return new Int(v[key] as number);
-      } else if(typeof v[key] === "bigint") {
+      } else if (typeof v[key] === "bigint") {
         return new Int(v[key] as bigint);
       }
     });
   }
- 
+
 
   memberByIndex(index: number): string {
-    if(!this.sorted) {
+    if (!this.sorted) {
       throw `unbinded Struct can't call memberByIndex`;
     }
 
     const v: StructObject = this.value as StructObject;
 
-    return  Object.keys(v)[index];
+    return Object.keys(v)[index];
   }
 
-   /**
-   * @deprecated use  getMemberFinalType
-   */
+  /**
+  * @deprecated use  getMemberFinalType
+  */
   getMemberType(key: string): string {
     const v: StructObject = this.value as StructObject;
-    
-    if(v[key] instanceof ScryptType) {
+
+    if (v[key] instanceof ScryptType) {
       return (v[key] as ScryptType).type;
-    } else if(typeof v[key] === "boolean") {
+    } else if (typeof v[key] === "boolean") {
       return new Bool(v[key] as boolean).type;
-    } else if(typeof v[key] === "number") {
+    } else if (typeof v[key] === "number") {
       return new Int(v[key] as number).type;
-    } else if(typeof v[key] === "bigint") {
+    } else if (typeof v[key] === "bigint") {
       return new Int(v[key] as bigint).type;
     } else {
       return typeof v[key];
@@ -422,20 +422,20 @@ export class Struct extends ScryptType {
    * Get the member type declared by the structure by structAst
    */
   getMemberAstFinalType(key: string): string {
-    const structAst: StructEntity =  Object.getPrototypeOf(this).constructor.structAst;
+    const structAst: StructEntity = Object.getPrototypeOf(this).constructor.structAst;
     const paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
 
-    if(!paramEntity) {
+    if (!paramEntity) {
       throw new Error(`${key} is member of struct ${structAst.name}`);
     }
 
     return this._typeResolver(paramEntity.type);
   }
 
-  
-  getMembers(): string[]  {
+
+  getMembers(): string[] {
     const v: StructObject = this.value as StructObject;
     return Object.keys(v);
   }
@@ -443,15 +443,15 @@ export class Struct extends ScryptType {
   memberByKey(key: string): SingletonParamType | undefined {
     const v: StructObject = this.value as StructObject;
 
-    if(v[key] instanceof ScryptType) {
+    if (v[key] instanceof ScryptType) {
       return v[key] as ScryptType;
-    } else if(typeof v[key] === "boolean") {
+    } else if (typeof v[key] === "boolean") {
       return new Bool(v[key] as boolean);
-    } else if(typeof v[key] === "number") {
+    } else if (typeof v[key] === "number") {
       return new Int(v[key] as number);
-    } else if(typeof v[key] === "bigint") {
+    } else if (typeof v[key] === "bigint") {
       return new Int(v[key] as bigint);
-    } 
+    }
 
     return v[key];
   }
@@ -460,13 +460,13 @@ export class Struct extends ScryptType {
   toLiteral(): string {
     const v = this.value;
     const l = Object.keys(v).map((key) => {
-      if(v[key] instanceof ScryptType) {
+      if (v[key] instanceof ScryptType) {
         return `${key}=${(v[key] as ScryptType).toLiteral()}`;
-      } else if(typeof v[key] === "boolean") {
+      } else if (typeof v[key] === "boolean") {
         return `${key}=${new Bool(v[key] as boolean).toLiteral()}`;
-      } else if(typeof v[key] === "number") {
+      } else if (typeof v[key] === "number") {
         return `${key}=${new Int(v[key] as number).toLiteral()}`;
-      } else if(typeof v[key] === "bigint") {
+      } else if (typeof v[key] === "bigint") {
         return `${key}=${new Int(v[key] as bigint).toLiteral()}`;
       }
     });
@@ -477,17 +477,17 @@ export class Struct extends ScryptType {
 
     const v = this.value;
     return Array.from(Object.keys(v)).reduce((obj, key) => {
-      if(v[key] instanceof ScryptType) {
-        if(Struct.isStruct(v[key])) {
-          return Object.assign(obj, {[key]:  (v[key] as ScryptType).toJSON()}); 
-        } else if(Array.isArray(v[key])) {
-          return Object.assign(obj, {[key]:  JSON.stringify(v[key])});
+      if (v[key] instanceof ScryptType) {
+        if (Struct.isStruct(v[key])) {
+          return Object.assign(obj, { [key]: (v[key] as ScryptType).toJSON() });
+        } else if (Array.isArray(v[key])) {
+          return Object.assign(obj, { [key]: JSON.stringify(v[key]) });
         } else {
-          return Object.assign(obj, {[key]:  (v[key] as ScryptType).toLiteral()}); 
+          return Object.assign(obj, { [key]: (v[key] as ScryptType).toLiteral() });
         }
-        
+
       } else {
-        return Object.assign(obj, { [key]: v[key] }); 
+        return Object.assign(obj, { [key]: v[key] });
       }
     }, {});
 
@@ -524,17 +524,17 @@ export enum VariableType {
 export const BasicType = Object.keys(VariableType).map(key => VariableType[key]);
 
 export const BasicScryptType = {
-  [VariableType.BOOL] :  Bool,
-  [VariableType.INT] :  Int,
-  [VariableType.BYTES] :  Bytes,
-  [VariableType.PUBKEY] :  PubKey,
-  [VariableType.PRIVKEY] :  PrivKey,
-  [VariableType.SIG] :  Sig,
-  [VariableType.RIPEMD160] :  Ripemd160,
-  [VariableType.SHA1] :  Sha1,
-  [VariableType.SHA256] :  Sha256,
-  [VariableType.SIGHASHTYPE] :  SigHashType,
-  [VariableType.OPCODETYPE] :  OpCodeType,
-  [VariableType.SIGHASHPREIMAGE] :  SigHashPreimage
+  [VariableType.BOOL]: Bool,
+  [VariableType.INT]: Int,
+  [VariableType.BYTES]: Bytes,
+  [VariableType.PUBKEY]: PubKey,
+  [VariableType.PRIVKEY]: PrivKey,
+  [VariableType.SIG]: Sig,
+  [VariableType.RIPEMD160]: Ripemd160,
+  [VariableType.SHA1]: Sha1,
+  [VariableType.SHA256]: Sha256,
+  [VariableType.SIGHASHTYPE]: SigHashType,
+  [VariableType.OPCODETYPE]: OpCodeType,
+  [VariableType.SIGHASHPREIMAGE]: SigHashPreimage
 };
 
