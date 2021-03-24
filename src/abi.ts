@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, printDebugUri, resolveType } from "./utils";
+import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, printDebugUri, resolveType } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity, AliasEntity } from './compilerWrapper';
@@ -16,9 +16,9 @@ export type FileUri = string;
      * Configuration for a debug session.
      */
 export interface DebugConfiguration {
-  type: "scrypt";
-  request: "launch";
-  internalConsoleOptions: "openOnSessionStart",
+  type: 'scrypt';
+  request: 'launch';
+  internalConsoleOptions: 'openOnSessionStart',
   name: string;
   program: string;
   constructorArgs: SupportedParamType[];
@@ -29,7 +29,7 @@ export interface DebugConfiguration {
 }
 
 export interface DebugLaunch {
-  version: "0.2.0";
+  version: '0.2.0';
   configurations: DebugConfiguration[];
 }
 
@@ -83,7 +83,7 @@ export class FunctionCall {
   ) {
 
     if (binding.lockingScriptASM === undefined && binding.unlockingScriptASM === undefined) {
-      throw new Error(`param binding.lockingScriptASM & binding.unlockingScriptASM cannot both be empty`);
+      throw new Error('param binding.lockingScriptASM & binding.unlockingScriptASM cannot both be empty');
     }
 
     this.contract = binding.contract;
@@ -158,7 +158,7 @@ export class FunctionCall {
       if (!result.success && printDebugUri()) {
         const debugUrl = this.genLaunchConfigFile(txContext);
         if (debugUrl) {
-          result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, "scryptlaunch:")})\n`;
+          result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
         }
       }
       return result;
@@ -166,7 +166,7 @@ export class FunctionCall {
 
     return {
       success: false,
-      error: "verification failed, missing unlockingScript"
+      error: 'verification failed, missing unlockingScript'
     };
   }
 

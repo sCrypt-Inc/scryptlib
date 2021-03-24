@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver } from "./scryptTypes";
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver } from './scryptTypes';
 import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity } from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
@@ -88,7 +88,7 @@ export function int2Value(str: string): number | bigint {
 export function intValue2hex(val: number | bigint): string {
   let hex = val.toString(16);
   if (hex.length % 2 === 1) {
-    hex = "0" + hex;
+    hex = '0' + hex;
   }
   return hex;
 }
@@ -97,10 +97,10 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
 
   // bool
   if (l === 'false') {
-    return ["OP_FALSE", false, VariableType.BOOL];
+    return ['OP_FALSE', false, VariableType.BOOL];
   }
   if (l === 'true') {
-    return ["OP_TRUE", true, VariableType.BOOL];
+    return ['OP_TRUE', true, VariableType.BOOL];
   }
 
   // hex int
@@ -176,7 +176,7 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const bn = new BN(getValidatedHexString(m[1]), 16);
-    return [bn.toString("hex", 2), bn.toNumber(), VariableType.SIGHASHTYPE];
+    return [bn.toString('hex', 2), bn.toNumber(), VariableType.SIGHASHTYPE];
   }
 
   // SigHashPreimage
@@ -213,32 +213,32 @@ export function literal2ScryptType(l: string): ScryptType {
 
   const [asm, value, type] = parseLiteral(l);
   switch (type) {
-    case VariableType.BOOL:
-      return new Bool(value as boolean);
-    case VariableType.INT:
-      return new Int(value as number);
-    case VariableType.BYTES:
-      return new Bytes(value as string);
-    case VariableType.PRIVKEY:
-      return new PrivKey(value as bigint);
-    case VariableType.PUBKEY:
-      return new PubKey(value as string);
-    case VariableType.SIG:
-      return new Sig(value as string);
-    case VariableType.RIPEMD160:
-      return new Ripemd160(value as string);
-    case VariableType.SHA1:
-      return new Sha1(value as string);
-    case VariableType.SHA256:
-      return new Sha256(value as string);
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(value as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(value as string);
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(value as string);
-    default:
-      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  case VariableType.BOOL:
+    return new Bool(value as boolean);
+  case VariableType.INT:
+    return new Int(value as number);
+  case VariableType.BYTES:
+    return new Bytes(value as string);
+  case VariableType.PRIVKEY:
+    return new PrivKey(value as bigint);
+  case VariableType.PUBKEY:
+    return new PubKey(value as string);
+  case VariableType.SIG:
+    return new Sig(value as string);
+  case VariableType.RIPEMD160:
+    return new Ripemd160(value as string);
+  case VariableType.SHA1:
+    return new Sha1(value as string);
+  case VariableType.SHA256:
+    return new Sha256(value as string);
+  case VariableType.SIGHASHTYPE:
+    return new SigHashType(value as number);
+  case VariableType.SIGHASHPREIMAGE:
+    return new SigHashPreimage(value as string);
+  case VariableType.OPCODETYPE:
+    return new OpCodeType(value as string);
+  default:
+    throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
 }
 
@@ -247,17 +247,17 @@ export function literal2ScryptType(l: string): ScryptType {
 export function bytes2Literal(bytearray: number[], type: string): string {
 
   switch (type) {
-    case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
+  case 'bool':
+    return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
 
-    case 'int':
-      return BN.fromSM(bytearray, { endian: 'little' }).toString();
+  case 'int':
+    return BN.fromSM(bytearray, { endian: 'little' }).toString();
 
-    case 'bytes':
-      return `b'${bytesToHexString(bytearray)}'`;
+  case 'bytes':
+    return `b'${bytesToHexString(bytearray)}'`;
 
-    default:
-      return `b'${bytesToHexString(bytearray)}'`;
+  default:
+    return `b'${bytesToHexString(bytearray)}'`;
   }
 
 }
@@ -288,7 +288,7 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
   const ret = hex.trim();
 
   if (ret.length < 1 && !allowEmpty) {
-    throw new Error("can't be empty string");
+    throw new Error('can\'t be empty string');
   }
 
   if (ret.length % 2) {
@@ -432,7 +432,7 @@ export function getStructNameByType(type: string): string {
   if (m) {
     return m[1];
   }
-  return "";
+  return '';
 }
 
 
@@ -505,7 +505,7 @@ export function arrayTypeAndSizeStr(arrayTypeName: string): [string, Array<strin
  */
 export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
   const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(arrayTypeName);
-  return [elemTypeName, arraySizes.map(size => parseInt(size))]
+  return [elemTypeName, arraySizes.map(size => parseInt(size))];
 }
 
 export function toLiteralArrayType(elemTypeName: string, sizes: Array<number>): string {
@@ -571,18 +571,18 @@ export function subscript(index: number, arraySizes: Array<number>): string {
 export function flatternArray(arg: Array<any>, name: string, finalType: string): Array<{ value: ScryptType, name: string, type: string }> {
 
   if (!Array.isArray(arg)) {
-    throw new Error(`flatternArray only work on array`);
+    throw new Error('flatternArray only work on array');
   }
 
   const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
   return arg.map((item, index) => {
 
-    if (typeof item === "boolean") {
+    if (typeof item === 'boolean') {
       item = new Bool(item as boolean);
-    } else if (typeof item === "number") {
+    } else if (typeof item === 'number') {
       item = new Int(item as number);
-    } else if (typeof item === "bigint") {
+    } else if (typeof item === 'bigint') {
       item = new Int(item as bigint);
     } else if (Array.isArray(item)) {
       return flatternArray(item, `${name}[${index}]`, subArrayType(finalType));
@@ -658,7 +658,7 @@ export function typeOfArg(arg: SupportedParamType): string {
 
 export function readFileByLine(path: string, index: number): string {
 
-  let result = "";
+  let result = '';
   fs.readFileSync(path, 'utf8').split(/\r?\n/).every(function (line, i) {
     if (i === (index - 1)) {
       result = line;
@@ -736,13 +736,13 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 
   // some desc without sourceMap will not have file property.
   if (!program) {
-    return "";
+    return '';
   }
 
   const debugConfig: DebugConfiguration = {
-    type: "scrypt",
-    request: "launch",
-    internalConsoleOptions: "openOnSessionStart",
+    type: 'scrypt',
+    request: 'launch',
+    internalConsoleOptions: 'openOnSessionStart',
     name: name,
     program: program,
     constructorArgs: constructorArgs,
@@ -781,7 +781,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
   }
 
   const launch: DebugLaunch = {
-    version: "0.2.0",
+    version: '0.2.0',
     configurations: [debugConfig]
   };
 

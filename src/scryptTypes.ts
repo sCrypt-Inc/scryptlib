@@ -1,5 +1,5 @@
-import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg } from "./utils";
-import { StructEntity } from "./compilerWrapper";
+import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg } from './utils';
+import { StructEntity } from './compilerWrapper';
 
 export type TypeResolver = (type: string) => string;
 
@@ -348,7 +348,7 @@ export class Struct extends ScryptType {
 
   toASM(): string {
     if (!this.sorted) {
-      throw `unbinded Struct can't call toASM`;
+      throw 'unbinded Struct can\'t call toASM';
     }
 
     this._asm = flatternStruct(this, '').map(v => {
@@ -362,7 +362,7 @@ export class Struct extends ScryptType {
    */
   toArray(): ScryptType[] {
     if (!this.sorted) {
-      throw `unbinded Struct can't call toArray`;
+      throw 'unbinded Struct can\'t call toArray';
     }
 
     const v: StructObject = this.value as StructObject;
@@ -370,11 +370,11 @@ export class Struct extends ScryptType {
     return Object.keys(v).map((key) => {
       if (v[key] instanceof ScryptType) {
         return v[key] as ScryptType;
-      } else if (typeof v[key] === "boolean") {
+      } else if (typeof v[key] === 'boolean') {
         return new Bool(v[key] as boolean);
-      } else if (typeof v[key] === "number") {
+      } else if (typeof v[key] === 'number') {
         return new Int(v[key] as number);
-      } else if (typeof v[key] === "bigint") {
+      } else if (typeof v[key] === 'bigint') {
         return new Int(v[key] as bigint);
       }
     });
@@ -383,7 +383,7 @@ export class Struct extends ScryptType {
 
   memberByIndex(index: number): string {
     if (!this.sorted) {
-      throw `unbinded Struct can't call memberByIndex`;
+      throw 'unbinded Struct can\'t call memberByIndex';
     }
 
     const v: StructObject = this.value as StructObject;
@@ -399,11 +399,11 @@ export class Struct extends ScryptType {
 
     if (v[key] instanceof ScryptType) {
       return (v[key] as ScryptType).type;
-    } else if (typeof v[key] === "boolean") {
+    } else if (typeof v[key] === 'boolean') {
       return new Bool(v[key] as boolean).type;
-    } else if (typeof v[key] === "number") {
+    } else if (typeof v[key] === 'number') {
       return new Int(v[key] as number).type;
-    } else if (typeof v[key] === "bigint") {
+    } else if (typeof v[key] === 'bigint') {
       return new Int(v[key] as bigint).type;
     } else {
       return typeof v[key];
@@ -445,11 +445,11 @@ export class Struct extends ScryptType {
 
     if (v[key] instanceof ScryptType) {
       return v[key] as ScryptType;
-    } else if (typeof v[key] === "boolean") {
+    } else if (typeof v[key] === 'boolean') {
       return new Bool(v[key] as boolean);
-    } else if (typeof v[key] === "number") {
+    } else if (typeof v[key] === 'number') {
       return new Int(v[key] as number);
-    } else if (typeof v[key] === "bigint") {
+    } else if (typeof v[key] === 'bigint') {
       return new Int(v[key] as bigint);
     }
 
@@ -462,11 +462,11 @@ export class Struct extends ScryptType {
     const l = Object.keys(v).map((key) => {
       if (v[key] instanceof ScryptType) {
         return `${key}=${(v[key] as ScryptType).toLiteral()}`;
-      } else if (typeof v[key] === "boolean") {
+      } else if (typeof v[key] === 'boolean') {
         return `${key}=${new Bool(v[key] as boolean).toLiteral()}`;
-      } else if (typeof v[key] === "number") {
+      } else if (typeof v[key] === 'number') {
         return `${key}=${new Int(v[key] as number).toLiteral()}`;
-      } else if (typeof v[key] === "bigint") {
+      } else if (typeof v[key] === 'bigint') {
         return `${key}=${new Int(v[key] as bigint).toLiteral()}`;
       }
     });

@@ -1,8 +1,8 @@
-import { ABICoder, Arguments, FunctionCall, Script } from "./abi";
-import { serializeState, State } from "./serializer";
-import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize } from "./utils";
+import { ABICoder, Arguments, FunctionCall, Script } from './abi';
+import { serializeState, State } from './serializer';
+import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize } from './utils';
 import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver } from './scryptTypes';
-import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity } from "./compilerWrapper";
+import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity } from './compilerWrapper';
 
 export interface TxContext {
   tx?: any;
@@ -58,7 +58,7 @@ export class AbstractContract {
       if (dp) {
         lsASM += ` OP_RETURN ${dp}`;
       } else {
-        lsASM += ` OP_RETURN`;  // note there is no space after op_return
+        lsASM += ' OP_RETURN';  // note there is no space after op_return
       }
     }
     return bsv.Script.fromASM(lsASM.trim());
@@ -82,7 +82,7 @@ export class AbstractContract {
 
   static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
     while (--stepIndex > 0 && --opcodesIndex > 0) {
-      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== "std" && opcodes[opcodesIndex].pos.line > 0 && steps[stepIndex].fExec) {
+      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0 && steps[stepIndex].fExec) {
         return opcodes[opcodesIndex];
       }
     }
@@ -153,7 +153,7 @@ export class AbstractContract {
 
         const opcode = opcodes[opcodeIndex];
 
-        if (!opcode.pos || opcode.pos.file === "std") {
+        if (!opcode.pos || opcode.pos.file === 'std') {
 
           const srcInfo = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
 
@@ -197,7 +197,7 @@ export class AbstractContract {
   get codePart(): Script {
     const codeASM = this.scriptedConstructor.toASM();
     // note: do not trim the trailing space
-    return bsv.Script.fromASM(codeASM + ` OP_RETURN`);
+    return bsv.Script.fromASM(codeASM + ' OP_RETURN');
   }
 
   static getAsmVars(contractAsm, instAsm): AsmVarValues | null {
@@ -233,7 +233,7 @@ export class AbstractContract {
 }
 
 
-const invalidMethodName = ["arguments", "setDataPart", "run_verify", "replaceAsmVars", "asmVars", "asmArguments", "dataPart", "lockingScript", "txContext"];
+const invalidMethodName = ['arguments', 'setDataPart', 'run_verify', 'replaceAsmVars', 'asmVars', 'asmArguments', 'dataPart', 'lockingScript', 'txContext'];
 
 export function buildContractClass(desc: CompileResult | ContractDescription): any {
 
@@ -249,7 +249,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
     throw new Error('missing field `asm` in description');
   }
 
-  if (!desc["errors"]) {
+  if (!desc['errors']) {
     desc = desc2CompileResult(desc as ContractDescription);
   } else {
     desc = desc as CompileResult;
@@ -260,7 +260,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
-      if (ctorParams.length > 0 || Contract.abi.find(fn => (fn.type === "constructor" && fn.params.length === 0))) {
+      if (ctorParams.length > 0 || Contract.abi.find(fn => (fn.type === 'constructor' && fn.params.length === 0))) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }
@@ -304,7 +304,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
-  ContractClass.asm = desc.asm.map(item => item["opcode"].trim()).join(' ');
+  ContractClass.asm = desc.asm.map(item => item['opcode'].trim()).join(' ');
   ContractClass.abiCoder = new ABICoder(desc.abi, desc.alias || []);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
