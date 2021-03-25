@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver} from "./scryptTypes";
-import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity} from './compilerWrapper';
+import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver } from './scryptTypes';
+import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity } from './compilerWrapper';
 import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
@@ -44,14 +44,14 @@ export function bool2Asm(str: string): string {
  */
 export function int2Asm(str: string): string {
 
-  if (/^(-?\d+)$/.test(str) ||  /^0x([0-9a-fA-F]+)$/.test(str)) {
+  if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
 
     const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
-  
+
     if (number.eqn(-1)) { return 'OP_1NEGATE'; }
-  
+
     if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
-  
+
     const m = number.toSM({ endian: 'little' });
     return m.toString('hex');
 
@@ -65,13 +65,13 @@ export function int2Asm(str: string): string {
  */
 export function int2Value(str: string): number | bigint {
 
-  if (/^(-?\d+)$/.test(str) ||  /^0x([0-9a-fA-F]+)$/.test(str)) {
+  if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
 
     const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
 
 
 
-    if(number.toNumber() < Number.MAX_SAFE_INTEGER) {
+    if (number.toNumber() < Number.MAX_SAFE_INTEGER) {
       return number.toNumber();
     } else {
       return BigInt(str);
@@ -85,22 +85,22 @@ export function int2Value(str: string): number | bigint {
 
 
 
-export function intValue2hex(val: number | bigint):  string{
+export function intValue2hex(val: number | bigint): string {
   let hex = val.toString(16);
-  if(hex.length % 2 === 1) {
-    hex = "0" + hex;
+  if (hex.length % 2 === 1) {
+    hex = '0' + hex;
   }
   return hex;
 }
 
-export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableType] {
+export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableType] {
 
   // bool
   if (l === 'false') {
-    return ["OP_FALSE", false, VariableType.BOOL];
+    return ['OP_FALSE', false, VariableType.BOOL];
   }
   if (l === 'true') {
-    return ["OP_TRUE", true, VariableType.BOOL];
+    return ['OP_TRUE', true, VariableType.BOOL];
   }
 
   // hex int
@@ -176,7 +176,7 @@ export function parseLiteral(l: string): [string /*asm*/ , ValueType, VariableTy
   m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const bn = new BN(getValidatedHexString(m[1]), 16);
-    return [bn.toString("hex", 2), bn.toNumber(), VariableType.SIGHASHTYPE];
+    return [bn.toString('hex', 2), bn.toNumber(), VariableType.SIGHASHTYPE];
   }
 
   // SigHashPreimage
@@ -213,32 +213,32 @@ export function literal2ScryptType(l: string): ScryptType {
 
   const [asm, value, type] = parseLiteral(l);
   switch (type) {
-    case VariableType.BOOL:
-      return new Bool(value as boolean);
-    case VariableType.INT:
-      return new Int(value as number);
-    case VariableType.BYTES:
-      return new Bytes(value as string);
-    case VariableType.PRIVKEY:
-      return new PrivKey(value as bigint);
-    case VariableType.PUBKEY:
-      return new PubKey(value as string);
-    case VariableType.SIG:
-      return new Sig(value as string);
-    case VariableType.RIPEMD160:
-      return new Ripemd160(value as string);
-    case VariableType.SHA1:
-      return new Sha1(value as string);
-    case VariableType.SHA256:
-      return new Sha256(value as string);
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(value as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(value as string);
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(value as string);
-    default:
-      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  case VariableType.BOOL:
+    return new Bool(value as boolean);
+  case VariableType.INT:
+    return new Int(value as number);
+  case VariableType.BYTES:
+    return new Bytes(value as string);
+  case VariableType.PRIVKEY:
+    return new PrivKey(value as bigint);
+  case VariableType.PUBKEY:
+    return new PubKey(value as string);
+  case VariableType.SIG:
+    return new Sig(value as string);
+  case VariableType.RIPEMD160:
+    return new Ripemd160(value as string);
+  case VariableType.SHA1:
+    return new Sha1(value as string);
+  case VariableType.SHA256:
+    return new Sha256(value as string);
+  case VariableType.SIGHASHTYPE:
+    return new SigHashType(value as number);
+  case VariableType.SIGHASHPREIMAGE:
+    return new SigHashPreimage(value as string);
+  case VariableType.OPCODETYPE:
+    return new OpCodeType(value as string);
+  default:
+    throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
 }
 
@@ -247,17 +247,17 @@ export function literal2ScryptType(l: string): ScryptType {
 export function bytes2Literal(bytearray: number[], type: string): string {
 
   switch (type) {
-    case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
+  case 'bool':
+    return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
 
-    case 'int':
-      return BN.fromSM(bytearray, { endian: 'little' }).toString();
+  case 'int':
+    return BN.fromSM(bytearray, { endian: 'little' }).toString();
 
-    case 'bytes':
-      return `b'${bytesToHexString(bytearray)}'`;
+  case 'bytes':
+    return `b'${bytesToHexString(bytearray)}'`;
 
-    default:
-      return `b'${bytesToHexString(bytearray)}'`;
+  default:
+    return `b'${bytesToHexString(bytearray)}'`;
   }
 
 }
@@ -288,7 +288,7 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
   const ret = hex.trim();
 
   if (ret.length < 1 && !allowEmpty) {
-    throw new Error("can't be empty string");
+    throw new Error('can\'t be empty string');
   }
 
   if (ret.length % 2) {
@@ -417,22 +417,22 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
 
 
 export function isStructType(type: string): boolean {
-	return /^struct\s(\w+)\s\{\}$/.test(type);
+  return /^struct\s(\w+)\s\{\}$/.test(type);
 }
 
 
 
 // test struct Token {}[3], int[3], st.b.c[3]
 export function isArrayType(type: string): boolean {
-	return /^\w[\w.\s{}]+(\[[\w.]+\])+$/.test(type);
+  return /^\w[\w.\s{}]+(\[[\w.]+\])+$/.test(type);
 }
 
-export function getStructNameByType(type: string): string  {
+export function getStructNameByType(type: string): string {
   const m = /^struct\s(\w+)\s\{\}$/.exec(type.trim());
   if (m) {
     return m[1];
   }
-  return "";
+  return '';
 }
 
 
@@ -447,7 +447,7 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeResolver): void {
-  
+
   s.params.forEach(p => {
     const member = arg.memberByKey(p.name);
 
@@ -455,13 +455,13 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
 
     const paramFinalType = typeResolver(p.type);
 
-    if(finalType === 'undefined') {
+    if (finalType === 'undefined') {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    } else if(finalType != paramFinalType) {
-      if(isArrayType(paramFinalType)) {
+    } else if (finalType != paramFinalType) {
+      if (isArrayType(paramFinalType)) {
         const [elemTypeName, arraySize] = arrayTypeAndSize(paramFinalType);
-        if(Array.isArray(arg.value[p.name])) {
-          if(!checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
+        if (Array.isArray(arg.value[p.name])) {
+          if (!checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
             throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
           }
         } else {
@@ -473,9 +473,9 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
     }
   });
 
-  const members = s.params.map(p =>  p.name);
+  const members = s.params.map(p => p.name);
   arg.getMembers().forEach(key => {
-    if(!members.includes(key)) {
+    if (!members.includes(key)) {
       throw new Error(`${key} is not a member of struct ${s.name}`);
     }
   });
@@ -486,7 +486,7 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
  * return eg. int[N][N][4] => ['int', ["N","N","4"]]
  * @param arrayTypeName 
  */
- export function arrayTypeAndSizeStr(arrayTypeName: string): [string, Array<string>] {
+export function arrayTypeAndSizeStr(arrayTypeName: string): [string, Array<string>] {
 
   const arraySizes: Array<string> = [];
   [...arrayTypeName.matchAll(/\[([\w.]+)\]+/g)].map(match => {
@@ -533,7 +533,7 @@ export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array
 
   const len = arraySizes[0];
 
-  if(!len) {
+  if (!len) {
     return false;
   }
 
@@ -542,7 +542,7 @@ export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array
   }
 
   if (!args.every(arg => {
-    if(Array.isArray(arg)) {
+    if (Array.isArray(arg)) {
       return checkArray(arg, [elemTypeName, arraySizes.slice(1)]);
     } else {
 
@@ -558,38 +558,38 @@ export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array
 }
 
 export function subscript(index: number, arraySizes: Array<number>): string {
-  
-  if(arraySizes.length == 1) {
+
+  if (arraySizes.length == 1) {
     return `[${index}]`;
-  } else if(arraySizes.length > 1) {
+  } else if (arraySizes.length > 1) {
     const subArraySizes = arraySizes.slice(1);
-    const offset = subArraySizes.reduce(function(acc, val) { return acc * val; }, 1);
+    const offset = subArraySizes.reduce(function (acc, val) { return acc * val; }, 1);
     return `[${Math.floor(index / offset)}]${subscript(index % offset, subArraySizes)}`;
   }
 }
 
-export function flatternArray(arg: Array<any>, name: string, finalType: string): Array<{value: ScryptType, name: string, type: string}>  {
+export function flatternArray(arg: Array<any>, name: string, finalType: string): Array<{ value: ScryptType, name: string, type: string }> {
 
-  if(!Array.isArray(arg)) {
-    throw new Error(`flatternArray only work on array`);
+  if (!Array.isArray(arg)) {
+    throw new Error('flatternArray only work on array');
   }
 
   const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
-  return arg.map((item,index) => {
+  return arg.map((item, index) => {
 
-    if(typeof item === "boolean") {
+    if (typeof item === 'boolean') {
       item = new Bool(item as boolean);
-    } else if(typeof item === "number") {
+    } else if (typeof item === 'number') {
       item = new Int(item as number);
-    } else if(typeof item === "bigint") {
+    } else if (typeof item === 'bigint') {
       item = new Int(item as bigint);
-    } else if(Array.isArray(item)) {
+    } else if (Array.isArray(item)) {
       return flatternArray(item, `${name}[${index}]`, subArrayType(finalType));
-    } else if(Struct.isStruct(item)) {
+    } else if (Struct.isStruct(item)) {
       return flatternStruct(item, `${name}[${index}]`);
     }
-    else  {
+    else {
       item = item as ScryptType;
     }
 
@@ -598,19 +598,19 @@ export function flatternArray(arg: Array<any>, name: string, finalType: string):
       name: `${name}${subscript(index, arraySizes)}`,
       type: elemTypeName
     };
-  }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string}>;
+  }).flat(Infinity) as Array<{ value: ScryptType, name: string, type: string }>;
 }
 
-export function flatternStruct(arg: SupportedParamType, name: string): Array<{value: ScryptType, name: string, type: string}> {
-  if(Struct.isStruct(arg)) {
+export function flatternStruct(arg: SupportedParamType, name: string): Array<{ value: ScryptType, name: string, type: string }> {
+  if (Struct.isStruct(arg)) {
     const argS = arg as Struct;
     const keys = argS.getMembers();
 
     return keys.map(key => {
-      let member = argS.memberByKey(key) ;
-      if(Struct.isStruct(member)) {
+      let member = argS.memberByKey(key);
+      if (Struct.isStruct(member)) {
         return flatternStruct(member as Struct, `${name}.${key}`);
-      } else if(Array.isArray(member)) {
+      } else if (Array.isArray(member)) {
         const finalType = argS.getMemberAstFinalType(key);
         return flatternArray(member, `${name}.${key}`, finalType);
       } else {
@@ -621,7 +621,7 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
           type: member.type
         };
       }
-    }).flat(Infinity) as Array<{value: ScryptType, name: string, type: string}>;
+    }).flat(Infinity) as Array<{ value: ScryptType, name: string, type: string }>;
 
   } else {
     throw new Error(`${arg} should be struct`);
@@ -632,7 +632,7 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{va
 
 export function typeOfArg(arg: SupportedParamType): string {
 
-  if(arg instanceof ScryptType) {
+  if (arg instanceof ScryptType) {
     const scryptType = (arg as ScryptType).finalType;
     return scryptType;
   }
@@ -652,15 +652,15 @@ export function typeOfArg(arg: SupportedParamType): string {
   }
 
   return typeof arg;
-  
+
 }
 
 
 export function readFileByLine(path: string, index: number): string {
 
-  let result = "";
-  fs.readFileSync(path, 'utf8').split(/\r?\n/).every(function(line, i) {
-    if(i === (index -1)) {
+  let result = '';
+  fs.readFileSync(path, 'utf8').split(/\r?\n/).every(function (line, i) {
+    if (i === (index - 1)) {
       result = line;
       return false;
     }
@@ -677,16 +677,16 @@ export function isEmpty(obj: unknown): boolean {
 
 function findCompiler(directory): string | undefined {
   if (!directory) {
-      directory = dirname(module.parent.filename);
+    directory = dirname(module.parent.filename);
   }
   const compiler = resolve(directory, 'compiler');
   if (fs.existsSync(compiler) && fs.statSync(compiler).isDirectory()) {
-      const scryptc = join(compiler, '..', getPlatformScryptc());
-      return scryptc;
+    const scryptc = join(compiler, '..', getPlatformScryptc());
+    return scryptc;
   }
   const parent = resolve(directory, '..');
   if (parent === directory) {
-      return undefined;
+    return undefined;
   }
   return findCompiler(parent);
 }
@@ -694,7 +694,7 @@ function findCompiler(directory): string | undefined {
 
 
 export function getCIScryptc(): string | undefined {
-   const scryptc =  findCompiler(__dirname);
+  const scryptc = findCompiler(__dirname);
   return fs.existsSync(scryptc) ? scryptc : undefined;
 }
 
@@ -702,14 +702,14 @@ export function compileContract(file: string, out?: string): CompileResult {
   console.log(`Compiling contract ${file} ...`);
 
 
-  if(!fs.existsSync(file)) {
-    throw(`file ${file} not exists!`);
+  if (!fs.existsSync(file)) {
+    throw (`file ${file} not exists!`);
   }
 
   const argv = minimist(process.argv.slice(2));
 
   let scryptc = argv.scryptc;
-  if(argv.ci || !scryptc) {
+  if (argv.ci || !scryptc) {
     scryptc = getCIScryptc();
   }
 
@@ -726,7 +726,7 @@ export function compileContract(file: string, out?: string): CompileResult {
 
 
 export function newCall(Cls, args: Array<SupportedParamType>) {
-	return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
+  return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
 }
 
 
@@ -736,13 +736,13 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 
   // some desc without sourceMap will not have file property.
   if (!program) {
-    return "";
+    return '';
   }
 
   const debugConfig: DebugConfiguration = {
-    type: "scrypt",
-    request: "launch",
-    internalConsoleOptions: "openOnSessionStart",
+    type: 'scrypt',
+    request: 'launch',
+    internalConsoleOptions: 'openOnSessionStart',
     name: name,
     program: program,
     constructorArgs: constructorArgs,
@@ -760,7 +760,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     const tx = txContext.tx || '';
     const inputIndex = txContext.inputIndex || 0;
     const inputSatoshis = txContext.inputSatoshis || 0;
-    if(tx) {
+    if (tx) {
       Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
     }
     if (txContext.opReturn) {
@@ -781,7 +781,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
   }
 
   const launch: DebugLaunch = {
-    version: "0.2.0",
+    version: '0.2.0',
     configurations: [debugConfig]
   };
 
@@ -802,12 +802,12 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 export function resolveType(alias: AliasEntity[], type: string): string {
 
 
-  if(isArrayType(type)) {
+  if (isArrayType(type)) {
     const [elemTypeName, sizes] = arrayTypeAndSize(type);
     return toLiteralArrayType(resolveType(alias, elemTypeName), sizes);
   }
 
-  if(isStructType(type)) {
+  if (isStructType(type)) {
     return resolveType(alias, getStructNameByType(type));
   }
 
@@ -815,10 +815,10 @@ export function resolveType(alias: AliasEntity[], type: string): string {
     return a.name === type;
   });
 
-  if(a) {
+  if (a) {
     return resolveType(alias, a.type);
   } else {
-    if(BasicType.indexOf(type) > -1) {
+    if (BasicType.indexOf(type) > -1) {
       return type;
     } else { // should be struct if it is not basic type
       return `struct ${type} {}`;
@@ -826,7 +826,7 @@ export function resolveType(alias: AliasEntity[], type: string): string {
   }
 }
 
-export function printDebugUri(){
+export function printDebugUri() {
   const argv = minimist(process.argv.slice(2));
   return argv.debugUri === true;
 }

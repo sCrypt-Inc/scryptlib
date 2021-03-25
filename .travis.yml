@@ -1,6 +1,9 @@
 language: node_js
 node_js:
- - "node"
+  - "node"
+git:
+  autocrlf: false
+
 os:
   - linux
   - osx
@@ -13,12 +16,13 @@ script:
   - git clone -b master https://github.com/sCrypt-Inc/compiler_dist.git compiler
   - cd compiler && npm run dl
   - cd -
+  - npm run testlint
   - npm test -- --ci=true
   # integration testing with boilerplate
   - npm link
   - git clone -b master https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
-  - npm link scryptlib  # use this version
+  - npm link scryptlib # use this version
   #- npm ls scryptlib    # double check the latest version is used
   - npm test -- --ci=true
