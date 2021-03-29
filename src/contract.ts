@@ -51,9 +51,6 @@ export class AbstractContract {
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
 
-  constructor(...ctorParams: SupportedParamType[]) {
-
-  }
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
@@ -263,8 +260,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
-      super(...ctorParams);
-      if (ctorParams.length > 0 || Contract.abi.find(fn => (fn.type === "constructor" && fn.params.length === 0))) {
+      super();
+      if (ctorParams.length > 0 || Contract.abi.find(fn => (fn.type === 'constructor' && fn.params.length === 0))) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }

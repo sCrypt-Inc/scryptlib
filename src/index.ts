@@ -13,4 +13,4 @@ export {
   Struct, StructObject, VariableType, TypeResolver
 } from './scryptTypes';
 
-export { web3, wallet, LocalWallet, NetWork, Account, UTXO, Output } from './web3';
+export { web3, wallet, LocalWallet, NetWork, Account, UTXO, Output, SignType, Tx, Input } from './web3';

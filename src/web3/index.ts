@@ -1,3 +1,3 @@
 export { web3 } from './web3';
-export { wallet, NetWork, Account, UTXO, Output} from './wallet'
-export { LocalWallet } from './localwallet'
+export { wallet, NetWork, Account, UTXO, Output, SignType, Tx, Input } from './wallet';
+export { LocalWallet } from './localwallet';

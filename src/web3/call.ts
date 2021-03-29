@@ -1,6 +1,6 @@
-import { UTXO, Output} from "./wallet"
-import { AbstractContract, buildContractClass, buildTypeClasses } from "../contract";
-import { ScryptType, SupportedParamType } from "../scryptTypes";
+import { UTXO, Output} from './wallet';
+import { AbstractContract, buildContractClass, buildTypeClasses } from '../contract';
+import { ScryptType, SupportedParamType } from '../scryptTypes';
 export interface Call {
     contract: AbstractContract;
     params: SupportedParamType[];
@@ -12,4 +12,4 @@ type IBuilder<T> = {
 } & { build(): T }
 
 
-export let CallBuilder = {} as IBuilder<Call>
+export const CallBuilder = {} as IBuilder<Call>;
