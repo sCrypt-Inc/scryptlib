@@ -1,8 +1,8 @@
 import { promises } from 'dns';
 import { AbstractContract, buildContractClass, buildTypeClasses } from '../contract';
-import { ScryptType, SupportedParamType } from '../scryptTypes';
+import { ScryptType, SigHashPreimage } from '../scryptTypes';
 import { Output, UTXO, wallet, Tx, Input, SignType } from './wallet';
-import { bsv } from '../utils';
+import { bsv, getPreimage, toHex } from '../utils';
 import { Call } from './call';
 import axios from 'axios';
 const WEB3_VERSION = '0.0.1';
@@ -130,6 +130,13 @@ export class web3 {
 
         return tx;
       });
+    }
+
+
+
+    static getPreimage(tx: Tx, inputIndex = 0, sigHashType: SignType = SignType.ALL): SigHashPreimage {
+      const bsvTx = wallet.toBsvTx(tx);
+      return getPreimage(bsvTx, bsv.Script.fromHex(tx.inputs[inputIndex].utxo.script).toASM(), tx.inputs[inputIndex].utxo.satoshis, inputIndex, sigHashType);
     }
 
 

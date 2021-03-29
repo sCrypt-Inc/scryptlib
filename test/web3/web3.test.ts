@@ -47,7 +47,7 @@ describe('test web3api', () => {
             let p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
             let tx = await web3.deploy(p2pkh, 1000);
             console.log('tx', tx)
-            assert.isTrue( typeof tx === 'string' && tx !== '')
+            assert.isTrue(typeof tx === 'string' && tx !== '')
         })
 
 

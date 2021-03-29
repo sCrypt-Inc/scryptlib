@@ -213,32 +213,32 @@ export function literal2ScryptType(l: string): ScryptType {
 
   const [asm, value, type] = parseLiteral(l);
   switch (type) {
-    case VariableType.BOOL:
-      return new Bool(value as boolean);
-    case VariableType.INT:
-      return new Int(value as number);
-    case VariableType.BYTES:
-      return new Bytes(value as string);
-    case VariableType.PRIVKEY:
-      return new PrivKey(value as bigint);
-    case VariableType.PUBKEY:
-      return new PubKey(value as string);
-    case VariableType.SIG:
-      return new Sig(value as string);
-    case VariableType.RIPEMD160:
-      return new Ripemd160(value as string);
-    case VariableType.SHA1:
-      return new Sha1(value as string);
-    case VariableType.SHA256:
-      return new Sha256(value as string);
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(value as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(value as string);
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(value as string);
-    default:
-      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  case VariableType.BOOL:
+    return new Bool(value as boolean);
+  case VariableType.INT:
+    return new Int(value as number);
+  case VariableType.BYTES:
+    return new Bytes(value as string);
+  case VariableType.PRIVKEY:
+    return new PrivKey(value as bigint);
+  case VariableType.PUBKEY:
+    return new PubKey(value as string);
+  case VariableType.SIG:
+    return new Sig(value as string);
+  case VariableType.RIPEMD160:
+    return new Ripemd160(value as string);
+  case VariableType.SHA1:
+    return new Sha1(value as string);
+  case VariableType.SHA256:
+    return new Sha256(value as string);
+  case VariableType.SIGHASHTYPE:
+    return new SigHashType(value as number);
+  case VariableType.SIGHASHPREIMAGE:
+    return new SigHashPreimage(value as string);
+  case VariableType.OPCODETYPE:
+    return new OpCodeType(value as string);
+  default:
+    throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
 }
 
@@ -247,17 +247,17 @@ export function literal2ScryptType(l: string): ScryptType {
 export function bytes2Literal(bytearray: number[], type: string): string {
 
   switch (type) {
-    case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
+  case 'bool':
+    return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
 
-    case 'int':
-      return BN.fromSM(bytearray, { endian: 'little' }).toString();
+  case 'int':
+    return BN.fromSM(bytearray, { endian: 'little' }).toString();
 
-    case 'bytes':
-      return `b'${bytesToHexString(bytearray)}'`;
+  case 'bytes':
+    return `b'${bytesToHexString(bytearray)}'`;
 
-    default:
-      return `b'${bytesToHexString(bytearray)}'`;
+  default:
+    return `b'${bytesToHexString(bytearray)}'`;
   }
 
 }
@@ -786,8 +786,8 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
   };
 
   if (typeof process !== 'object') {
-    console.error("DebugConfiguration", JSON.stringify(launch))
-    return "";
+    console.error('DebugConfiguration', JSON.stringify(launch));
+    return '';
   }
 
   const filename = `${name}-launch.json`;

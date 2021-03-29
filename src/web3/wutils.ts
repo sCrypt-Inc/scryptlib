@@ -1,5 +1,5 @@
 
-import { toHex, bsv } from '..//utils';
+import { toHex, bsv } from '../utils';
 import { UTXO } from './wallet';
 
 
