@@ -6,7 +6,7 @@ import { AbstractContract } from '../../src/contract';
 import { web3, LocalWallet } from '../../src/web3';
 import { delay, loadDescription } from '../helper';
 import { Sig, PubKey, Ripemd160 } from '../../src/scryptTypes';
-import { toHex, bsv } from '../../src/utils';
+import { toHex, bsv, newCall } from '../../src/utils';
 import { NetWork } from '../../src/web3/wallet';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
@@ -21,13 +21,14 @@ describe('test web3api', () => {
         it('test web3api loadContract', async () => {
 
             let {
-                contract: TictactoeContract
+                contractClass: TictactoeClass
             }
                 = await web3.loadContract('https://scrypt.io/tic-tac-toe/tictactoe_desc.json')
 
-            let tictactoe = new TictactoeContract(
-                new PubKey(toHex(privateKey.publicKey)),
-                new PubKey(toHex(privateKey.publicKey)));
+
+            const tictactoe: AbstractContract = newCall(TictactoeClass, [new PubKey(toHex(privateKey.publicKey)), new PubKey(toHex(privateKey.publicKey))]);
+
+
             assert.isTrue(tictactoe instanceof AbstractContract)
         })
     })
@@ -54,13 +55,11 @@ describe('test web3api', () => {
         it('test web3api deploy tictactoe ', async () => {
 
             let {
-                contract: TictactoeContract
+                contractClass: TictactoeClass
             }
                 = await web3.loadContract('https://scrypt.io/tic-tac-toe/tictactoe_desc.json')
 
-            let tictactoe = new TictactoeContract(
-                new PubKey(toHex(privateKey.publicKey)),
-                new PubKey(toHex(privateKey.publicKey)));
+            const tictactoe: AbstractContract = newCall(TictactoeClass, [new PubKey(toHex(privateKey.publicKey)), new PubKey(toHex(privateKey.publicKey))]);
 
             tictactoe.setDataPart("0011");
 

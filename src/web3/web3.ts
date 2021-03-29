@@ -27,7 +27,7 @@ export class web3 {
 
 
     static loadContract(url: string): Promise<{
-        contract: typeof AbstractContract,
+        contractClass: typeof AbstractContract,
         types: Record<string, typeof ScryptType>
     }> {
 
@@ -37,7 +37,7 @@ export class web3 {
 
         if (res.status === 200) {
           return {
-            contract: buildContractClass(res.data),
+            contractClass: buildContractClass(res.data),
             types: buildTypeClasses(res.data)
           };
         }
