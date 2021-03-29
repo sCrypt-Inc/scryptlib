@@ -165,7 +165,9 @@ export class AbstractContract {
 
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
         if (opcode.pos) {
-          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
+
+          const file = typeof process === 'undefined' ? path2uri(opcode.pos.file) : opcode.pos.file;
+          error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${file}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
         }
       }
     }

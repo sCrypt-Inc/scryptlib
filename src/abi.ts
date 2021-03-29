@@ -155,9 +155,9 @@ export class FunctionCall {
     if (this.unlockingScript) {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
 
-      if (!result.success && printDebugUri()) {
+      if (!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
-        if (debugUrl) {
+        if (debugUrl && printDebugUri()) {
           result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
         }
       }
