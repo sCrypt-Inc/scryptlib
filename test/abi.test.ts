@@ -125,8 +125,9 @@ describe('FunctionCall', () => {
 
       it('should fail if param `txContext` is incorrect', () => {
         // missing txContext
-        result = target.verify({ inputSatoshis });
-        assert.isFalse(result.success, result.error);
+        expect(() => {
+          target.verify({ inputSatoshis })
+        }).to.throw('should provoid txContext.tx when verify')
 
         // incorrect txContext.tx
         tx.nLockTime = tx.nLockTime + 1;

@@ -153,7 +153,7 @@ export class FunctionCall {
 
   verify(txContext?: TxContext): VerifyResult {
     if (this.unlockingScript) {
-      const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext);
+      const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext, this.args);
 
       if (!result.success && printDebugUri()) {
         const debugUrl = this.genLaunchConfigFile(txContext);

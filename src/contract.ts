@@ -1,8 +1,9 @@
 import { ABICoder, Arguments, FunctionCall, Script } from './abi';
 import { serializeState, State } from './serializer';
-import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize } from './utils';
-import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver } from './scryptTypes';
-import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity } from './compilerWrapper';
+import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize, getPreimage, getSigHashPreimageDiff, removeSharedStart } from './utils';
+import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver, SigHashPreimage, SigHashType } from './scryptTypes';
+import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, Pos } from './compilerWrapper';
+import { readFileSync } from 'fs';
 
 export interface TxContext {
   tx?: any;
@@ -80,9 +81,9 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(steps: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
+  static findSrcInfo(interpretStates: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
     while (--stepIndex > 0 && --opcodesIndex > 0) {
-      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0 && steps[stepIndex].fExec) {
+      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0 && interpretStates[stepIndex].step.fExec) {
         return opcodes[opcodesIndex];
       }
     }
@@ -90,16 +91,168 @@ export class AbstractContract {
 
 
 
-  static findLastfExec(steps: any[], stepIndex: StepIndex): StepIndex {
+  static findLastfExec(interpretStates: any[], stepIndex: StepIndex): StepIndex {
     while (--stepIndex > 0) {
-      if (steps[stepIndex].fExec) {
+      if (interpretStates[stepIndex].step.fExec) {
         return stepIndex;
       }
     }
   }
 
+  private getParamFailsAtCheckSig(pos: Pos, paramType: string, args: Arguments): string | undefined {
 
-  run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
+    const lines = readFileSync(pos.file)
+      .toString().split('\n');
+
+    const failAtCode = lines.slice(pos.line - 1, pos.line).join('\n');
+    const pubFuncArgs = [...args.values()].filter(p => p.type === paramType);
+    for (const param of pubFuncArgs) {
+      const reg = new RegExp(`\\b${param.name}\\b`);
+      if (reg.exec(failAtCode)) {
+        return param.name;
+      }
+    }
+
+    return undefined;
+  }
+
+
+  private getPubkeyAtCheckSigFail(interpretStates: any): string | undefined {
+    const curStack = interpretStates[interpretStates.length - 1].mainstack;
+    return curStack[1].toString('hex'); // public key is the second element on stack
+  }
+
+
+  private getCheckSigErrorDetail(interpretStates: any, txCtx: TxContext, pos: Pos, args: Arguments): string {
+    const paramName = this.getParamFailsAtCheckSig(pos, 'Sig', args);
+    if (paramName) {
+
+      const sigArg = args.find(arg => arg.name === paramName);
+      if (sigArg) {
+        const sig: string = (sigArg.value as Bytes).value as string;
+        console.log('aa', txCtx.tx);
+        const preimageFromTx = getPreimage(
+          txCtx.tx,
+          this.lockingScript.toASM(),
+          txCtx.inputSatoshis,
+          txCtx.inputIndex,
+          parseInt(sig.slice(sig.length - 2, sig.length), 16),
+          DEFAULT_FLAGS
+        );
+
+        const title = '----- CheckSig Fail Hints Begin -----';
+        const body = [
+          'You should make sure the following check points all passed:',
+          `1. private key used to sign should be corresponding to the public key ${this.getPubkeyAtCheckSigFail(interpretStates)}`,
+          `2. the preimage of the tx to be signed should be ${preimageFromTx.toString()}`
+        ].join('\n');
+        const tail = '----- CheckSig Fail Hints End -----';
+
+        return `\n${title}\n${body}\n${tail}\n`;
+      }
+    }
+    return '';
+  }
+
+  private getCheckPreiamgeErrorDetail(txCtx: TxContext, pos: Pos, args: Arguments): string {
+    const paramName = this.getParamFailsAtCheckSig(pos, 'SigHashPreimage', args);
+    if (paramName) {
+
+      const param = args.find(arg => arg.name === paramName);
+      if (param) {
+        const preimage: string = (param.value as Bytes).value as string;
+        const preimageInParam = new SigHashPreimage(preimage);
+        const preimageFromTx = getPreimage(
+          txCtx.tx,
+          this.lockingScript.toASM(),
+          txCtx.inputSatoshis,
+          txCtx.inputIndex,
+          preimageInParam.sighashType,
+          DEFAULT_FLAGS
+        );
+
+        const diff = getSigHashPreimageDiff(preimageInParam, preimageFromTx);
+
+        const title = [
+          '----- CheckPreimage Fail Hints Begin -----',
+          'You should check the differences in detail listed below:\n',
+          'Fields with difference | From preimage in entry method params | From preimage calculated with tx',
+        ].join('\n');
+        const tail = '----- CheckPreimage Fail Hints End -----';
+
+        return `\n${title}\n${Object.keys(diff).map(k => {
+          let value1 = diff[k][0];
+          let value2 = diff[k][1];
+
+          if (k === 'outpoint') {
+            value1 = JSON.stringify(value1);
+            value2 = JSON.stringify(value2);
+          }
+
+          if (k === 'scriptCode') {
+
+            const [a, b] = removeSharedStart([bsv.Script.fromHex(value1).toASM(), bsv.Script.fromHex(value2).toASM()]);
+            value1 = a;
+            value2 = b;
+          }
+
+          if (k === 'sighashType') {
+            value1 = `"${new SigHashType(value1).toString()}"`;
+            value2 = `"${new SigHashType(value2).toString()}"`;
+          }
+
+          return `${k} | ${value1} | ${value2}`;
+        }).join('\n')
+          }\n\nPreimage calculated with tx:\n${preimageFromTx.toString()}\n${tail}\n`;
+      }
+    }
+
+    return '';
+  }
+
+  private getTxContextInfo(txCtx: TxContext): string {
+
+    const tx = txCtx.tx;
+
+    tx['inputs'] = [...tx['inputs'].map((input, i) => {
+      input.toObject = function () {
+        const { script, prevTxId, outputIndex, sequenceNumber } = input;
+        return {
+          'prevTxId': prevTxId.toString('hex'),
+          outputIndex,
+          sequenceNumber,
+          'index': i,
+          'unlockingScript': {
+            'asm': script.toASM(),
+            'hex': script.toHex()
+          }
+        };
+      };
+      return input;
+    })];
+
+    tx['outputs'] = [...tx['outputs'].map((output, i) => {
+      output.toObject = function () {
+        const { script, satoshis } = output;
+        return {
+          satoshis,
+          'index': i,
+          'lockingScript': {
+            'asm': script.toASM(),
+            'hex': script.toHex()
+          }
+        };
+      };
+      return output;
+    })];
+
+    txCtx['tx'] = tx;
+
+    return `\nTxContext from config:\n${JSON.stringify(txCtx, null, 4)}\n`;
+  }
+
+
+  run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM.trim());
@@ -111,9 +264,9 @@ export class AbstractContract {
     const bsi = bsv.Script.Interpreter();
 
     let stepCounter: StepIndex = 0;
-    const steps = [];
+    const interpretStates: { step: any, mainstack: any, altstack: any }[] = [];
     bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
-      steps.push(step);
+      interpretStates.push({ mainstack: stack, altstack: altstack, step: step });
       stepCounter++;
     };
 
@@ -131,7 +284,7 @@ export class AbstractContract {
       const offset = unlockingScriptASM.trim().split(' ').length;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
 
-      const lastStepIndex = AbstractContract.findLastfExec(steps, stepCounter);
+      const lastStepIndex = AbstractContract.findLastfExec(interpretStates, stepCounter);
 
       if (typeof this._dataPart === 'string') {
         opcodes.push({ opcode: 'OP_RETURN', stack: [] });
@@ -155,7 +308,7 @@ export class AbstractContract {
 
         if (!opcode.pos || opcode.pos.file === 'std') {
 
-          const srcInfo = AbstractContract.findSrcInfo(steps, opcodes, lastStepIndex, opcodeIndex);
+          const srcInfo = AbstractContract.findSrcInfo(interpretStates, opcodes, lastStepIndex, opcodeIndex);
 
           if (srcInfo) {
             opcode.pos = srcInfo.pos;
@@ -165,6 +318,19 @@ export class AbstractContract {
         // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
         if (opcode.pos) {
           error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
+
+          if (args && ['OP_CHECKSIG', 'OP_CHECKSIGVERIFY'].includes(opcode.opcode)) {
+            if (!txCtx) {
+              throw new Error('should provoid txContext when verify');
+            } if (!tx) {
+              throw new Error('should provoid txContext.tx when verify');
+            }
+            else {
+              error += this.getCheckSigErrorDetail(interpretStates, txCtx, opcode.pos, args);
+              error += this.getCheckPreiamgeErrorDetail(txCtx, opcode.pos, args);
+              error += this.getTxContextInfo(txCtx);
+            }
+          }
         }
       }
     }
