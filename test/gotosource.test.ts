@@ -216,8 +216,9 @@ describe('VerifyError', () => {
       expect(result.error).to.contains("p2pkh.scrypt#10");
       expect(result.error).to.contains("DemoP2PKH-launch.json");
       expect(result.error).to.contains("fails at OP_CHECKSIG");
-      expect(result.error).to.contains("private key used to sign should be corresponding to the public key");
-
+      expect(result.error).to.contains("----- CheckSig Fail Hints Begin -----");
+      expect(result.error).to.contains("1. private key used to sign should be corresponding to the public key");
+      expect(result.error).to.contains("2. the preimage of the tx to be signed should be");
     })
 
   })

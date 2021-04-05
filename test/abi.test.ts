@@ -127,7 +127,7 @@ describe('FunctionCall', () => {
         // missing txContext
         expect(() => {
           target.verify({ inputSatoshis })
-        }).to.throw('should provoid txContext.tx when verify')
+        }).to.throw('should provide txContext.tx when verify')
 
         // incorrect txContext.tx
         tx.nLockTime = tx.nLockTime + 1;

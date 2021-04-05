@@ -142,7 +142,7 @@ export class AbstractContract {
 
         const title = '----- CheckSig Fail Hints Begin -----';
         const body = [
-          'You should make sure the following check points all passed:',
+          'You should make sure the following checkpoints all pass:',
           `1. private key used to sign should be corresponding to the public key ${this.getPubkeyAtCheckSigFail(interpretStates)}`,
           `2. the preimage of the tx to be signed should be ${preimageFromTx.toString()}`
         ].join('\n');
@@ -203,7 +203,7 @@ export class AbstractContract {
 
           return `${k} | ${value1} | ${value2}`;
         }).join('\n')
-        }\n\nPreimage calculated with tx:\n${preimageFromTx.toString()}\n${tail}\n`;
+          }\n\nPreimage calculated with tx:\n${preimageFromTx.toString()}\n${tail}\n`;
       }
     }
 
@@ -319,11 +319,11 @@ export class AbstractContract {
         if (opcode.pos) {
           error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${opcode.opcode}\n`;
 
-          if (args && ['OP_CHECKSIG', 'OP_CHECKSIGVERIFY'].includes(opcode.opcode)) {
+          if (args && ['OP_CHECKSIG', 'OP_CHECKSIGVERIFY', 'OP_CHECKMULTISIG', 'OP_CHECKMULTISIGVERIFY'].includes(opcode.opcode)) {
             if (!txCtx) {
-              throw new Error('should provoid txContext when verify');
+              throw new Error('should provide txContext when verify');
             } if (!tx) {
-              throw new Error('should provoid txContext.tx when verify');
+              throw new Error('should provide txContext.tx when verify');
             }
             else {
               error += this.getCheckSigErrorDetail(interpretStates, txCtx, opcode.pos, args);
