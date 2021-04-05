@@ -203,7 +203,7 @@ export class AbstractContract {
 
           return `${k} | ${value1} | ${value2}`;
         }).join('\n')
-          }\n\nPreimage calculated with tx:\n${preimageFromTx.toString()}\n${tail}\n`;
+        }\n\nPreimage calculated with tx:\n${preimageFromTx.toString()}\n${tail}\n`;
       }
     }
 
