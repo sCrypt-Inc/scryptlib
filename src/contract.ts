@@ -99,18 +99,12 @@ export class AbstractContract {
     }
   }
 
-  private getParamFailsAtCheckSig(pos: Pos, paramType: string, args: Arguments): string | undefined {
+  private getParamFailsAtCheckSig(paramType: string, args: Arguments): string | undefined {
 
-    const lines = readFileSync(pos.file)
-      .toString().split('\n');
-
-    const failAtCode = lines.slice(pos.line - 1, pos.line).join('\n');
     const pubFuncArgs = [...args.values()].filter(p => p.type === paramType);
-    for (const param of pubFuncArgs) {
-      const reg = new RegExp(`\\b${param.name}\\b`);
-      if (reg.exec(failAtCode)) {
-        return param.name;
-      }
+
+    if (pubFuncArgs.length === 1) {
+      return pubFuncArgs[0].name;
     }
 
     return undefined;
@@ -123,14 +117,14 @@ export class AbstractContract {
   }
 
 
-  private getCheckSigErrorDetail(interpretStates: any, txCtx: TxContext, pos: Pos, args: Arguments): string {
-    const paramName = this.getParamFailsAtCheckSig(pos, 'Sig', args);
+  private getCheckSigErrorDetail(interpretStates: any, txCtx: TxContext, args: Arguments): string {
+    const paramName = this.getParamFailsAtCheckSig('Sig', args);
     if (paramName) {
 
       const sigArg = args.find(arg => arg.name === paramName);
       if (sigArg) {
         const sig: string = (sigArg.value as Bytes).value as string;
-        console.log('aa', txCtx.tx);
+
         const preimageFromTx = getPreimage(
           txCtx.tx,
           this.lockingScript.toASM(),
@@ -154,8 +148,8 @@ export class AbstractContract {
     return '';
   }
 
-  private getCheckPreiamgeErrorDetail(txCtx: TxContext, pos: Pos, args: Arguments): string {
-    const paramName = this.getParamFailsAtCheckSig(pos, 'SigHashPreimage', args);
+  private getCheckPreiamgeErrorDetail(txCtx: TxContext, args: Arguments): string {
+    const paramName = this.getParamFailsAtCheckSig('SigHashPreimage', args);
     if (paramName) {
 
       const param = args.find(arg => arg.name === paramName);
@@ -326,8 +320,8 @@ export class AbstractContract {
               throw new Error('should provide txContext.tx when verify');
             }
             else {
-              error += this.getCheckSigErrorDetail(interpretStates, txCtx, opcode.pos, args);
-              error += this.getCheckPreiamgeErrorDetail(txCtx, opcode.pos, args);
+              error += this.getCheckSigErrorDetail(interpretStates, txCtx, args);
+              error += this.getCheckPreiamgeErrorDetail(txCtx, args);
               error += this.getTxContextInfo(txCtx);
             }
           }
