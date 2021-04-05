@@ -1,9 +1,9 @@
 import { assert, expect } from 'chai';
-import { getContractFilePath, newTx, loadDescription} from './helper';
+import { getContractFilePath, newTx, loadDescription } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, buildTypeClasses, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx, compileContract } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct} from '../src/scryptTypes';
+import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct } from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -18,7 +18,7 @@ const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
 const personDescr = loadDescription('person_desc.json');
 const PersonContract = buildContractClass(personDescr);
 
-const {Person, Block} = buildTypeClasses(personDescr);
+const { Person, Block } = buildTypeClasses(personDescr);
 
 let man = new Person({
   isMale: false,
@@ -89,7 +89,7 @@ describe('FunctionCall', () => {
           name: 'sig',
           type: 'Sig',
           value: sig
-        },  {
+        }, {
           name: 'pubKey',
           type: 'PubKey',
           value: pubkey
@@ -165,7 +165,7 @@ describe('FunctionCall', () => {
 
   describe('when it is a contract public function with struct', () => {
 
- 
+
     it('should return true when age 10', () => {
 
       let result = person.main(man, 10, false).verify()
@@ -176,14 +176,14 @@ describe('FunctionCall', () => {
 
     it('should return false when age 36', () => {
 
-      let result = person.main(man,  36, false).verify()
+      let result = person.main(man, 36, false).verify()
 
       assert.isFalse(result.success, result.error);
     })
 
     it('should return false when isMale true', () => {
 
-      let result = person.main(man,  18, true).verify()
+      let result = person.main(man, 18, true).verify()
 
       assert.isFalse(result.success, result.error);
     })
@@ -193,34 +193,42 @@ describe('FunctionCall', () => {
   describe('struct member check', () => {
 
     it('should throw with wrong members', () => {
-      expect(() => { person.main(new Person({
-        age: 14,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      }), 18, true) }).to.throw('argument of type struct Person missing member isMale');
+      expect(() => {
+        person.main(new Person({
+          age: 14,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        }), 18, true)
+      }).to.throw('argument of type struct Person missing member isMale');
     })
 
     it('should throw with wrong members', () => {
-      expect(() => { person.main(new Person({
-        isMale: false,
-        age: 13
-      }), 18, true) }).to.throw('argument of type struct Person missing member addr');
+      expect(() => {
+        person.main(new Person({
+          isMale: false,
+          age: 13
+        }), 18, true)
+      }).to.throw('argument of type struct Person missing member addr');
     })
 
     it('should throw with wrong members', () => {
-      expect(() => { person.main(new Person({
-        weight: 100,
-        isMale: false,
-        age: 13,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      }), 18, true) }).to.throw('weight is not a member of struct Person');
+      expect(() => {
+        person.main(new Person({
+          weight: 100,
+          isMale: false,
+          age: 13,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        }), 18, true)
+      }).to.throw('weight is not a member of struct Person');
     })
 
     it('should throw with wrong members type', () => {
-      expect(() => { person.main(new Person({
-        isMale: 11,
-        age: 14,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      }), 18, true) }).to.throw('wrong argument type, expected bool but got int');
+      expect(() => {
+        person.main(new Person({
+          isMale: 11,
+          age: 14,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        }), 18, true)
+      }).to.throw('wrong argument type, expected bool but got int');
     })
 
   })
