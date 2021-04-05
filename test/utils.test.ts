@@ -184,6 +184,12 @@ describe('utils', () => {
       expect(parseLiteral("SigHashType(b'80')")).to.have.members(["80", 0x80, "SigHashType"]);
       expect(parseLiteral("SigHashPreimage(b'3847f126769a6c65d281d925f9ff99')")).to.have.members(["3847f126769a6c65d281d925f9ff99", "3847f126769a6c65d281d925f9ff99", "SigHashPreimage"]);
       expect(parseLiteral("OpCodeType(b'01')")).to.have.members(["01", "01", "OpCodeType"]);
+      expect(parseLiteral("b'01'")).to.have.members(["OP_1", "01", "bytes"]);
+      expect(parseLiteral("b'03'")).to.have.members(["OP_3", "03", "bytes"]);
+      expect(parseLiteral("b'00'")).to.have.members(["00", "00", "bytes"]);
+      expect(parseLiteral("b'10'")).to.have.members(["OP_16", "10", "bytes"]);
+      expect(parseLiteral("b'11'")).to.have.members(["11", "11", "bytes"]);
+      expect(parseLiteral("b'0001'")).to.have.members(["0001", "0001", "bytes"]);
     });
   })
 

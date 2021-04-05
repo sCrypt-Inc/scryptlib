@@ -119,9 +119,23 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   // note: special handling of empty bytes b''
   m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    const value = getValidatedHexString(m[1]);
-    const asm = value === '' ? 'OP_0' : value;
-    return [asm, value, VariableType.BYTES];
+    const hexString = getValidatedHexString(m[1]);
+    if (hexString === '') {
+      return ['OP_0', hexString, VariableType.BYTES];
+    }
+
+    if (hexString.length / 2 > 1) {
+      return [hexString, hexString, VariableType.BYTES];
+    }
+
+
+    const intValue = parseInt(hexString, 16);
+
+    if (intValue >= 1 && intValue <= 16) {
+      return [`OP_${intValue}`, hexString, VariableType.BYTES];
+    }
+
+    return [hexString, hexString, VariableType.BYTES];
   }
 
 

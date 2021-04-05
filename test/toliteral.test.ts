@@ -9,6 +9,10 @@ const { ST1, AliasST2, ST3 } = buildTypeClasses(loadDescription('mdarray_desc.js
 
 const { Block, Person, Token, Bsver } = buildTypeClasses(loadDescription('mixedstruct_desc.json'));
 
+const BytesLiteralContract = buildContractClass(loadDescription('bytesLiteral_desc.json'));
+
+const bytesLiteral = new BytesLiteralContract();
+
 
 describe('toLiteral test', () => {
 
@@ -90,6 +94,18 @@ describe('toLiteral test', () => {
                     header: new Bytes('1156'),
                 })
             }).toLiteral()).to.equal('{b\'7361746f736869206e616b616d6f746f\',b\'68656c6c6f20776f726c6421\',true,33,{b\'68656c6c6f20776f726c6420\',b\'1156\',10000}}')
+
+        })
+    })
+
+
+    describe('passing bytes Literal to public function', () => {
+
+        it('passing bytes Literal to public function', () => {
+
+            let result = bytesLiteral.main(new Bytes(""), new Bytes("00"), new Bytes("01"), new Bytes("02"), new Bytes("0002"), new Bytes("10"), new Bytes("11")).verify();
+
+            assert.isTrue(result.success, result.error);
 
         })
     })
