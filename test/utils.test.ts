@@ -1,13 +1,13 @@
 import { expect } from 'chai'
 import { buildTypeClasses } from '../src/contract';
-import { Int, Bool, Bytes} from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType} from '../src/utils'
+import { Int, Bool, Bytes } from '../src/scryptTypes'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType } from '../src/utils'
 import { loadDescription } from './helper';
 
 
 
 const mixedstructDescr = loadDescription('mixedstruct_desc.json');
-const {Person, Block, Bsver, Token} = buildTypeClasses(mixedstructDescr);
+const { Person, Block, Bsver, Token } = buildTypeClasses(mixedstructDescr);
 
 
 const BN = bsv.crypto.BN
@@ -137,11 +137,11 @@ describe('utils', () => {
 
     it('int string to asm', () => {
       expect(int2Asm("992218700866541488854030164190743727617658394826382323005192752278160641622424126616186015754450906117445668830393086070718237548341612508577988597572812"))
-      .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
+        .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
 
 
       expect(int2Asm("0x12f1dd2e0965dc433b0d32b86333b0fb432df592f6108803d7afe51a14a0e867045fe22af85862b8e744700920e0b7e430a192440a714277efb895b51120e4cc"))
-      .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
+        .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
     });
   })
 
@@ -161,15 +161,15 @@ describe('utils', () => {
       expect(parseLiteral("b'62f0245bb9'")).to.have.members(["62f0245bb9", "62f0245bb9", "bytes"]);
       expect(parseLiteral("PrivKey(1)")).to.have.members(["1", 1, "PrivKey"]);
       expect(parseLiteral("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members([
-          "0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
-          BigInt("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062"),
-          "PrivKey"
-        ]);
+        "0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+        BigInt("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062"),
+        "PrivKey"
+      ]);
       expect(parseLiteral("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members([
-          "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", 
-          "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062", 
-          "PubKey"
-        ]);
+        "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+        "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+        "PubKey"
+      ]);
       expect(parseLiteral("Sig(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members([
         "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
         "3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
@@ -327,7 +327,7 @@ describe('utils', () => {
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3], [1,1,1]], ['int', [2, 3]])).to.false;
+      expect(checkArray([[3, 3, 3], [3, 12, 3], [1, 1, 1]], ['int', [2, 3]])).to.false;
     })
 
     it('checkArray int[2][3]', () => {
@@ -354,16 +354,16 @@ describe('utils', () => {
 
 
     it('checkArray int[2][3][4]', () => {
-      expect(checkArray([ [
+      expect(checkArray([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10, 11, 12]
-        ],
-        [
+      ],
+      [
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-        ]], ['int', [2, 3, 4]])).to.true;
+      ]], ['int', [2, 3, 4]])).to.true;
     })
 
     it('checkArray int[2][3][4]', () => {
@@ -413,15 +413,15 @@ describe('utils', () => {
         name: "a[1][0][2]",
         type: "int",
         value: new Int(3)
-      },  {
+      }, {
         name: "a[1][1][0]",
         type: "int",
         value: new Int(3)
-      },  {
+      }, {
         name: "a[1][1][1]",
         type: "int",
         value: new Int(3)
-      },  {
+      }, {
         name: "a[1][1][2]",
         type: "int",
         value: new Int(3)
@@ -429,7 +429,7 @@ describe('utils', () => {
     })
 
     it('flatternArray int[2][3]', () => {
-      expect(flatternArray([[1, 2, 3], [4, 12, 5]],  "a", "int[2][3]")).to.deep.ordered.members([{
+      expect(flatternArray([[1, 2, 3], [4, 12, 5]], "a", "int[2][3]")).to.deep.ordered.members([{
         name: "a[0][0]",
         type: "int",
         value: new Int(1)
@@ -453,12 +453,12 @@ describe('utils', () => {
         name: "a[1][2]",
         type: "int",
         value: new Int(5)
-      }, 
+      },
       ])
     })
 
     it('flatternArray int[1][1][1][2]', () => {
-      expect(flatternArray([[[[3,4]]]], "a", "int[1][1][1][2]")).to.deep.ordered.members([
+      expect(flatternArray([[[[3, 4]]]], "a", "int[1][1][1][2]")).to.deep.ordered.members([
         {
           name: "a[0][0][0][0]",
           type: "int",
@@ -473,7 +473,7 @@ describe('utils', () => {
     })
 
     it('flatternArray int[3]', () => {
-      expect(flatternArray([1,2,3], "a", "int[3]")).to.deep.ordered.members([
+      expect(flatternArray([1, 2, 3], "a", "int[3]")).to.deep.ordered.members([
         {
           name: "a[0]",
           type: "int",
@@ -492,123 +492,123 @@ describe('utils', () => {
       ])
     })
 
- 
+
 
     it('flatternArray int[2][3][4]', () => {
-      expect(flatternArray([ [
+      expect(flatternArray([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10, 11, 12]
-        ],
-        [
+      ],
+      [
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-        ] ], "a", "int[2][3][4]")).to.deep.ordered.members([
-          {
-            name: "a[0][0][0]",
-            type: "int",
-            value: new Int(1)
-          },
-          {
-            name: "a[0][0][1]",
-            type: "int",
-            value: new Int(2)
-          },
-          {
-            name: "a[0][0][2]",
-            type: "int",
-            value: new Int(3)
-          },
-          {
-            name: "a[0][0][3]",
-            type: "int",
-            value: new Int(4)
-          },
-          {
-            name: "a[0][1][0]",
-            type: "int",
-            value: new Int(5)
-          },{
-            name: "a[0][1][1]",
-            type: "int",
-            value: new Int(6)
-          },{
-            name: "a[0][1][2]",
-            type: "int",
-            value: new Int(7)
-          },{
-            name: "a[0][1][3]",
-            type: "int",
-            value: new Int(8)
-          },{
-            name: "a[0][2][0]",
-            type: "int",
-            value: new Int(9)
-          },{
-            name: "a[0][2][1]",
-            type: "int",
-            value: new Int(10)
-          },{
-            name: "a[0][2][2]",
-            type: "int",
-            value: new Int(11)
-          },{
-            name: "a[0][2][3]",
-            type: "int",
-            value: new Int(12)
-          },{
-            name: "a[1][0][0]",
-            type: "int",
-            value: new Int(13)
-          },{
-            name: "a[1][0][1]",
-            type: "int",
-            value: new Int(14)
-          },{
-            name: "a[1][0][2]",
-            type: "int",
-            value: new Int(15)
-          },{
-            name: "a[1][0][3]",
-            type: "int",
-            value: new Int(16)
-          },{
-            name: "a[1][1][0]",
-            type: "int",
-            value: new Int(17)
-          },{
-            name: "a[1][1][1]",
-            type: "int",
-            value: new Int(18)
-          },{
-            name: "a[1][1][2]",
-            type: "int",
-            value: new Int(19)
-          },{
-            name: "a[1][1][3]",
-            type: "int",
-            value: new Int(20)
-          },{
-            name: "a[1][2][0]",
-            type: "int",
-            value: new Int(21)
-          },{
-            name: "a[1][2][1]",
-            type: "int",
-            value: new Int(22)
-          },{
-            name: "a[1][2][2]",
-            type: "int",
-            value: new Int(23)
-          },{
-            name: "a[1][2][3]",
-            type: "int",
-            value: new Int(24)
-          }
-        ])
-      })
+      ]], "a", "int[2][3][4]")).to.deep.ordered.members([
+        {
+          name: "a[0][0][0]",
+          type: "int",
+          value: new Int(1)
+        },
+        {
+          name: "a[0][0][1]",
+          type: "int",
+          value: new Int(2)
+        },
+        {
+          name: "a[0][0][2]",
+          type: "int",
+          value: new Int(3)
+        },
+        {
+          name: "a[0][0][3]",
+          type: "int",
+          value: new Int(4)
+        },
+        {
+          name: "a[0][1][0]",
+          type: "int",
+          value: new Int(5)
+        }, {
+          name: "a[0][1][1]",
+          type: "int",
+          value: new Int(6)
+        }, {
+          name: "a[0][1][2]",
+          type: "int",
+          value: new Int(7)
+        }, {
+          name: "a[0][1][3]",
+          type: "int",
+          value: new Int(8)
+        }, {
+          name: "a[0][2][0]",
+          type: "int",
+          value: new Int(9)
+        }, {
+          name: "a[0][2][1]",
+          type: "int",
+          value: new Int(10)
+        }, {
+          name: "a[0][2][2]",
+          type: "int",
+          value: new Int(11)
+        }, {
+          name: "a[0][2][3]",
+          type: "int",
+          value: new Int(12)
+        }, {
+          name: "a[1][0][0]",
+          type: "int",
+          value: new Int(13)
+        }, {
+          name: "a[1][0][1]",
+          type: "int",
+          value: new Int(14)
+        }, {
+          name: "a[1][0][2]",
+          type: "int",
+          value: new Int(15)
+        }, {
+          name: "a[1][0][3]",
+          type: "int",
+          value: new Int(16)
+        }, {
+          name: "a[1][1][0]",
+          type: "int",
+          value: new Int(17)
+        }, {
+          name: "a[1][1][1]",
+          type: "int",
+          value: new Int(18)
+        }, {
+          name: "a[1][1][2]",
+          type: "int",
+          value: new Int(19)
+        }, {
+          name: "a[1][1][3]",
+          type: "int",
+          value: new Int(20)
+        }, {
+          name: "a[1][2][0]",
+          type: "int",
+          value: new Int(21)
+        }, {
+          name: "a[1][2][1]",
+          type: "int",
+          value: new Int(22)
+        }, {
+          name: "a[1][2][2]",
+          type: "int",
+          value: new Int(23)
+        }, {
+          name: "a[1][2][3]",
+          type: "int",
+          value: new Int(24)
+        }
+      ])
     })
+  })
 
 
   describe('flatternStruct()', () => {
@@ -617,7 +617,7 @@ describe('utils', () => {
         time: 10000,
         hash: new Bytes('68656c6c6f20776f726c6421'),
         header: new Bytes('1156'),
-      }), "block")).to.deep.ordered.members([ {
+      }), "block")).to.deep.ordered.members([{
         value: new Bytes('68656c6c6f20776f726c6421'),
         name: "block.hash",
         type: "bytes"
@@ -644,7 +644,7 @@ describe('utils', () => {
           hash: new Bytes('68656c6c6f20776f726c6421'),
           header: new Bytes('1156'),
         })
-      }), "p")).to.deep.ordered.members([ {
+      }), "p")).to.deep.ordered.members([{
         value: new Bytes('7361746f736869206e616b616d6f746f'),
         name: "p.name",
         type: "bytes"
@@ -700,7 +700,7 @@ describe('utils', () => {
           id: new Bytes('0003'),
           createTime: 1000002
         })]
-      }), "b")).to.deep.ordered.members([ {
+      }), "b")).to.deep.ordered.members([{
         value: new Bytes('6666'),
         name: "b.name",
         type: "bytes"
@@ -724,7 +724,7 @@ describe('utils', () => {
         value: new Bytes('0003'),
         name: "b.tokens[2].id",
         type: "bytes"
-      },{
+      }, {
         value: new Int(1000002),
         name: "b.tokens[2].createTime",
         type: "int"
@@ -763,102 +763,102 @@ describe('utils', () => {
 
   describe('subscript() [2][3][4]', () => {
     it('subscript should be [0][0][0] when one-dimensions index = 0', () => {
-      expect(subscript(0, [2,3,4])).to.equal('[0][0][0]')
+      expect(subscript(0, [2, 3, 4])).to.equal('[0][0][0]')
     })
 
 
     it('subscript should be [0][0][1] when one-dimensions index = 1', () => {
-      expect(subscript(1, [2,3,4])).to.equal('[0][0][1]')
+      expect(subscript(1, [2, 3, 4])).to.equal('[0][0][1]')
     })
 
     it('subscript should be [0][0][2] when one-dimensions index = 2', () => {
-      expect(subscript(2, [2,3,4])).to.equal('[0][0][2]')
+      expect(subscript(2, [2, 3, 4])).to.equal('[0][0][2]')
     })
 
     it('subscript should be [0][0][3] when one-dimensions index = 3', () => {
-      expect(subscript(3, [2,3,4])).to.equal('[0][0][3]')
+      expect(subscript(3, [2, 3, 4])).to.equal('[0][0][3]')
     })
 
     it('subscript should be [0][1][0] when one-dimensions index = 4', () => {
-      expect(subscript(4, [2,3,4])).to.equal('[0][1][0]')
+      expect(subscript(4, [2, 3, 4])).to.equal('[0][1][0]')
     })
 
     it('subscript should be [0][1][1] when one-dimensions index = 5', () => {
-      expect(subscript(5, [2,3,4])).to.equal('[0][1][1]')
+      expect(subscript(5, [2, 3, 4])).to.equal('[0][1][1]')
     })
 
     it('subscript should be [0][1][2] when one-dimensions index = 6', () => {
-      expect(subscript(6, [2,3,4])).to.equal('[0][1][2]')
+      expect(subscript(6, [2, 3, 4])).to.equal('[0][1][2]')
     })
 
     it('subscript should be [0][1][3] when one-dimensions index = 7', () => {
-      expect(subscript(7, [2,3,4])).to.equal('[0][1][3]')
+      expect(subscript(7, [2, 3, 4])).to.equal('[0][1][3]')
     })
 
     it('subscript should be [0][2][0] when  one-dimensions index = 8', () => {
-      expect(subscript(8, [2,3,4])).to.equal('[0][2][0]')
+      expect(subscript(8, [2, 3, 4])).to.equal('[0][2][0]')
     })
 
     it('subscript should be [0][2][1] when one-dimensions index = 9', () => {
-      expect(subscript(9, [2,3,4])).to.equal('[0][2][1]')
+      expect(subscript(9, [2, 3, 4])).to.equal('[0][2][1]')
     })
 
     it('subscript should be [0][2][2] when one-dimensions index = 10', () => {
-      expect(subscript(10, [2,3,4])).to.equal('[0][2][2]')
+      expect(subscript(10, [2, 3, 4])).to.equal('[0][2][2]')
     })
 
     it('subscript should be [0][2][3] when one-dimensions index = 11', () => {
-      expect(subscript(11, [2,3,4])).to.equal('[0][2][3]')
+      expect(subscript(11, [2, 3, 4])).to.equal('[0][2][3]')
     })
 
     it('subscript should be [1][0][0] when one-dimensions index = 12', () => {
-      expect(subscript(12, [2,3,4])).to.equal('[1][0][0]')
+      expect(subscript(12, [2, 3, 4])).to.equal('[1][0][0]')
     })
 
 
     it('subscript should be [1][0][1] when one-dimensions index = 13', () => {
-      expect(subscript(13, [2,3,4])).to.equal('[1][0][1]')
+      expect(subscript(13, [2, 3, 4])).to.equal('[1][0][1]')
     })
 
     it('subscript should be [1][0][2] when one-dimensions index = 14', () => {
-      expect(subscript(14, [2,3,4])).to.equal('[1][0][2]')
+      expect(subscript(14, [2, 3, 4])).to.equal('[1][0][2]')
     })
 
     it('subscript should be [1][0][3] when one-dimensions index = 15', () => {
-      expect(subscript(15, [2,3,4])).to.equal('[1][0][3]')
+      expect(subscript(15, [2, 3, 4])).to.equal('[1][0][3]')
     })
 
 
     it('subscript should be [1][1][0] when one-dimensions index = 16', () => {
-      expect(subscript(16, [2,3,4])).to.equal('[1][1][0]')
+      expect(subscript(16, [2, 3, 4])).to.equal('[1][1][0]')
     })
 
     it('subscript should be [1][1][1] when one-dimensions index = 17', () => {
-      expect(subscript(17, [2,3,4])).to.equal('[1][1][1]')
+      expect(subscript(17, [2, 3, 4])).to.equal('[1][1][1]')
     })
 
     it('subscript should be [1][1][2] when one-dimensions index = 18', () => {
-      expect(subscript(18, [2,3,4])).to.equal('[1][1][2]')
+      expect(subscript(18, [2, 3, 4])).to.equal('[1][1][2]')
     })
 
     it('subscript should be [1][1][3] when one-dimensions index = 19', () => {
-      expect(subscript(19, [2,3,4])).to.equal('[1][1][3]')
+      expect(subscript(19, [2, 3, 4])).to.equal('[1][1][3]')
     })
 
     it('subscript should be [1][2][0] when one-dimensions index = 20', () => {
-      expect(subscript(20, [2,3,4])).to.equal('[1][2][0]')
+      expect(subscript(20, [2, 3, 4])).to.equal('[1][2][0]')
     })
 
     it('subscript should be [1][2][1] when one-dimensions index = 21', () => {
-      expect(subscript(21, [2,3,4])).to.equal('[1][2][1]')
+      expect(subscript(21, [2, 3, 4])).to.equal('[1][2][1]')
     })
 
     it('subscript should be [1][2][2] when one-dimensions index = 22', () => {
-      expect(subscript(22, [2,3,4])).to.equal('[1][2][2]')
+      expect(subscript(22, [2, 3, 4])).to.equal('[1][2][2]')
     })
 
     it('subscript should be [1][2][3] when one-dimensions index = 23', () => {
-      expect(subscript(23, [2,3,4])).to.equal('[1][2][3]')
+      expect(subscript(23, [2, 3, 4])).to.equal('[1][2][3]')
     })
 
     it('subscript should be [0] when one-dimensions index = 0', () => {
