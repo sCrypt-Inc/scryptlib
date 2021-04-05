@@ -108,7 +108,7 @@ describe('VerifyError', () => {
     });
 
 
-    const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1, inputlockingScript = undefined) => {
+    const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1, inputlockingScript = undefined, inputAmount = 0) => {
       let tx = new bsv.Transaction()
 
       tx.addInput(new bsv.Transaction.Input({
@@ -133,7 +133,7 @@ describe('VerifyError', () => {
 
       token.txContext = { tx: tx, inputIndex: 0, inputSatoshis }
 
-      const preimage = getPreimage(tx, inputlockingScript ? inputlockingScript : token.lockingScript.toASM(), inputSatoshis)
+      const preimage = getPreimage(tx, inputlockingScript ? inputlockingScript : token.lockingScript.toASM(), inputAmount ? inputAmount : inputSatoshis)
       const sig = signTx(tx, privKey, token.lockingScript.toASM(), inputSatoshis)
       return token.split(
         new Sig(toHex(sig)),
@@ -166,11 +166,14 @@ describe('VerifyError', () => {
       // split 100 tokens
       token.setDataPart(toHex(publicKey1) + num2bin(10, DataLen) + num2bin(90, DataLen))
 
-      result = testSplit(privateKey1, 60, 40, 60, 40, token.lockingScript.toASM() + "00").verify()
+      result = testSplit(privateKey1, 60, 40, 60, 40, token.lockingScript.toASM() + "00", 111111).verify()
+
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("tokenUtxo.scrypt#14");
       expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      //only check error message contains scriptCode diff
       expect(result.error).to.contains("scriptCode | ...OP_RETURN");
+      expect(result.error).to.contains("amount | 111111 | 100000");
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
       expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
