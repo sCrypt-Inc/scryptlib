@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.3.3
+## 0.3.4
 
 - support warnings
 - add CheckPreimage/CheckSig Fail Hints
