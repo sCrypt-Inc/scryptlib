@@ -2,6 +2,7 @@
 
 ## 0.3.3
 
+- support warnings
 - add CheckPreimage/CheckSig Fail Hints
 - fix VerifyError: SCRIPT_ERR_MINIMALDATA
 - fix struct toLiteral not working properly
