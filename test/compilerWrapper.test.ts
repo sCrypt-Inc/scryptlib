@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import path = require("path");
-import { loadDescription,getContractFilePath, getInvalidContractFilePath } from './helper'
-import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion} from '../src/compilerWrapper';
+import { loadDescription, getContractFilePath, getInvalidContractFilePath } from './helper'
+import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
 import { compileContract, getCIScryptc } from '../src/utils';
 import * as minimist from 'minimist';
 
@@ -91,7 +91,7 @@ describe('compile()', () => {
     const argv = minimist(process.argv.slice(2));
 
     let scryptc = argv.scryptc;
-    if(argv.ci || !scryptc) {
+    if (argv.ci || !scryptc) {
       scryptc = getCIScryptc();
     }
 
@@ -99,7 +99,7 @@ describe('compile()', () => {
     console.log('compilerVersion', version)
     expect(/^(\d)+\.(\d)+\.(\d)+\+commit\./.test(version)).to.be.true
   })
- 
+
 
 
   describe('desc should be as expected', () => {
@@ -110,8 +110,8 @@ describe('compile()', () => {
 
     it('source should be sort as expected', () => {
       expect(desc.sources[0]).to.contains("std");
-      expect(desc.sources[1]).to.contains("util.scrypt");
-      expect(desc.sources[2]).to.contains("tokenUtxo.scrypt");
+      expect(desc.sources[2]).to.contains("util.scrypt");
+      expect(desc.sources[1]).to.contains("tokenUtxo.scrypt");
     })
 
 
@@ -126,164 +126,164 @@ describe('compile()', () => {
   describe('compile error test', () => {
     it('should compile fail with import error', () => {
       const result = compileContract(getInvalidContractFilePath('main.scrypt'));
-  
+
       assert.typeOf(result.errors, 'array');
-  
+
       result.errors.forEach(e => {
         e.filePath = path.basename(e.filePath);
       })
-  
+
       expect(result.errors).to.deep.include.members([{
-          filePath: "main.scrypt",
-          message: "File not found: \" lib.scrypt\"",
-          position: [
-            {
-              "column": 8,
-              "line": 1
-            },
-            {
-              "column": 21,
-              "line": 1
-            }
-          ],
-          type: "SemanticError"
-        
+        filePath: "main.scrypt",
+        message: "File not found: \" lib.scrypt\"",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 21,
+            "line": 1
+          }
+        ],
+        type: "SemanticError"
+
       }])
-  
+
     })
-  
-  
+
+
     it('should compile fail with import error', () => {
       const result = compileContract(getInvalidContractFilePath('main0.scrypt'));
-  
+
       assert.typeOf(result.errors, 'array');
-  
+
       result.errors.forEach(e => {
         e.filePath = path.basename(e.filePath);
       })
-  
+
       expect(result.errors).to.deep.include.members([{
-          filePath: "main0.scrypt",
-          message: "File not found: \"libx.scrypt\"",
-          position: [
-            {
-              "column": 8,
-              "line": 1
-            },
-            {
-              "column": 21,
-              "line": 1
-            }
-          ],
-          type: "SemanticError"
+        filePath: "main0.scrypt",
+        message: "File not found: \"libx.scrypt\"",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 21,
+            "line": 1
+          }
+        ],
+        type: "SemanticError"
       }])
     })
-  
+
     it('should compile fail with import error', () => {
       const result = compileContract(getInvalidContractFilePath('demo.scrypt'));
-  
+
       assert.typeOf(result.errors, 'array');
-  
+
       result.errors.forEach(e => {
         e.filePath = path.basename(e.filePath);
       })
-  
+
       expect(result.errors).to.deep.include.members([{
-          filePath: "main0.scrypt",
-          message: "File not found: \"libx.scrypt\"",
-          position: [
-            {
-              "column": 8,
-              "line": 1
-            },
-            {
-              "column": 21,
-              "line": 1
-            }
-          ],
-          type: "SemanticError"
+        filePath: "main0.scrypt",
+        message: "File not found: \"libx.scrypt\"",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 21,
+            "line": 1
+          }
+        ],
+        type: "SemanticError"
       }])
     })
-  
-  
+
+
     it('should compile fail with ImportCycleError', () => {
       const result = compileContract(getInvalidContractFilePath('importCycleA.scrypt'));
-  
+
       assert.typeOf(result.errors, 'array');
-  
+
       result.errors.forEach(e => {
         e.filePath = path.basename(e.filePath);
       })
-  
+
       expect(result.errors).to.deep.include.members([{
-          filePath: "importCycleB.scrypt",
-          message: "Dependency cycle detected: (\"importCycleB.scrypt\" -> \"importCycleC.scrypt\", \"importCycleC.scrypt\" -> \"importCycleA.scrypt\", \"importCycleA.scrypt\" -> \"importCycleB.scrypt\")",
-          position: [
-            {
-              "column": 8,
-              "line": 1
-            },
-            {
-              "column": 31,
-              "line": 1
-            }
-          ],
-          type: "SemanticError"
+        filePath: "importCycleB.scrypt",
+        message: "Cycle detected in import dependency: (\"importCycleB.scrypt\" -> \"importCycleC.scrypt\", \"importCycleC.scrypt\" -> \"importCycleA.scrypt\", \"importCycleA.scrypt\" -> \"importCycleB.scrypt\")",
+        position: [
+          {
+            "column": 8,
+            "line": 1
+          },
+          {
+            "column": 31,
+            "line": 1
+          }
+        ],
+        type: "SemanticError"
       }])
     })
 
 
     it('must have at least one public function', () => {
       const result = compileContract(getInvalidContractFilePath('lib.scrypt'));
-  
+
       assert.typeOf(result.errors, 'array');
-  
+
       result.errors.forEach(e => {
         e.filePath = path.basename(e.filePath);
       })
-  
+
       expect(result.errors).to.deep.include.members([{
-          filePath: "lib.scrypt",
-          message: "Contact `Lib` must have at least one public function",
-          position: [
-            {
-              "column": 10,
-              "line": 1
-            },
-            {
-              "column": 13,
-              "line": 1
-            }
-          ],
-          type: "SemanticError"
+        filePath: "lib.scrypt",
+        message: "Contact `Lib` must have at least one public function",
+        position: [
+          {
+            "column": 10,
+            "line": 1
+          },
+          {
+            "column": 13,
+            "line": 1
+          }
+        ],
+        type: "SemanticError"
       }])
     })
 
 
     it('Expecting a compile time constant', () => {
       const result = compileContract(getInvalidContractFilePath('const.scrypt'));
-  
+
       assert.typeOf(result.errors, 'array');
-  
+
       result.errors.forEach(e => {
         e.filePath = path.basename(e.filePath);
       })
-  
+
       expect(result.errors).to.deep.include.members([{
-          filePath: "const.scrypt",
-          message: "Expecting a compile time constant",
-          position: [
-            {
-              "column": 10,
-              "line": 8
-            },
-            {
-              "column": 11,
-              "line": 8
-            }
-          ],
-          type: "SemanticError"
-      },{
+        filePath: "const.scrypt",
+        message: "Expecting a compile time constant",
+        position: [
+          {
+            "column": 10,
+            "line": 8
+          },
+          {
+            "column": 11,
+            "line": 8
+          }
+        ],
+        type: "SemanticError"
+      }, {
         filePath: "const.scrypt",
         message: "Expecting a compile time constant",
         position: [
@@ -297,7 +297,7 @@ describe('compile()', () => {
           }
         ],
         type: "SemanticError"
-    }])
+      }])
     })
 
   })
