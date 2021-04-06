@@ -135,6 +135,8 @@ describe('Alias type check', () => {
       expect(finalTypeResolver("Coinbase")).to.equal('bytes')
       expect(finalTypeResolver("Integer")).to.equal('int')
       expect(finalTypeResolver("Height")).to.equal('int')
+      expect(finalTypeResolver("struct Person {}[3]")).to.equal('struct Person {}[3]')
+      expect(finalTypeResolver("struct MaleAAA {}[3]")).to.equal('struct Person {}[3]')
 
       expect(finalTypeResolver("int")).to.equal('int')
       expect(finalTypeResolver("PubKey")).to.equal('PubKey')

@@ -598,7 +598,13 @@ export function buildTypeResolver(alias: AliasEntity[]): TypeResolver {
     let arrayType = '';
     if (isArrayType(alias)) {
       const [elemTypeName, sizes] = arrayTypeAndSize(alias);
-      alias = elemTypeName;
+
+      if (isStructType(elemTypeName)) {
+        alias = getStructNameByType(elemTypeName);
+      } else {
+        alias = elemTypeName;
+      }
+
       arrayType = sizes.map(size => `[${size}]`).join('');
     }
 
