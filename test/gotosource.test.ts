@@ -1,9 +1,9 @@
 import { assert, expect } from 'chai';
-import { newTx, loadDescription} from './helper';
-import { DebugLaunch} from '../src/abi';
+import { newTx, loadDescription } from './helper';
+import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
-import { bsv, toHex, signTx, compileContract ,num2bin, getPreimage, uri2path} from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage} from '../src/scryptTypes';
+import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, } from '../src/utils';
+import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage } from '../src/scryptTypes';
 import { readFileSync } from 'fs';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
@@ -36,12 +36,12 @@ const person = new PersonContract(man, 18);
 
 const mdDescr = loadDescription('mdarray_desc.json');
 const MDArray = buildContractClass(mdDescr);
-const {ST1, AliasST2, ST3} = buildTypeClasses(mdDescr);
+const { ST1, AliasST2, ST3 } = buildTypeClasses(mdDescr);
 
 
 function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
   for (const match of error.matchAll(LINKPATTERN)) {
-    if(match[5] && match[5].startsWith("scryptlaunch")) {
+    if (match[5] && match[5].startsWith("scryptlaunch")) {
       const file = match[5].replace(/scryptlaunch/, "file");
       return JSON.parse(readFileSync(uri2path(file)).toString());
     }
@@ -54,12 +54,12 @@ describe('VerifyError', () => {
 
   describe('check VerifyError ackermann.scrypt', () => {
     let ackermann, result;
-  
+
     before(() => {
       const Ackermann = buildContractClass(loadDescription('ackermann_desc.json'));
       ackermann = new Ackermann(2, 1);
     });
-  
+
     it('stop at ackermann.scrypt#38', () => {
       result = ackermann.unlock(15).verify()
       expect(result.error).to.contains("ackermann.scrypt#38");
@@ -78,7 +78,7 @@ describe('VerifyError', () => {
       const DemoP2PKH = buildContractClass(jsonDescr);
       p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
     });
-  
+
     it('need generate DemoP2PKH-launch.json', () => {
       let sig: Sig = new Sig(toHex(signTx(tx, privateKey, p2pkh.lockingScript.toASM(), inputSatoshis)));
       let pubkey: PubKey = new PubKey(toHex(publicKey));
@@ -102,56 +102,56 @@ describe('VerifyError', () => {
     before(() => {
       const Token = buildContractClass(loadDescription('tokenUtxo_desc.json'))
       token = new Token()
-  
+
       // code part
       lockingScriptCodePart = token.codePart.toASM()
     });
 
-  
+
+    const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1, inputlockingScript = undefined, inputAmount = 0) => {
+      let tx = new bsv.Transaction()
+
+      tx.addInput(new bsv.Transaction.Input({
+        prevTxId: dummyTxId,
+        outputIndex: 0,
+        script: ''
+      }), bsv.Script.fromASM(token.lockingScript.toASM()), inputSatoshis)
+
+      const newLockingScript0 = [lockingScriptCodePart, toHex(publicKey2) + num2bin(0, DataLen) + num2bin(balance0, DataLen)].join(' ') + " "
+      tx.addOutput(new bsv.Transaction.Output({
+        script: bsv.Script.fromASM(newLockingScript0),
+        satoshis: outputAmount
+      }))
+
+      if (balance1 > 0) {
+        const newLockingScript1 = [lockingScriptCodePart, toHex(publicKey3) + num2bin(0, DataLen) + num2bin(balance1, DataLen)].join(' ')
+        tx.addOutput(new bsv.Transaction.Output({
+          script: bsv.Script.fromASM(newLockingScript1),
+          satoshis: outputAmount
+        }))
+      }
+
+      token.txContext = { tx: tx, inputIndex: 0, inputSatoshis }
+
+      const preimage = getPreimage(tx, inputlockingScript ? inputlockingScript : token.lockingScript.toASM(), inputAmount ? inputAmount : inputSatoshis)
+      const sig = signTx(tx, privKey, token.lockingScript.toASM(), inputSatoshis)
+      return token.split(
+        new Sig(toHex(sig)),
+        new PubKey(toHex(publicKey2)),
+        balanceInput0,
+        outputAmount,
+        new PubKey(toHex(publicKey3)),
+        balanceInput1,
+        outputAmount,
+        new SigHashPreimage(toHex(preimage))
+      )
+    }
+
     it('stop tokenUtxo.scrypt#43', () => {
 
       // split 100 tokens
       token.setDataPart(toHex(publicKey1) + num2bin(10, DataLen) + num2bin(90, DataLen))
-      
-      const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1) => {
-        let tx = new bsv.Transaction()
-  
-        tx.addInput(new bsv.Transaction.Input({
-          prevTxId: dummyTxId,
-          outputIndex: 0,
-          script: ''
-        }), bsv.Script.fromASM(token.lockingScript.toASM()), inputSatoshis)
-  
-        const newLockingScript0 = [lockingScriptCodePart, toHex(publicKey2) + num2bin(0, DataLen) + num2bin(balance0, DataLen)].join(' ') + " "
-        tx.addOutput(new bsv.Transaction.Output({
-          script: bsv.Script.fromASM(newLockingScript0),
-          satoshis: outputAmount
-        }))
-  
-        if (balance1 > 0) {
-          const newLockingScript1 = [lockingScriptCodePart, toHex(publicKey3) + num2bin(0, DataLen) + num2bin(balance1, DataLen)].join(' ')
-          tx.addOutput(new bsv.Transaction.Output({
-            script: bsv.Script.fromASM(newLockingScript1),
-            satoshis: outputAmount
-          }))
-        }
-  
-        token.txContext = { tx: tx, inputIndex: 0, inputSatoshis }
-        
-        const preimage = getPreimage(tx, token.lockingScript.toASM(), inputSatoshis)
-        const sig = signTx(tx, privKey, token.lockingScript.toASM(), inputSatoshis)
-        return token.split(
-          new Sig(toHex(sig)),
-          new PubKey(toHex(publicKey2)),
-          balanceInput0,
-          outputAmount,
-          new PubKey(toHex(publicKey3)),
-          balanceInput1,
-          outputAmount,
-          new SigHashPreimage(toHex(preimage))
-        )
-      }
-  
+
       result = testSplit(privateKey1, 60, 40).verify()
       expect(result.error).to.contains("fails at 02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a");
       expect(result.error).to.contains("tokenUtxo.scrypt#43");
@@ -161,12 +161,30 @@ describe('VerifyError', () => {
     });
 
 
+    it('stop tokenUtxo.scrypt#14 => require(Tx.checkPreimage(txPreimage))', () => {
+
+      // split 100 tokens
+      token.setDataPart(toHex(publicKey1) + num2bin(10, DataLen) + num2bin(90, DataLen))
+
+      result = testSplit(privateKey1, 60, 40, 60, 40, token.lockingScript.toASM() + "00", 111111).verify()
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("tokenUtxo.scrypt#14");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      //only check error message contains scriptCode diff
+      expect(result.error).to.contains("scriptCode | ...OP_RETURN");
+      expect(result.error).to.contains("amount | 111111 | 100000");
+      const launch = readLaunchJson(result.error);
+      expect(launch).not.undefined;
+      expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
+    });
+
   });
-  
+
 
   describe('check VerifyError', () => {
 
-    
+
     it('stop at person.scrypt#26', () => {
 
       let result = person.main(man, 44, false).verify()
@@ -198,7 +216,9 @@ describe('VerifyError', () => {
       expect(result.error).to.contains("p2pkh.scrypt#10");
       expect(result.error).to.contains("DemoP2PKH-launch.json");
       expect(result.error).to.contains("fails at OP_CHECKSIG");
-
+      expect(result.error).to.contains("----- CheckSig Fail Hints Begin -----");
+      expect(result.error).to.contains("1. private key used to sign should be corresponding to the public key");
+      expect(result.error).to.contains("2. the preimage of the tx to be signed should be");
     })
 
   })
@@ -206,12 +226,12 @@ describe('VerifyError', () => {
 
   describe('check asmArgs', () => {
     let asm, result;
-  
+
     before(() => {
       const ASM = buildContractClass(loadDescription('asm_desc.json'));
       asm = new ASM();
     });
-  
+
     it('it should success when replace correctly ', () => {
 
       asm.replaceAsmVars({
@@ -237,38 +257,38 @@ describe('VerifyError', () => {
       const launch = readLaunchJson(result.error);
 
       assert.deepEqual(launch.configurations[0].asmArgs, {
-          'ASM.equalImpl.x': 'OP_5'
-        }
+        'ASM.equalImpl.x': 'OP_5'
+      }
       )
     });
 
   });
 
 
-  
+
   describe('check MDArray', () => {
     let mdArray, result;
-  
+
     before(() => {
-      mdArray = new MDArray([ [
+      mdArray = new MDArray([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10, 11, 12]
-        ],
-        [
+      ],
+      [
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-        ] ]);
+      ]]);
     });
-  
+
     it('LaunchJson should be right with Multidimensional Arrays ', () => {
-      result = mdArray.unlock([[3,1,2],[4,5, 5]], [1,32]).verify()
+      result = mdArray.unlock([[3, 1, 2], [4, 5, 5]], [1, 32]).verify()
       expect(result.success, result.error).to.be.false;
 
       const launch = readLaunchJson(result.error);
       expect(result.error).to.contains("mdarray.scrypt#44");
-      assert.deepEqual(launch.configurations[0].pubFuncArgs, [[[3,1,2],[4,5, 5]], [1,32]])
+      assert.deepEqual(launch.configurations[0].pubFuncArgs, [[[3, 1, 2], [4, 5, 5]], [1, 32]])
     });
 
     it('LaunchJson should be right with mixed struct', () => {
@@ -278,14 +298,14 @@ describe('VerifyError', () => {
         y: new Bytes("68656c6c6f20776f726c6421"),
         st2: new ST3({
           x: false,
-          y: [1,2,3]
+          y: [1, 2, 3]
         })
       }), new AliasST2({
         y: new Bytes("68656c6c6f20776f726c6420"),
         x: true,
         st2: new ST3({
           x: true,
-          y: [4,5,1]
+          y: [4, 5, 1]
         })
       })]).verify()
 
@@ -293,7 +313,7 @@ describe('VerifyError', () => {
 
       const launch = readLaunchJson(result.error);
       expect(result.error).to.contains("mdarray.scrypt#101");
-  
+
       assert.deepEqual(launch.configurations[0].pubFuncArgs as object, [
         [
           {
@@ -324,7 +344,7 @@ describe('VerifyError', () => {
       ])
 
 
-      assert.deepEqual(launch.configurations[0].constructorArgs as object,  [
+      assert.deepEqual(launch.configurations[0].constructorArgs as object, [
         [
           [
             [
@@ -372,4 +392,48 @@ describe('VerifyError', () => {
     });
 
   })
+
+
+
+
+
+  describe('Test sCrypt contract MultiSig In Javascript', () => {
+    let multiSig, result, context
+
+    const privateKey1 = new bsv.PrivateKey.fromRandom('testnet')
+    const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1)
+    const pkh1 = bsv.crypto.Hash.sha256ripemd160(publicKey1.toBuffer())
+    const privateKey2 = new bsv.PrivateKey.fromRandom('testnet')
+    const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2)
+    const pkh2 = bsv.crypto.Hash.sha256ripemd160(publicKey2.toBuffer())
+    const privateKey3 = new bsv.PrivateKey.fromRandom('testnet')
+    const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3)
+    const pkh3 = bsv.crypto.Hash.sha256ripemd160(publicKey3.toBuffer())
+
+    before(() => {
+      const MultiSig = buildContractClass(loadDescription('multiSig_desc.json'));
+      multiSig = new MultiSig([new Ripemd160(toHex(pkh1)), new Ripemd160(toHex(pkh2)), new Ripemd160(toHex(pkh3))]);
+      context = { tx, inputIndex: 0, inputSatoshis }
+    });
+
+
+    it('signature check should fail when wrong private key signs', () => {
+      const sig1 = signTx(tx, privateKey1, multiSig.lockingScript.toASM(), inputSatoshis)
+      const sig2 = signTx(tx, privateKey1, multiSig.lockingScript.toASM(), inputSatoshis)
+      const sig3 = signTx(tx, privateKey1, multiSig.lockingScript.toASM(), inputSatoshis)
+      result = multiSig.unlock([new PubKey(toHex(publicKey1)), new PubKey(toHex(publicKey2)), new PubKey(toHex(publicKey3))],
+        [new Sig(toHex(sig1)), new Sig(toHex(sig2)), new Sig(toHex(sig3))]).verify(context)
+
+      console.log('ee', result.error)
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("multiSig.scrypt#5");
+      expect(result.error).to.contains("MultiSig-launch.json");
+      expect(result.error).to.contains("fails at OP_CHECKMULTISIG");
+
+    });
+
+  });
+
+
 })

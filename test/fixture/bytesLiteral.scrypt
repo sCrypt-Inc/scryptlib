@@ -1,0 +1,12 @@
+contract BytesLiteral {
+    public function main(bytes x1, bytes x2, bytes x3, bytes x4, bytes x5, bytes x6, bytes x7) {
+        require(x1 == b'');
+        require(x2 == b'00');
+        require(x3 == b'01');
+        require(x4 == b'02');
+        require(x5 == b'0002');
+        require(x6 == b'10');
+        require(x7 == b'11');
+    }
+}
+

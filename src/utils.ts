@@ -8,7 +8,7 @@ import * as minimist from 'minimist';
 import { AsmVarValues, TxContext } from './contract';
 import { DebugConfiguration, DebugLaunch, FileUri } from './abi';
 import { tmpdir } from 'os';
-
+import md5 = require('md5');
 export { bsv };
 
 const BN = bsv.crypto.BN;
@@ -119,9 +119,23 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   // note: special handling of empty bytes b''
   m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    const value = getValidatedHexString(m[1]);
-    const asm = value === '' ? 'OP_0' : value;
-    return [asm, value, VariableType.BYTES];
+    const hexString = getValidatedHexString(m[1]);
+    if (hexString === '') {
+      return ['OP_0', hexString, VariableType.BYTES];
+    }
+
+    if (hexString.length / 2 > 1) {
+      return [hexString, hexString, VariableType.BYTES];
+    }
+
+
+    const intValue = parseInt(hexString, 16);
+
+    if (intValue >= 1 && intValue <= 16) {
+      return [`OP_${intValue}`, hexString, VariableType.BYTES];
+    }
+
+    return [hexString, hexString, VariableType.BYTES];
   }
 
 
@@ -194,10 +208,10 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // Struct
-  m = /^struct\((.*)\)$/.exec(l);
+  m = /^\{([\w(){}[\],\s']+)\}$/.exec(l);
   if (m) {
-    const value = m[1];
-    return [value, value, VariableType.STRUCT];
+    // we use object to constructor a struct, no use literal, so here we return empty
+    return ['', '', VariableType.STRUCT];
   }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
@@ -829,4 +843,46 @@ export function resolveType(alias: AliasEntity[], type: string): string {
 export function printDebugUri() {
   const argv = minimist(process.argv.slice(2));
   return argv.debugUri === true;
+}
+
+interface Outpoint { hash: string, index: number }
+
+export interface SighashPreiamgeDiff {
+  nVersion?: [number, number],
+  hashPrevouts?: [string, string],
+  hashSequence?: [string, string],
+  outpoint?: [Outpoint, Outpoint],
+  scriptCode?: [string, string],
+  amount?: [number, number],
+  nSequence?: [number, number],
+  hashOutputs?: [string, string],
+  nLocktime?: [number, number],
+  sighashType?: [number, number],
+}
+
+export function getSigHashPreimageDiff(sigImgA: SigHashPreimage, sigImgB: SigHashPreimage): SighashPreiamgeDiff {
+  const result: SighashPreiamgeDiff = {};
+  const attributes = ['nVersion', 'hashPrevouts', 'hashSequence', 'outpoint', 'scriptCode', 'amount', 'nSequence', 'hashOutputs', 'nLocktime', 'sighashType'];
+  for (const att of attributes) {
+    if (JSON.stringify(sigImgA[att]) !== JSON.stringify(sigImgB[att])) {
+      result[att] = [sigImgA[att], sigImgB[att]];
+    }
+  }
+  return result;
+}
+
+export function removeSharedStart([asmPreimageInParam, asmPreimageFromTx]) {
+  const A: string[] = asmPreimageInParam.split(' ');
+  const B: string[] = asmPreimageFromTx.split(' ');
+
+  const L = A.length;
+
+  let i = 0;
+  while (i < L && A[i] === B[i] && A[i] != 'OP_RETURN') i++;
+
+  if (A[i] === 'OP_RETURN') {
+    return [`...${A.slice(i).join(' ')}`, `...${B.slice(i).join(' ')}`];
+  }
+
+  return [`md5(scriptCode) = ${md5(asmPreimageInParam)}`, `md5(scriptCode) = ${md5(asmPreimageFromTx)}`];
 }

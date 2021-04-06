@@ -5,6 +5,19 @@ export type TypeResolver = (type: string) => string;
 
 export type ValueType = number | bigint | boolean | string | StructObject;
 
+
+export function toScryptType(a: any): ScryptType {
+  if (typeof a === 'number' || typeof a === 'bigint') {
+    return new Int(a);
+  } else if (typeof a === 'boolean') {
+    return new Bool(a);
+  } else if (a instanceof ScryptType) {
+    return a;
+  } else {
+    throw `${a} cannot be convert to ScryptType`;
+  }
+}
+
 export class ScryptType {
 
   protected _value: ValueType;
@@ -457,20 +470,30 @@ export class Struct extends ScryptType {
   }
 
 
+  static arrayToLiteral(a: Array<ValueType>) {
+
+    const al = a.map(i => {
+      if (Array.isArray(i)) {
+        return Struct.arrayToLiteral(i);
+      }
+      return toScryptType(i).toLiteral();
+    }).join(',');
+
+    return `[${al}]`;
+  }
+
+
   toLiteral(): string {
     const v = this.value;
-    const l = Object.keys(v).map((key) => {
-      if (v[key] instanceof ScryptType) {
-        return `${key}=${(v[key] as ScryptType).toLiteral()}`;
-      } else if (typeof v[key] === 'boolean') {
-        return `${key}=${new Bool(v[key] as boolean).toLiteral()}`;
-      } else if (typeof v[key] === 'number') {
-        return `${key}=${new Int(v[key] as number).toLiteral()}`;
-      } else if (typeof v[key] === 'bigint') {
-        return `${key}=${new Int(v[key] as bigint).toLiteral()}`;
+    const l = Object.keys(this.value).map(key => {
+      if (Array.isArray(v[key])) {
+        return Struct.arrayToLiteral(v[key]);
+      } else {
+        return toScryptType(v[key]).toLiteral();
       }
-    });
-    return `struct(${l})`;
+    }).join(',');
+
+    return `{${l}}`;
   }
 
   toJSON() {
