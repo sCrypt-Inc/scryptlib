@@ -424,7 +424,6 @@ describe('VerifyError', () => {
       result = multiSig.unlock([new PubKey(toHex(publicKey1)), new PubKey(toHex(publicKey2)), new PubKey(toHex(publicKey3))],
         [new Sig(toHex(sig1)), new Sig(toHex(sig2)), new Sig(toHex(sig3))]).verify(context)
 
-      console.log('ee', result.error)
       expect(result.success, result.error).to.be.false
 
       expect(result.error).to.contains("multiSig.scrypt#5");

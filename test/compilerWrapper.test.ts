@@ -444,4 +444,123 @@ describe('compile()', () => {
       ])
     })
   })
+
+
+  describe('output warnings test', () => {
+
+    function warningsTest(warnings) {
+      warnings.forEach(error => {
+        delete error.filePath;
+      });
+      assert.isTrue(warnings.length === 5);
+
+      expect(warnings).to.deep.include.members([
+        {
+          type: 'Warning',
+          position: [
+            {
+              "column": 17,
+              "line": 15
+            },
+            {
+              "column": 18,
+              "line": 15
+            }
+          ],
+          message: 'Variable `y` shadows existing binding at 11:22:11:23'
+        },
+        {
+          type: 'Warning',
+          position: [
+            {
+              "column": 21,
+              "line": 19
+            },
+            {
+              "column": 22,
+              "line": 19
+            }
+          ],
+          message: 'Variable `y` shadows existing binding at 15:17:15:18'
+        },
+        {
+          type: 'Warning',
+          position: [
+            {
+              "column": 17,
+              "line": 34
+            },
+            {
+              "column": 18,
+              "line": 34
+            }
+          ],
+          message: 'Variable `i` shadows existing binding at 32:9:36:10'
+        },
+        {
+          type: 'Warning',
+          position: [
+            {
+              "column": 17,
+              "line": 44
+            },
+            {
+              "column": 18,
+              "line": 44
+            }
+          ],
+          message: 'Variable `y` shadows existing binding at 41:32:41:33'
+        },
+        {
+          type: 'Warning',
+          position: [
+            {
+              "column": 17,
+              "line": 48
+            },
+            {
+              "column": 18,
+              "line": 48
+            }
+          ],
+          message: 'Variable `y` shadows existing binding at 41:32:41:33'
+        }
+      ])
+
+    }
+
+    it('warnings should be right', () => {
+
+      const result = compileContract(getContractFilePath('varshadow.scrypt'));
+
+      warningsTest(result.warnings);
+    })
+
+    it('warnings and errors should be right', () => {
+
+      const result = compileContract(getInvalidContractFilePath('varshadow.scrypt'));
+      warningsTest(result.warnings);
+      result.errors.forEach(error => {
+        delete error.filePath;
+      });
+      expect(result.errors).to.deep.include.members([
+        {
+          type: 'SemanticError',
+          position: [
+            {
+              "column": 17,
+              "line": 13
+            },
+            {
+              "column": 22,
+              "line": 13
+            }
+          ],
+          message: "Couldn't match expected type 'int' with actual type 'bytes'"
+        }
+      ])
+    })
+
+  })
+
 })

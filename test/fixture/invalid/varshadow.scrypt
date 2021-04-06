@@ -1,0 +1,81 @@
+/**
+* test variable shadowing
+*/
+struct Person {
+    int age;
+}
+
+contract VarShadow {
+    static const int N = 2;
+
+    function foo(int y) : int {
+        require(y == -1);
+        int a = b'aa';
+        if (true) {
+            int y = 3;
+            require(y == 3);
+
+            loop (3) {
+                int y = 4;
+                require(y == 4);
+            }
+
+            require(y == 3);
+        }
+
+        return y;
+    }
+
+    function inductionVar() : bool {
+        int[N] xs = [1, 2];
+
+        loop (N) : i {
+            // shadow induction var i above
+            int i = N + 1;
+            require(i > N);
+        }
+
+        return true;
+    }
+
+    public function unlock(int y) {
+        int x = this.foo(-1);
+        {
+            int y = 1;
+            require(y == 1);
+        }{
+            // use outer scope y to init inner scope y
+            int y = y * 2 + 3;
+            require(y == 13);
+        }
+
+        require(y == 5);
+
+        int[2][3] xs = [[1, 2, 3], [40, 50, 60]];
+        xs = this.updateArray(xs);
+        require(xs[1][1] == 51);
+
+        Person p = {
+            42};
+        p = this.updateStruct(p);
+        require(p.age == 43);
+        require(++p.age == 44);
+        require(p.age-- == 44);
+        require(--p.age == 42);
+
+        require(this.inductionVar());
+    }
+
+    function updateArray(int[2][3] xs) : int[2][3] {
+        xs[1][1]++;
+        return xs;
+    }
+
+    function updateStruct(Person p) : Person {
+        p.age++;
+        return p;
+    }
+}
+
+
+

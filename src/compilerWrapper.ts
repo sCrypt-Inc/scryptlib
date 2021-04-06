@@ -11,6 +11,8 @@ import compareVersions = require('compare-versions');
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG = /Internal error:(?<message>.+)/;
+const WARNING_REG = /Warning:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
+
 
 
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
@@ -21,7 +23,8 @@ const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
-  InternalError = 'InternalError'
+  InternalError = 'InternalError',
+  Warning = 'Warning'
 }
 
 export interface CompileErrorBase {
@@ -51,7 +54,11 @@ export interface InternalError extends CompileErrorBase {
   type: CompileErrorType.InternalError;
 }
 
-export type CompileError = SyntaxError | SemanticError | InternalError;
+export interface Warning extends CompileErrorBase {
+  type: CompileErrorType.Warning;
+}
+
+export type CompileError = SyntaxError | SemanticError | InternalError | Warning;
 
 export interface CompileResult {
   asm?: OpCode[];
@@ -59,6 +66,7 @@ export interface CompileResult {
   dependencyAsts?: Record<string, unknown>;
   abi?: Array<ABIEntity>;
   errors: CompileError[];
+  warnings: Warning[];
   compilerVersion?: string;
   contract?: string;
   md5?: string;
@@ -166,67 +174,17 @@ export function compile(
     let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
-    if (output.startsWith('Error:')) {
-      if (output.match(INTERNAL_ERR_REG)) {
-        return {
-          errors: [{
-            type: CompileErrorType.InternalError,
-            filePath: getFullFilePath('stdin', srcDir, sourceFileName),
-            message: `Compiler internal error: ${oc(output.match(INTERNAL_ERR_REG).groups).message('')}`,
-            position: [{
-              line: 1,
-              column: 1
-            }, {
-              line: 1,
-              column: 1
-            }]
-          }]
-        };
-      } else if (output.includes('Syntax error:')) {
-        const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)].map(match => {
-          const filePath = oc(match.groups).filePath('');
-          const unexpected = oc(match.groups).unexpected('');
-          const expecting = oc(match.groups).expecting('');
-          return {
-            type: CompileErrorType.SyntaxError,
-            filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-            position: [{
-              line: parseInt(oc(match.groups).line('-1')),
-              column: parseInt(oc(match.groups).column('-1')),
-            }],
-            message: oc(match.groups).message(`unexpected ${unexpected}\nexpecting ${expecting}`),
-            unexpected,
-            expecting,
-          };
-        });
-        return {
-          errors: syntaxErrors
-        };
-      }
-      else {
+    let result: CompileResult = { errors: [], warnings: [] };
+    if (output.startsWith('Error:') || output.startsWith('Warning:')) {
+      result = getErrorsAndWarnings(output, srcDir, sourceFileName);
 
-        const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
-          const filePath = oc(match.groups).filePath('');
-          return {
-            type: CompileErrorType.SemanticError,
-            filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-            position: [{
-              line: parseInt(oc(match.groups).line('-1')),
-              column: parseInt(oc(match.groups).column('-1')),
-            }, {
-              line: parseInt(oc(match.groups).line1('-1')),
-              column: parseInt(oc(match.groups).column1('-1')),
-            }],
-            message: oc(match.groups).message('')
-          };
-        });
-        return {
-          errors: semanticErrors
-        };
+      if (result.errors.length > 0) {
+        return result;
       }
+
     }
 
-    const result: CompileResult = { errors: [] };
+
 
     if (settings.ast || settings.desc) {
       const outputFilePath = getOutputFilePath(outputDir, 'ast');
@@ -680,6 +638,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     alias: description.alias,
     file: description.file,
     errors: [],
+    warnings: [],
     asm: asm.map((opcode, index) => {
       const item = description.sourceMap && description.sourceMap[index];
       if (item) {
@@ -710,4 +669,88 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     })
   };
   return result;
+}
+
+function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: string): CompileResult {
+  const warnings: Warning[] = [...output.matchAll(WARNING_REG)].map(match => {
+    const filePath = oc(match.groups).filePath('');
+    let message = oc(match.groups).message('');
+
+    message = message.replace(/Variable `(?<varName>\w+)` shadows existing binding at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
+      'Variable `$1` shadows existing binding at $3:$4:$5:$6');
+    return {
+      type: CompileErrorType.Warning,
+      filePath: getFullFilePath(filePath, srcDir, sourceFileName),
+      position: [{
+        line: parseInt(oc(match.groups).line('-1')),
+        column: parseInt(oc(match.groups).column('-1')),
+      }, {
+        line: parseInt(oc(match.groups).line1('-1')),
+        column: parseInt(oc(match.groups).column1('-1')),
+      }],
+      message: message
+    };
+  });
+
+
+  if (output.match(INTERNAL_ERR_REG)) {
+    return {
+      warnings: warnings,
+      errors: [{
+        type: CompileErrorType.InternalError,
+        filePath: getFullFilePath('stdin', srcDir, sourceFileName),
+        message: `Compiler internal error: ${oc(output.match(INTERNAL_ERR_REG).groups).message('')}`,
+        position: [{
+          line: 1,
+          column: 1
+        }, {
+          line: 1,
+          column: 1
+        }]
+      }]
+    };
+  } else if (output.includes('Syntax error:')) {
+    const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)].map(match => {
+      const filePath = oc(match.groups).filePath('');
+      const unexpected = oc(match.groups).unexpected('');
+      const expecting = oc(match.groups).expecting('');
+      return {
+        type: CompileErrorType.SyntaxError,
+        filePath: getFullFilePath(filePath, srcDir, sourceFileName),
+        position: [{
+          line: parseInt(oc(match.groups).line('-1')),
+          column: parseInt(oc(match.groups).column('-1')),
+        }],
+        message: oc(match.groups).message(`unexpected ${unexpected}\nexpecting ${expecting}`),
+        unexpected,
+        expecting,
+      };
+    });
+    return {
+      warnings: warnings,
+      errors: syntaxErrors
+    };
+  }
+  else {
+
+    const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
+      const filePath = oc(match.groups).filePath('');
+      return {
+        type: CompileErrorType.SemanticError,
+        filePath: getFullFilePath(filePath, srcDir, sourceFileName),
+        position: [{
+          line: parseInt(oc(match.groups).line('-1')),
+          column: parseInt(oc(match.groups).column('-1')),
+        }, {
+          line: parseInt(oc(match.groups).line1('-1')),
+          column: parseInt(oc(match.groups).column1('-1')),
+        }],
+        message: oc(match.groups).message('')
+      };
+    });
+    return {
+      warnings: warnings,
+      errors: semanticErrors
+    };
+  }
 }
