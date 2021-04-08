@@ -561,6 +561,65 @@ describe('compile()', () => {
       ])
     })
 
+
+    it('warnings and errors should be right', () => {
+
+      const result = compileContract(getInvalidContractFilePath('varshadow1.scrypt'));
+      result.warnings.forEach(warning => {
+        delete warning.filePath;
+      });
+      result.errors.forEach(error => {
+        delete error.filePath;
+      });
+
+      expect(result.warnings).to.deep.include.members([
+        {
+          type: 'Warning',
+          position: [
+            {
+              "column": 17,
+              "line": 5
+            },
+            {
+              "column": 18,
+              "line": 5
+            }
+          ],
+          message: 'Variable `x` shadows existing binding at 2:30:2:31'
+        }]
+      )
+      expect(result.errors).to.deep.include.members([
+        {
+          type: 'SemanticError',
+          position: [
+            {
+              "column": 13,
+              "line": 3
+            },
+            {
+              "column": 14,
+              "line": 3
+            }
+          ],
+          message: "Symbol `x` already defined at 2:30:2:31"
+        },
+        {
+          type: 'SemanticError',
+          position: [
+            {
+              "column": 13,
+              "line": 7
+            },
+            {
+              "column": 14,
+              "line": 7
+            }
+          ],
+          message: "Symbol `x` already defined at 2:30:2:31"
+        }
+      ])
+    })
+
   })
 
 })
