@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.3.5
+
+- remove `stdin` from error message
+- fix IDE UnhandledPromiseRejectionWarning
+
 ## 0.3.4
 
 - support warnings
