@@ -440,6 +440,12 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 
 export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt: Record<string, number>): ABI {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  if (!mainContract) {
+    return {
+      contract: '',
+      abi: []
+    };
+  }
 
   const interfaces: ABIEntity[] = getPublicFunctionDeclaration(mainContract);
   const constructorABI = getConstructorDeclaration(mainContract);

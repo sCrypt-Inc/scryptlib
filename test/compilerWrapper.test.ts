@@ -622,4 +622,11 @@ describe('compile()', () => {
 
   })
 
+
+  it('issue310.scrypt should be compile success', () => {
+
+    const result = compileContract(getInvalidContractFilePath('issue310.scrypt'));
+    assert.isTrue(result.errors.length === 0, "issue310.scrypt should be compile success")
+  })
+
 })
