@@ -440,6 +440,12 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 
 export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt: Record<string, number>): ABI {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  if (!mainContract) {
+    return {
+      contract: '',
+      abi: []
+    };
+  }
 
   const interfaces: ABIEntity[] = getPublicFunctionDeclaration(mainContract);
   const constructorABI = getConstructorDeclaration(mainContract);
@@ -734,7 +740,12 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
   else {
 
     const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
+      let message = oc(match.groups).message('');
       const filePath = oc(match.groups).filePath('');
+
+      message = message.replace(/Symbol `(?<varName>\w+)` already defined at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
+        'Symbol `$1` already defined at $3:$4:$5:$6');
+
       return {
         type: CompileErrorType.SemanticError,
         filePath: getFullFilePath(filePath, srcDir, sourceFileName),
@@ -745,7 +756,7 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
           line: parseInt(oc(match.groups).line1('-1')),
           column: parseInt(oc(match.groups).column1('-1')),
         }],
-        message: oc(match.groups).message('')
+        message: message
       };
     });
     return {

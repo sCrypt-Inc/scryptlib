@@ -1,0 +1,11 @@
+
+//https://github.com/sCrypt-Inc/ide/issues/310
+struct ST1 {
+    int a;
+    int caaaa;
+}
+
+struct ST2 {
+    int a;
+
+}
