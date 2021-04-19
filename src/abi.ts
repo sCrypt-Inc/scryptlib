@@ -233,7 +233,8 @@ export class ABICoder {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
-      const re = new RegExp(escapeRegExp(`$${param.name}`), 'g');
+
+      const re = param.name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\b`, 'g');
       lsASM = lsASM.replace(re, this.encodeParam(args_[index], param));
     });
 

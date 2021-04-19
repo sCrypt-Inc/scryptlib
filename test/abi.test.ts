@@ -2,8 +2,9 @@ import { assert, expect } from 'chai';
 import { getContractFilePath, newTx, loadDescription } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, buildTypeClasses, VerifyResult } from '../src/contract';
-import { bsv, toHex, signTx, compileContract } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct } from '../src/scryptTypes';
+import { bsv, toHex, signTx, compileContract, num2bin } from '../src/utils';
+import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, Sha256 } from '../src/scryptTypes';
+import { createHash } from 'crypto';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -252,7 +253,31 @@ describe('ABICoder', () => {
 
   describe('encodeConstructorCall()', () => {
     describe('when contract has explict constructor', () => {
-      it('should return FunctionCall object for contract constructor')
+      it('encodeConstructorCall RegExp replace error fix issue #86', () => {
+
+        const DemoCoinToss = buildContractClass(loadDescription('cointoss_desc.json'));
+        let demoCoinToss = new DemoCoinToss(
+          new PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
+          new PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
+          new Sha256("bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1"),
+          new Sha256("d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b"),
+          555
+        );
+
+        expect(demoCoinToss.lockingScript.toASM()).to.be.contain('034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281 039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2 bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1 d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b 2b02')
+
+      })
+
+
+      it('encodeConstructorCall RegExp replace error fix issue #86', () => {
+
+        const MultiSig = buildContractClass(loadDescription('multiSig_desc.json'));
+        let multiSig = new MultiSig([new Ripemd160("2f87fe26049415441f024eb134ce54bbafd78e96"), new Ripemd160("9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9"), new Ripemd160("58ddca9a92ebf90edf505a172fcef1197b376f5d")]);
+
+        expect(multiSig.lockingScript.toASM()).to.be.contain('2f87fe26049415441f024eb134ce54bbafd78e96 9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9 58ddca9a92ebf90edf505a172fcef1197b376f5d')
+
+      })
+
     })
 
     describe('when contract has no explict constructor', () => {
