@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.6
+
+- encodeConstructorCall RegExp replace error Fix #86
+
 ## 0.3.5
 
 - remove `stdin` from error message

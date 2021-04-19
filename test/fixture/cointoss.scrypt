@@ -1,0 +1,27 @@
+import "util.scrypt";
+
+// fair coin toss using Blum's protocol
+// Coin Flipping by Telephone. by Manuel Blum CRYPTO 1981
+contract CoinToss {
+    PubKey alice;
+    PubKey bob;
+    // commitments
+    Sha256 aliceHash;
+    Sha256 bobHash;
+    // N = p * q
+    int N;
+
+    public function toss(int aliceNonce, int bobNonce, Sig sig) {
+        require(hash256(pack(aliceNonce)) == this.aliceHash);
+        require(hash256(pack(bobNonce)) == this.bobHash);
+        
+        // Bob succeeds to guess Alice's toss
+        bool head = aliceNonce == bobNonce || aliceNonce == this.N - bobNonce;
+
+        // head -> Bob wins; tail -> Alice wins
+        PubKey winner = head ? this.bob : this.alice;
+
+        // winner takes all
+        require(checkSig(sig, winner));
+    }
+}
