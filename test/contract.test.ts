@@ -14,13 +14,13 @@ const txContext = { inputSatoshis, tx };
 
 const jsonDescr = loadDescription('p2pkh_desc.json');
 
+const cointoss_desc = loadDescription('cointoss_desc.json');
 
-
-describe('check constructor()', () => {
+describe('check explicit  constructor()', () => {
 
   const DemoP2PKH = buildContractClass(jsonDescr);
 
-  it('should return a reflected contract class object', () => {
+  it('should throw when wrong number of arguments', () => {
 
     expect(() => {
       new DemoP2PKH();
@@ -28,11 +28,32 @@ describe('check constructor()', () => {
   })
 
 
-  it('should return a reflected contract class object', () => {
+  it('should throw when wrong type of arguments', () => {
 
     expect(() => {
       new DemoP2PKH(1);
     }).to.throws(/wrong argument type, expected Ripemd160 or Ripemd160 but got int/);
+  })
+})
+
+
+describe('check implicit   constructor()', () => {
+
+  const Cointoss = buildContractClass(cointoss_desc);
+
+  it('should throw when wrong number of arguments', () => {
+
+    expect(() => {
+      new Cointoss();
+    }).to.throws(/wrong number of arguments for #constructor, expected 5 but got 0/);
+  })
+
+
+  it('should throw when wrong type of arguments', () => {
+
+    expect(() => {
+      new Cointoss(1, 1, 1, 1, 1);
+    }).to.throws(/wrong argument type, expected PubKey or PubKey but got int/);
   })
 })
 
