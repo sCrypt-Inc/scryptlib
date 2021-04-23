@@ -3,8 +3,7 @@ import { loadDescription, newTx } from './helper'
 import {
   buildContractClass,
   AbstractContract,
-  TxContext,
-  VerifyResult,
+  VerifyResult
 } from '../src/contract'
 import { FunctionCall } from '../src/abi'
 import { bsv, signTx, toHex } from '../src/utils'
@@ -96,6 +95,7 @@ describe('create instance from UTXO Hex', () => {
 
 describe('buildContractClass and create instance from script', () => {
   const DemoP2PKH = buildContractClass(jsonDescr)
+  const ASMDemoP2PKH = buildContractClass(jsonDescr, true)
 
   describe('instance from an exist script ', () => {
     let instance: any
@@ -106,7 +106,7 @@ describe('buildContractClass and create instance from script', () => {
     beforeEach(() => {
       const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)))
       //create instance from an exist script
-      instance = DemoP2PKH.fromHex(p2pkh.lockingScript.toHex())
+      instance = ASMDemoP2PKH.fromHex(p2pkh.lockingScript.toHex())
       sig = signTx(
         tx,
         privateKey,
@@ -118,7 +118,7 @@ describe('buildContractClass and create instance from script', () => {
 
     it('static getAsmVars method', () => {
       let lockingScriptAsm = instance.lockingScript.toASM()
-      let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
+      let asmVars = ASMDemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
 
       expect(asmVars).is.not.null
       expect(asmVars).have.key('pubKeyHash')

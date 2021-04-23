@@ -14,6 +14,49 @@ const txContext = { inputSatoshis, tx };
 
 const jsonDescr = loadDescription('p2pkh_desc.json');
 
+const cointoss_desc = loadDescription('cointoss_desc.json');
+
+describe('check explicit  constructor()', () => {
+
+  const DemoP2PKH = buildContractClass(jsonDescr);
+
+  it('should throw when wrong number of arguments', () => {
+
+    expect(() => {
+      new DemoP2PKH();
+    }).to.throws(/wrong number of arguments for #constructor, expected 1 but got 0/);
+  })
+
+
+  it('should throw when wrong type of arguments', () => {
+
+    expect(() => {
+      new DemoP2PKH(1);
+    }).to.throws(/wrong argument type, expected Ripemd160 or Ripemd160 but got int/);
+  })
+})
+
+
+describe('check implicit   constructor()', () => {
+
+  const Cointoss = buildContractClass(cointoss_desc);
+
+  it('should throw when wrong number of arguments', () => {
+
+    expect(() => {
+      new Cointoss();
+    }).to.throws(/wrong number of arguments for #constructor, expected 5 but got 0/);
+  })
+
+
+  it('should throw when wrong type of arguments', () => {
+
+    expect(() => {
+      new Cointoss(1, 1, 1, 1, 1);
+    }).to.throws(/wrong argument type, expected PubKey or PubKey but got int/);
+  })
+})
+
 describe('buildContractClass()', () => {
 
   const DemoP2PKH = buildContractClass(jsonDescr);
@@ -54,7 +97,7 @@ describe('buildContractClass()', () => {
       expect(asmVars).have.key('pubKeyHash')
       expect(asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
     })
-  
+
     it('should have an asm var', () => {
       expect(instance.asmVars).is.not.null;
       expect(instance.asmVars).have.key('pubKeyHash')
@@ -75,11 +118,11 @@ describe('buildContractClass()', () => {
         const lsAfterAddDataLoad = instance.lockingScript; // locking script changed after adding op_return
 
         assert.equal(instance.codePart.toASM(), lsBeforeAddDataLoad.toASM() + ' OP_RETURN');
-        assert.equal(instance.codePart.toHex(), lsBeforeAddDataLoad.toHex()+'6a');
+        assert.equal(instance.codePart.toHex(), lsBeforeAddDataLoad.toHex() + '6a');
 
         assert.equal(instance.codePart.toASM() + ' aa', lsAfterAddDataLoad.toASM());
         assert.equal(instance.codePart.toHex() + '01aa', lsAfterAddDataLoad.toHex());
-        
+
         assert.equal(instance.codePart.toASM(), `OP_NOP 0 ${toHex(pubKeyHash)} 0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_RETURN`);
         assert.equal(instance.codePart.toHex(), `610014${toHex(pubKeyHash)}0079527a75517a75615179a95179876952795279ac7777776a`);
       })
