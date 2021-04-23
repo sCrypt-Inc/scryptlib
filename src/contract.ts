@@ -395,7 +395,7 @@ export class AbstractContract {
 
 const invalidMethodName = ['arguments', 'setDataPart', 'run_verify', 'replaceAsmVars', 'asmVars', 'asmArguments', 'dataPart', 'lockingScript', 'txContext'];
 
-export function buildContractClass(desc: CompileResult | ContractDescription): any {
+export function buildContractClass(desc: CompileResult | ContractDescription, asmContract = false): any {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');
@@ -420,7 +420,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
-      if (ctorParams.length > 0 || Contract.abi.find(fn => (fn.type === 'constructor' && fn.params.length === 0))) {
+      if (!asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }
