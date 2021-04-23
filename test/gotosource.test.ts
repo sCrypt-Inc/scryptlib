@@ -435,4 +435,195 @@ describe('VerifyError', () => {
   });
 
 
+
+
+
+  describe('check VerifyError when preimage Incorrect', () => {
+    let counter, preimage, result, tx;
+    beforeEach(() => {
+      const Counter = buildContractClass(loadDescription('counter_desc.json'))
+      counter = new Counter()
+
+      // set initial counter value
+      counter.setDataPart(num2bin(0, DataLen))
+
+      const newLockingScript = [counter.codePart.toASM(), num2bin(1, DataLen)].join(' ')
+      tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: bsv.Script.fromASM(newLockingScript),
+        satoshis: outputAmount
+      }))
+    });
+
+
+    it('check scriptCode', () => {
+
+      preimage = getPreimage(tx, counter.lockingScript.toASM() + "10", inputSatoshis)
+
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      //only check error message contains scriptCode diff
+      expect(result.error).to.contains("scriptCode | ...OP_RETURN 0010 | ...OP_RETURN 00");
+    });
+
+    it('check amount', () => {
+
+      preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis + 1)
+
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      //only check error message contains scriptCode diff
+      expect(result.error).to.contains("amount | 100001 | 100000");
+
+    });
+
+    it('check sighashType', () => {
+      const Signature = bsv.crypto.Signature
+      const sighashType = Signature.SIGHASH_ANYONECANPAY | Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
+      preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis, 0, sighashType)
+
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      expect(result.error).to.contains("The reason for the check failure is usually because the sighashtype used by the contract to check the preimage is different from the sighashtype used by the preimage for calculating the transaction\nCheck if the sighashtype used by the contract is [SigHash.ANYONECANPAY | SigHash.ALL | SigHash.FORKID]");
+
+    });
+
+
+    it('check nSequence', () => {
+
+      preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis)
+
+      tx.inputs[0].sequenceNumber = 1;
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      //only check error message contains scriptCode diff
+      expect(result.error).to.contains("hashSequence | 3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e70665044 | 41f758f2e5cc078d3795b4fc0cb60c2d735fa92cc020572bdc982dd2d564d11b");
+      expect(result.error).to.contains("nSequence | 4294967295 | 1");
+    });
+
+
+
+    it('check version', () => {
+
+      preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis)
+
+      tx.version = 0;
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      expect(result.error).to.contains("nVersion | 1 | 0");
+    });
+
+
+
+
+    it('check nLocktime', () => {
+
+      preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis)
+
+      tx.nLockTime = 11;
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      expect(result.error).to.contains("nLocktime | 0 | 11");
+    });
+
+
+    it('check outpoint', () => {
+
+      preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis)
+
+      tx.inputs[0].outputIndex = 1;
+      // set txContext for verification
+      counter.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+
+      expect(result.success, result.error).to.be.false
+
+      expect(result.error).to.contains("fails at OP_CHECKSIG");
+      expect(result.error).to.contains("counter.scrypt#8");
+      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+      expect(result.error).to.contains("hashPrevouts | 28bcef7e73248aa273db19d73f65730862b2491c8e0eeb767f7fbd78c4731bbf | 8e2679d3336475ea02702053e636c2d6058a97e520f353f1afd2d71d955d0ba6");
+      expect(result.error).to.contains('outpoint | {"hash":"a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458","index":0,"hex":"5884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a400000000"} | {"hash":"a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458","index":1,"hex":"5884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a401000000"}');
+    });
+
+
+  })
+
+
 })

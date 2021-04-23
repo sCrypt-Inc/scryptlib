@@ -1,6 +1,6 @@
 import { ABICoder, Arguments, FunctionCall, Script } from './abi';
 import { serializeState, State } from './serializer';
-import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize, getPreimage, getSigHashPreimageDiff, removeSharedStart } from './utils';
+import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize, getPreimage, getSigHashPreimageDiff, removeSharedStart, isEmpty } from './utils';
 import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver, SigHashPreimage, SigHashType } from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, Pos } from './compilerWrapper';
 import { readFileSync } from 'fs';
@@ -134,11 +134,21 @@ export class AbstractContract {
           DEFAULT_FLAGS
         );
 
+        const preimageFromTxJson = preimageFromTx.toJSONObject();
+
+        const scriptCode = bsv.Script.fromHex(preimageFromTxJson.scriptCode);
+        const preimageFromTx_ = Object.assign({}, preimageFromTxJson, {
+          scriptCode: {
+            asm: scriptCode.toASM(),
+            hex: scriptCode.toHex()
+          }
+        });
+
         const title = '----- CheckSig Fail Hints Begin -----';
         const body = [
           'You should make sure the following checkpoints all pass:',
           `1. private key used to sign should be corresponding to the public key ${this.getPubkeyAtCheckSigFail(interpretStates)}`,
-          `2. the preimage of the tx to be signed should be ${preimageFromTx.toString()}`
+          `2. the preimage of the tx to be signed should be:\n ${JSON.stringify(preimageFromTx_, null, 4)}`
         ].join('\n');
         const tail = '----- CheckSig Fail Hints End -----';
 
@@ -166,6 +176,27 @@ export class AbstractContract {
         );
 
         const diff = getSigHashPreimageDiff(preimageInParam, preimageFromTx);
+
+        const preimageFromTxJson = preimageFromTx.toJSONObject();
+
+
+        if (isEmpty(diff)) {
+          return [
+            '----- CheckPreimage Fail Hints Begin -----',
+            `The preimage in param ${paramName} is indeed calculated by the TxContext， `,
+            'The reason for the check failure is usually because the sighashtype used by the contract to check the preimage is different from the sighashtype used by the preimage for calculating the transaction',
+            `Check if the sighashtype used by the contract is [${preimageFromTxJson.sighashType}]`,
+            '----- CheckPreimage Fail Hints End -----'
+          ].join('\n');
+        }
+
+        const scriptCode = bsv.Script.fromHex(preimageFromTxJson.scriptCode);
+        const preimageFromTx_ = Object.assign({}, preimageFromTxJson, {
+          scriptCode: {
+            asm: scriptCode.toASM(),
+            hex: scriptCode.toHex(),
+          }
+        });
 
         const title = [
           '----- CheckPreimage Fail Hints Begin -----',
@@ -197,7 +228,7 @@ export class AbstractContract {
 
           return `${k} | ${value1} | ${value2}`;
         }).join('\n')
-        }\n\nPreimage calculated with tx:\n${preimageFromTx.toString()}\n${tail}\n`;
+        }\n\nPreimage calculated with tx:\n${JSON.stringify(preimageFromTx_, null, 4)}\n${tail}\n`;
       }
     }
 
