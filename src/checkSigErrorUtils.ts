@@ -69,7 +69,7 @@ export function findArgumentFailsAtCheckSig(paramType: string, args: Arguments):
 }
 
 
-export function getCheckSigErrorDetail(arg: Argument, interpretStates: any, txCtx: TxContext, inputLockingScript: string): string {
+export function getCheckSigErrorDetail(arg: Argument, publickey: string, txCtx: TxContext, inputLockingScript: string): string {
 
   const sig: string = (arg.value as Bytes).value as string;
 
@@ -95,7 +95,7 @@ export function getCheckSigErrorDetail(arg: Argument, interpretStates: any, txCt
   const title = '----- CheckSig Fail Hints Begin -----';
   const body = [
     'You should make sure the following checkpoints all pass:',
-    `1. private key used to sign should be corresponding to the public key ${getPubkeyAtCheckSigFail(interpretStates)}`,
+    `1. private key used to sign should be corresponding to the public key ${publickey}`,
     `2. the preimage of the tx to be signed should be:\n ${JSON.stringify(preimageFromTx_, null, 4)}`
   ].join('\n');
   const tail = '----- CheckSig Fail Hints End -----';
@@ -106,6 +106,16 @@ export function getCheckSigErrorDetail(arg: Argument, interpretStates: any, txCt
 export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inputLockingScript: string, supportsColor?: boolean): string {
   const preimage: string = (arg.value as Bytes).value as string;
   const preimageInParam = new SigHashPreimage(preimage);
+
+  let preimageFromTxJson;
+  try {
+    // try check preimage is valid
+    preimageFromTxJson = preimageInParam.toJSONObject();
+  } catch (e) {
+    return `Preimage provided in param '${arg.name}' is invalid`;
+  }
+
+
   const preimageFromTx = getPreimage(
     txCtx.tx,
     inputLockingScript,
@@ -119,13 +129,10 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
 
   const diff = getSigHashPreimageDiff(preimageFromTx, preimageInParam);
 
-  const preimageFromTxJson = preimageFromTx.toJSONObject();
-
-
-  let title = 'CheckPreimage Fail Hints\n \n You should check the differences in detail listed below:';
+  let title = 'CheckPreimage Fail Hints\n \n You should check the differences in detail listed below:\n';
   if (isSupportsColor) {
-    title += `fields of ${customChalk.green('preimage')} calculated with TxContext is marked green
-    fields of public function param ${customChalk.red(arg.name)} is marked red\n`;
+    title += `fields of ${customChalk.green('preimage')} calculated with TxContext is marked green\n`;
+    title += `fields of public function param ${customChalk.red(arg.name)} is marked red\n`;
   }
 
   const p = new Table({
