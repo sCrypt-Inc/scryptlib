@@ -1,9 +1,9 @@
 import { ABICoder, Arguments, FunctionCall, Script } from './abi';
 import { serializeState, State } from './serializer';
-import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize, getPreimage, getSigHashPreimageDiff, removeSharedStart, isEmpty } from './utils';
+import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize } from './utils';
 import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver, SigHashPreimage, SigHashType } from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, Pos } from './compilerWrapper';
-import { readFileSync } from 'fs';
+import { findArgumentFailsAtCheckSig, getCheckSigErrorDetail, getCheckPreiamgeErrorDetail, getTxContextInfo } from './checkSigErrorUtils';
 
 export interface TxContext {
   tx?: any;
@@ -99,182 +99,7 @@ export class AbstractContract {
     }
   }
 
-  private getParamFailsAtCheckSig(paramType: string, args: Arguments): string | undefined {
 
-    const pubFuncArgs = [...args.values()].filter(p => p.type === paramType);
-
-    if (pubFuncArgs.length === 1) {
-      return pubFuncArgs[0].name;
-    }
-
-    return undefined;
-  }
-
-
-  private getPubkeyAtCheckSigFail(interpretStates: any): string | undefined {
-    const curStack = interpretStates[interpretStates.length - 1].mainstack;
-    return curStack[1].toString('hex'); // public key is the second element on stack
-  }
-
-
-  private getCheckSigErrorDetail(interpretStates: any, txCtx: TxContext, args: Arguments): string {
-    const paramName = this.getParamFailsAtCheckSig('Sig', args);
-    if (paramName) {
-
-      const sigArg = args.find(arg => arg.name === paramName);
-      if (sigArg) {
-        const sig: string = (sigArg.value as Bytes).value as string;
-
-        const preimageFromTx = getPreimage(
-          txCtx.tx,
-          this.lockingScript.toASM(),
-          txCtx.inputSatoshis,
-          txCtx.inputIndex,
-          parseInt(sig.slice(sig.length - 2, sig.length), 16),
-          DEFAULT_FLAGS
-        );
-
-        const preimageFromTxJson = preimageFromTx.toJSONObject();
-
-        const scriptCode = bsv.Script.fromHex(preimageFromTxJson.scriptCode);
-        const preimageFromTx_ = Object.assign({}, preimageFromTxJson, {
-          scriptCode: {
-            asm: scriptCode.toASM(),
-            hex: scriptCode.toHex()
-          }
-        });
-
-        const title = '----- CheckSig Fail Hints Begin -----';
-        const body = [
-          'You should make sure the following checkpoints all pass:',
-          `1. private key used to sign should be corresponding to the public key ${this.getPubkeyAtCheckSigFail(interpretStates)}`,
-          `2. the preimage of the tx to be signed should be:\n ${JSON.stringify(preimageFromTx_, null, 4)}`
-        ].join('\n');
-        const tail = '----- CheckSig Fail Hints End -----';
-
-        return `\n${title}\n${body}\n${tail}\n`;
-      }
-    }
-    return '';
-  }
-
-  private getCheckPreiamgeErrorDetail(txCtx: TxContext, args: Arguments): string {
-    const paramName = this.getParamFailsAtCheckSig('SigHashPreimage', args);
-    if (paramName) {
-
-      const param = args.find(arg => arg.name === paramName);
-      if (param) {
-        const preimage: string = (param.value as Bytes).value as string;
-        const preimageInParam = new SigHashPreimage(preimage);
-        const preimageFromTx = getPreimage(
-          txCtx.tx,
-          this.lockingScript.toASM(),
-          txCtx.inputSatoshis,
-          txCtx.inputIndex,
-          preimageInParam.sighashType,
-          DEFAULT_FLAGS
-        );
-
-        const diff = getSigHashPreimageDiff(preimageInParam, preimageFromTx);
-
-        const preimageFromTxJson = preimageFromTx.toJSONObject();
-
-
-        if (isEmpty(diff)) {
-          return [
-            '----- CheckPreimage Fail Hints Begin -----',
-            `The preimage in param ${paramName} is indeed calculated by the TxContext， `,
-            'The reason for the check failure is usually because the sighashtype used by the contract to check the preimage is different from the sighashtype used by the preimage for calculating the transaction',
-            `Check if the sighashtype used by the contract is [${preimageFromTxJson.sighashType}]`,
-            '----- CheckPreimage Fail Hints End -----'
-          ].join('\n');
-        }
-
-        const scriptCode = bsv.Script.fromHex(preimageFromTxJson.scriptCode);
-        const preimageFromTx_ = Object.assign({}, preimageFromTxJson, {
-          scriptCode: {
-            asm: scriptCode.toASM(),
-            hex: scriptCode.toHex(),
-          }
-        });
-
-        const title = [
-          '----- CheckPreimage Fail Hints Begin -----',
-          'You should check the differences in detail listed below:\n',
-          'Fields with difference | From preimage in entry method params | From preimage calculated with tx',
-        ].join('\n');
-        const tail = '----- CheckPreimage Fail Hints End -----';
-
-        return `\n${title}\n${Object.keys(diff).map(k => {
-          let value1 = diff[k][0];
-          let value2 = diff[k][1];
-
-          if (k === 'outpoint') {
-            value1 = JSON.stringify(value1);
-            value2 = JSON.stringify(value2);
-          }
-
-          if (k === 'scriptCode') {
-
-            const [a, b] = removeSharedStart([bsv.Script.fromHex(value1).toASM(), bsv.Script.fromHex(value2).toASM()]);
-            value1 = a;
-            value2 = b;
-          }
-
-          if (k === 'sighashType') {
-            value1 = `"${new SigHashType(value1).toString()}"`;
-            value2 = `"${new SigHashType(value2).toString()}"`;
-          }
-
-          return `${k} | ${value1} | ${value2}`;
-        }).join('\n')
-        }\n\nPreimage calculated with tx:\n${JSON.stringify(preimageFromTx_, null, 4)}\n${tail}\n`;
-      }
-    }
-
-    return '';
-  }
-
-  private getTxContextInfo(txCtx: TxContext): string {
-
-    const tx = txCtx.tx;
-
-    tx['inputs'] = [...tx['inputs'].map((input, i) => {
-      input.toObject = function () {
-        const { script, prevTxId, outputIndex, sequenceNumber } = input;
-        return {
-          'prevTxId': prevTxId.toString('hex'),
-          outputIndex,
-          sequenceNumber,
-          'index': i,
-          'unlockingScript': {
-            'asm': script.toASM(),
-            'hex': script.toHex()
-          }
-        };
-      };
-      return input;
-    })];
-
-    tx['outputs'] = [...tx['outputs'].map((output, i) => {
-      output.toObject = function () {
-        const { script, satoshis } = output;
-        return {
-          satoshis,
-          'index': i,
-          'lockingScript': {
-            'asm': script.toASM(),
-            'hex': script.toHex()
-          }
-        };
-      };
-      return output;
-    })];
-
-    txCtx['tx'] = tx;
-
-    return `\nTxContext from config:\n${JSON.stringify(txCtx, null, 4)}\n`;
-  }
 
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
@@ -351,9 +176,18 @@ export class AbstractContract {
               throw new Error('should provide txContext.tx when verify');
             }
             else {
-              error += this.getCheckSigErrorDetail(interpretStates, txCtx, args);
-              error += this.getCheckPreiamgeErrorDetail(txCtx, args);
-              error += this.getTxContextInfo(txCtx);
+              const sig = findArgumentFailsAtCheckSig('Sig', args);
+              if (sig) {
+                error += getCheckSigErrorDetail(sig, interpretStates, txCtx, this.lockingScript.toASM());
+              }
+
+              const preimage = findArgumentFailsAtCheckSig('SigHashPreimage', args);
+
+              if (preimage) {
+                error += getCheckPreiamgeErrorDetail(preimage, txCtx, this.lockingScript.toASM());
+              }
+
+              error += getTxContextInfo(txCtx);
             }
           }
         }
