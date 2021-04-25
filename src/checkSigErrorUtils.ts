@@ -34,21 +34,6 @@ export function getSigHashPreimageDiff(sigImgA: SigHashPreimage, sigImgB: SigHas
   return result;
 }
 
-export function removeSharedStart([asmPreimageInParam, asmPreimageFromTx]) {
-  const A: string[] = asmPreimageInParam.split(' ');
-  const B: string[] = asmPreimageFromTx.split(' ');
-
-  const L = A.length;
-
-  let i = 0;
-  while (i < L && A[i] === B[i] && A[i] != 'OP_RETURN') i++;
-
-  if (A[i] === 'OP_RETURN') {
-    return [`...${A.slice(i).join(' ')}`, `...${B.slice(i).join(' ')}`];
-  }
-
-  //return [`md5(scriptCode) = ${md5(asmPreimageInParam)}`, `md5(scriptCode) = ${md5(asmPreimageFromTx)}`];
-}
 
 
 export function getPubkeyAtCheckSigFail(interpretStates: any): string | undefined {
