@@ -1,9 +1,9 @@
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadDescription, stripAnsi } from './helper';
 import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
 import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage } from '../src/scryptTypes';
+import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
 import { readFileSync } from 'fs';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
@@ -170,10 +170,18 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("tokenUtxo.scrypt#14");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
+
       //only check error message contains scriptCode diff
-      expect(result.error).to.contains("scriptCode | ...OP_RETURN");
-      expect(result.error).to.contains("amount | 111111 | 100000");
+      expect(stripAnsi(result.error)).to.contains(
+        `┌────────────┬───────────────────────────────┐
+│ Field      │ value                         │
+├────────────┼───────────────────────────────┤
+│ scriptCode │ See scriptCode diff below ... │
+│ scriptCode │ See scriptCode diff below ... │
+│ amount     │ 100000                        │
+│ amount     │ 111111                        │
+└────────────┴───────────────────────────────┘`);
+      expect(result.error).to.contains("OP_RETURN \u001b[39m\u001b[33m02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a\u001b[39m\u001b[31m02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a00\u001b[39m]");
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
       expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
@@ -470,12 +478,20 @@ describe('VerifyError', () => {
       result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
 
       expect(result.success, result.error).to.be.false
-
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      //only check error message contains scriptCode diff
-      expect(result.error).to.contains("scriptCode | ...OP_RETURN 0010 | ...OP_RETURN 00");
+      expect(stripAnsi(result.error)).to.contains(
+        `┌────────────┬───────────────────────────────┐
+│ Field      │ value                         │
+├────────────┼───────────────────────────────┤
+│ scriptCode │ See scriptCode diff below ... │
+│ scriptCode │ See scriptCode diff below ... │
+└────────────┴───────────────────────────────┘`);
+
+
+
+      expect(result.error).to.contains("OP_RETURN \u001b[39m\u001b[33m00\u001b[39m\u001b[31m0010\u001b[39m]");
+
     });
 
     it('check amount', () => {
@@ -495,9 +511,14 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      //only check error message contains scriptCode diff
-      expect(result.error).to.contains("amount | 100001 | 100000");
+      expect(stripAnsi(result.error)).to.contains(
+        `┌────────┬────────┐
+│ Field  │ value  │
+├────────┼────────┤
+│ amount │ 100000 │
+│ amount │ 100001 │
+└────────┴────────┘`);
+
 
     });
 
@@ -519,9 +540,15 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      expect(result.error).to.contains("The reason for the check failure is usually because the sighashtype used by the contract to check the preimage is different from the sighashtype used by the preimage for calculating the transaction\nCheck if the sighashtype used by the contract is [SigHash.ANYONECANPAY | SigHash.ALL | SigHash.FORKID]");
-
+      expect(stripAnsi(result.error)).to.contains(
+        `┌───────┬───────┐
+│ Field │ value │
+├───────┼───────┤
+└───────┴───────┘`);
+      expect(result.error).to.contains(
+        `There is no different field, the preimage of param txPreimage is indeed calculated by the TxContext.
+The reason for the check failure is usually because the sighashtype used by the contract to check txPreimage is different from the sighashtype used for calculating the preimage of the TxContext
+Check if the sighashtype used by the contract is [SigHash.ANYONECANPAY | SigHash.ALL | SigHash.FORKID], which is used by txPreimage`);
     });
 
 
@@ -543,10 +570,17 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      //only check error message contains scriptCode diff
-      expect(result.error).to.contains("hashSequence | 3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e70665044 | 41f758f2e5cc078d3795b4fc0cb60c2d735fa92cc020572bdc982dd2d564d11b");
-      expect(result.error).to.contains("nSequence | 4294967295 | 1");
+      expect(result.error).to.contains("TxContext from config:");
+
+      expect(stripAnsi(result.error)).to.contains(
+        `┌──────────────┬──────────────────────────────────────────────────────────────────┐
+│ Field        │ value                                                            │
+├──────────────┼──────────────────────────────────────────────────────────────────┤
+│ hashSequence │ 41f758f2e5cc078d3795b4fc0cb60c2d735fa92cc020572bdc982dd2d564d11b │
+│ hashSequence │ 3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e70665044 │
+│ nSequence    │ 1                                                                │
+│ nSequence    │ 4294967295                                                       │
+└──────────────┴──────────────────────────────────────────────────────────────────┘`);
     });
 
 
@@ -569,8 +603,17 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      expect(result.error).to.contains("nVersion | 1 | 0");
+      expect(result.error).to.contains("TxContext from config:");
+      expect(stripAnsi(result.error)).to.contains("fields of public function param txPreimage is mark red");
+
+      expect(stripAnsi(result.error)).to.contains(
+        `┌──────────┬───────┐
+│ Field    │ value │
+├──────────┼───────┤
+│ nVersion │ 0     │
+│ nVersion │ 1     │
+└──────────┴───────┘`)
+
     });
 
 
@@ -594,8 +637,17 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      expect(result.error).to.contains("nLocktime | 0 | 11");
+      expect(result.error).to.contains("TxContext from config:");
+
+      expect(stripAnsi(result.error)).to.contains(
+        `┌───────────┬───────┐
+│ Field     │ value │
+├───────────┼───────┤
+│ nLocktime │ 11    │
+│ nLocktime │ 0     │
+└───────────┴───────┘`
+      )
+
     });
 
 
@@ -617,9 +669,16 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      expect(result.error).to.contains("hashPrevouts | 28bcef7e73248aa273db19d73f65730862b2491c8e0eeb767f7fbd78c4731bbf | 8e2679d3336475ea02702053e636c2d6058a97e520f353f1afd2d71d955d0ba6");
-      expect(result.error).to.contains('outpoint | {"hash":"a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458","index":0,"hex":"5884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a400000000"} | {"hash":"a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458","index":1,"hex":"5884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a401000000"}');
+      expect(result.error).to.contains("TxContext from config:");
+      expect(stripAnsi(result.error)).to.contains(
+        `┌──────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Field        │ value                                                                                                                                                                  │
+├──────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ hashPrevouts │ 8e2679d3336475ea02702053e636c2d6058a97e520f353f1afd2d71d955d0ba6                                                                                                       │
+│ hashPrevouts │ 28bcef7e73248aa273db19d73f65730862b2491c8e0eeb767f7fbd78c4731bbf                                                                                                       │
+│ outpoint     │ {"hash":"a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458","index":1,"hex":"5884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a401000000"} │
+│ outpoint     │ {"hash":"a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458","index":0,"hex":"5884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a400000000"} │
+└──────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘`);
     });
 
 

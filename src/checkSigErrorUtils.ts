@@ -2,6 +2,9 @@ import { Argument, Arguments } from './abi';
 import { TxContext } from './contract';
 import { Bytes, SigHashPreimage, SigHashType } from './scryptTypes';
 import { DEFAULT_FLAGS, getPreimage, isEmpty } from './utils';
+import { Table } from 'console-table-printer';
+import * as chalk from 'chalk';
+import Diff = require('diff');
 import bsv = require('bsv');
 interface Outpoint { hash: string, index: number }
 
@@ -110,37 +113,36 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
     DEFAULT_FLAGS
   );
 
-  const diff = getSigHashPreimageDiff(preimageInParam, preimageFromTx);
+  const diff = getSigHashPreimageDiff(preimageFromTx, preimageInParam);
 
   const preimageFromTxJson = preimageFromTx.toJSONObject();
 
 
+  const title = `CheckPreimage Fail Hints\n \n You should check the differences in detail listed below:
+ fields of ${chalk.yellow('preimage')} calculated with TxContext is mark yellow
+ fields of public function param ${chalk.red(arg.name)} is mark red\n`;
+  const p = new Table({
+    title: title,
+    columns: [
+      { name: 'Field', alignment: 'left' }, //with alignment and color
+      { name: 'value', alignment: 'left' }, // with Title as separate Text
+    ],
+  });
+
+
   if (isEmpty(diff)) {
+    const result = p.render();
+
     return [
-      '----- CheckPreimage Fail Hints Begin -----',
-      `The preimage in param ${arg.name} is indeed calculated by the TxContext， `,
-      'The reason for the check failure is usually because the sighashtype used by the contract to check the preimage is different from the sighashtype used by the preimage for calculating the transaction',
-      `Check if the sighashtype used by the contract is [${preimageFromTxJson.sighashType}]`,
-      '----- CheckPreimage Fail Hints End -----'
+      result,
+      `There is no different field, the preimage of param ${arg.name} is indeed calculated by the TxContext.`,
+      `The reason for the check failure is usually because the sighashtype used by the contract to check ${arg.name} is different from the sighashtype used for calculating the preimage of the TxContext`,
+      `Check if the sighashtype used by the contract is [${preimageFromTxJson.sighashType}], which is used by ${arg.name}`
     ].join('\n');
   }
 
-  const scriptCode = bsv.Script.fromHex(preimageFromTx.scriptCode);
-  const preimageFromTx_ = Object.assign({}, preimageFromTxJson, {
-    scriptCode: {
-      asm: scriptCode.toASM(),
-      hex: scriptCode.toHex(),
-    }
-  });
 
-  const title = [
-    '----- CheckPreimage Fail Hints Begin -----',
-    'You should check the differences in detail listed below:\n',
-    'Fields with difference | From preimage in entry method params | From preimage calculated with tx',
-  ].join('\n');
-  const tail = '----- CheckPreimage Fail Hints End -----';
-
-  return `\n${title}\n${Object.keys(diff).map(k => {
+  Object.keys(diff).forEach(k => {
     let value1 = diff[k][0];
     let value2 = diff[k][1];
 
@@ -150,10 +152,8 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
     }
 
     if (k === 'scriptCode') {
-
-      const [a, b] = removeSharedStart([bsv.Script.fromHex(value1).toASM(), bsv.Script.fromHex(value2).toASM()]);
-      value1 = a;
-      value2 = b;
+      value1 = 'See scriptCode diff below ...';
+      value2 = 'See scriptCode diff below ...';
     }
 
     if (k === 'sighashType') {
@@ -161,9 +161,31 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
       value2 = `"${new SigHashType(value2).toString()}"`;
     }
 
-    return `${k} | ${value1} | ${value2}`;
-  }).join('\n')
-  }\n\nPreimage calculated with tx:\n${JSON.stringify(preimageFromTx_, null, 4)}\n${tail}\n`;
+    p.addRow({ Field: k, value: value1 }, { color: 'yellow' });
+    p.addRow({ Field: k, value: value2 }, { color: 'red' });
+  });
+
+  let result = p.render();
+
+  if (diff['scriptCode']) {
+    let scriptCodeDiff = '';
+
+    Diff.diffWords(bsv.Script.fromHex(diff['scriptCode'][0]).toASM(), bsv.Script.fromHex(diff['scriptCode'][1]).toASM()).forEach((part) => {
+
+      if (part.added) {
+        scriptCodeDiff += chalk.red(part.value);
+      } else if (part.removed) {
+        scriptCodeDiff += chalk.yellow(part.value);
+      } else {
+        scriptCodeDiff += chalk.grey(part.value);
+      }
+    });
+
+    result += `\n[scriptCode diff: ${scriptCodeDiff}]`;
+  }
+
+
+  return result + '\n';
 }
 
 export function getTxContextInfo(txCtx: TxContext): string {
