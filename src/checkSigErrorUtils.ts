@@ -3,10 +3,12 @@ import { TxContext } from './contract';
 import { Bytes, SigHashPreimage, SigHashType } from './scryptTypes';
 import { DEFAULT_FLAGS, getPreimage, isEmpty } from './utils';
 import { Table } from 'console-table-printer';
-import * as chalk from 'chalk';
+import chalk = require('chalk')
 import Diff = require('diff');
 import bsv = require('bsv');
 interface Outpoint { hash: string, index: number }
+
+const customChalk = new chalk.Instance({ level: 1 });
 
 export interface SighashPreiamgeDiff {
   nVersion?: [number, number],
@@ -101,7 +103,7 @@ export function getCheckSigErrorDetail(arg: Argument, interpretStates: any, txCt
   return `\n${title}\n${body}\n${tail}\n`;
 }
 
-export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inputLockingScript: string): string {
+export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inputLockingScript: string, supportsColor?: boolean): string {
   const preimage: string = (arg.value as Bytes).value as string;
   const preimageInParam = new SigHashPreimage(preimage);
   const preimageFromTx = getPreimage(
@@ -113,14 +115,19 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
     DEFAULT_FLAGS
   );
 
+  const isSupportsColor = chalk.supportsColor ? true : false || supportsColor;
+
   const diff = getSigHashPreimageDiff(preimageFromTx, preimageInParam);
 
   const preimageFromTxJson = preimageFromTx.toJSONObject();
 
 
-  const title = `CheckPreimage Fail Hints\n \n You should check the differences in detail listed below:
- fields of ${chalk.yellow('preimage')} calculated with TxContext is mark yellow
- fields of public function param ${chalk.red(arg.name)} is mark red\n`;
+  let title = 'CheckPreimage Fail Hints\n \n You should check the differences in detail listed below:';
+  if (isSupportsColor) {
+    title += `fields of ${customChalk.green('preimage')} calculated with TxContext is marked green
+    fields of public function param ${customChalk.red(arg.name)} is marked red\n`;
+  }
+
   const p = new Table({
     title: title,
     columns: [
@@ -161,8 +168,8 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
       value2 = `"${new SigHashType(value2).toString()}"`;
     }
 
-    p.addRow({ Field: k, value: value1 }, { color: 'yellow' });
-    p.addRow({ Field: k, value: value2 }, { color: 'red' });
+    p.addRow({ Field: isSupportsColor ? k : `${k}:TxContext`, value: value1 }, { color: 'green' });
+    p.addRow({ Field: isSupportsColor ? k : `${k}:${arg.name}`, value: value2 }, { color: 'red' });
   });
 
   let result = p.render();
@@ -170,18 +177,23 @@ export function getCheckPreiamgeErrorDetail(arg: Argument, txCtx: TxContext, inp
   if (diff['scriptCode']) {
     let scriptCodeDiff = '';
 
-    Diff.diffWords(bsv.Script.fromHex(diff['scriptCode'][0]).toASM(), bsv.Script.fromHex(diff['scriptCode'][1]).toASM()).forEach((part) => {
+    if (isSupportsColor) {
+      Diff.diffWords(bsv.Script.fromHex(diff['scriptCode'][0]).toASM(), bsv.Script.fromHex(diff['scriptCode'][1]).toASM()).forEach((part) => {
 
-      if (part.added) {
-        scriptCodeDiff += chalk.red(part.value);
-      } else if (part.removed) {
-        scriptCodeDiff += chalk.yellow(part.value);
-      } else {
-        scriptCodeDiff += chalk.grey(part.value);
-      }
-    });
+        if (part.added) {
+          scriptCodeDiff += customChalk.red(part.value);
+        } else if (part.removed) {
+          scriptCodeDiff += customChalk.green(part.value);
+        } else {
+          scriptCodeDiff += customChalk.grey(part.value);
+        }
+      });
 
-    result += `\n[scriptCode diff: ${scriptCodeDiff}]`;
+      result += `\n[scriptCode diff:\n ${scriptCodeDiff}]`;
+    } else {
+
+      result += `\n[scriptCode diff:\n TxContext:\n${bsv.Script.fromHex(diff['scriptCode'][0]).toASM()} \n\n\n${arg.name}:\n${bsv.Script.fromHex(diff['scriptCode'][1]).toASM()}]`;
+    }
   }
 
 

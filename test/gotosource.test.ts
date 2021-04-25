@@ -1,8 +1,8 @@
 import { assert, expect } from 'chai';
-import { newTx, loadDescription, stripAnsi } from './helper';
+import { newTx, loadDescription } from './helper';
 import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
-import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, } from '../src/utils';
+import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, stripAnsi } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
 import { readFileSync } from 'fs';
 
@@ -181,7 +181,8 @@ describe('VerifyError', () => {
 │ amount     │ 100000                        │
 │ amount     │ 111111                        │
 └────────────┴───────────────────────────────┘`);
-      expect(result.error).to.contains("OP_RETURN \u001b[39m\u001b[33m02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a\u001b[39m\u001b[31m02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a00\u001b[39m]");
+
+      expect(result.error).to.contains("OP_RETURN \u001b[39m\u001b[32m02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a\u001b[39m\u001b[31m02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a00\u001b[39m]");
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
       expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
@@ -490,7 +491,7 @@ describe('VerifyError', () => {
 
 
 
-      expect(result.error).to.contains("OP_RETURN \u001b[39m\u001b[33m00\u001b[39m\u001b[31m0010\u001b[39m]");
+      expect(result.error).to.contains("OP_RETURN \u001b[39m\u001b[32m00\u001b[39m\u001b[31m0010\u001b[39m]");
 
     });
 
@@ -604,7 +605,7 @@ Check if the sighashtype used by the contract is [SigHash.ANYONECANPAY | SigHash
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("counter.scrypt#8");
       expect(result.error).to.contains("TxContext from config:");
-      expect(stripAnsi(result.error)).to.contains("fields of public function param txPreimage is mark red");
+      expect(stripAnsi(result.error)).to.contains("fields of public function param txPreimage is marked red");
 
       expect(stripAnsi(result.error)).to.contains(
         `┌──────────┬───────┐
