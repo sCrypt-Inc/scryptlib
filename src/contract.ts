@@ -3,7 +3,6 @@ import { serializeState, State } from './serializer';
 import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize, stripAnsi } from './utils';
 import { Struct, SupportedParamType, StructObject, ScryptType, VariableType, Int, Bytes, BasicScryptType, ValueType, TypeResolver, SigHashPreimage, SigHashType } from './scryptTypes';
 import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, Pos } from './compilerWrapper';
-import { findArgumentFailsAtCheckSig, getCheckSigErrorDetail, getCheckPreiamgeErrorDetail, getTxContextInfo, getPubkeyAtCheckSigFail } from './checkSigErrorUtils';
 
 export interface TxContext {
   tx?: any;
@@ -174,20 +173,6 @@ export class AbstractContract {
               throw new Error('should provide txContext when verify');
             } if (!tx) {
               throw new Error('should provide txContext.tx when verify');
-            }
-            else {
-              const sigArg = findArgumentFailsAtCheckSig('Sig', args);
-              if (sigArg) {
-                error += getCheckSigErrorDetail(sigArg, getPubkeyAtCheckSigFail(interpretStates), txCtx, this.lockingScript.toASM());
-              }
-
-              const preimageArg = findArgumentFailsAtCheckSig('SigHashPreimage', args);
-
-              if (preimageArg) {
-                error += getCheckPreiamgeErrorDetail(preimageArg, txCtx, this.lockingScript.toASM());
-              }
-
-              error += getTxContextInfo(txCtx);
             }
           }
         }
