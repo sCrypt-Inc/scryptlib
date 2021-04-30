@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
 import * as minimist from 'minimist';
 import { AsmVarValues, TxContext } from './contract';
-import { DebugConfiguration, DebugLaunch, FileUri } from './abi';
+import { Arguments, DebugConfiguration, DebugLaunch, FileUri } from './abi';
 import { tmpdir } from 'os';
 import md5 = require('md5');
 export { bsv };
@@ -845,44 +845,22 @@ export function printDebugUri() {
   return argv.debugUri === true;
 }
 
-interface Outpoint { hash: string, index: number }
 
-export interface SighashPreiamgeDiff {
-  nVersion?: [number, number],
-  hashPrevouts?: [string, string],
-  hashSequence?: [string, string],
-  outpoint?: [Outpoint, Outpoint],
-  scriptCode?: [string, string],
-  amount?: [number, number],
-  nSequence?: [number, number],
-  hashOutputs?: [string, string],
-  nLocktime?: [number, number],
-  sighashType?: [number, number],
+
+export function ansiRegex({ onlyFirst = false } = {}) {
+  const pattern = [
+    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+    '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
+  ].join('|');
+
+  return new RegExp(pattern, onlyFirst ? undefined : 'g');
 }
 
-export function getSigHashPreimageDiff(sigImgA: SigHashPreimage, sigImgB: SigHashPreimage): SighashPreiamgeDiff {
-  const result: SighashPreiamgeDiff = {};
-  const attributes = ['nVersion', 'hashPrevouts', 'hashSequence', 'outpoint', 'scriptCode', 'amount', 'nSequence', 'hashOutputs', 'nLocktime', 'sighashType'];
-  for (const att of attributes) {
-    if (JSON.stringify(sigImgA[att]) !== JSON.stringify(sigImgB[att])) {
-      result[att] = [sigImgA[att], sigImgB[att]];
-    }
-  }
-  return result;
-}
 
-export function removeSharedStart([asmPreimageInParam, asmPreimageFromTx]) {
-  const A: string[] = asmPreimageInParam.split(' ');
-  const B: string[] = asmPreimageFromTx.split(' ');
-
-  const L = A.length;
-
-  let i = 0;
-  while (i < L && A[i] === B[i] && A[i] != 'OP_RETURN') i++;
-
-  if (A[i] === 'OP_RETURN') {
-    return [`...${A.slice(i).join(' ')}`, `...${B.slice(i).join(' ')}`];
+export function stripAnsi(string) {
+  if (typeof string !== 'string') {
+    throw new TypeError(`Expected a \`string\`, got \`${typeof string}\``);
   }
 
-  return [`md5(scriptCode) = ${md5(asmPreimageInParam)}`, `md5(scriptCode) = ${md5(asmPreimageFromTx)}`];
+  return string.replace(ansiRegex(), '');
 }

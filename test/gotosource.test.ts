@@ -2,8 +2,8 @@ import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
-import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage } from '../src/scryptTypes';
+import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, stripAnsi } from '../src/utils';
+import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
 import { readFileSync } from 'fs';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
@@ -170,10 +170,7 @@ describe('VerifyError', () => {
 
       expect(result.error).to.contains("fails at OP_CHECKSIG");
       expect(result.error).to.contains("tokenUtxo.scrypt#14");
-      expect(result.error).to.contains("CheckPreimage Fail Hints Begin");
-      //only check error message contains scriptCode diff
-      expect(result.error).to.contains("scriptCode | ...OP_RETURN");
-      expect(result.error).to.contains("amount | 111111 | 100000");
+
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
       expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
@@ -216,9 +213,6 @@ describe('VerifyError', () => {
       expect(result.error).to.contains("p2pkh.scrypt#10");
       expect(result.error).to.contains("DemoP2PKH-launch.json");
       expect(result.error).to.contains("fails at OP_CHECKSIG");
-      expect(result.error).to.contains("----- CheckSig Fail Hints Begin -----");
-      expect(result.error).to.contains("1. private key used to sign should be corresponding to the public key");
-      expect(result.error).to.contains("2. the preimage of the tx to be signed should be");
     })
 
   })
@@ -396,43 +390,6 @@ describe('VerifyError', () => {
 
 
 
-
-  describe('Test sCrypt contract MultiSig In Javascript', () => {
-    let multiSig, result, context
-
-    const privateKey1 = new bsv.PrivateKey.fromRandom('testnet')
-    const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1)
-    const pkh1 = bsv.crypto.Hash.sha256ripemd160(publicKey1.toBuffer())
-    const privateKey2 = new bsv.PrivateKey.fromRandom('testnet')
-    const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2)
-    const pkh2 = bsv.crypto.Hash.sha256ripemd160(publicKey2.toBuffer())
-    const privateKey3 = new bsv.PrivateKey.fromRandom('testnet')
-    const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3)
-    const pkh3 = bsv.crypto.Hash.sha256ripemd160(publicKey3.toBuffer())
-
-    before(() => {
-      const MultiSig = buildContractClass(loadDescription('multiSig_desc.json'));
-      multiSig = new MultiSig([new Ripemd160(toHex(pkh1)), new Ripemd160(toHex(pkh2)), new Ripemd160(toHex(pkh3))]);
-      context = { tx, inputIndex: 0, inputSatoshis }
-    });
-
-
-    it('signature check should fail when wrong private key signs', () => {
-      const sig1 = signTx(tx, privateKey1, multiSig.lockingScript.toASM(), inputSatoshis)
-      const sig2 = signTx(tx, privateKey1, multiSig.lockingScript.toASM(), inputSatoshis)
-      const sig3 = signTx(tx, privateKey1, multiSig.lockingScript.toASM(), inputSatoshis)
-      result = multiSig.unlock([new PubKey(toHex(publicKey1)), new PubKey(toHex(publicKey2)), new PubKey(toHex(publicKey3))],
-        [new Sig(toHex(sig1)), new Sig(toHex(sig2)), new Sig(toHex(sig3))]).verify(context)
-
-      expect(result.success, result.error).to.be.false
-
-      expect(result.error).to.contains("multiSig.scrypt#5");
-      expect(result.error).to.contains("MultiSig-launch.json");
-      expect(result.error).to.contains("fails at OP_CHECKMULTISIG");
-
-    });
-
-  });
 
 
 })

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.3.7
+
+- remove CheckPreimage/CheckSig Fail Hints
+
+
 ## 0.3.6
 
 - encodeConstructorCall RegExp replace error Fix #86
