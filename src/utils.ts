@@ -404,12 +404,30 @@ export function bin2num(s: string | Buffer): bigint {
   return BigInt(bn);
 }
 
+
+declare let window: any;
+
+export function isNode(): boolean {
+  return typeof window === 'undefined' && typeof process === 'object';
+}
+
+
 export function path2uri(path: string): string {
-  return pathToFileURL(path).toString();
+
+  if (isNode()) {
+    return pathToFileURL(path).toString();
+  } else {
+    return path;
+  }
 }
 
 export function uri2path(uri: string): string {
-  return fileURLToPath(uri);
+  if (isNode()) {
+    return fileURLToPath(uri);
+  } else {
+    return uri;
+  }
+
 }
 
 /**
@@ -799,14 +817,20 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     configurations: [debugConfig]
   };
 
-  const filename = `${name}-launch.json`;
-  const file = join(fs.mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename);
-  fs.writeFileSync(file, JSON.stringify(launch, (key, value) => (
+  const jsonstr = JSON.stringify(launch, (key, value) => (
     typeof value === 'bigint'
       ? value.toString()
       : value // return everything else unchanged
-  ), 2));
-  return path2uri(file);
+  ), 2);
+
+  if (isNode()) {
+    const filename = `${name}-launch.json`;
+    const file = join(fs.mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename);
+    fs.writeFileSync(file, jsonstr);
+    return path2uri(file);
+  } else {
+    console.error(`${pubFunc}() call fail, see launch.json`, jsonstr);
+  }
 
 }
 
@@ -842,7 +866,7 @@ export function resolveType(alias: AliasEntity[], type: string): string {
 
 export function printDebugUri() {
   const argv = minimist(process.argv.slice(2));
-  return argv.debugUri === true;
+  return argv.debugUri === true || !isNode();
 }
 
 
