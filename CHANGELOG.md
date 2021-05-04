@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.10
+
+- Fix loc undefined
+
 ## 0.3.9
 
 - support bigint in ast

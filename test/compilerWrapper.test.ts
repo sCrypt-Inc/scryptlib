@@ -1,9 +1,11 @@
 import { assert, expect } from 'chai';
 import path = require("path");
-import { loadDescription, getContractFilePath, getInvalidContractFilePath } from './helper'
+import { loadDescription, getContractFilePath, getInvalidContractFilePath, deleteSource } from './helper'
 import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
 import { compileContract, getCIScryptc } from '../src/utils';
 import * as minimist from 'minimist';
+import { writeFileSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -638,4 +640,11 @@ describe('compile()', () => {
     expect(contracts[1].statics[7].expr.value.toString(10)).to.equal('2988348162058574136915891421498819466320163312926952423791023078876139')
   })
 
+
+  it('check foo ast', () => {
+    const result = compileContract(getContractFilePath('foo.scrypt'));
+    deleteSource(result.ast)
+    const content = readFileSync(join(__dirname, './fixture/ast/foo.ast.json')).toString();
+    expect(JSON.parse(JSON.stringify(result.ast))).to.deep.equal(JSON.parse(content));
+  })
 })

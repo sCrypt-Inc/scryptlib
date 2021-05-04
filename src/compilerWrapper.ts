@@ -190,7 +190,7 @@ export function compile(
       const outputFilePath = getOutputFilePath(outputDir, 'ast');
       outputFiles['ast'] = outputFilePath;
 
-      
+
       const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
 
       const sourceUri = path2uri(sourcePath);
@@ -362,8 +362,8 @@ function addSourceLocation(astRoot, basePath: string, curFileName: string) {
 }
 
 function _addSourceLocationProperty(astObj, uri: string | null) {
-  if (!(astObj instanceof Object)) { return astObj; }
 
+  if (!(typeof astObj === 'object')) { return astObj; }
   for (const field in astObj) {
     const value = astObj[field];
     if (field === 'src') {
@@ -378,7 +378,7 @@ function _addSourceLocationProperty(astObj, uri: string | null) {
         };
       }
       delete astObj['src'];
-    } else if (value instanceof Object) {
+    } else if (typeof value === 'object') {
       _addSourceLocationProperty(value, uri);
     }
   }
