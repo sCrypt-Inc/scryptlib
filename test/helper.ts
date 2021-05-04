@@ -27,3 +27,16 @@ export function newTx(inputSatoshis: number) {
   };
   return new bsv.Transaction().from(utxo);
 }
+
+export function deleteSource(o: any) {
+  Object.keys(o).forEach(key => {
+
+    if (key === 'source') {
+      delete o['source'];
+    }
+
+    if (typeof o[key] === "object") {
+      deleteSource(o[key])
+    }
+  })
+}
