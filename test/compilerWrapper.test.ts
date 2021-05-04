@@ -629,4 +629,13 @@ describe('compile()', () => {
     assert.isTrue(result.errors.length === 0, "issue310.scrypt should be compile success")
   })
 
+
+
+  it('Expecting bigint const toString right ', () => {
+    const result = compileContract(getContractFilePath('const.scrypt'));
+    const contracts: any = result.ast.contracts;
+    expect(contracts[0].statics[1].expr.value.toString(10)).to.equal('2988348162058574136915891421498819466320163312926952423791023078876139')
+    expect(contracts[1].statics[7].expr.value.toString(10)).to.equal('2988348162058574136915891421498819466320163312926952423791023078876139')
+  })
+
 })

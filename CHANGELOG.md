@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.9
+
+- support bigint in ast
+
 ## 0.3.8
 
 - support print launch.json for debugging in browser webview developer tool. see [commit](https://github.com/sCrypt-Inc/tic-tac-toe/commit/3a466de69095b05ca0da35408b324565d7eaa18a)
