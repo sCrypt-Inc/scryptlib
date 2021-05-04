@@ -154,10 +154,10 @@ export function compile(
     optimize?: boolean,
     timeout?: number  // in ms
   } = {
-      asm: true,
-      debug: true,
-      optimize: false,
-    }
+    asm: true,
+    debug: true,
+    optimize: false,
+  }
 ): CompileResult {
   const st = Date.now();
   const sourcePath = source.path;
@@ -565,14 +565,14 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
 
 export function getPlatformScryptc(): string {
   switch (os.platform()) {
-    case 'win32':
-      return 'compiler/scryptc/win32/scryptc.exe';
-    case 'linux':
-      return 'compiler/scryptc/linux/scryptc';
-    case 'darwin':
-      return 'compiler/scryptc/mac/scryptc';
-    default:
-      throw `sCrypt doesn't support ${os.platform()}`;
+  case 'win32':
+    return 'compiler/scryptc/win32/scryptc.exe';
+  case 'linux':
+    return 'compiler/scryptc/linux/scryptc';
+  case 'darwin':
+    return 'compiler/scryptc/mac/scryptc';
+  default:
+    throw `sCrypt doesn't support ${os.platform()}`;
   }
 }
 
