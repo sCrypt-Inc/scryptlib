@@ -154,10 +154,10 @@ export function compile(
     optimize?: boolean,
     timeout?: number  // in ms
   } = {
-    asm: true,
-    debug: true,
-    optimize: false,
-  }
+      asm: true,
+      debug: true,
+      optimize: false,
+    }
 ): CompileResult {
   const st = Date.now();
   const sourcePath = source.path;
@@ -190,7 +190,7 @@ export function compile(
       const outputFilePath = getOutputFilePath(outputDir, 'ast');
       outputFiles['ast'] = outputFilePath;
 
-      
+
       const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
 
       const sourceUri = path2uri(sourcePath);
@@ -362,8 +362,8 @@ function addSourceLocation(astRoot, basePath: string, curFileName: string) {
 }
 
 function _addSourceLocationProperty(astObj, uri: string | null) {
-  if (!(astObj instanceof Object)) { return astObj; }
 
+  if (!(typeof astObj === 'object')) { return astObj; }
   for (const field in astObj) {
     const value = astObj[field];
     if (field === 'src') {
@@ -378,7 +378,7 @@ function _addSourceLocationProperty(astObj, uri: string | null) {
         };
       }
       delete astObj['src'];
-    } else if (value instanceof Object) {
+    } else if (typeof value === 'object') {
       _addSourceLocationProperty(value, uri);
     }
   }
@@ -565,14 +565,14 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
 
 export function getPlatformScryptc(): string {
   switch (os.platform()) {
-  case 'win32':
-    return 'compiler/scryptc/win32/scryptc.exe';
-  case 'linux':
-    return 'compiler/scryptc/linux/scryptc';
-  case 'darwin':
-    return 'compiler/scryptc/mac/scryptc';
-  default:
-    throw `sCrypt doesn't support ${os.platform()}`;
+    case 'win32':
+      return 'compiler/scryptc/win32/scryptc.exe';
+    case 'linux':
+      return 'compiler/scryptc/linux/scryptc';
+    case 'darwin':
+      return 'compiler/scryptc/mac/scryptc';
+    default:
+      throw `sCrypt doesn't support ${os.platform()}`;
   }
 }
 
