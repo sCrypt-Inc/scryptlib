@@ -7,12 +7,12 @@ import * as os from 'os';
 import md5 = require('md5');
 import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize } from './utils';
 import compareVersions = require('compare-versions');
-
+import JSONbig = require('json-bigint');
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG = /Internal error:(?<message>.+)/;
 const WARNING_REG = /Warning:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
-
+const JSONbigAlways = JSONbig({ alwaysParseAsBig: true, constructorAction: 'preserve' });
 
 
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
@@ -190,7 +190,8 @@ export function compile(
       const outputFilePath = getOutputFilePath(outputDir, 'ast');
       outputFiles['ast'] = outputFilePath;
 
-      const allAst = addSourceLocation(JSON.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
+      
+      const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
 
       const sourceUri = path2uri(sourcePath);
       result.file = sourceUri;

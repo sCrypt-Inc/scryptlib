@@ -3,6 +3,7 @@ type Amount = int;
 
 library Util {
     static const int DATALEN = 5;
+    static const int BIGINT = 2988348162058574136915891421498819466320163312926952423791023078876139;
 }
 
 contract ConstTest {
@@ -13,6 +14,7 @@ contract ConstTest {
     static const int C = N;
     static const Amount amount = 1;
     static const PubKey p = PubKey(b'aaaa');
+    static const int BIGINT = 2988348162058574136915891421498819466320163312926952423791023078876139;
 
     int[amount] memberx;
 
