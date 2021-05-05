@@ -265,6 +265,7 @@ export function bytes2Literal(bytearray: number[], type: string): string {
     return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
 
   case 'int':
+  case 'PrivKey':
     return BN.fromSM(bytearray, { endian: 'little' }).toString();
 
   case 'bytes':
