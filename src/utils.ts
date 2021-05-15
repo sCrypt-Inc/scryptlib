@@ -796,7 +796,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     if (tx) {
       Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
     }
-    if (txContext.opReturn) {
+    if (typeof txContext.opReturn === 'string') {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
     }
   }
