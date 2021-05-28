@@ -5,7 +5,7 @@ import bsv = require('bsv');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
 import * as minimist from 'minimist';
-import { AsmVarValues, TxContext } from './contract';
+import { AbstractContract, AsmVarValues, TxContext } from './contract';
 import { Arguments, DebugConfiguration, DebugLaunch, FileUri } from './abi';
 import { tmpdir } from 'os';
 import md5 = require('md5');
@@ -58,6 +58,67 @@ export function int2Asm(str: string): string {
   } else {
     throw new Error(`invalid str '${str}' to convert to int`);
   }
+}
+
+
+/**
+ * convert asm string to number or bigint
+ */
+export function asm2int(str: string): number | bigint {
+
+  switch (str) {
+  case '0':
+    return 0;
+  case 'OP_1NEGATE':
+    return -1;
+  case 'OP_0':
+    return 0;
+  case 'OP_1':
+    return 1;
+  case 'OP_2':
+    return 2;
+  case 'OP_3':
+    return 3;
+  case 'OP_4':
+    return 4;
+  case 'OP_5':
+    return 5;
+  case 'OP_6':
+    return 6;
+  case 'OP_7':
+    return 7;
+  case 'OP_8':
+    return 8;
+  case 'OP_9':
+    return 9;
+  case 'OP_10':
+    return 10;
+  case 'OP_11':
+    return 11;
+  case 'OP_12':
+    return 12;
+  case 'OP_13':
+    return 13;
+  case 'OP_14':
+    return 14;
+  case 'OP_15':
+    return 15;
+  case 'OP_16':
+    return 16;
+  default: {
+    const value = getValidatedHexString(str);
+    const bn = BN.fromHex(value, {
+      endian: 'little'
+    });
+
+    if (bn.toNumber() < Number.MAX_SAFE_INTEGER) {
+      return bn.toNumber();
+    } else {
+      return BigInt(bn.toString());
+    }
+  }
+  }
+
 }
 
 /**
@@ -254,6 +315,40 @@ export function literal2ScryptType(l: string): ScryptType {
   default:
     throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
+}
+
+
+export function asm2ScryptType(type: string, asm: string) {
+
+  switch (type) {
+  case VariableType.BOOL:
+    return new Bool(BN.fromString(asm) > 0 ? true : false);
+  case VariableType.INT:
+    return new Int(asm2int(asm));
+  case VariableType.BYTES:
+    return new Bytes(asm);
+  case VariableType.PRIVKEY:
+    return new PrivKey(asm2int(asm) as bigint);
+  case VariableType.PUBKEY:
+    return new PubKey(asm);
+  case VariableType.SIG:
+    return new Sig(asm);
+  case VariableType.RIPEMD160:
+    return new Ripemd160(asm);
+  case VariableType.SHA1:
+    return new Sha1(asm);
+  case VariableType.SHA256:
+    return new Sha256(asm);
+  case VariableType.SIGHASHTYPE:
+    return new SigHashType(asm2int(asm) as number);
+  case VariableType.SIGHASHPREIMAGE:
+    return new SigHashPreimage(asm);
+  case VariableType.OPCODETYPE:
+    return new OpCodeType(asm);
+  default:
+    throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  }
+
 }
 
 
@@ -888,4 +983,76 @@ export function stripAnsi(string) {
   }
 
   return string.replace(ansiRegex(), '');
+}
+
+
+export function createStruct(contract: AbstractContract, sType: typeof Struct, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver) {
+
+  const obj = Object.create({});
+  sType.structAst.params.forEach(param => {
+
+    const finalType = finalTypeResolver(param.type);
+
+    if (isStructType(finalType)) {
+
+      const stclass = contract.getTypeClassByType(param.type);
+
+      Object.assign(obj, {
+        [param.name]: createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap, finalTypeResolver)
+      });
+
+    } else if (isArrayType(finalType)) {
+
+      Object.assign(obj, {
+        [param.name]: createArray(contract, finalType, `${name}.${param.name}`, opcodesMap, finalTypeResolver)
+      });
+
+    } else {
+
+      Object.assign(obj, {
+        [param.name]: asm2ScryptType(finalType, opcodesMap.get(`$${name}.${param.name}`))
+      });
+
+    }
+
+  });
+
+
+  return new sType(obj);
+}
+
+
+
+
+export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver) {
+
+  const arrays = [];
+  const [elemTypeName, sizes] = arrayTypeAndSize(type);
+
+  const arraylen = sizes[0];
+  if (sizes.length === 1) {
+    for (let index = 0; index < arraylen; index++) {
+      const finalType = finalTypeResolver(elemTypeName);
+
+      if (isStructType(finalType)) {
+
+        const stclass = contract.getTypeClassByType(finalType);
+        arrays.push(createStruct(contract, stclass as typeof Struct, `${name}[${index}]`, opcodesMap, finalTypeResolver));
+      } else {
+
+        arrays.push(asm2ScryptType(finalType, opcodesMap.get(`$${name}[${index}]`)));
+      }
+
+    }
+
+  } else {
+
+    for (let index = 0; index < arraylen; index++) {
+      const finalType = finalTypeResolver(elemTypeName);
+      const subArrayType = [finalType, sizes.slice(1).map(size => `[${size}]`).join('')].join('');
+      arrays.push(createArray(contract, subArrayType, `${name}[${index}]`, opcodesMap, finalTypeResolver));
+    }
+  }
+
+  return arrays;
 }

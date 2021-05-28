@@ -46,6 +46,8 @@ export class AbstractContract {
   public static opcodes?: OpCode[];
   public static file: string;
   public static structs: StructEntity[];
+  public static types: Record<string, typeof ScryptType>;
+
 
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
@@ -99,7 +101,18 @@ export class AbstractContract {
   }
 
 
+  getTypeClassByType(type: string): typeof ScryptType {
+    const types: typeof ScryptType[] = Object.getPrototypeOf(this).constructor.types;
 
+    if (isStructType(type)) {
+      const structName = getStructNameByType(type);
+      if (Object.prototype.hasOwnProperty.call(types, structName)) {
+        return types[structName];
+      }
+    } else {
+      return types[type];
+    }
+  }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
@@ -284,7 +297,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription, as
      */
     static fromASM(asm: string) {
       const obj = new this();
-      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, asm);
+      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, Contract.asm, asm);
       return obj;
     }
 
@@ -319,6 +332,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription, as
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
   ContractClass.structs = desc.structs;
+  ContractClass.types = buildTypeClasses(desc);
 
 
   ContractClass.abi.forEach(entity => {

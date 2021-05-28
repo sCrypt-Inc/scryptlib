@@ -7,7 +7,7 @@ import {
 } from '../src/contract'
 import { FunctionCall } from '../src/abi'
 import { bsv, signTx, toHex } from '../src/utils'
-import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes'
+import { Sig, PubKey, Ripemd160, Bytes, Int } from '../src/scryptTypes'
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
@@ -306,6 +306,83 @@ describe('buildContractClass and create instance from script', () => {
           .verify({ inputSatoshis, tx })
         assert.isFalse(result.success, result.error)
       })
+    })
+
+
+
+
+    describe('constructorArgs', () => {
+      const ConstructorArgs = buildContractClass(loadDescription('constructorArgs_desc.json'));
+      const { ST2, ST3 } = ConstructorArgs.types;
+
+      const asmConstructorArgs = buildContractClass(loadDescription('constructorArgs_desc.json'), true)
+      describe('when dataPart is unset', () => {
+        it('should return undefined', () => {
+
+          let args = [2, new Int(BigInt(11111111111111111111n)), false, new Bytes('1234567890'),
+            new ST2({
+              x: false,
+              y: new Bytes('12345678901100'),
+              st3: new ST3({
+                x: true,
+                y: [23, 10, 25555555555555555555555555555n]
+              })
+            }),
+            [
+              [new ST2({
+                x: false,
+                y: new Bytes('123456789011'),
+                st3: new ST3({
+                  x: true,
+                  y: [0, 1, 22222222222222222222222222222n]
+                })
+              }), new ST2({
+                x: false,
+                y: new Bytes('123456789011'),
+                st3: new ST3({
+                  x: true,
+                  y: [2, 16, 22222222222222222222222222222n]
+                })
+              })],
+              [new ST2({
+                x: false,
+                y: new Bytes('123456789011'),
+                st3: new ST3({
+                  x: true,
+                  y: [2, 16, 22222222222222222222222222222n]
+                })
+              }),
+              new ST2({
+                x: false,
+                y: new Bytes('12345678901100'),
+                st3: new ST3({
+                  x: true,
+                  y: [23, 17, 25555555555555555555555555555n]
+                })
+              })]
+            ]
+          ];
+
+          let constructorArgs = new ConstructorArgs(...args);
+
+          let result = constructorArgs.unlock(...args).verify();
+
+          assert.isTrue(result.success)
+
+          let newConstructorArgs = asmConstructorArgs.fromASM(constructorArgs.lockingScript.toASM());
+
+
+          result = newConstructorArgs.unlock(...args).verify()
+          assert.isTrue(result.success)
+
+
+          let constructorArgsClone = new ConstructorArgs(...newConstructorArgs.arguments('constructor').map(arg => arg.value));
+
+          assert.deepEqual(constructorArgs.lockingScript.toASM(), constructorArgsClone.lockingScript.toASM())
+
+        })
+      })
+
     })
   })
 })

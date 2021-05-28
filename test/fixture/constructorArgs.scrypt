@@ -1,0 +1,40 @@
+
+/**
+* contract ConstructorArgs
+*/
+
+struct ST2 {
+    bool x;
+    bytes y;
+    ST3 st3;
+}
+
+struct ST3 {
+    bool x;
+    int[3] y;
+}
+
+contract ConstructorArgs {
+    int x;
+    int y;
+    bool c;
+    bytes a;
+    ST2 st2;
+    ST2[2][2] st2array;
+    public function unlock(int x,
+        int y,
+        bool c,
+        bytes a,
+        ST2 st2,
+        ST2[2][2] st2array
+        ) {
+        require(this.x == x);
+        require(this.y == y);
+        require(this.c == c);
+        require(this.a == a);
+        require(this.st2 == st2);
+        require(this.st2array == st2array);
+    }
+}
+
+
