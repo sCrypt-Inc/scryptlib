@@ -35,7 +35,7 @@ export function deleteSource(o: any) {
       delete o['source'];
     }
 
-    if (typeof o[key] === "object") {
+    if (typeof o[key] === "object" && o[key] !== null) {
       deleteSource(o[key])
     }
   })
