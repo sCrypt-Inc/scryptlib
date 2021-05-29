@@ -67,44 +67,27 @@ export function int2Asm(str: string): string {
 export function asm2int(str: string): number | bigint {
 
   switch (str) {
-  case '0':
-    return 0;
   case 'OP_1NEGATE':
     return -1;
+  case '0':
   case 'OP_0':
-    return 0;
   case 'OP_1':
-    return 1;
   case 'OP_2':
-    return 2;
   case 'OP_3':
-    return 3;
   case 'OP_4':
-    return 4;
   case 'OP_5':
-    return 5;
   case 'OP_6':
-    return 6;
   case 'OP_7':
-    return 7;
   case 'OP_8':
-    return 8;
   case 'OP_9':
-    return 9;
   case 'OP_10':
-    return 10;
   case 'OP_11':
-    return 11;
   case 'OP_12':
-    return 12;
   case 'OP_13':
-    return 13;
   case 'OP_14':
-    return 14;
   case 'OP_15':
-    return 15;
   case 'OP_16':
-    return 16;
+    return parseInt(str.replace('OP_', ''));
   default: {
     const value = getValidatedHexString(str);
     const bn = BN.fromHex(value, {
@@ -1055,4 +1038,16 @@ export function createArray(contract: AbstractContract, type: string, name: stri
   }
 
   return arrays;
+}
+
+
+export function toLiteral(value: any) {
+
+  if (Array.isArray(value)) {
+
+    return value.map(i => toLiteral(i));
+  } else {
+
+    return value instanceof ScryptType ? value.toLiteral() : value;
+  }
 }

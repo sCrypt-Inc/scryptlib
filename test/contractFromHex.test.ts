@@ -6,8 +6,8 @@ import {
   VerifyResult
 } from '../src/contract'
 import { FunctionCall } from '../src/abi'
-import { bsv, signTx, toHex } from '../src/utils'
-import { Sig, PubKey, Ripemd160, Bytes, Int } from '../src/scryptTypes'
+import { bsv, signTx, toHex, toLiteral } from '../src/utils'
+import { Sig, PubKey, Ripemd160, Bytes, Int, ScryptType } from '../src/scryptTypes'
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
@@ -312,12 +312,15 @@ describe('buildContractClass and create instance from script', () => {
 
 
     describe('constructorArgs', () => {
-      const ConstructorArgs = buildContractClass(loadDescription('constructorArgs_desc.json'));
-      const { ST2, ST3 } = ConstructorArgs.types;
 
-      const asmConstructorArgs = buildContractClass(loadDescription('constructorArgs_desc.json'), true)
-      describe('when dataPart is unset', () => {
-        it('should return undefined', () => {
+      describe('when build a contract which have Implicit constructor from asm', () => {
+
+        const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgs_desc.json'));
+        const { ST2, ST3 } = ConstructorArgsContract.types;
+
+        const AsmConstructorArgsContract = buildContractClass(loadDescription('constructorArgs_desc.json'), true)
+
+        it('should get right constructor args', () => {
 
           let args = [2, new Int(BigInt(11111111111111111111n)), false, new Bytes('1234567890'),
             new ST2({
@@ -364,26 +367,128 @@ describe('buildContractClass and create instance from script', () => {
             [[[1, 25555555555555555555555555555n]]]
           ];
 
-          let constructorArgs = new ConstructorArgs(...args);
+          let contract = new ConstructorArgsContract(...args);
 
-          let result = constructorArgs.unlock(...args).verify();
+          let result = contract.unlock(...args).verify();
 
           assert.isTrue(result.success)
 
-          let newConstructorArgs = asmConstructorArgs.fromASM(constructorArgs.lockingScript.toASM());
+          let newContract = AsmConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 
+          assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
 
-          result = newConstructorArgs.unlock(...args).verify()
-          assert.isTrue(result.success)
-
-
-          let constructorArgsClone = new ConstructorArgs(...newConstructorArgs.arguments('constructor').map(arg => arg.value));
-
-          assert.deepEqual(constructorArgs.lockingScript.toASM(), constructorArgsClone.lockingScript.toASM())
-
+            [
+              '2',
+              '11111111111111111111',
+              'false',
+              "b'1234567890'",
+              "{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}}",
+              [
+                [
+                  "{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}}",
+                  "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}"
+                ],
+                [
+                  "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}",
+                  "{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}"
+                ]
+              ],
+              [[['1', '25555555555555555555555555555']]]
+            ]
+          )
         })
       })
 
+    })
+
+
+    describe('when build a contract which have explicit constructor from asm', () => {
+
+      const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgsExplicit_desc.json'));
+      const { ST2, ST3 } = ConstructorArgsContract.types;
+
+      const AsmConstructorArgsContract = buildContractClass(loadDescription('constructorArgsExplicit_desc.json'), true)
+
+
+      it('should get right constructor args', () => {
+
+        let args = [2, new Int(BigInt(11111111111111111111n)), false, new Bytes('1234567890'),
+          new ST2({
+            x: false,
+            y: new Bytes('12345678901100'),
+            st3: new ST3({
+              x: true,
+              y: [23, 10, 25555555555555555555555555555n]
+            })
+          }),
+          [
+            [new ST2({
+              x: false,
+              y: new Bytes('123456789011'),
+              st3: new ST3({
+                x: true,
+                y: [0, 1, 22222222222222222222222222222n]
+              })
+            }), new ST2({
+              x: false,
+              y: new Bytes('123456789011'),
+              st3: new ST3({
+                x: true,
+                y: [2, 16, 22222222222222222222222222222n]
+              })
+            })],
+            [new ST2({
+              x: false,
+              y: new Bytes('123456789011'),
+              st3: new ST3({
+                x: true,
+                y: [2, 16, 22222222222222222222222222222n]
+              })
+            }),
+            new ST2({
+              x: false,
+              y: new Bytes('12345678901100'),
+              st3: new ST3({
+                x: true,
+                y: [23, 17, 25555555555555555555555555555n]
+              })
+            })]
+          ],
+          [[[1, 25555555555555555555555555555n]]]
+        ];
+
+        let contract = new ConstructorArgsContract(...args);
+
+        let result = contract.unlock(...args).verify();
+
+        console.log(result)
+
+        assert.isTrue(result.success)
+
+        let newContract = AsmConstructorArgsContract.fromASM(contract.lockingScript.toASM());
+
+        assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
+
+          [
+            '2',
+            '11111111111111111111',
+            'false',
+            "b'1234567890'",
+            "{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}}",
+            [
+              [
+                "{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}}",
+                "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}"
+              ],
+              [
+                "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}",
+                "{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}"
+              ]
+            ],
+            [[['1', '25555555555555555555555555555']]]
+          ]
+        )
+      })
     })
   })
 })
