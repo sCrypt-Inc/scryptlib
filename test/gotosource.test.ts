@@ -401,7 +401,7 @@ describe('VerifyError', () => {
 
     });
 
-    it('it should contains opReturn', () => {
+    it('it should contain opReturn', () => {
       const Counter = buildContractClass(loadDescription('counter_desc.json'));
       counter = new Counter();
 
