@@ -265,6 +265,7 @@ export function bytes2Literal(bytearray: number[], type: string): string {
     return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
 
   case 'int':
+  case 'PrivKey':
     return BN.fromSM(bytearray, { endian: 'little' }).toString();
 
   case 'bytes':
@@ -795,7 +796,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     if (tx) {
       Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
     }
-    if (txContext.opReturn) {
+    if (typeof txContext.opReturn === 'string') {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
     }
   }

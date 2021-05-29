@@ -145,7 +145,7 @@ export class FunctionCall {
     const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
-    const dataPart: string = this.contract.dataPart ? this.contract.dataPart.toASM() : '';
+    const dataPart: string = this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
     const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: dataPart });
 
     return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
