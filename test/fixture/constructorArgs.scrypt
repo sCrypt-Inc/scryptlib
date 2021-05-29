@@ -14,19 +14,24 @@ struct ST3 {
     int[3] y;
 }
 
+type ST2Alias = ST2;
+type Integer = int;
+
 contract ConstructorArgs {
     int x;
     int y;
     bool c;
     bytes a;
-    ST2 st2;
+    ST2Alias st2;
     ST2[2][2] st2array;
+    Integer[1][1][2] intarray;
     public function unlock(int x,
         int y,
         bool c,
         bytes a,
         ST2 st2,
-        ST2[2][2] st2array
+        ST2[2][2] st2array,
+        Integer[1][1][2] intarray
         ) {
         require(this.x == x);
         require(this.y == y);
@@ -34,6 +39,7 @@ contract ConstructorArgs {
         require(this.a == a);
         require(this.st2 == st2);
         require(this.st2array == st2array);
+        require(this.intarray == intarray);
     }
 }
 

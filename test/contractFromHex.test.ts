@@ -360,7 +360,8 @@ describe('buildContractClass and create instance from script', () => {
                   y: [23, 17, 25555555555555555555555555555n]
                 })
               })]
-            ]
+            ],
+            [[[1, 25555555555555555555555555555n]]]
           ];
 
           let constructorArgs = new ConstructorArgs(...args);
