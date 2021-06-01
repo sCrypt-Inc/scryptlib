@@ -6,6 +6,9 @@
     "node": ">=12.0.0"
   },
   "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
   "types": "dist",
   "browser": {
     "child_process": false,
@@ -18,9 +21,9 @@
     "testlint": "eslint src --ext .ts,.js",
     "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000 --debugUri",
     "pretest": "ts-node test/fixture/autoCompile.ts",
-    "prepare": "husky install && npm run compile",
+    "prepare": "husky install && npm run compile && cp src/interpreter.js dist",
     "publishcheck": "sh ./publishcheck.sh",
-    "prepublishOnly": "npm run publishcheck && npm run lint && npm run compile"
+    "prepublishOnly": "npm run publishcheck && npm run lint && npm run compile && cp src/interpreter.js dist"
   },
   "repository": {
     "type": "git",

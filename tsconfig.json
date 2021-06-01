@@ -11,5 +11,5 @@
     "declarationDir": "./dist",
     "lib": ["es2020"]
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.js"]
 }
