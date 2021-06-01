@@ -4,34 +4,22 @@
     "node": true,
     "es2020": true
   },
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "@typescript-eslint"
-  ],
+  "plugins": ["@typescript-eslint"],
   "parserOptions": {
     "sourceType": "module",
     "project": "./tsconfig.json"
   },
   "rules": {
-    "linebreak-style": [
-      "error",
-      "unix"
-    ],
-    "semi": [
-      "error",
-      "always"
-    ],
-    "quotes": [
-      "error",
-      "single"
-    ],
+    "linebreak-style": ["error", "unix"],
+    "semi": ["error", "always"],
+    "semi-spacing": ["error", { "after": true, "before": false }],
+    "semi-style": ["error", "last"],
     "indent": [
       "error",
-      2
+      2,
+      { "SwitchCase": 1, "ConditionalExpression": 0, "ObjectExpression": 2 }
     ]
   }
 }

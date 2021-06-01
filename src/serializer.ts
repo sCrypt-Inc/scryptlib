@@ -12,7 +12,7 @@ function serializeBool(flag: boolean): string {
 }
 
 function serializeInt(n: number | bigint): string {
-  const num = new BN(n);
+  const num = new BN(n.toString());
   if (num.eqn(0)) {
     return '00';
   }
@@ -35,7 +35,11 @@ function serializeBytes(hexStr: string): string {
 export type State = Record<string, boolean | number | bigint | string>;
 export type StateArray = Array<boolean | number | bigint | string>;
 
-function serializeWithSchema(state: State | StateArray, key: string | number, schema: State | StateArray = undefined) {
+function serializeWithSchema(
+  state: State | StateArray,
+  key: string | number,
+  schema: State | StateArray = undefined
+) {
   const type = schema[key];
   if (type === 'boolean') {
     return serializeBool(state[key]);
@@ -65,7 +69,11 @@ function serialize(x: boolean | number | bigint | string) {
 }
 
 // serialize contract state into Script ASM
-export function serializeState(state: State | StateArray, stateBytes: number = STATE_LEN_2BYTES, schema: State | StateArray = undefined): string {
+export function serializeState(
+  state: State | StateArray,
+  stateBytes: number = STATE_LEN_2BYTES,
+  schema: State | StateArray = undefined
+): string {
   const asms = [];
 
   const keys = Object.keys(state);
@@ -106,10 +114,14 @@ class OpState {
       return BigInt(0);
     } else if (this.op.opcodenum === Opcode.OP_1NEGATE) {
       return BigInt(-1);
-    } else if (this.op.opcodenum >= Opcode.OP_2 && this.op.opcodenum <= Opcode.OP_16) {
+    } else if (
+      this.op.opcodenum >= Opcode.OP_2 &&
+      this.op.opcodenum <= Opcode.OP_16
+    ) {
       return BigInt(this.op.opcodenum - Opcode.OP_2 + 2);
     } else {
-      if (!this.op.buf) throw new Error('state does not have a number representation');
+      if (!this.op.buf)
+        throw new Error('state does not have a number representation');
       return bin2num(this.op.buf);
     }
   }
@@ -119,12 +131,15 @@ class OpState {
   }
 
   toHex(): string {
-    if (!this.op.buf) throw new Error('state does not have a hexadecimal representation');
+    if (!this.op.buf)
+      throw new Error('state does not have a hexadecimal representation');
     return this.op.buf.toString('hex');
   }
 
   toString(arg = 'utf8') {
-    if (!this.op.buf) { throw new Error('state does not have a string representation'); }
+    if (!this.op.buf) {
+      throw new Error('state does not have a string representation');
+    }
     if (this.op.buf[0] === 0) {
       return '';
     }
@@ -132,15 +147,18 @@ class OpState {
   }
 }
 
-export type OpStateArray = Array<OpState>
+export type OpStateArray = Array<OpState>;
 
 // deserialize Script or Script Hex or Script ASM Code to contract state array and object
-export function deserializeState(s: string | bsv.Script, schema: State | StateArray = undefined): OpStateArray | State | StateArray {
+export function deserializeState(
+  s: string | bsv.Script,
+  schema: State | StateArray = undefined
+): OpStateArray | State | StateArray {
   let script: bsv.Script;
   try {
     script = new Script(s);
   } catch (e) {
-    script = Script.fromASM(s);
+    script = Script.fromASM(s as string);
   }
   const chunks = script.chunks;
   const states = [];

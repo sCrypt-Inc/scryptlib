@@ -1,20 +1,15 @@
 {
-    "compilerOptions": {
-        "target": "esnext",
-        "module": "commonjs",
-        "outDir": "./dist",
-        "alwaysStrict": true,
-        "sourceMap": true,
-        "resolveJsonModule": true,
-        "moduleResolution": "node",
-        "declaration": true,
-        "declarationDir": "./dist",
-        "lib": [
-            "es2020"
-        ]
-    },
-    "include": [
-        "src/**/*.ts",
-        "src/**/*.js",
-    ]
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "alwaysStrict": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationDir": "./dist",
+    "lib": ["es2020"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.js", "test/**/*.ts"]
 }
