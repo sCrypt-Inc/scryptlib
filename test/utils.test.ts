@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { buildTypeClasses } from '../src/contract';
+import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes } from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType } from '../src/utils'
-import { loadDescription } from './helper';
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract } from '../src/utils'
+import { getContractFilePath, loadDescription } from './helper';
 
 
 
@@ -943,6 +943,46 @@ describe('utils', () => {
       expect(isStructType('int[3]')).to.be.false
     })
 
+  })
+
+
+
+  describe('test compileContract', () => {
+
+    describe('compileContract ackermann.scrypt', () => {
+      let ackermann, result;
+
+      before(() => {
+        const Ackermann = buildContractClass(compileContract(getContractFilePath('ackermann.scrypt')));
+        ackermann = new Ackermann(2, 1);
+      });
+
+      it('should show stop ackermann.scrypt#38', () => {
+        result = ackermann.unlock(15).verify()
+        expect(result.error).to.contains("ackermann.scrypt#38");
+      });
+    });
+
+    describe('compileContract ackermann.scrypt without sourcemap', () => {
+      let ackermann, result;
+
+      before(() => {
+        const Ackermann = buildContractClass(compileContract(getContractFilePath('ackermann.scrypt'), {
+          sourceMap: false
+        }));
+        ackermann = new Ackermann(2, 1);
+      });
+
+      it('should not show stop ackermann.scrypt#38', () => {
+        result = ackermann.unlock(15).verify()
+        expect(result.error).to.not.contains("ackermann.scrypt#38");
+      });
+
+      it('should run success', () => {
+        result = ackermann.unlock(5).verify()
+        expect(result.success).to.be.true
+      });
+    });
   })
 
 })
