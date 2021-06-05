@@ -948,12 +948,6 @@ export function resolveType(alias: AliasEntity[], type: string): string {
   }
 }
 
-export function printDebugUri() {
-  const argv = minimist(process.argv.slice(2));
-  return argv.debugUri === true || !isNode();
-}
-
-
 
 export function ansiRegex({ onlyFirst = false } = {}) {
   const pattern = [

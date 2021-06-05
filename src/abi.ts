@@ -1,5 +1,5 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, printDebugUri, resolveType, int2Value, asm2int, createStruct, createArray, asm2ScryptType } from './utils';
+import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, resolveType, int2Value, asm2int, createStruct, createArray, asm2ScryptType } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues, buildTypeResolver } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, Bytes } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity, AliasEntity } from './compilerWrapper';
@@ -155,7 +155,7 @@ export class FunctionCall {
     if (this.unlockingScript) {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext, this.args);
 
-      if (!result.success && printDebugUri()) {
+      if (!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
         if (debugUrl) {
           result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;

@@ -3,6 +3,7 @@
 ## 0.4.1
 
 - Contract Description File add `buildType`
+- remove ``debugUri`` command option, will print **Launch Debugger** uri default
 
 ## 0.3.10
 
