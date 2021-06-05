@@ -23,6 +23,7 @@ export interface VerifyResult {
 export interface ContractDescription {
   version: number;
   compilerVersion: string;
+  buildType: string;
   contract: string;
   md5: string;
   structs: Array<StructEntity>;

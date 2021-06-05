@@ -12,3 +12,7 @@
 ## version = 3
 
 * remove `finalType`
+
+## version = 4
+
+* add  `buildType`

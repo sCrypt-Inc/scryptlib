@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.4.1
+
+- Contract Description File add `buildType`
+
 ## 0.3.10
 
 - Fix loc undefined

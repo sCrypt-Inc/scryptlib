@@ -809,10 +809,15 @@ export function getCIScryptc(): string | undefined {
   return fs.existsSync(scryptc) ? scryptc : undefined;
 }
 
-export function compileContract(file: string, out?: string): CompileResult {
+export function compileContract(file: string, options?: {
+  out?: string,
+  sourceMap?: boolean
+}): CompileResult {
   console.log(`Compiling contract ${file} ...`);
-
-
+  options = Object.assign({
+    out: join(__dirname, '../out'),
+    sourceMap: true
+  }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
   }
@@ -827,7 +832,7 @@ export function compileContract(file: string, out?: string): CompileResult {
   const result = compile(
     { path: file },
     {
-      desc: true, debug: true, sourceMap: true, outputDir: out ? out : join(__dirname, '../out'),
+      desc: true, debug: options.sourceMap, outputDir: options.out,
       cmdPrefix: scryptc
     }
   );
