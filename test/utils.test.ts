@@ -159,9 +159,11 @@ describe('utils', () => {
       expect(parseLiteral("false")).to.have.members(["OP_FALSE", false, "bool"]);
       expect(parseLiteral("b''")).to.have.members(["OP_0", "", "bytes"]);
       expect(parseLiteral("b'62f0245bb9'")).to.have.members(["62f0245bb9", "62f0245bb9", "bytes"]);
-      expect(parseLiteral("PrivKey(1)")).to.have.members(["1", 1, "PrivKey"]);
+      expect(parseLiteral("PrivKey(1)")).to.have.members(["OP_1", 1, "PrivKey"]);
+      expect(parseLiteral("PrivKey(16)")).to.have.members(["OP_16", 16, "PrivKey"]);
+      expect(parseLiteral("PrivKey(0)")).to.have.members(["OP_0", 0, "PrivKey"]);
       expect(parseLiteral("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members([
-        "0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
+        "62f0245bb90aef0d18f914c3c8191d430f99fff925d981d2656c9a7626f14738",
         BigInt("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062"),
         "PrivKey"
       ]);
