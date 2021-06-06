@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { bsv, serializeState, deserializeState, STATE_LEN_2BYTES, STATE_LEN_4BYTES  } from '../src/index'
+import { bsv, serializeState, deserializeState, STATE_LEN_2BYTES, STATE_LEN_4BYTES } from '../src/index'
 
 const BN = bsv.crypto.BN
 const Script = bsv.Script
@@ -53,7 +53,7 @@ describe('serializer', () => {
       const schema = { str: 'string', counter: 'number', bytes: 'hex', flag: 'boolean' }
 
       const state = { str: 'Helloこんにちは你好', counter: 11, bytes: '1234', flag: true }
-      const serial = serializeState(state, STATE_LEN_2BYTES, schema )
+      const serial = serializeState(state, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -74,9 +74,9 @@ describe('serializer', () => {
 
     it('array type with schema', () => {
       //support string type when using schema 
-      const schema = ['string', 'number', 'hex', 'boolean' ]
-      const state = ['Helloこんにちは你好', 11, '1234', false ]
-      const serial = serializeState(state, STATE_LEN_2BYTES, schema )
+      const schema = ['string', 'number', 'hex', 'boolean']
+      const state = ['Helloこんにちは你好', 11, '1234', false]
+      const serial = serializeState(state, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -105,10 +105,10 @@ describe('serializer', () => {
     })
 
     it('special string with schema', () => {
-      const schema = ['string', 'string', 'string', 'string' ]
+      const schema = ['string', 'string', 'string', 'string']
       //emptr, space, double space, UTF8 Full-Word Space
-      const state = ['', ' ', '  ', '　' ]
-      const serial = serializeState(state, STATE_LEN_2BYTES, schema )
+      const state = ['', ' ', '  ', '　']
+      const serial = serializeState(state, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -207,7 +207,7 @@ describe('serializer', () => {
       const schema = { str: 'string', counter: 'number', bytes: 'hex', flag: 'boolean' }
 
       const states = { str: 'Helloこんにちは你好', counter: 11, bytes: '1234', flag: true }
-      const serial = serializeState(states, STATE_LEN_2BYTES, schema )
+      const serial = serializeState(states, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -221,7 +221,7 @@ describe('serializer', () => {
     it('object type with schema 2', () => {
       const schema = { counter: 'number', bytes: 'hex', flag: 'boolean', str: 'string' }
       const states = { counter: 11, bytes: '1234', flag: true }
-      const serial = serializeState(states, STATE_LEN_2BYTES, schema )
+      const serial = serializeState(states, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -235,7 +235,7 @@ describe('serializer', () => {
     it('object type with schema 3', () => {
       const schema = { counter: 'number', bytes: 'hex', flag: 'boolean', str: 'string' }
       const states = { counter: 11, bytes: '1234', flag: true }
-      const serial = serializeState(states, STATE_LEN_2BYTES, schema )
+      const serial = serializeState(states, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -263,9 +263,9 @@ describe('serializer', () => {
 
     it('array type with schema', () => {
       //support string type when using schema 
-      const schema = ['string', 'number', 'hex', 'boolean' ]
-      const states = ['Helloこんにちは你好', 11, '1234', false ]
-      const serial = serializeState(states, STATE_LEN_2BYTES, schema )
+      const schema = ['string', 'number', 'hex', 'boolean']
+      const states = ['Helloこんにちは你好', 11, '1234', false]
+      const serial = serializeState(states, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -354,7 +354,7 @@ describe('serializer', () => {
       expect(hex).to.equal('516a01000181010101020103010401050106010701080109010a010b010c010d010e010f011001110112022800')
 
       const deStates = deserializeState(hex)
-      for(let i=0; i<states.length; i++) {
+      for (let i = 0; i < states.length; i++) {
         expect(deStates[i].toNumber()).to.equal(states[i])
       }
     })
@@ -369,16 +369,16 @@ describe('serializer', () => {
       expect(hex).to.equal('516a005152535455565758595a5b5c5d5e5f60011101120113021700')
 
       const deStates = deserializeState(hex)
-      for(let i=0; i<states.length; i++) {
+      for (let i = 0; i < states.length; i++) {
         expect(deStates[i].toNumber()).to.equal(i)
       }
     })
 
     it('special string with schema', () => {
-      const schema = ['string', 'string', 'string', 'string', 'string' ]
+      const schema = ['string', 'string', 'string', 'string', 'string']
       //emptr, space, double space, UTF8 Full-Word Space, string with left & right space
-      const states = ['', ' ', '  ', '　', '  hello   ' ]
-      const serial = serializeState(states, STATE_LEN_2BYTES, schema )
+      const states = ['', ' ', '  ', '　', '  hello   ']
+      const serial = serializeState(states, STATE_LEN_2BYTES, schema)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
@@ -426,7 +426,7 @@ describe('serializer', () => {
       expect(hex).to.equal('516a0100010a02230107debc9a7856341202e883021200')
 
       const deStates = deserializeState(hex)
-      for(let i=0; i<states.length; i++) {
+      for (let i = 0; i < states.length; i++) {
         expect(deStates[i].toBigInt()).to.equal(states[i])
       }
     })
