@@ -19,12 +19,18 @@ const JSONbigAlways = JSONbig({ alwaysParseAsBig: true, constructorAction: 'pres
 const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 3;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 4;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
   InternalError = 'InternalError',
   Warning = 'Warning'
+}
+
+
+export enum BuildType {
+  Debug = 'debug',
+  Release = 'release'
 }
 
 export interface CompileErrorBase {
@@ -73,6 +79,7 @@ export interface CompileResult {
   structs?: any;
   alias?: any;
   file?: string;
+  buildType?: string;
   autoTypedVars?: AutoTypedVar[];
 }
 
@@ -139,8 +146,6 @@ export function compile(
     content?: string,
   },
   settings: {
-    npxArgs?: string,
-    scVersion?: string,
     ast?: boolean,
     asm?: boolean,
     debug?: boolean,
@@ -150,13 +155,11 @@ export function compile(
     cwd?: string,
     cmdPrefix?: string,
     cmdArgs?: string,
-    sourceMap?: boolean,
-    optimize?: boolean,
+    buildType?: string,
     timeout?: number  // in ms
   } = {
     asm: true,
     debug: true,
-    optimize: false,
   }
 ): CompileResult {
   const st = Date.now();
@@ -170,7 +173,7 @@ export function compile(
   try {
     const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
     const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
-    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} ${settings.optimize ? '--opt' : ''} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
     let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
@@ -297,13 +300,14 @@ export function compile(
         structs: result.structs || [],
         alias: result.alias || [],
         abi: result.abi || [],
+        buildType: settings.buildType || BuildType.Debug,
         file: '',
         asm: result.asm.map(item => item['opcode'].trim()).join(' '),
         sources: [],
         sourceMap: []
       };
 
-      if (settings.debug && settings.sourceMap && asmObj) {
+      if (settings.debug && asmObj) {
         Object.assign(description, {
           file: result.file,
           sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
@@ -644,6 +648,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     structs: description.structs,
     alias: description.alias,
     file: description.file,
+    buildType: description.buildType || BuildType.Debug,
     errors: [],
     warnings: [],
     asm: asm.map((opcode, index) => {

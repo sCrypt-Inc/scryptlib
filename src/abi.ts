@@ -1,9 +1,9 @@
 import { oc } from 'ts-optchain';
-import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, printDebugUri, resolveType } from './utils';
-import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct } from './scryptTypes';
+import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, resolveType, int2Value, asm2int, createStruct, createArray, asm2ScryptType } from './utils';
+import { AbstractContract, TxContext, VerifyResult, AsmVarValues, buildTypeResolver } from './contract';
+import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, Bytes } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity, AliasEntity } from './compilerWrapper';
-
+const BN = bsv.crypto.BN;
 
 export interface Script {
   toASM(): string;
@@ -155,7 +155,7 @@ export class FunctionCall {
     if (this.unlockingScript) {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext, this.args);
 
-      if (!result.success && printDebugUri()) {
+      if (!result.success) {
         const debugUrl = this.genLaunchConfigFile(txContext);
         if (debugUrl) {
           result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
@@ -241,8 +241,51 @@ export class ABICoder {
     return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
   }
 
-  encodeConstructorCallFromASM(contract: AbstractContract, lsASM: string): FunctionCall {
-    return new FunctionCall('constructor', [], { contract, lockingScriptASM: lsASM });
+  encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
+    const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
+    const cParams = oc(constructorABI).params([]);
+
+    const opcodesMap = new Map<string, string>();
+
+    const asmTemplateOpcodes = asmTemplate.split(' ');
+    const asmOpcodes = lsASM.split(' ');
+
+    if (asmTemplateOpcodes.length != asmOpcodes.length) {
+      throw new Error(`the raw script cannot match the contract ${AbstractContract.contractName}`);
+    }
+
+    asmTemplateOpcodes.forEach((opcode, index) => {
+
+      if (opcode.startsWith('$')) {
+        opcodesMap.set(opcode, asmOpcodes[index]);
+      }
+    });
+
+
+    const finalTypeResolver = buildTypeResolver(this.alias);
+
+    const args: SupportedParamType[] = [];
+    cParams.forEach((param, index) => {
+      const finalType = finalTypeResolver(param.type);
+
+
+      if (isStructType(finalType)) {
+
+        const stclass = contract.getTypeClassByType(param.type);
+
+        args.push(createStruct(contract, stclass as typeof Struct, param.name, opcodesMap, finalTypeResolver));
+      } else if (isArrayType(finalType)) {
+
+        args.push(createArray(contract, finalType, param.name, opcodesMap, finalTypeResolver));
+
+      } else {
+        args.push(asm2ScryptType(finalType, opcodesMap.get(`$${param.name}`)));
+      }
+
+    });
+
+
+    return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
   }
 
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
