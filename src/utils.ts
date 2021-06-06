@@ -2,14 +2,15 @@ import { pathToFileURL, fileURLToPath } from 'url';
 import { Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType, ValueType, Struct, SupportedParamType, VariableType, BasicType, SingletonParamType, TypeResolver } from './scryptTypes';
 import { StructEntity, compile, getPlatformScryptc, CompileResult, AliasEntity, ParamEntity } from './compilerWrapper';
 import bsv = require('bsv');
+import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
 import * as minimist from 'minimist';
 import { AbstractContract, AsmVarValues, TxContext } from './contract';
 import { Arguments, DebugConfiguration, DebugLaunch, FileUri } from './abi';
 import { tmpdir } from 'os';
-import md5 = require('md5');
 export { bsv };
+export { ECIES };
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;

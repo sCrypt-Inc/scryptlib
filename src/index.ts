@@ -2,7 +2,7 @@ export { buildContractClass, VerifyResult, buildTypeClasses, buildStructsClass, 
 export { compile, StructEntity, getStructDeclaration, getABIDeclaration, ABIEntity, ABIEntityType, ABI, ParamEntity, BuildType } from './compilerWrapper';
 export { Arguments, Argument } from './abi';
 export {
-  bsv, signTx, toHex, getPreimage, num2bin, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
+  bsv, ECIES, signTx, toHex, getPreimage, num2bin, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
   findStructByType, findStructByName, isStructType, isArrayType, compileContract,
   arrayTypeAndSize, newCall, getStructNameByType, genLaunchConfigFile, subArrayType
 } from './utils';
