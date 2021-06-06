@@ -187,12 +187,12 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
-    return [m[1], int2Value(m[1]), VariableType.PRIVKEY];
+    return [int2Asm(m[1]), int2Value(m[1]), VariableType.PRIVKEY];
   }
   // 2) hex int
   m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
   if (m) {
-    return [m[1], int2Value(m[1]), VariableType.PRIVKEY];
+    return [int2Asm(m[1]), int2Value(m[1]), VariableType.PRIVKEY];
   }
 
   // PubKey
