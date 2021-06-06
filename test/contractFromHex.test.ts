@@ -371,7 +371,7 @@ describe('buildContractClass and create instance from script', () => {
 
           let result = contract.unlock(...args).verify();
 
-          assert.isTrue(result.success)
+          assert.isTrue(result.success, result.error)
 
           let newContract = AsmConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 

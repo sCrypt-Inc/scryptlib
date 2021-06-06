@@ -92,16 +92,6 @@ export class AbstractContract {
   }
 
 
-
-  static findLastfExec(interpretStates: any[], stepIndex: StepIndex): StepIndex {
-    while (--stepIndex > 0) {
-      if (interpretStates[stepIndex].step.fExec) {
-        return stepIndex;
-      }
-    }
-  }
-
-
   getTypeClassByType(type: string): typeof ScryptType {
     const types: typeof ScryptType[] = Object.getPrototypeOf(this).constructor.types;
 
@@ -123,6 +113,11 @@ export class AbstractContract {
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
+
+
+    bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
+    bsv.Script.Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
+
 
     const bsi = bsv.Script.Interpreter();
 
@@ -147,7 +142,7 @@ export class AbstractContract {
       const offset = unlockingScriptASM.trim().split(' ').length;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
 
-      const lastStepIndex = AbstractContract.findLastfExec(interpretStates, stepCounter);
+      const lastStepIndex = stepCounter - 1;
 
       if (typeof this._dataPart === 'string') {
         opcodes.push({ opcode: 'OP_RETURN', stack: [] });
@@ -159,11 +154,8 @@ export class AbstractContract {
         }
       }
 
-      let opcodeIndex = lastStepIndex - offset;
-      if (stepCounter < (opcodes.length + offset)) {
-        // not all opcodes were executed, stopped in the middle at opcode like OP_VERIFY
-        opcodeIndex += 1;
-      }
+      const opcodeIndex = lastStepIndex - offset;
+
 
       if (!result && opcodes[opcodeIndex]) {
 

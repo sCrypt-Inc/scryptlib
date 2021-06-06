@@ -19,6 +19,7 @@
     "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "husky install && npm run compile",
+    "postinstall": "patch-package",
     "publishcheck": "sh ./publishcheck.sh",
     "prepublishOnly": "npm run publishcheck && npm run lint && npm run compile"
   },
@@ -53,13 +54,15 @@
     "ts-node": "^8.6.2",
     "typescript": "^3.9.5",
     "webpack": "4.29.5",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "glob": "^7.1.6"
   },
   "dependencies": {
-    "bsv": "git+https://git@github.com/scrypt-sv/bsv.git#07f0d3c688a979d0b5d5cfe5e96c53f52fce6d58",
+    "bsv": "^1.5.6",
     "compare-versions": "^3.6.0",
     "json-bigint": "^1.0.0",
     "md5": "^2.2.1",
+    "patch-package": "^6.4.7",
     "ts-optchain": "^0.1.8"
   }
 }

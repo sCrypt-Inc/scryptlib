@@ -1,0 +1,203 @@
+diff --git a/node_modules/bsv/lib/crypto/bn.js b/node_modules/bsv/lib/crypto/bn.js
+index 22a5d8f..88d809e 100644
+--- a/node_modules/bsv/lib/crypto/bn.js
++++ b/node_modules/bsv/lib/crypto/bn.js
+@@ -185,7 +185,8 @@ BN.prototype.toSM = function (opts) {
+  * @param {number} size The maximum size.
+  */
+ BN.fromScriptNumBuffer = function (buf, fRequireMinimal, size) {
+-  var nMaxNumSize = size || 4
++  // don't limit numSize default
++  var nMaxNumSize = size || Number.MAX_SAFE_INTEGER;
+   $.checkArgument(buf.length <= nMaxNumSize, new Error('script number overflow'))
+   if (fRequireMinimal && buf.length > 0) {
+     // Check that the number is encoded with the minimum possible
+diff --git a/node_modules/bsv/lib/script/interpreter.js b/node_modules/bsv/lib/script/interpreter.js
+index 4185994..68f9b1c 100644
+--- a/node_modules/bsv/lib/script/interpreter.js
++++ b/node_modules/bsv/lib/script/interpreter.js
+@@ -46,7 +46,7 @@ var Interpreter = function Interpreter (obj) {
+  *
+  * Translated from bitcoind's VerifyScript
+  */
+-Interpreter.prototype.verify = function (scriptSig, scriptPubkey, tx, nin, flags, satoshisBN) {
++Interpreter.prototype.verify = function (scriptSig, scriptPubkey, tx, nin, flags, satoshisBN, sighashScript) {
+   var Transaction = require('../transaction')
+ 
+   if (_.isUndefined(tx)) {
+@@ -74,7 +74,8 @@ Interpreter.prototype.verify = function (scriptSig, scriptPubkey, tx, nin, flags
+     tx: tx,
+     nin: nin,
+     flags: flags,
+-    satoshisBN: satoshisBN
++    satoshisBN: satoshisBN,
++    sighashScript: sighashScript
+   })
+   var stackCopy
+ 
+@@ -100,7 +101,8 @@ Interpreter.prototype.verify = function (scriptSig, scriptPubkey, tx, nin, flags
+     tx: tx,
+     nin: nin,
+     flags: flags,
+-    satoshisBN: satoshisBN
++    satoshisBN: satoshisBN,
++    sighashScript: sighashScript
+   })
+ 
+   // evaluate scriptPubkey
+@@ -196,6 +198,9 @@ Interpreter.prototype.initialize = function (obj) {
+   this.vfExec = []
+   this.errstr = ''
+   this.flags = 0
++  // if OP_RETURN is found in executed branches after genesis is activated,
++  // we still have to check if the rest of the script is valid
++  this.nonTopLevelReturnAfterGenesis = false
+ }
+ 
+ Interpreter.prototype.set = function (obj) {
+@@ -211,8 +216,28 @@ Interpreter.prototype.set = function (obj) {
+   this.vfExec = obj.vfExec || this.vfExec
+   this.errstr = obj.errstr || this.errstr
+   this.flags = typeof obj.flags !== 'undefined' ? obj.flags : this.flags
++  this.sighashScript = obj.sighashScript || this.sighashScript
+ }
+ 
++Interpreter.prototype.subscript = function () {
++
++  if (this.sighashScript) {
++
++    return new Script().set({
++      chunks: this.sighashScript.chunks
++    })
++
++  } else {
++    // Subset of script starting at the most recent codeseparator
++    // CScript scriptCode(pbegincodehash, pend);
++    return new Script().set({
++      chunks: this.script.chunks.slice(this.pbegincodehash)
++    })
++  }
++}
++
++
++
+ Interpreter.true = Buffer.from([1])
+ Interpreter.false = Buffer.from([])
+ 
+@@ -487,19 +512,24 @@ Interpreter._minimallyEncode = function (buf) {
+  */
+ Interpreter.prototype.evaluate = function () {
+   // TODO: script size should be configurable. no magic numbers
+-  if (this.script.toBuffer().length > 10000) {
+-    this.errstr = 'SCRIPT_ERR_SCRIPT_SIZE'
+-    return false
+-  }
++  // don't limit script size.
++  // if (this.script.toBuffer().length > 10000) {
++  //   this.errstr = 'SCRIPT_ERR_SCRIPT_SIZE'
++  //   return false
++  // }
+ 
+   try {
+     while (this.pc < this.script.chunks.length) {
+-      let thisStep = { pc: this.pc, opcode: Opcode.fromNumber(this.script.chunks[this.pc].opcodenum) }
++      // fExec: if the opcode will be executed, i.e., not in a false branch
++      let thisStep = { pc: this.pc, fExec: (this.vfExec.indexOf(false) === -1), opcode: Opcode.fromNumber(this.script.chunks[this.pc].opcodenum) }
++
+       var fSuccess = this.step()
++
++      this._callbackStep(thisStep)
++
+       if (!fSuccess) {
+         return false
+       }
+-      this._callbackStep(thisStep)
+     }
+ 
+     // Size limits
+@@ -692,7 +722,7 @@ Interpreter.prototype.step = function () {
+   var fRequireMinimal = (this.flags & Interpreter.SCRIPT_VERIFY_MINIMALDATA) !== 0
+ 
+   // bool fExec = !count(vfExec.begin(), vfExec.end(), false);
+-  var fExec = (this.vfExec.indexOf(false) === -1)
++
+   var buf, buf1, buf2, spliced, n, x1, x2, bn, bn1, bn2, bufSig, bufPubkey, subscript
+   var sig, pubkey
+   var fValue, fSuccess
+@@ -710,11 +740,16 @@ Interpreter.prototype.step = function () {
+     return false
+   }
+ 
++  // Do not execute instructions if Genesis OP_RETURN was found in executed branches.
++  var fExec = (this.vfExec.indexOf(false) === -1) && (!this.nonTopLevelReturnAfterGenesis || opcodenum === Opcode.OP_RETURN)
++
+   // Note how Opcode.OP_RESERVED does not count towards the opcode limit.
+-  if (opcodenum > Opcode.OP_16 && ++(this.nOpCount) > 201) {
+-    this.errstr = 'SCRIPT_ERR_OP_COUNT'
+-    return false
+-  }
++  // if (opcodenum > Opcode.OP_16 && ++(this.nOpCount) > 201) {
++  //   this.errstr = 'SCRIPT_ERR_OP_COUNT'
++  //   return false
++  // }
++  ++(this.nOpCount)
++
+ 
+   if (isOpcodeDisabled(opcodenum)) {
+     this.errstr = 'SCRIPT_ERR_DISABLED_OPCODE'
+@@ -941,9 +976,15 @@ Interpreter.prototype.step = function () {
+         break
+ 
+       case Opcode.OP_RETURN:
+-        this.errstr = 'SCRIPT_ERR_OP_RETURN'
+-        return false
+-        // break // unreachable
++        if (this.vfExec.length === 0) {
++          // Terminate the execution as successful. The remaining of the script does not affect the validity (even in
++          // presence of unbalanced IFs, invalid opcodes etc)
++          this.pc = this.script.chunks.length
++          return true
++        }
++        // op_return encountered inside if statement after genesis --> check for invalid grammar
++        this.nonTopLevelReturnAfterGenesis = true
++        break
+ 
+         //
+         // Stack ops
+@@ -1503,9 +1544,7 @@ Interpreter.prototype.step = function () {
+ 
+         // Subset of script starting at the most recent codeseparator
+         // CScript scriptCode(pbegincodehash, pend);
+-        subscript = new Script().set({
+-          chunks: this.script.chunks.slice(this.pbegincodehash)
+-        })
++        subscript = this.subscript()
+ 
+         // Drop the signature, since there's no way for a signature to sign itself
+         var tmpScript = new Script().add(bufSig)
+@@ -1559,10 +1598,10 @@ Interpreter.prototype.step = function () {
+           return false
+         }
+         this.nOpCount += nKeysCount
+-        if (this.nOpCount > 201) {
+-          this.errstr = 'SCRIPT_ERR_OP_COUNT'
+-          return false
+-        }
++        // if (this.nOpCount > 201) {
++        //   this.errstr = 'SCRIPT_ERR_OP_COUNT'
++        //   return false
++        // }
+         // int ikey = ++i;
+         var ikey = ++i
+         i += nKeysCount
+@@ -1592,9 +1631,7 @@ Interpreter.prototype.step = function () {
+         }
+ 
+         // Subset of script starting at the most recent codeseparator
+-        subscript = new Script().set({
+-          chunks: this.script.chunks.slice(this.pbegincodehash)
+-        })
++        subscript = this.subscript()
+ 
+         // Drop the signatures, since there's no way for a signature to sign itself
+         for (var k = 0; k < nSigsCount; k++) {

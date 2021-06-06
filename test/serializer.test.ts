@@ -147,7 +147,7 @@ describe('serializer', () => {
     })
 
     it('pushdata 0', () => {
-      const state = ['FF'.repeat(75)]
+      const state = ['ff'.repeat(75)]
       const serial = serializeState(state)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
@@ -157,7 +157,7 @@ describe('serializer', () => {
     })
 
     it('pushdata 1', () => {
-      const state = ['FF'.repeat(76)]
+      const state = ['ff'.repeat(76)]
       const serial = serializeState(state)
       const script = Script.fromASM(serial)
       const hex = script.toHex()
@@ -167,7 +167,7 @@ describe('serializer', () => {
     })
 
     it('pushdata 2', () => {
-      const state = ['FF'.repeat(2 ** 8)]
+      const state = ['ff'.repeat(2 ** 8)]
       const serialize = serializeState(state)
       const script = Script.fromASM(serialize)
       const hex = script.toHex()
@@ -177,7 +177,7 @@ describe('serializer', () => {
     })
 
     it('pushdata 4', () => {
-      const state = ['FF'.repeat(2 ** 16)]
+      const state = ['ff'.repeat(2 ** 16)]
       // use 4 bytes to accomodate
       const serial = serializeState(state, STATE_LEN_4BYTES)
       const script = Script.fromASM(serial)
