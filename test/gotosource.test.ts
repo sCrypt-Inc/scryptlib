@@ -153,7 +153,7 @@ describe('VerifyError', () => {
       token.setDataPart(toHex(publicKey1) + num2bin(10, DataLen) + num2bin(90, DataLen))
 
       result = testSplit(privateKey1, 60, 40).verify()
-      expect(result.error).to.contains("fails at 02beb44ff058a00b9d2dd287619c141451fa337210592a8d72b92c4d8d9b60e7d80a5a");
+      expect(result.error).to.contains("fails at OP_RETURN");
       expect(result.error).to.contains("tokenUtxo.scrypt#43");
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
@@ -175,6 +175,8 @@ describe('VerifyError', () => {
       expect(launch).not.undefined;
       expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
     });
+
+    //TODO: add exit(true| false) test
 
   });
 
