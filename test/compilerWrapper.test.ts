@@ -644,6 +644,7 @@ describe('compile()', () => {
   it('check foo ast', () => {
     const result = compileContract(getContractFilePath('foo.scrypt'));
     deleteSource(result.ast)
+    //writeFileSync(join(__dirname, './fixture/ast/foo.ast.json'), JSON.stringify(result.ast, null, 4));
     const content = readFileSync(join(__dirname, './fixture/ast/foo.ast.json')).toString();
     expect(JSON.parse(JSON.stringify(result.ast))).to.deep.equal(JSON.parse(content));
   })
