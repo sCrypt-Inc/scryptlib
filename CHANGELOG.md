@@ -2,8 +2,13 @@
 
 ## 0.4.1
 
+- bump ``bsv`` library to version ``1.5.6``
 - Contract Description File add `buildType`
 - remove ``debugUri`` command option, will print **Launch Debugger** uri default
+- export ``bsv`` ECIES
+- ``compileContract`` function supports whether to export the sourcemap
+- 
+
 
 ## 0.3.10
 

@@ -81,7 +81,17 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "loc": {
+                        "start": {
+                            "line": 4,
+                            "column": 23
+                        },
+                        "end": {
+                            "line": 6,
+                            "column": 4
+                        }
+                    }
                 },
                 "params": [
                     {
@@ -118,20 +128,7 @@
                     "nodeType": "FunctionDefinition",
                     "body": {
                         "nodeType": "FunctionBodyRegular",
-                        "return": {
-                            "nodeType": "BoolLiteral",
-                            "value": true,
-                            "loc": {
-                                "start": {
-                                    "line": 1,
-                                    "column": 1
-                                },
-                                "end": {
-                                    "line": 1,
-                                    "column": 1
-                                }
-                            }
-                        },
+                        "return": null,
                         "stmts": [
                             {
                                 "nodeType": "Requirement",
@@ -216,7 +213,17 @@
                                     }
                                 }
                             }
-                        ]
+                        ],
+                        "loc": {
+                            "start": {
+                                "line": 8,
+                                "column": 32
+                            },
+                            "end": {
+                                "line": 10,
+                                "column": 4
+                            }
+                        }
                     },
                     "static": false,
                     "visibility": "Public",
@@ -239,7 +246,7 @@
                         }
                     ],
                     "name": "equal",
-                    "returnType": "bool",
+                    "returnType": null,
                     "loc": {
                         "start": {
                             "line": 8,
@@ -255,20 +262,7 @@
                     "nodeType": "FunctionDefinition",
                     "body": {
                         "nodeType": "FunctionBodyRegular",
-                        "return": {
-                            "nodeType": "BoolLiteral",
-                            "value": true,
-                            "loc": {
-                                "start": {
-                                    "line": 1,
-                                    "column": 1
-                                },
-                                "end": {
-                                    "line": 1,
-                                    "column": 1
-                                }
-                            }
-                        },
+                        "return": null,
                         "stmts": [
                             {
                                 "nodeType": "Assignment",
@@ -361,6 +355,7 @@
                                         },
                                         {
                                             "nodeType": "IntLiteral",
+                                            "hex": false,
                                             "value": "1",
                                             "loc": {
                                                 "start": {
@@ -480,7 +475,17 @@
                                     }
                                 }
                             }
-                        ]
+                        ],
+                        "loc": {
+                            "start": {
+                                "line": 12,
+                                "column": 40
+                            },
+                            "end": {
+                                "line": 15,
+                                "column": 4
+                            }
+                        }
                     },
                     "static": false,
                     "visibility": "Public",
@@ -503,7 +508,7 @@
                         }
                     ],
                     "name": "equalAfterInc",
-                    "returnType": "bool",
+                    "returnType": null,
                     "loc": {
                         "start": {
                             "line": 12,
@@ -592,7 +597,17 @@
                                     }
                                 }
                             }
-                        ]
+                        ],
+                        "loc": {
+                            "start": {
+                                "line": 17,
+                                "column": 35
+                            },
+                            "end": {
+                                "line": 20,
+                                "column": 4
+                            }
+                        }
                     },
                     "static": false,
                     "visibility": "Default",
