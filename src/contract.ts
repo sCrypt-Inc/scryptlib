@@ -48,6 +48,7 @@ export class AbstractContract {
   public static file: string;
   public static structs: StructEntity[];
   public static types: Record<string, typeof ScryptType>;
+  public static asmContract: boolean;
 
 
   scriptedConstructor: FunctionCall;
@@ -251,7 +252,7 @@ export class AbstractContract {
 
 const invalidMethodName = ['arguments', 'setDataPart', 'run_verify', 'replaceAsmVars', 'asmVars', 'asmArguments', 'dataPart', 'lockingScript', 'txContext'];
 
-export function buildContractClass(desc: CompileResult | ContractDescription, asmContract = false): any {
+export function buildContractClass(desc: CompileResult | ContractDescription): any {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');
@@ -276,7 +277,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription, as
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
-      if (!asmContract) {
+      if (!Contract.asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
       }
     }
@@ -289,7 +290,9 @@ export function buildContractClass(desc: CompileResult | ContractDescription, as
      * @param hex 
      */
     static fromASM(asm: string) {
+      Contract.asmContract = true;
       const obj = new this();
+      Contract.asmContract = false;
       obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, Contract.asm, asm);
       return obj;
     }

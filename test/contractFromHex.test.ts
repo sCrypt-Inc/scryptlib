@@ -95,7 +95,6 @@ describe('create instance from UTXO Hex', () => {
 
 describe('buildContractClass and create instance from script', () => {
   const DemoP2PKH = buildContractClass(jsonDescr)
-  const ASMDemoP2PKH = buildContractClass(jsonDescr, true)
 
   describe('instance from an exist script ', () => {
     let instance: any
@@ -106,7 +105,7 @@ describe('buildContractClass and create instance from script', () => {
     beforeEach(() => {
       const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)))
       //create instance from an exist script
-      instance = ASMDemoP2PKH.fromHex(p2pkh.lockingScript.toHex())
+      instance = DemoP2PKH.fromHex(p2pkh.lockingScript.toHex())
       sig = signTx(
         tx,
         privateKey,
@@ -118,7 +117,7 @@ describe('buildContractClass and create instance from script', () => {
 
     it('static getAsmVars method', () => {
       let lockingScriptAsm = instance.lockingScript.toASM()
-      let asmVars = ASMDemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
+      let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
 
       expect(asmVars).is.not.null
       expect(asmVars).have.key('pubKeyHash')
@@ -318,8 +317,6 @@ describe('buildContractClass and create instance from script', () => {
         const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgs_desc.json'));
         const { ST2, ST3 } = ConstructorArgsContract.types;
 
-        const AsmConstructorArgsContract = buildContractClass(loadDescription('constructorArgs_desc.json'), true)
-
         it('should get right constructor args', () => {
 
           let args = [2, new Int(BigInt(11111111111111111111n)), false, new Bytes('1234567890'),
@@ -373,7 +370,7 @@ describe('buildContractClass and create instance from script', () => {
 
           assert.isTrue(result.success, result.error)
 
-          let newContract = AsmConstructorArgsContract.fromASM(contract.lockingScript.toASM());
+          let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 
           assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
 
@@ -406,8 +403,6 @@ describe('buildContractClass and create instance from script', () => {
 
       const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgsExplicit_desc.json'));
       const { ST2, ST3 } = ConstructorArgsContract.types;
-
-      const AsmConstructorArgsContract = buildContractClass(loadDescription('constructorArgsExplicit_desc.json'), true)
 
 
       it('should get right constructor args', () => {
@@ -465,7 +460,7 @@ describe('buildContractClass and create instance from script', () => {
 
         assert.isTrue(result.success)
 
-        let newContract = AsmConstructorArgsContract.fromASM(contract.lockingScript.toASM());
+        let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 
         assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
 
