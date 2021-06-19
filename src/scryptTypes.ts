@@ -1,13 +1,13 @@
-import { parseLiteral, getValidatedHexString, bsv, intValue2hex, checkStruct, flatternStruct, typeOfArg } from './utils';
+import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg } from './utils';
 import { StructEntity } from './compilerWrapper';
-
+import bsv = require('bsv');
 export type TypeResolver = (type: string) => string;
 
 export type ValueType = number | bigint | boolean | string | StructObject;
 
 
-export function toScryptType(a: any): ScryptType {
-  if (typeof a === 'number' || typeof a === 'bigint') {
+export function toScryptType(a: ValueType): ScryptType {
+  if (typeof a === 'number' || typeof a === 'bigint' || typeof a === 'string') {
     return new Int(a);
   } else if (typeof a === 'boolean') {
     return new Bool(a);
@@ -70,7 +70,7 @@ export class ScryptType {
 }
 
 export class Int extends ScryptType {
-  constructor(intVal: number | bigint) {
+  constructor(intVal: number | bigint | string) {
     super(intVal);
   }
   toLiteral(): string {
@@ -97,12 +97,16 @@ export class Bytes extends ScryptType {
 }
 
 export class PrivKey extends ScryptType {
-  constructor(intVal: bigint) {
+  constructor(intVal: bigint | string) {
     super(intVal);
   }
   toLiteral(): string {
-    const v = this._value as bigint;
-    return `PrivKey(0x${intValue2hex(v)})`;
+    if (typeof this._value === 'string') {
+      return `PrivKey(${this._value})`;
+    } else {
+      const v = this._value as bigint;
+      return `PrivKey(0x${intValue2hex(v)})`;
+    }
   }
 }
 
@@ -320,7 +324,7 @@ export class OpCodeType extends ScryptType {
 }
 
 
-export type BasicType = ScryptType | boolean | number | bigint;
+export type BasicType = ScryptType | boolean | number | bigint | string;
 
 export type SingletonParamType = BasicType | BasicType[];
 
@@ -418,6 +422,8 @@ export class Struct extends ScryptType {
       return new Int(v[key] as number).type;
     } else if (typeof v[key] === 'bigint') {
       return new Int(v[key] as bigint).type;
+    } else if (typeof v[key] === 'string') {
+      return new Int(v[key] as string).type;
     } else {
       return typeof v[key];
     }
@@ -464,13 +470,15 @@ export class Struct extends ScryptType {
       return new Int(v[key] as number);
     } else if (typeof v[key] === 'bigint') {
       return new Int(v[key] as bigint);
+    } else if (typeof v[key] === 'string') {
+      return new Int(v[key] as string);
     }
 
     return v[key];
   }
 
 
-  static arrayToLiteral(a: Array<ValueType>) {
+  static arrayToLiteral(a: Array<ValueType>): string {
 
     const al = a.map(i => {
       if (Array.isArray(i)) {
@@ -496,7 +504,7 @@ export class Struct extends ScryptType {
     return `{${l}}`;
   }
 
-  toJSON() {
+  toJSON(): unknown {
 
     const v = this.value;
     return Array.from(Object.keys(v)).reduce((obj, key) => {

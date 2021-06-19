@@ -378,6 +378,10 @@ export class ABICoder {
       arg = new Int(arg as bigint);
     }
 
+    if (typeof arg === 'string') {
+      arg = new Int(arg as string);
+    }
+
     return (arg as ScryptType).toASM();
   }
 

@@ -65,7 +65,7 @@ export function int2Asm(str: string): string {
 /**
  * convert asm string to number or bigint
  */
-export function asm2int(str: string): number | bigint {
+export function asm2int(str: string): number | bigint | string {
 
   switch (str) {
   case 'OP_1NEGATE':
@@ -97,8 +97,10 @@ export function asm2int(str: string): number | bigint {
 
     if (bn.toNumber() < Number.MAX_SAFE_INTEGER) {
       return bn.toNumber();
-    } else {
+    } else if (typeof BigInt === 'function') {
       return BigInt(bn.toString());
+    } else {
+      return bn.toString();
     }
   }
   }
@@ -108,18 +110,18 @@ export function asm2int(str: string): number | bigint {
 /**
  * decimal int or hex str to number or bigint
  */
-export function int2Value(str: string): number | bigint {
+export function int2Value(str: string): number | bigint | string {
 
   if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
 
-    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
+    const bn = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
 
-
-
-    if (number.toNumber() < Number.MAX_SAFE_INTEGER) {
-      return number.toNumber();
+    if (bn.toNumber() < Number.MAX_SAFE_INTEGER) {
+      return bn.toNumber();
+    } else if (typeof BigInt === 'function') {
+      return BigInt(bn.toString());
     } else {
-      return BigInt(str);
+      return bn.toString();
     }
 
   } else {
@@ -466,7 +468,7 @@ export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): st
 }
 
 //Support Bigint
-export function bin2num(s: string | Buffer): bigint {
+export function bin2num(s: string | Buffer): number | bigint | string {
   const hex = s.toString('hex');
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);
@@ -481,7 +483,14 @@ export function bin2num(s: string | Buffer): bigint {
   if (m >> 7) {
     bn = bn.neg();
   }
-  return BigInt(bn);
+
+  if (typeof BigInt === 'function') {
+    return BigInt(bn);
+  } else if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+    return bn.toNumber();
+  } else {
+    return bn.toString();
+  }
 }
 
 
@@ -763,6 +772,10 @@ export function typeOfArg(arg: SupportedParamType): string {
     return 'int';
   }
 
+  if (typeofArg === 'string') {
+    return 'int';
+  }
+
   return typeof arg;
 
 }
@@ -1041,11 +1054,11 @@ export function createArray(contract: AbstractContract, type: string, name: stri
 }
 
 
-export function toLiteral(value: any) {
+export function toLiteral(value: ScryptType): string {
 
   if (Array.isArray(value)) {
 
-    return value.map(i => toLiteral(i));
+    return `[${value.map(i => toLiteral(i))}]`;
   } else {
 
     return value instanceof ScryptType ? value.toLiteral() : value;

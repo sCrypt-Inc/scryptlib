@@ -113,4 +113,8 @@ contract MDArray {
     require(st1mdarray[1][1][1].y == b'11');
     require(st1mdarray[1][1][1].i == 8);
   }
+
+  public function unlockX(int[2][3][4] x) {
+    require(this.X == x);
+  }
 }

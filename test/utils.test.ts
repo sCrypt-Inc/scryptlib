@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { Int, Bool, Bytes } from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract } from '../src/utils'
+import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract, toLiteral } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
 
 
@@ -985,6 +985,26 @@ describe('utils', () => {
         expect(result.success).to.be.true
       });
     });
+  })
+
+
+  describe('toLiteral() ', () => {
+    expect(toLiteral(new PrivKey("111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
+    expect(toLiteral(new PrivKey("111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
+    expect(toLiteral(new PrivKey("0x111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
+    expect(toLiteral(new PrivKey(111111111111111111111111111111111111111111n))).to.be.equal("PrivKey(0x014686b59ab3939851acf5c2e071c71c71c7)");
+    expect(toLiteral(new PrivKey(0x111111111111111111111111111111111111111111n))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
+    expect(toLiteral(new PrivKey(24942961277114076470676221145024563535461248733457n))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
+    expect(toLiteral(new PrivKey("24942961277114076470676221145024563535461248733457"))).to.be.equal("PrivKey(24942961277114076470676221145024563535461248733457)");
+
+    expect(toLiteral(new Int("111111111111111111111111111111111111111111"))).to.be.equal("111111111111111111111111111111111111111111");
+    expect(toLiteral(new Int("0x111111111111111111111111111111111111111111"))).to.be.equal("0x111111111111111111111111111111111111111111");
+    expect(toLiteral(new Int(111111111111111111111111111111111111111111n))).to.be.equal("111111111111111111111111111111111111111111");
+    expect(toLiteral(new Int(0x111111111111111111111111111111111111111111n))).to.be.equal("24942961277114076470676221145024563535461248733457");
+    expect(toLiteral(new Int(24942961277114076470676221145024563535461248733457n))).to.be.equal("24942961277114076470676221145024563535461248733457");
+    expect(toLiteral(new Int("24942961277114076470676221145024563535461248733457"))).to.be.equal("24942961277114076470676221145024563535461248733457");
+    expect(toLiteral(new Int(1))).to.be.equal("1");
+    expect(toLiteral(new Int(0))).to.be.equal("0");
   })
 
 })

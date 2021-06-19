@@ -1,16 +1,42 @@
 {
+    // This is an alias to @tsconfig/node12: https://github.com/tsconfig/bases
+    // Most ts-node options can be specified here using their programmatic names.
+    "ts-node": {
+        // It is faster to skip typechecking.
+        // Remove if you want ts-node to do typechecking.
+        "files": true,
+        "compilerOptions": {
+            // compilerOptions specified here will override those declared below,
+            // but *only* in ts-node.  Useful if you want ts-node and tsc to use
+            // different options with a single tsconfig.json.
+            "target": "esnext",
+            "lib": [
+                "dom",
+                "dom.iterable",
+                "esnext"
+            ],
+        }
+    },
     "compilerOptions": {
-        "target": "esnext",
+        "target": "es5",
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ],
         "module": "commonjs",
         "outDir": "./dist",
         "alwaysStrict": true,
         "sourceMap": true,
         "resolveJsonModule": true,
+        "downlevelIteration": true,
         "moduleResolution": "node",
         "declaration": true,
         "declarationDir": "./dist",
-        "lib": [
-            "es2020"
+        "plugins": [
+            {
+                "transform": "ts-optchain/transform"
+            }
         ]
     },
     "include": [

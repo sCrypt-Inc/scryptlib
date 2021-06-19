@@ -3,8 +3,7 @@ import { getContractFilePath, newTx, loadDescription } from './helper';
 import { ABICoder, FunctionCall } from '../src/abi';
 import { buildContractClass, buildTypeClasses, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx, compileContract, num2bin } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, Sha256 } from '../src/scryptTypes';
-import { createHash } from 'crypto';
+import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, Sha256, Int } from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -289,5 +288,339 @@ describe('ABICoder', () => {
     it('should return FunctionCall object for contract public method')
   })
 })
+
+
+
+
+describe('string as bigInt', () => {
+
+
+
+  describe('test DemoCoinToss', () => {
+
+    const DemoCoinToss = buildContractClass(loadDescription('cointoss_desc.json'));
+    it('test lockingScript', () => {
+
+      let demoCoinToss = new DemoCoinToss(
+        new PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
+        new PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
+        new Sha256("bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1"),
+        new Sha256("d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b"),
+        "555555555555555555555555555555555555555555555555"
+      );
+
+      expect(demoCoinToss.lockingScript.toASM()).to.be.contain('034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281 039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2 bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1 d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b e3388ee3388e402a180d5bc55a1a09cf02f94f61')
+
+    })
+
+    describe('test Demo', () => {
+      const Demo = buildContractClass(loadDescription('demo_desc.json'));
+      it('test demo', () => {
+
+
+        function expectDemo(demo) {
+          let result = demo.add("200000000000000000000000000000000000000000000001").verify()
+
+          expect(result.success).to.be.true;
+
+          result = demo.add("0x23084F676940B7915149BD08B30D000000000001").verify()
+
+          expect(result.success).to.be.true;
+
+
+          result = demo.add(200000000000000000000000000000000000000000000001n).verify()
+
+          expect(result.success).to.be.true;
+
+          result = demo.add(new Int(200000000000000000000000000000000000000000000001n)).verify()
+
+          expect(result.success).to.be.true;
+
+
+          result = demo.add(new Int("200000000000000000000000000000000000000000000001")).verify()
+
+          expect(result.success).to.be.true;
+
+
+          result = demo.add("200000000000000000000000000000000000000000000002").verify()
+
+          expect(result.success).to.be.false;
+
+
+          result = demo.add(200000000000000000000000000000000000000000000002n).verify()
+
+          expect(result.success).to.be.false;
+
+          result = demo.add(new Int(200000000000000000000000000000000000000000000002n)).verify()
+
+          expect(result.success).to.be.false;
+
+          result = demo.add(new Int("200000000000000000000000000000000000000000000002")).verify()
+
+          expect(result.success).to.be.false;
+        }
+
+        expectDemo(new Demo(
+          new Int("100000000000000000000000000000000000000000000000"),
+          new Int(100000000000000000000000000000000000000000000001n)
+        ))
+
+
+        expectDemo(new Demo(
+          "100000000000000000000000000000000000000000000000",
+          100000000000000000000000000000000000000000000001n
+        ))
+
+      })
+
+
+      it('constract with string bigint', () => {
+
+
+        let demo = new Demo(
+          new Int("100000000000000000000000000000000000000000000000"),
+          new Int("-100000000000000000000000000000000000000000000001")
+        );
+
+        let result = demo.add(-1).verify()
+
+        expect(result.success).to.be.true;
+
+        result = demo.add(0).verify()
+
+        expect(result.success).to.be.false;
+
+      })
+
+      it('should throw  with string not in hex or decimal', () => {
+
+
+        expect(() => {
+          let demo = new Demo(
+            new Int("fasdfeeeeyjtuykjtukj"),
+            33
+          );
+
+        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+
+
+        expect(() => {
+          let demo = new Demo(
+            "fasdfeeeeyjtuykjtukj",
+            33
+          );
+
+        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+
+        expect(() => {
+          let demo = new Demo(1, 1);
+
+          demo.add("fasdfeeeeyjtuykjtukj").verify()
+
+
+
+        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+
+        expect(() => {
+          new Int("fasdfeeeeyjtuykjtukj")
+        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+
+        expect(() => {
+          new Int("afe3")
+        }).to.be.throw('can\'t get type from afe3, <afe3> cannot be cast to ASM format, only sCrypt native types supported');
+
+      })
+
+    })
+
+
+
+    describe('test MDArray', () => {
+
+      const jsonDescr = loadDescription('mdarray_desc.json');
+      const MDArray = buildContractClass(jsonDescr);
+
+
+      it('test lockingScript', () => {
+        let mdArray = new MDArray([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          [999999999999999999999999999999n, 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, 11111111111111111111111111111111111n]
+        ]]);
+
+
+        let mdArrayBigInt = new MDArray([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          ["999999999999999999999999999999", 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, "11111111111111111111111111111111111"]
+        ]]);
+
+
+        expect(mdArray.lockingScript.toASM()).to.be.equal(mdArrayBigInt.lockingScript.toASM());
+      })
+
+
+      it('test unlockX', () => {
+        let mdArray = new MDArray([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          [999999999999999999999999999999n, 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, 11111111111111111111111111111111111n]
+        ]]);
+
+
+
+        let result = mdArray.unlockX([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          ["999999999999999999999999999999", 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, "11111111111111111111111111111111111"]
+        ]]).verify()
+
+
+        expect(result.success).to.be.true;
+
+
+        result = mdArray.unlockX([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          [999999999999999999999999999999n, 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, 11111111111111111111111111111111111n]
+        ]]).verify()
+        expect(result.success).to.be.true;
+
+
+
+        result = mdArray.unlockX([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          [999999999999999999999999999998n, 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, 11111111111111111111111111111111111n]
+        ]]).verify()
+        expect(result.success).to.be.false;
+
+
+        result = mdArray.unlockX([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          ["999999999999999999999999999999", 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, "11111111111111111111111111111111110"]
+        ]]).verify()
+        expect(result.success).to.be.false;
+
+
+      })
+
+
+      expect(() => {
+        new MDArray([[
+          [1, 2, 3, 4],
+          [5, 6, 7, 8],
+          ["999999999999999999999999999999", 10, 11, 12]
+        ],
+        [
+          [13, 14, 15, 16],
+          [17, 18, 19, 20],
+          [21, 22, 23, "1111111111111111h1111111111111111111"]
+        ]]);
+      }).to.be.throw('can\'t get type from 1111111111111111h1111111111111111111, <1111111111111111h1111111111111111111> cannot be cast to ASM format, only sCrypt native types supported');
+
+    })
+
+
+
+    describe('test person.scrypt', () => {
+
+      it('test lockingScript', () => {
+
+        let person1 = new Person({
+          isMale: false,
+          age: 33333333333333333333333333333333333n,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        });
+
+        let person2 = new Person({
+          isMale: false,
+          age: "33333333333333333333333333333333333",
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        });
+
+        let main = new PersonContract(person1, 33333333333333333333333333333333333n);
+
+        let mainBigIntStr = new PersonContract(person2, "33333333333333333333333333333333333");
+
+        expect(main.lockingScript.toASM()).to.be.equal(mainBigIntStr.lockingScript.toASM());
+      })
+
+
+      it('test equal', () => {
+
+        let person1 = new Person({
+          isMale: false,
+          age: 33333333333333333333333333333333333n,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        });
+
+        let person2 = new Person({
+          isMale: false,
+          age: "33333333333333333333333333333333333",
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        });
+
+        let main = new PersonContract(person1, 33333333333333333333333333333333333n);
+
+
+        let result = main.equal(person2).verify()
+        expect(result.success).to.be.true;
+
+        result = main.equal(person1).verify()
+        expect(result.success).to.be.true;
+
+        result = main.equal(new Person({
+          isMale: false,
+          age: "33333333333333333333333333333333334",
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        })).verify()
+        expect(result.success).to.be.false;
+
+      })
+
+
+    })
+
+  })
+
+})
+
 
 

@@ -24,7 +24,7 @@ contract Main {
 
         require(p.isMale == isMale);
         require(p.age > x);
-        require(! p.isMale);
+        require(!p.isMale);
 
         Person c = this.incAge(p);
         require(c.age == 34);
@@ -38,5 +38,9 @@ contract Main {
         p1.age = p1.age + 1;
         return p1;
     }
-}
 
+    public function equal(Person p1) {
+        require(this.x == p1.age);
+        require(this.person == p1);
+    }
+}
