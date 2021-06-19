@@ -4,19 +4,16 @@ struct ST1 {
   int i;
 }
 
-
 struct ST2 {
   bool x;
   bytes y;
   ST3 st2;
 }
 
-
 struct ST3 {
   bool x;
   int[3] y;
 }
-
 
 type AliasST2 = ST2;
 
@@ -24,106 +21,96 @@ type MDArrayST1 = ST1[2][2][2];
 
 contract MDArray {
 
-    int[2][3][4] X;
-    
+  int[2][3][4] X;
 
-    public function unlock(int[2][3] P1, int[2] P2) {
- 
-        int x = P1[0][1];
+  public function unlock(int[2][3] P1, int[2] P2) {
 
-        require(x == 1);
+    int x = P1[0][1];
 
-        require(P2[0] == 1);
-        require(P2[1] == 32);
+    require(x == 1);
 
-        require(P1[0][0] == 3);
-        require(P1[0][1] == 1);
-        require(P1[0][2] == 2);
-        require(P1[1][0] == 4);
-        require(P1[1][1] == 5);
-        require(P1[1][2] == 6);
+    require(P2[0] == 1);
+    require(P2[1] == 32);
 
-        require(P1[0] == [3,1,2]);
-        require(P1[1] == [4,5,6]);
+    require(P1[0][0] == 3);
+    require(P1[0][1] == 1);
+    require(P1[0][2] == 2);
+    require(P1[1][0] == 4);
+    require(P1[1][1] == 5);
+    require(P1[1][2] == 6);
 
+    require(P1[0] == [3, 1, 2]);
+    require(P1[1] == [4, 5, 6]);
 
-        require(this.X[0][0][0] == 1);
-        require(this.X[0][0][1] == 2);
-        require(this.X[0][0][2] == 3);
-        require(this.X[0][0][3] == 4);
-        require(this.X[0][1][0] == 5);
-        require(this.X[0][2][3] == 12);
-        require(this.X[1][0][0] == 13);
-        require(this.X[1][1][1] == 18);
+    require(this.X[0][0][0] == 1);
+    require(this.X[0][0][1] == 2);
+    require(this.X[0][0][2] == 3);
+    require(this.X[0][0][3] == 4);
+    require(this.X[0][1][0] == 5);
+    require(this.X[0][2][3] == 12);
+    require(this.X[1][0][0] == 13);
+    require(this.X[1][1][1] == 18);
 
-        require(this.X[x][x+1][x+2] == 24);
-        
-        // with parens
-        require((this.X[1])[2][x+2] == 24);
-        require((this.X[1][2])[x+2] == 24);
+    require(this.X[x][x + 1][x + 2] == 24);
 
+    // with parens
+    require((this.X[1])[2][x + 2] == 24);
+    require((this.X[1][2])[x + 2] == 24);
 
-        require(this.X[0] == [
-            [1, 2, 3, 4],
-            [5, 6, 7, 8],
-            [9, 10, 11, 12]
-        ]);
+    require(this.X[0] == [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]);
 
-        require(this.X[0][1] == [5, 6, 7, 8]);
-    }
+    require(this.X[0][1] == [5, 6, 7, 8]);
+  }
 
+  public function unlockST1(ST1[2] st1array) {
+    ST1 st0 = st1array[0];
+    ST1 st1 = st1array[1];
+    require(st0.x == false);
+    require(st0.y == b'68656c6c6f20776f726c6421');
+    require(st0.i == 1);
+    require(st1.x == true);
+    require(st1.y == b'68656c6c6f20776f726c6420');
+    require(st1.i == 2);
+  }
 
-    public function unlockST1(ST1[2] st1array) {
-        ST1 st0 = st1array[0];
-        ST1 st1 = st1array[1];
-        require(st0.x == false);
-        require(st0.y == b'68656c6c6f20776f726c6421');
-        require(st0.i == 1);
-        require(st1.x == true);
-        require(st1.y == b'68656c6c6f20776f726c6420');
-        require(st1.i == 2);
-    }
+  public function unlockAliasST2(AliasST2[2] st1array) {
+    AliasST2 st0 = st1array[0];
+    AliasST2 st1 = st1array[1];
+    require(st0.x == false);
+    require(st0.y == b'68656c6c6f20776f726c6421');
+    require(st0.st2.x == false);
+    require(st0.st2.y[0] == 1);
+    require(st0.st2.y[1] == 2);
+    require(st0.st2.y[2] == 3);
+    require(st1.x == true);
+    require(st1.y == b'68656c6c6f20776f726c6420');
+    require(st1.st2.x == true);
+    require(st1.st2.y[0] == 4);
+    require(st1.st2.y[1] == 5);
+    require(st1.st2.y[2] == 6);
+  }
 
-    public function unlockAliasST2(AliasST2[2] st1array) {
-        AliasST2 st0 = st1array[0];
-        AliasST2 st1 = st1array[1];
-        require(st0.x == false);
-        require(st0.y == b'68656c6c6f20776f726c6421');
-        require(st0.st2.x == false);
-        require(st0.st2.y[0] == 1);
-        require(st0.st2.y[1] == 2);
-        require(st0.st2.y[2] == 3);
-        require(st1.x == true);
-        require(st1.y == b'68656c6c6f20776f726c6420');
-        require(st1.st2.x == true);
-        require(st1.st2.y[0] == 4);
-        require(st1.st2.y[1] == 5);
-        require(st1.st2.y[2] == 6);
-    }
+  public function unlockMDArrayST1(MDArrayST1 st1mdarray) {
+    require(st1mdarray[0][0][0] == { false, b'aa', 1 });
+    require(st1mdarray[0][0][0].x == false);
+    require(st1mdarray[0][0][0].y == b'aa');
+    require(st1mdarray[0][0][0].i == 1);
 
-    public function unlockMDArrayST1(MDArrayST1 st1mdarray) {
-        require(st1mdarray[0][0][0] == {false, b'aa', 1});
-        require(st1mdarray[0][0][0].x == false);
-        require(st1mdarray[0][0][0].y == b'aa');
-        require(st1mdarray[0][0][0].i == 1);
+    require(st1mdarray[0][0][1] == { true, b'bb', 2 });
+    require(st1mdarray[0][0][1].x == true);
+    require(st1mdarray[0][0][1].y == b'bb');
+    require(st1mdarray[0][0][1].i == 2);
 
-        require(st1mdarray[0][0][1] == {true, b'bb', 2});
-        require(st1mdarray[0][0][1].x == true);
-        require(st1mdarray[0][0][1].y == b'bb');
-        require(st1mdarray[0][0][1].i == 2);
+    require(st1mdarray[0][0] == [{ false, b'aa', 1 }, { true, b'bb', 2 }]);
 
-        require(st1mdarray[0][0] == [{false, b'aa', 1}, {true, b'bb', 2}]);
- 
-        require(st1mdarray[0][1][0] == {false, b'cc', 3});
-        require(st1mdarray[0][1][0].x == false);
-        require(st1mdarray[0][1][0].y == b'cc');
-        require(st1mdarray[0][1][0].i == 3);
+    require(st1mdarray[0][1][0] == { false, b'cc', 3 });
+    require(st1mdarray[0][1][0].x == false);
+    require(st1mdarray[0][1][0].y == b'cc');
+    require(st1mdarray[0][1][0].i == 3);
 
-
-        require(st1mdarray[1][1][1] == {true, b'11', 8});
-        require(st1mdarray[1][1][1].x == true);
-        require(st1mdarray[1][1][1].y == b'11');
-        require(st1mdarray[1][1][1].i == 8);
-    }
+    require(st1mdarray[1][1][1] == { true, b'11', 8 });
+    require(st1mdarray[1][1][1].x == true);
+    require(st1mdarray[1][1][1].y == b'11');
+    require(st1mdarray[1][1][1].i == 8);
+  }
 }
-
