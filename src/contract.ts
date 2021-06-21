@@ -305,6 +305,16 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
       return ContractClass.fromASM((new bsv.Script(hex)).toASM());
     }
 
+
+    /**
+     * Create a contract instance using raw Transaction
+     * @param hex 
+     */
+    static fromTransaction(hex: string, outputIndex = 0) {
+      const tx = new bsv.Transaction(hex);
+      return ContractClass.fromHex(tx.outputs[outputIndex].script.toHex());
+    }
+
     /**
      * Get the parameter of the constructor and inline asm vars,
      * all values is hex string, need convert it to number or bytes on using

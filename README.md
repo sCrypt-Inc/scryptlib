@@ -160,6 +160,7 @@ Note that `parameters` in both constructor and function call are mapped to sCryp
 
 * `boolean`: mapped to sCrypt `bool`
 * `number`: mapped to sCrypt `int`
+* `bigint`: mapped to sCrypt `int`
 * `new Int(x)`/ `new Bool(x)` / `new Bytes(x)` / `new Sig(x)` / `new PubKey(x)` / `new Ripemd160(x)` / … : mapped to sCrypt `int` / `bool` / `bytes` / `Sig` / `PubKey` / `Ripemd160` / … , where `x` is hex string
 
 In this way, the type of parameters could be checked and potential bugs can be detected before running.
@@ -237,3 +238,45 @@ instance.replaceAsmVars(asmVars);
 
 You could find more examples using `scryptlib` in the [boilerplate](https://github.com/sCrypt-Inc/boilerplate) repository.
 
+
+## Construct contracts from raw transactions
+
+In addition to using the constructor to construct the contract, you can also use raw transactions to construct the contract.
+
+```typescript
+    const axios = require('axios');
+
+    const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
+    let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
+    // constructor from raw Transaction.
+    let counter = Counter.fromTransaction(response.data, 0/** output index**/);
+
+    // constructor from Utxo lockingScript
+    let counterClone = Counter.fromHex(counter.lockingScript.toHex());
+
+```
+
+
+## Support browsers that are not compatible with BigInt
+
+Some contracts use ``Bigint`` to construct or unlock. but some browsers do not support ``Bigint``, such as IE11. In this case, we use strings to build ``Bigint``.
+
+```typescript
+
+// polyfill
+
+import 'react-app-polyfill/ie11';  
+import 'core-js/features/number';
+import 'core-js/features/string';
+import 'core-js/features/array';
+
+
+
+let demo = new Demo("11111111111111111111111111111111111", 1);
+
+let result = demo.add(new Int("11111111111111111111111111111111112")).verify();
+
+console.assert(result.success, result.error)
+
+
+```

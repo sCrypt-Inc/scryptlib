@@ -1,6 +1,6 @@
 {
   "name": "scryptlib",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
     "node": ">=12.0.0"
@@ -17,7 +17,8 @@
     "cov": "nyc npm t",
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "testlint": "eslint src --ext .ts,.js",
-    "test": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
+    "test": "npm run td",
+    "td": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "husky install && npm run compile",
     "postinstall": "node postinstall",

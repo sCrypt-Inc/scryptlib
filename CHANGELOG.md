@@ -1,5 +1,20 @@
 # CHANGELOG
 
+
+## 0.4.2
+
+- support [browsers that are not compatible with bigint](./README.md#support-browsers-that-are-not-compatible-with-bigint)
+- add [construct contracts from raw transactions](./README.md#construct-contracts-from-raw-transactions)
+- remove ts-optchain which is now deprecated
+- bump ssri from 6.0.1 to 6.0.2
+- bump lodash from 4.17.20 to 4.17.21
+
+
+*Release Date: 2021/06/21*
+
+
+
+
 ## 0.4.1
 
 - bump ``bsv`` library to version ``1.5.6``

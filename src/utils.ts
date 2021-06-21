@@ -65,61 +65,62 @@ export function int2Asm(str: string): string {
 /**
  * convert asm string to number or bigint
  */
-export function asm2int(str: string): number | bigint {
+export function asm2int(str: string): number | bigint | string {
 
   switch (str) {
-  case 'OP_1NEGATE':
-    return -1;
-  case '0':
-  case 'OP_0':
-  case 'OP_1':
-  case 'OP_2':
-  case 'OP_3':
-  case 'OP_4':
-  case 'OP_5':
-  case 'OP_6':
-  case 'OP_7':
-  case 'OP_8':
-  case 'OP_9':
-  case 'OP_10':
-  case 'OP_11':
-  case 'OP_12':
-  case 'OP_13':
-  case 'OP_14':
-  case 'OP_15':
-  case 'OP_16':
-    return parseInt(str.replace('OP_', ''));
-  default: {
-    const value = getValidatedHexString(str);
-    const bn = BN.fromHex(value, {
-      endian: 'little'
-    });
+    case 'OP_1NEGATE':
+      return -1;
+    case '0':
+    case 'OP_0':
+    case 'OP_1':
+    case 'OP_2':
+    case 'OP_3':
+    case 'OP_4':
+    case 'OP_5':
+    case 'OP_6':
+    case 'OP_7':
+    case 'OP_8':
+    case 'OP_9':
+    case 'OP_10':
+    case 'OP_11':
+    case 'OP_12':
+    case 'OP_13':
+    case 'OP_14':
+    case 'OP_15':
+    case 'OP_16':
+      return parseInt(str.replace('OP_', ''));
+    default: {
+      const value = getValidatedHexString(str);
+      const bn = BN.fromHex(value, {
+        endian: 'little'
+      });
 
-    if (bn.toNumber() < Number.MAX_SAFE_INTEGER) {
-      return bn.toNumber();
-    } else {
-      return BigInt(bn.toString());
+      if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+        return bn.toNumber();
+      } else if (typeof BigInt === 'function') {
+        return BigInt(bn.toString());
+      } else {
+        return bn.toString();
+      }
     }
   }
-  }
-
 }
 
 /**
  * decimal int or hex str to number or bigint
  */
-export function int2Value(str: string): number | bigint {
+export function int2Value(str: string): number | bigint | string {
 
   if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
 
-    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
+    const bn = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
 
-
-
-    if (number.toNumber() < Number.MAX_SAFE_INTEGER) {
-      return number.toNumber();
+    if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+      return bn.toNumber();
+    } else if (typeof BigInt === 'function') {
+      return BigInt(bn.toString());
     } else {
-      return BigInt(str);
+      return bn.toString();
     }
 
   } else {
@@ -272,32 +273,32 @@ export function literal2ScryptType(l: string): ScryptType {
 
   const [asm, value, type] = parseLiteral(l);
   switch (type) {
-  case VariableType.BOOL:
-    return new Bool(value as boolean);
-  case VariableType.INT:
-    return new Int(value as number);
-  case VariableType.BYTES:
-    return new Bytes(value as string);
-  case VariableType.PRIVKEY:
-    return new PrivKey(value as bigint);
-  case VariableType.PUBKEY:
-    return new PubKey(value as string);
-  case VariableType.SIG:
-    return new Sig(value as string);
-  case VariableType.RIPEMD160:
-    return new Ripemd160(value as string);
-  case VariableType.SHA1:
-    return new Sha1(value as string);
-  case VariableType.SHA256:
-    return new Sha256(value as string);
-  case VariableType.SIGHASHTYPE:
-    return new SigHashType(value as number);
-  case VariableType.SIGHASHPREIMAGE:
-    return new SigHashPreimage(value as string);
-  case VariableType.OPCODETYPE:
-    return new OpCodeType(value as string);
-  default:
-    throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
+    case VariableType.BOOL:
+      return new Bool(value as boolean);
+    case VariableType.INT:
+      return new Int(value as number);
+    case VariableType.BYTES:
+      return new Bytes(value as string);
+    case VariableType.PRIVKEY:
+      return new PrivKey(value as bigint);
+    case VariableType.PUBKEY:
+      return new PubKey(value as string);
+    case VariableType.SIG:
+      return new Sig(value as string);
+    case VariableType.RIPEMD160:
+      return new Ripemd160(value as string);
+    case VariableType.SHA1:
+      return new Sha1(value as string);
+    case VariableType.SHA256:
+      return new Sha256(value as string);
+    case VariableType.SIGHASHTYPE:
+      return new SigHashType(value as number);
+    case VariableType.SIGHASHPREIMAGE:
+      return new SigHashPreimage(value as string);
+    case VariableType.OPCODETYPE:
+      return new OpCodeType(value as string);
+    default:
+      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
 }
 
@@ -305,32 +306,32 @@ export function literal2ScryptType(l: string): ScryptType {
 export function asm2ScryptType(type: string, asm: string) {
 
   switch (type) {
-  case VariableType.BOOL:
-    return new Bool(BN.fromString(asm) > 0 ? true : false);
-  case VariableType.INT:
-    return new Int(asm2int(asm));
-  case VariableType.BYTES:
-    return new Bytes(asm);
-  case VariableType.PRIVKEY:
-    return new PrivKey(asm2int(asm) as bigint);
-  case VariableType.PUBKEY:
-    return new PubKey(asm);
-  case VariableType.SIG:
-    return new Sig(asm);
-  case VariableType.RIPEMD160:
-    return new Ripemd160(asm);
-  case VariableType.SHA1:
-    return new Sha1(asm);
-  case VariableType.SHA256:
-    return new Sha256(asm);
-  case VariableType.SIGHASHTYPE:
-    return new SigHashType(asm2int(asm) as number);
-  case VariableType.SIGHASHPREIMAGE:
-    return new SigHashPreimage(asm);
-  case VariableType.OPCODETYPE:
-    return new OpCodeType(asm);
-  default:
-    throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
+    case VariableType.BOOL:
+      return new Bool(BN.fromString(asm) > 0 ? true : false);
+    case VariableType.INT:
+      return new Int(asm2int(asm));
+    case VariableType.BYTES:
+      return new Bytes(asm);
+    case VariableType.PRIVKEY:
+      return new PrivKey(asm2int(asm) as bigint);
+    case VariableType.PUBKEY:
+      return new PubKey(asm);
+    case VariableType.SIG:
+      return new Sig(asm);
+    case VariableType.RIPEMD160:
+      return new Ripemd160(asm);
+    case VariableType.SHA1:
+      return new Sha1(asm);
+    case VariableType.SHA256:
+      return new Sha256(asm);
+    case VariableType.SIGHASHTYPE:
+      return new SigHashType(asm2int(asm) as number);
+    case VariableType.SIGHASHPREIMAGE:
+      return new SigHashPreimage(asm);
+    case VariableType.OPCODETYPE:
+      return new OpCodeType(asm);
+    default:
+      throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
   }
 
 }
@@ -340,18 +341,18 @@ export function asm2ScryptType(type: string, asm: string) {
 export function bytes2Literal(bytearray: number[], type: string): string {
 
   switch (type) {
-  case 'bool':
-    return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
+    case 'bool':
+      return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
 
-  case 'int':
-  case 'PrivKey':
-    return BN.fromSM(bytearray, { endian: 'little' }).toString();
+    case 'int':
+    case 'PrivKey':
+      return BN.fromSM(bytearray, { endian: 'little' }).toString();
 
-  case 'bytes':
-    return `b'${bytesToHexString(bytearray)}'`;
+    case 'bytes':
+      return `b'${bytesToHexString(bytearray)}'`;
 
-  default:
-    return `b'${bytesToHexString(bytearray)}'`;
+    default:
+      return `b'${bytesToHexString(bytearray)}'`;
   }
 
 }
@@ -466,7 +467,7 @@ export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): st
 }
 
 //Support Bigint
-export function bin2num(s: string | Buffer): bigint {
+export function bin2num(s: string | Buffer): number | bigint | string {
   const hex = s.toString('hex');
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);
@@ -481,7 +482,14 @@ export function bin2num(s: string | Buffer): bigint {
   if (m >> 7) {
     bn = bn.neg();
   }
-  return BigInt(bn);
+
+  if (typeof BigInt === 'function') {
+    return BigInt(bn);
+  } else if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+    return bn.toNumber();
+  } else {
+    return bn.toString();
+  }
 }
 
 
@@ -763,6 +771,10 @@ export function typeOfArg(arg: SupportedParamType): string {
     return 'int';
   }
 
+  if (typeofArg === 'string') {
+    return 'int';
+  }
+
   return typeof arg;
 
 }
@@ -1041,11 +1053,11 @@ export function createArray(contract: AbstractContract, type: string, name: stri
 }
 
 
-export function toLiteral(value: any) {
+export function toLiteral(value: ScryptType): string {
 
   if (Array.isArray(value)) {
 
-    return value.map(i => toLiteral(i));
+    return `[${value.map(i => toLiteral(i))}]`;
   } else {
 
     return value instanceof ScryptType ? value.toLiteral() : value;

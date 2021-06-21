@@ -242,22 +242,32 @@ export class ABICoder {
   encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
-
+    const contractName = Object.getPrototypeOf(contract).constructor.contractName;
     const opcodesMap = new Map<string, string>();
 
     const asmTemplateOpcodes = asmTemplate.split(' ');
     const asmOpcodes = lsASM.split(' ');
 
-    if (asmTemplateOpcodes.length != asmOpcodes.length) {
-      throw new Error(`the raw script cannot match the contract ${AbstractContract.contractName}`);
+
+    if (asmTemplateOpcodes.length > asmOpcodes.length) {
+      throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
     }
 
     asmTemplateOpcodes.forEach((opcode, index) => {
 
       if (opcode.startsWith('$')) {
         opcodesMap.set(opcode, asmOpcodes[index]);
+      } else if (bsv.Script.fromASM(opcode).toHex() !== bsv.Script.fromASM(asmOpcodes[index]).toHex()) {
+        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
       }
     });
+
+    if (asmTemplateOpcodes.length < asmOpcodes.length) {
+      const opcode = asmOpcodes[asmTemplateOpcodes.length];
+      if (opcode !== 'OP_RETURN') {
+        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
+      }
+    }
 
 
     const finalTypeResolver = buildTypeResolver(this.alias);
@@ -376,6 +386,10 @@ export class ABICoder {
 
     if (typeofArg === 'bigint') {
       arg = new Int(arg as bigint);
+    }
+
+    if (typeof arg === 'string') {
+      arg = new Int(arg as string);
     }
 
     return (arg as ScryptType).toASM();

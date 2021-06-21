@@ -74,6 +74,32 @@ describe('create instance from UTXO Hex', () => {
     assert.instanceOf(instance, AbstractContract)
   })
 
+
+  it('should throw when the raw script cannot match the asm template of contract Simple', () => {
+    const simple = new Simple()
+    const asmVars = {
+      'Simple.equalImpl.x': 'OP_11'
+    }
+    simple.replaceAsmVars(asmVars)
+    expect(() => {
+      const asm = [simple.lockingScript.toASM(), '11'].join(' ');
+      Simple.fromHex(new bsv.Script.fromASM(asm).toHex())
+    }).to.be.throw(/the raw script cannot match the asm template of contract Simple/);
+
+
+    expect(() => {
+      Simple.fromHex(simple.lockingScript.toHex().substr(1))
+    }).to.be.throw(/the raw script cannot match the asm template of contract Simple/);
+
+
+    simple.setDataPart("00 11");
+
+    // should not throw
+    instance = Simple.fromHex(simple.lockingScript.toHex())
+    assert.instanceOf(instance, AbstractContract)
+
+  })
+
   it('the returned object can be verified whether it could unlock the contract', () => {
     // can unlock contract if params are correct
     result = instance.main(2, 4).verify({ inputSatoshis, tx })
@@ -373,25 +399,7 @@ describe('buildContractClass and create instance from script', () => {
           let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 
           assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
-
-            [
-              '2',
-              '11111111111111111111',
-              'false',
-              "b'1234567890'",
-              "{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}}",
-              [
-                [
-                  "{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}}",
-                  "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}"
-                ],
-                [
-                  "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}",
-                  "{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}"
-                ]
-              ],
-              [[['1', '25555555555555555555555555555']]]
-            ]
+            `[2,11111111111111111111,false,b'1234567890',{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}},[[{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}},{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}],[{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}},{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}]],[[[1,25555555555555555555555555555]]]]`
           )
         })
       })
@@ -456,32 +464,11 @@ describe('buildContractClass and create instance from script', () => {
 
         let result = contract.unlock(...args).verify();
 
-        console.log(result)
-
         assert.isTrue(result.success)
 
         let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
-
         assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
-
-          [
-            '2',
-            '11111111111111111111',
-            'false',
-            "b'1234567890'",
-            "{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}}",
-            [
-              [
-                "{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}}",
-                "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}"
-              ],
-              [
-                "{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}",
-                "{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}"
-              ]
-            ],
-            [[['1', '25555555555555555555555555555']]]
-          ]
+          `[2,11111111111111111111,false,b'1234567890',{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}},[[{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}},{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}],[{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}},{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}]],[[[1,25555555555555555555555555555]]]]`
         )
       })
     })
