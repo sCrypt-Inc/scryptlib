@@ -283,7 +283,7 @@ describe('VerifyError', () => {
       expect(result.success, result.error).to.be.false;
 
       const launch = readLaunchJson(result.error);
-      expect(result.error).to.contains("mdarray.scrypt#44");
+      expect(result.error).to.contains("mdarray.scrypt#40");
       assert.deepEqual(launch.configurations[0].pubFuncArgs, [[[3, 1, 2], [4, 5, 5]], [1, 32]])
     });
 
@@ -308,7 +308,7 @@ describe('VerifyError', () => {
       expect(result.success, result.error).to.be.false;
 
       const launch = readLaunchJson(result.error);
-      expect(result.error).to.contains("mdarray.scrypt#101");
+      expect(result.error).to.contains("mdarray.scrypt#90");
 
       assert.deepEqual(launch.configurations[0].pubFuncArgs as object, [
         [

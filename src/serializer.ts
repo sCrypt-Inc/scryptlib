@@ -95,8 +95,21 @@ class OpState {
     this.op = op;
   }
 
-  toNumber(): number {
-    return Number(this.toBigInt());
+  toNumber(): number | string | bigint {
+
+    if (this.op.opcodenum === Opcode.OP_1) {
+      return Number(1);
+    } else if (this.op.opcodenum === Opcode.OP_0) {
+      return Number(0);
+    } else if (this.op.opcodenum === Opcode.OP_1NEGATE) {
+      return Number(-1);
+    } else if (this.op.opcodenum >= Opcode.OP_2 && this.op.opcodenum <= Opcode.OP_16) {
+      return Number(this.op.opcodenum - Opcode.OP_2 + 2);
+    } else {
+      if (!this.op.buf) throw new Error('state does not have a number representation');
+      return Number(bin2num(this.op.buf));
+    }
+
   }
 
   toBigInt(): bigint {
@@ -110,12 +123,12 @@ class OpState {
       return BigInt(this.op.opcodenum - Opcode.OP_2 + 2);
     } else {
       if (!this.op.buf) throw new Error('state does not have a number representation');
-      return bin2num(this.op.buf);
+      return bin2num(this.op.buf) as bigint;
     }
   }
 
   toBoolean(): boolean {
-    return this.toBigInt() !== BigInt(0);
+    return this.toNumber() !== Number(0);
   }
 
   toHex(): string {
@@ -179,7 +192,11 @@ export function deserializeState(s: string | bsv.Script, schema: State | StateAr
     } else if (val === 'number' || typeof val === 'number') {
       ret[key] = states[i].toNumber();
     } else if (val === 'bigint' || typeof val === 'bigint') {
-      ret[key] = states[i].toBigInt();
+      if (typeof BigInt === 'function') {
+        ret[key] = states[i].toBigInt();
+      } else {
+        ret[key] = states[i].toNumber();
+      }
     } else if (val === 'string') {
       ret[key] = states[i].toString();
     } else {
