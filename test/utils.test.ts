@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract, toLiteral } from '../src/utils'
+import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
 
 
@@ -142,6 +142,42 @@ describe('utils', () => {
 
       expect(int2Asm("0x12f1dd2e0965dc433b0d32b86333b0fb432df592f6108803d7afe51a14a0e867045fe22af85862b8e744700920e0b7e430a192440a714277efb895b51120e4cc"))
         .to.equal("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112")
+
+      expect(int2Asm("-1"))
+        .to.equal("OP_1NEGATE")
+
+      expect(int2Asm("0"))
+        .to.equal("OP_0")
+
+
+      expect(int2Asm("1"))
+        .to.equal("OP_1")
+
+      expect(int2Asm("-2"))
+        .to.equal("82")
+    });
+  })
+
+
+  describe('asm2int()', () => {
+
+    it('asm string to int', () => {
+      expect(asm2int("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112"))
+        .to.equal(992218700866541488854030164190743727617658394826382323005192752278160641622424126616186015754450906117445668830393086070718237548341612508577988597572812n)
+
+
+      expect(asm2int("OP_1"))
+        .to.equal(1)
+
+      expect(asm2int("OP_0"))
+        .to.equal(0)
+
+      expect(asm2int("OP_1NEGATE"))
+        .to.equal(-1)
+
+      expect(asm2int("82"))
+        .to.equal(130)
+
     });
   })
 
