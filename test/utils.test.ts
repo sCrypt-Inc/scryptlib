@@ -3,7 +3,7 @@ import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes } from '../src/scryptTypes'
 import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
-
+import { tmpdir } from 'os'
 
 
 const mixedstructDescr = loadDescription('mixedstruct_desc.json');
@@ -970,6 +970,7 @@ describe('utils', () => {
 
       before(() => {
         const Ackermann = buildContractClass(compileContract(getContractFilePath('ackermann.scrypt'), {
+          out: tmpdir(),
           sourceMap: false
         }));
         ackermann = new Ackermann(2, 1);

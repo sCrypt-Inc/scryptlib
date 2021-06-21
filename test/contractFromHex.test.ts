@@ -74,6 +74,32 @@ describe('create instance from UTXO Hex', () => {
     assert.instanceOf(instance, AbstractContract)
   })
 
+
+  it('should throw when the raw script cannot match the asm template of contract Simple', () => {
+    const simple = new Simple()
+    const asmVars = {
+      'Simple.equalImpl.x': 'OP_11'
+    }
+    simple.replaceAsmVars(asmVars)
+    expect(() => {
+      const asm = [simple.lockingScript.toASM(), '11'].join(' ');
+      Simple.fromHex(new bsv.Script.fromASM(asm).toHex())
+    }).to.be.throw(/the raw script cannot match the asm template of contract Simple/);
+
+
+    expect(() => {
+      Simple.fromHex(simple.lockingScript.toHex().substr(1))
+    }).to.be.throw(/the raw script cannot match the asm template of contract Simple/);
+
+
+    simple.setDataPart("00 11");
+
+    // should not throw
+    instance = Simple.fromHex(simple.lockingScript.toHex())
+    assert.instanceOf(instance, AbstractContract)
+
+  })
+
   it('the returned object can be verified whether it could unlock the contract', () => {
     // can unlock contract if params are correct
     result = instance.main(2, 4).verify({ inputSatoshis, tx })
