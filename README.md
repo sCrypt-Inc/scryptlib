@@ -160,6 +160,7 @@ Note that `parameters` in both constructor and function call are mapped to sCryp
 
 * `boolean`: mapped to sCrypt `bool`
 * `number`: mapped to sCrypt `int`
+* `bigint`: mapped to sCrypt `int`
 * `new Int(x)`/ `new Bool(x)` / `new Bytes(x)` / `new Sig(x)` / `new PubKey(x)` / `new Ripemd160(x)` / … : mapped to sCrypt `int` / `bool` / `bytes` / `Sig` / `PubKey` / `Ripemd160` / … , where `x` is hex string
 
 In this way, the type of parameters could be checked and potential bugs can be detected before running.
@@ -252,5 +253,30 @@ In addition to using the constructor to construct the contract, you can also use
 
     // constructor from Utxo lockingScript
     let counterClone = Counter.fromHex(counter.lockingScript.toHex());
+
+```
+
+
+## BigInt in browsers that are not compatible with BigInt
+
+Some contracts use ``Bigint`` to construct or unlock. but some browsers do not support ``Bigint``, such as IE11. In this case, we use strings to build ``Bigint``.
+
+```typescript
+
+// polyfill
+
+import 'react-app-polyfill/ie11';  
+import 'core-js/features/number';
+import 'core-js/features/string';
+import 'core-js/features/array';
+
+
+
+let demo = new Demo("11111111111111111111111111111111111", 1);
+
+let result = demo.add(new Int("11111111111111111111111111111111112")).verify();
+
+console.assert(result.success, result.error)
+
 
 ```
