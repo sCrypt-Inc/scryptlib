@@ -991,7 +991,7 @@ describe('utils', () => {
       let ackermann, result;
 
       before(() => {
-        const Ackermann = buildContractClass(compileContract(getContractFilePath('ackermann.scrypt')));
+        const Ackermann = buildContractClass(loadDescription('ackermann_desc.json'));
         ackermann = new Ackermann(2, 1);
       });
 
