@@ -32,12 +32,7 @@
         "downlevelIteration": true,
         "moduleResolution": "node",
         "declaration": true,
-        "declarationDir": "./dist",
-        "plugins": [
-            {
-                "transform": "ts-optchain/transform"
-            }
-        ]
+        "declarationDir": "./dist"
     },
     "include": [
         "src/**/*.ts",
