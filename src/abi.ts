@@ -1,9 +1,7 @@
-import { oc } from 'ts-optchain';
 import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, subscript, flatternStruct, resolveType, int2Value, asm2int, createStruct, createArray, asm2ScryptType } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues, buildTypeResolver } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, Bytes } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity, AliasEntity } from './compilerWrapper';
-const BN = bsv.crypto.BN;
 
 export interface Script {
   toASM(): string;
@@ -180,7 +178,7 @@ export class ABICoder {
   encodeConstructorCall(contract: AbstractContract, asmTemplate: string, ...args: SupportedParamType[]): FunctionCall {
 
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
-    const cParams = oc(constructorABI).params([]);
+    const cParams = constructorABI?.params || [];
 
     if (args.length !== cParams.length) {
       throw new Error(`wrong number of arguments for #constructor, expected ${cParams.length} but got ${args.length}`);
@@ -243,7 +241,7 @@ export class ABICoder {
 
   encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
-    const cParams = oc(constructorABI).params([]);
+    const cParams = constructorABI?.params || [];
 
     const opcodesMap = new Map<string, string>();
 

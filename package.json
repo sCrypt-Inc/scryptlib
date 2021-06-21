@@ -64,7 +64,6 @@
     "bsv": "^1.5.6",
     "compare-versions": "^3.6.0",
     "json-bigint": "^1.0.0",
-    "md5": "^2.2.1",
-    "ts-optchain": "^0.1.8"
+    "md5": "^2.2.1"
   }
 }

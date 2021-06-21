@@ -1,7 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
-import { oc } from 'ts-optchain';
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
@@ -520,7 +519,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   });
 
   return allAst.map(ast => {
-    return oc(ast).structs([]).map(s => ({
+    return (ast.structs || []).map(s => ({
       name: s['name'],
       params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
     }));
@@ -537,7 +536,7 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   });
 
   return allAst.map(ast => {
-    return oc(ast).alias([]).map(s => ({
+    return (ast.alias || []).map(s => ({
       name: s['alias'],
       type: s['type'],
     }));
@@ -552,8 +551,8 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
   });
 
   return allAst.map((ast, index) => {
-    return oc(ast).contracts([]).map(contract => {
-      return oc(contract).statics([]).filter(s => (
+    return (ast.contracts || []).map(contract => {
+      return (contract.statics || []).filter(s => (
         s.const === true && s.expr.nodeType === 'IntLiteral'
       )).map(s => {
 
@@ -685,8 +684,8 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
 
 function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: string): CompileResult {
   const warnings: Warning[] = [...output.matchAll(WARNING_REG)].map(match => {
-    const filePath = oc(match.groups).filePath('');
-    let message = oc(match.groups).message('');
+    const filePath = match.groups?.filePath || '';
+    let message = match.groups?.message || '';
 
     message = message.replace(/Variable `(?<varName>\w+)` shadows existing binding at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
       'Variable `$1` shadows existing binding at $3:$4:$5:$6');
@@ -694,11 +693,11 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
       type: CompileErrorType.Warning,
       filePath: getFullFilePath(filePath, srcDir, sourceFileName),
       position: [{
-        line: parseInt(oc(match.groups).line('-1')),
-        column: parseInt(oc(match.groups).column('-1')),
+        line: parseInt(match.groups?.line || '-1'),
+        column: parseInt(match.groups?.column || '-1'),
       }, {
-        line: parseInt(oc(match.groups).line1('-1')),
-        column: parseInt(oc(match.groups).column1('-1')),
+        line: parseInt(match.groups?.line1 || '-1'),
+        column: parseInt(match.groups?.column1 || '-1'),
       }],
       message: message
     };
@@ -711,7 +710,7 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
       errors: [{
         type: CompileErrorType.InternalError,
         filePath: getFullFilePath('stdin', srcDir, sourceFileName),
-        message: `Compiler internal error: ${oc(output.match(INTERNAL_ERR_REG).groups).message('')}`,
+        message: `Compiler internal error: ${output.match(INTERNAL_ERR_REG).groups?.message || ''}`,
         position: [{
           line: 1,
           column: 1
@@ -723,17 +722,17 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
     };
   } else if (output.includes('Syntax error:')) {
     const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)].map(match => {
-      const filePath = oc(match.groups).filePath('');
-      const unexpected = oc(match.groups).unexpected('');
-      const expecting = oc(match.groups).expecting('');
+      const filePath = match.groups?.filePath || '';
+      const unexpected = match.groups?.unexpected || '';
+      const expecting = match.groups?.expecting || '';
       return {
         type: CompileErrorType.SyntaxError,
         filePath: getFullFilePath(filePath, srcDir, sourceFileName),
         position: [{
-          line: parseInt(oc(match.groups).line('-1')),
-          column: parseInt(oc(match.groups).column('-1')),
+          line: parseInt(match.groups?.line || '-1'),
+          column: parseInt(match.groups?.column || '-1'),
         }],
-        message: oc(match.groups).message(`unexpected ${unexpected}\nexpecting ${expecting}`),
+        message: match.groups?.message || `unexpected ${unexpected}\nexpecting ${expecting}`,
         unexpected,
         expecting,
       };
@@ -746,8 +745,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
   else {
 
     const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
-      let message = oc(match.groups).message('');
-      const filePath = oc(match.groups).filePath('');
+      let message = match.groups?.message || '';
+      const filePath = match.groups?.filePath || '';
 
       message = message.replace(/Symbol `(?<varName>\w+)` already defined at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
         'Symbol `$1` already defined at $3:$4:$5:$6');
@@ -756,11 +755,11 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
         type: CompileErrorType.SemanticError,
         filePath: getFullFilePath(filePath, srcDir, sourceFileName),
         position: [{
-          line: parseInt(oc(match.groups).line('-1')),
-          column: parseInt(oc(match.groups).column('-1')),
+          line: parseInt(match.groups?.line || '-1'),
+          column: parseInt(match.groups?.column || '-1'),
         }, {
-          line: parseInt(oc(match.groups).line1('-1')),
-          column: parseInt(oc(match.groups).column1('-1')),
+          line: parseInt(match.groups?.line1 || '-1'),
+          column: parseInt(match.groups?.column1 || '-1'),
         }],
         message: message
       };
