@@ -237,3 +237,20 @@ instance.replaceAsmVars(asmVars);
 
 You could find more examples using `scryptlib` in the [boilerplate](https://github.com/sCrypt-Inc/boilerplate) repository.
 
+
+## Construct contracts from raw transactions
+
+In addition to using the constructor to construct the contract, you can also use raw transactions to construct the contract.
+
+```typescript
+    const axios = require('axios');
+
+    const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
+    let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
+    // constructor from raw Transaction.
+    let counter = Counter.fromTransaction(response.data, 0/** output index**/);
+
+    // constructor from Utxo lockingScript
+    let counterClone = Counter.fromHex(counter.lockingScript.toHex());
+
+```
