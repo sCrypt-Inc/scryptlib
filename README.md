@@ -257,7 +257,7 @@ In addition to using the constructor to construct the contract, you can also use
 ```
 
 
-## BigInt in browsers that are not compatible with BigInt
+## Support browsers that are not compatible with BigInt
 
 Some contracts use ``Bigint`` to construct or unlock. but some browsers do not support ``Bigint``, such as IE11. In this case, we use strings to build ``Bigint``.
 
