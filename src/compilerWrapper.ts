@@ -101,6 +101,7 @@ export interface Pos {
 export interface OpCode {
   opcode: string;
   stack?: string[];
+  topVars?: string[];
   pos?: Pos;
   debugTag?: DebugModeTag;
 }
@@ -257,6 +258,7 @@ export function compile(
           return {
             opcode: item.opcode,
             stack: item.stack,
+            topVars: item.topVars || [],
             pos: pos,
             debugTag
           };
@@ -669,14 +671,16 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
           return {
             pos: pos,
             opcode: opcode,
-            stack: []
+            stack: [],
+            topVars: []
           };
         }
       }
 
       return {
         opcode: opcode,
-        stack: []
+        stack: [],
+        topVars: []
       };
     })
   };
