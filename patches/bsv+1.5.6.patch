@@ -13,7 +13,7 @@ index 22a5d8f..88d809e 100644
    if (fRequireMinimal && buf.length > 0) {
      // Check that the number is encoded with the minimum possible
 diff --git a/node_modules/bsv/lib/script/interpreter.js b/node_modules/bsv/lib/script/interpreter.js
-index 4185994..68f9b1c 100644
+index 4185994..cb39f8e 100644
 --- a/node_modules/bsv/lib/script/interpreter.js
 +++ b/node_modules/bsv/lib/script/interpreter.js
 @@ -46,7 +46,7 @@ var Interpreter = function Interpreter (obj) {
@@ -84,19 +84,15 @@ index 4185994..68f9b1c 100644
  Interpreter.true = Buffer.from([1])
  Interpreter.false = Buffer.from([])
  
-@@ -487,19 +512,24 @@ Interpreter._minimallyEncode = function (buf) {
+@@ -486,20 +511,19 @@ Interpreter._minimallyEncode = function (buf) {
+  * bitcoind commit: b5d1b1092998bc95313856d535c632ea5a8f9104
   */
  Interpreter.prototype.evaluate = function () {
-   // TODO: script size should be configurable. no magic numbers
+-  // TODO: script size should be configurable. no magic numbers
 -  if (this.script.toBuffer().length > 10000) {
 -    this.errstr = 'SCRIPT_ERR_SCRIPT_SIZE'
 -    return false
 -  }
-+  // don't limit script size.
-+  // if (this.script.toBuffer().length > 10000) {
-+  //   this.errstr = 'SCRIPT_ERR_SCRIPT_SIZE'
-+  //   return false
-+  // }
  
    try {
      while (this.pc < this.script.chunks.length) {
@@ -115,7 +111,7 @@ index 4185994..68f9b1c 100644
      }
  
      // Size limits
-@@ -692,7 +722,7 @@ Interpreter.prototype.step = function () {
+@@ -692,7 +716,7 @@ Interpreter.prototype.step = function () {
    var fRequireMinimal = (this.flags & Interpreter.SCRIPT_VERIFY_MINIMALDATA) !== 0
  
    // bool fExec = !count(vfExec.begin(), vfExec.end(), false);
@@ -124,28 +120,22 @@ index 4185994..68f9b1c 100644
    var buf, buf1, buf2, spliced, n, x1, x2, bn, bn1, bn2, bufSig, bufPubkey, subscript
    var sig, pubkey
    var fValue, fSuccess
-@@ -710,11 +740,16 @@ Interpreter.prototype.step = function () {
+@@ -710,11 +734,9 @@ Interpreter.prototype.step = function () {
      return false
    }
  
-+  // Do not execute instructions if Genesis OP_RETURN was found in executed branches.
-+  var fExec = (this.vfExec.indexOf(false) === -1) && (!this.nonTopLevelReturnAfterGenesis || opcodenum === Opcode.OP_RETURN)
-+
-   // Note how Opcode.OP_RESERVED does not count towards the opcode limit.
+-  // Note how Opcode.OP_RESERVED does not count towards the opcode limit.
 -  if (opcodenum > Opcode.OP_16 && ++(this.nOpCount) > 201) {
 -    this.errstr = 'SCRIPT_ERR_OP_COUNT'
 -    return false
 -  }
-+  // if (opcodenum > Opcode.OP_16 && ++(this.nOpCount) > 201) {
-+  //   this.errstr = 'SCRIPT_ERR_OP_COUNT'
-+  //   return false
-+  // }
-+  ++(this.nOpCount)
++  // Do not execute instructions if Genesis OP_RETURN was found in executed branches.
++  var fExec = (this.vfExec.indexOf(false) === -1) && (!this.nonTopLevelReturnAfterGenesis || opcodenum === Opcode.OP_RETURN)
 +
  
    if (isOpcodeDisabled(opcodenum)) {
      this.errstr = 'SCRIPT_ERR_DISABLED_OPCODE'
-@@ -941,9 +976,15 @@ Interpreter.prototype.step = function () {
+@@ -941,9 +963,15 @@ Interpreter.prototype.step = function () {
          break
  
        case Opcode.OP_RETURN:
@@ -164,7 +154,7 @@ index 4185994..68f9b1c 100644
  
          //
          // Stack ops
-@@ -1503,9 +1544,7 @@ Interpreter.prototype.step = function () {
+@@ -1503,9 +1531,7 @@ Interpreter.prototype.step = function () {
  
          // Subset of script starting at the most recent codeseparator
          // CScript scriptCode(pbegincodehash, pend);
@@ -175,22 +165,21 @@ index 4185994..68f9b1c 100644
  
          // Drop the signature, since there's no way for a signature to sign itself
          var tmpScript = new Script().add(bufSig)
-@@ -1559,10 +1598,10 @@ Interpreter.prototype.step = function () {
+@@ -1558,11 +1584,8 @@ Interpreter.prototype.step = function () {
+           this.errstr = 'SCRIPT_ERR_PUBKEY_COUNT'
            return false
          }
-         this.nOpCount += nKeysCount
+-        this.nOpCount += nKeysCount
 -        if (this.nOpCount > 201) {
 -          this.errstr = 'SCRIPT_ERR_OP_COUNT'
 -          return false
 -        }
-+        // if (this.nOpCount > 201) {
-+        //   this.errstr = 'SCRIPT_ERR_OP_COUNT'
-+        //   return false
-+        // }
++
++
          // int ikey = ++i;
          var ikey = ++i
          i += nKeysCount
-@@ -1592,9 +1631,7 @@ Interpreter.prototype.step = function () {
+@@ -1592,9 +1615,7 @@ Interpreter.prototype.step = function () {
          }
  
          // Subset of script starting at the most recent codeseparator

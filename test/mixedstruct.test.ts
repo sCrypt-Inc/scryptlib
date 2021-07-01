@@ -1,11 +1,8 @@
 
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
-import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
-import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Bool, Struct, SigHashPreimage } from '../src/scryptTypes';
-import { readFileSync } from 'fs';
+import { Bytes, } from '../src/scryptTypes';
 
 
 const jsonDescr = loadDescription('mixedstruct_desc.json');
@@ -101,7 +98,7 @@ describe('MixedStruct  test', () => {
 
 
     it('should fail when missing member name', () => {
-      
+
       expect(() => {
         result = mixedStruct.unlock(new Person({
           addr: new Bytes('68656c6c6f20776f726c6421'),
@@ -119,7 +116,7 @@ describe('MixedStruct  test', () => {
 
 
     it('should fail when missing member hash', () => {
-      
+
       expect(() => {
         result = mixedStruct.unlock(new Person({
           name: new Bytes('7361746f736869206e616b616d6f746f'),
@@ -137,7 +134,7 @@ describe('MixedStruct  test', () => {
 
 
     it('struct Bsver property tokens should be struct Token {}[3]', () => {
-      
+
       expect(() => {
         new MixedStruct(new Bsver({
           name: new Bytes('6666'),

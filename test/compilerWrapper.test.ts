@@ -18,10 +18,6 @@ describe('compile()', () => {
 
 
   it('should generate description file properly', () => {
-    const result = compileContract(getContractFilePath('bar.scrypt'));
-    const outputFile = path.join(__dirname, 'fixture/bar_desc.json');
-
-    assert.typeOf(result, 'object');
 
     const content = loadDescription('bar_desc.json');
 
@@ -57,7 +53,7 @@ describe('compile()', () => {
   })
 
   it('should generate structs properly', () => {
-    const result = compileContract(getContractFilePath('person.scrypt'));
+    const result = loadDescription('person_desc.json');
 
     assert.equal(result.structs.length, 2);
 
@@ -345,7 +341,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with const var should be replace with IntLiteral', () => {
-      const result = compileContract(getContractFilePath('const.scrypt'));
+      const result = loadDescription('const_desc.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",
@@ -384,7 +380,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with alias should be replace with final type', () => {
-      const result = compileContract(getContractFilePath('mdarray.scrypt'));
+      const result = loadDescription('mdarray_desc.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",

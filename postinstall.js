@@ -32,17 +32,15 @@ console.log('patches', patches);
 
 let bsv = path.join(__dirname, 'node_modules', 'bsv');
 
-const cwd = process.cwd();
 
 if (fs.existsSync(bsv)) {
-
+    checkIfIDE(bsv)
     apply(patches)
-
 } else {
 
     bsv = path.join(__dirname, '..', 'bsv');
-
     if (fs.existsSync(bsv)) {
+        checkIfIDE(bsv)
         const cwd = process.cwd();
         console.log('cwd', cwd);
         //chdir
@@ -50,5 +48,15 @@ if (fs.existsSync(bsv)) {
         apply(patches)
         //restore dir
         process.chdir(cwd);
+    }
+}
+
+
+function checkIfIDE(bsv) {
+    console.log('checkIfIDE', bsv);
+    let bsvPackage = path.join(bsv, 'package.json');
+    if (JSON.parse(fs.readFileSync(bsvPackage)).ide) {
+        console.log('sCrypt IDE bsv, ignore patches')
+        exit(0);
     }
 }

@@ -2,7 +2,7 @@ import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
-import { bsv, toHex, signTx, compileContract, num2bin, getPreimage, uri2path, stripAnsi } from '../src/utils';
+import { bsv, toHex, signTx, num2bin, getPreimage, uri2path, stripAnsi } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
 import { readFileSync } from 'fs';
 
