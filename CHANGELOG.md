@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 0.4.3
+
+- add topVars
+
+*Release Date: 2021/07/1*
+
+
 ## 0.4.2
 
 - support [browsers that are not compatible with bigint](./README.md#support-browsers-that-are-not-compatible-with-bigint)
