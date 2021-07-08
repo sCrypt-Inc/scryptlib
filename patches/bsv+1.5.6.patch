@@ -23,7 +23,7 @@ index 46683f1..b59a70c 100644
 +
 +module.exports.Stack = require('./stack')
 diff --git a/node_modules/bsv/lib/script/interpreter.js b/node_modules/bsv/lib/script/interpreter.js
-index 4185994..7bb9fae 100644
+index 4185994..1dea443 100644
 --- a/node_modules/bsv/lib/script/interpreter.js
 +++ b/node_modules/bsv/lib/script/interpreter.js
 @@ -9,7 +9,7 @@ var Hash = require('../crypto/hash')
@@ -131,13 +131,15 @@ index 4185994..7bb9fae 100644
  }
  
  Interpreter.prototype.set = function (obj) {
-@@ -211,6 +216,21 @@ Interpreter.prototype.set = function (obj) {
+@@ -211,10 +216,25 @@ Interpreter.prototype.set = function (obj) {
    this.vfExec = obj.vfExec || this.vfExec
    this.errstr = obj.errstr || this.errstr
    this.flags = typeof obj.flags !== 'undefined' ? obj.flags : this.flags
 +  this.sighashScript = obj.sighashScript || this.sighashScript
-+}
-+
+ }
+ 
+-Interpreter.true = Buffer.from([1])
+-Interpreter.false = Buffer.from([])
 +Interpreter.prototype.subscript = function () {
 +  if (this.sighashScript) {
 +    return new Script().set({
@@ -150,9 +152,13 @@ index 4185994..7bb9fae 100644
 +      chunks: this.script.chunks.slice(this.pbegincodehash)
 +    })
 +  }
- }
++}
++
++Interpreter.getTrue = () => Buffer.from([1])
++Interpreter.getFalse = () => Buffer.from([])
  
- Interpreter.true = Buffer.from([1])
+ Interpreter.MAX_SCRIPT_ELEMENT_SIZE = 520
+ Interpreter.MAXIMUM_ELEMENT_SIZE = 4
 @@ -329,6 +349,10 @@ Interpreter.SEQUENCE_LOCKTIME_TYPE_FLAG = (1 << 22)
   */
  Interpreter.SEQUENCE_LOCKTIME_MASK = 0x0000ffff
@@ -307,6 +313,15 @@ index 4185994..7bb9fae 100644
      this.errstr = 'SCRIPT_ERR_OP_COUNT'
      return false
    }
+@@ -727,7 +778,7 @@ Interpreter.prototype.step = function () {
+       return false
+     }
+     if (!chunk.buf) {
+-      this.stack.push(Interpreter.false)
++      this.stack.push(Interpreter.getFalse())
+     } else if (chunk.len !== chunk.buf.length) {
+       throw new Error(`Length of push value not equal to length of data (${chunk.len},${chunk.buf.length})`)
+     } else {
 @@ -762,9 +813,9 @@ Interpreter.prototype.step = function () {
          // they push, so no need for a CheckMinimalPush here.
          break
@@ -576,6 +591,15 @@ index 4185994..7bb9fae 100644
            n = bn2.toNumber()
            if (n < 0) {
              this.errstr = 'SCRIPT_ERR_INVALID_NUMBER_RANGE'
+@@ -1264,7 +1361,7 @@ Interpreter.prototype.step = function () {
+         var fEqual = buf1.toString('hex') === buf2.toString('hex')
+         this.stack.pop()
+         this.stack.pop()
+-        this.stack.push(fEqual ? Interpreter.true : Interpreter.false)
++        this.stack.push(fEqual ? Interpreter.getTrue() : Interpreter.getFalse())
+         if (opcodenum === Opcode.OP_EQUALVERIFY) {
+           if (fEqual) {
+             this.stack.pop()
 @@ -1275,9 +1372,9 @@ Interpreter.prototype.step = function () {
          }
          break
@@ -651,8 +675,12 @@ index 4185994..7bb9fae 100644
          }
          this.stack.pop()
          this.stack.pop()
-@@ -1449,9 +1546,9 @@ Interpreter.prototype.step = function () {
-         this.stack.push(fValue ? Interpreter.true : Interpreter.false)
+@@ -1446,12 +1543,12 @@ Interpreter.prototype.step = function () {
+         this.stack.pop()
+         this.stack.pop()
+         this.stack.pop()
+-        this.stack.push(fValue ? Interpreter.true : Interpreter.false)
++        this.stack.push(fValue ? Interpreter.getTrue() : Interpreter.getFalse())
          break
  
 -        //
@@ -675,6 +703,15 @@ index 4185994..7bb9fae 100644
  
          // Drop the signature, since there's no way for a signature to sign itself
          var tmpScript = new Script().add(bufSig)
+@@ -1531,7 +1626,7 @@ Interpreter.prototype.step = function () {
+         this.stack.pop()
+ 
+         // stack.push_back(fSuccess ? vchTrue : vchFalse);
+-        this.stack.push(fSuccess ? Interpreter.true : Interpreter.false)
++        this.stack.push(fSuccess ? Interpreter.getTrue() : Interpreter.getFalse())
+         if (opcodenum === Opcode.OP_CHECKSIGVERIFY) {
+           if (fSuccess) {
+             this.stack.pop()
 @@ -1559,7 +1654,7 @@ Interpreter.prototype.step = function () {
            return false
          }
@@ -695,6 +732,15 @@ index 4185994..7bb9fae 100644
  
          // Drop the signatures, since there's no way for a signature to sign itself
          for (var k = 0; k < nSigsCount; k++) {
+@@ -1668,7 +1761,7 @@ Interpreter.prototype.step = function () {
+         }
+         this.stack.pop()
+ 
+-        this.stack.push(fSuccess ? Interpreter.true : Interpreter.false)
++        this.stack.push(fSuccess ? Interpreter.getTrue() : Interpreter.getFalse())
+ 
+         if (opcodenum === Opcode.OP_CHECKMULTISIGVERIFY) {
+           if (fSuccess) {
 @@ -1680,9 +1773,9 @@ Interpreter.prototype.step = function () {
          }
          break
