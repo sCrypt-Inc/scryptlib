@@ -348,9 +348,15 @@ export function compile(
   }
 }
 
-export function compilerVersion(cwd?: string): string {
-  const text = execSync(`${cwd} version`).toString();
-  return /Version:\s*([^\s]+)\s*/.exec(text)[1];
+export function compilerVersion(cwd: string): string | undefined {
+
+  try {
+    const text = execSync(`${cwd} version`).toString();
+    return /Version:\s*([^\s]+)\s*/.exec(text)[1];
+  } catch (e) {
+    throw new Error(`compilerVersion fail when run: ${cwd} version`);
+  }
+
 }
 
 function addSourceLocation(astRoot, basePath: string, curFileName: string) {
