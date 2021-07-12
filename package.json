@@ -1,9 +1,9 @@
 {
   "name": "scryptlib",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=14.0.0"
   },
   "main": "dist/index.js",
   "types": "dist",

@@ -9,11 +9,12 @@ function apply(patches) {
     console.log(cmd)
     exec(cmd, (error, stdout, stderr) => {
         if (error) {
-            console.log(`error: ${error.message}`);
+            console.error(`error: ${error.message}`);
+            console.log(`scryptlib: please delete bsv in the node_moudules and run npm install again.`);
             return;
         }
         if (stderr) {
-            console.log(`stderr: ${stderr}`);
+            console.error(`stderr: ${stderr}`);
             return;
         }
         console.log(`scryptlib: apply patches successfully: ${stdout}`);

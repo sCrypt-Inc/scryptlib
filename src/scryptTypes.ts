@@ -1,4 +1,4 @@
-import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg } from './utils';
+import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger } from './utils';
 import { StructEntity } from './compilerWrapper';
 import bsv = require('bsv');
 export type TypeResolver = (type: string) => string;
@@ -28,13 +28,13 @@ export class ScryptType {
 
   constructor(value: ValueType) {
     try {
-      this._value = value;
+      this._value = this.checkValue(value);
       this._literal = this.toLiteral();
       const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
       this._asm = asm;
     } catch (error) {
-      throw new Error(`can't get type from ${this._literal}, ${error.message}`);
+      throw new Error(`can't construct ${this.constructor.name} from <${value}>, ${error.message}`);
     }
   }
 
@@ -67,6 +67,13 @@ export class ScryptType {
   toLiteral(): string {
     return '';
   }
+  checkValue(value: ValueType): ValueType {
+    if (typeof value === 'undefined') {
+      throw new Error('constructor argument undefined');
+    }
+
+    return value;
+  }
 }
 
 export class Int extends ScryptType {
@@ -75,6 +82,21 @@ export class Int extends ScryptType {
   }
   toLiteral(): string {
     return this._value.toString();
+  }
+  checkValue(value: ValueType): ValueType {
+    super.checkValue(value);
+    if (!isInteger(value)) {
+      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string');
+    }
+
+    if (typeof value == 'number' && !isNaN(value)) {
+
+      if (!Number.isSafeInteger(value)) {
+        throw new Error(`<${value}> is not safe integer, should use bigint, hex string or decimal string`);
+      }
+    }
+
+    return value;
   }
 }
 

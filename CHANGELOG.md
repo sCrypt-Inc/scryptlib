@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.4.5
+
+- fix crash when using negative numbers to construct structures
+- patch bsv to fix **Interpreter** bug
+- add `checkValue` to check if an integer is used to construct `Int`
+
+*Release Date: 2021/07/12*
+
 
 ## 0.4.3
 

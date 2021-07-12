@@ -254,7 +254,7 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // Struct
-  m = /^\{([\w(){}[\],\s']+)\}$/.exec(l);
+  m = /^\{([\w(){}[\],\s'-]+)\}$/.exec(l);
   if (m) {
     // we use object to constructor a struct, no use literal, so here we return empty
     return ['', '', VariableType.STRUCT];
@@ -1062,4 +1062,34 @@ export function toLiteral(value: ScryptType): string {
 
     return value instanceof ScryptType ? value.toLiteral() : value;
   }
+}
+export function isInteger(x: unknown): boolean {
+
+  // check if the passed value is a number
+  if (typeof x == 'number' && !isNaN(x)) {
+
+    // check if it is integer
+    return Number.isInteger(x);
+
+  } else if (typeof x == 'bigint') {
+    return true;
+  } else if (typeof x == 'string') {
+
+    // hex int
+    let m = /^(0x[0-9a-fA-F]+)$/.exec(x);
+    if (m) {
+      return true;
+    }
+
+    // decimal int
+    m = /^(-?\d+)$/.exec(x);
+    if (m) {
+      return true;
+    }
+
+    return false;
+  }
+
+
+  return false;
 }
