@@ -95,6 +95,33 @@ describe('toLiteral test', () => {
                 })
             }).toLiteral()).to.equal('{b\'7361746f736869206e616b616d6f746f\',b\'68656c6c6f20776f726c6421\',true,33,{b\'68656c6c6f20776f726c6420\',b\'1156\',10000}}')
 
+
+            expect(new Person({
+                name: new Bytes('7361746f736869206e616b616d6f746f'),
+                addr: new Bytes('68656c6c6f20776f726c6421'),
+                isMale: true,
+                age: -33,
+                blk: new Block({
+                    time: -10000,
+                    hash: new Bytes('68656c6c6f20776f726c6420'),
+                    header: new Bytes('1156'),
+                })
+            }).toLiteral()).to.equal('{b\'7361746f736869206e616b616d6f746f\',b\'68656c6c6f20776f726c6421\',true,-33,{b\'68656c6c6f20776f726c6420\',b\'1156\',-10000}}')
+
+
+            expect(new Person({
+                name: new Bytes('7361746f736869206e616b616d6f746f'),
+                addr: new Bytes('68656c6c6f20776f726c6421'),
+                isMale: true,
+                age: -33,
+                blk: new Block({
+                    time: -10000,
+                    hash: new Bytes('68656c6c6f20776f726c6420'),
+                    header: new Bytes('1156'),
+                })
+            }).toASM()).to.equal('7361746f736869206e616b616d6f746f 68656c6c6f20776f726c6421 OP_TRUE a1 68656c6c6f20776f726c6420 1156 10a7')
+
+
         })
     })
 
