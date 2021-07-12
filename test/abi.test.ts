@@ -401,7 +401,7 @@ describe('string as bigInt', () => {
             33
           );
 
-        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
 
         expect(() => {
@@ -410,7 +410,7 @@ describe('string as bigInt', () => {
             33
           );
 
-        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
         expect(() => {
           let demo = new Demo(1, 1);
@@ -419,15 +419,44 @@ describe('string as bigInt', () => {
 
 
 
-        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
         expect(() => {
           new Int("fasdfeeeeyjtuykjtukj")
-        }).to.be.throw('can\'t get type from fasdfeeeeyjtuykjtukj, <fasdfeeeeyjtuykjtukj> cannot be cast to ASM format, only sCrypt native types supported');
+        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
         expect(() => {
           new Int("afe3")
-        }).to.be.throw('can\'t get type from afe3, <afe3> cannot be cast to ASM format, only sCrypt native types supported');
+        }).to.be.throw('can\'t construct Int from <afe3>, Only supports integers, should use integer number, bigint, hex string or decimal string');
+
+
+        expect(() => {
+          new Int(1.3)
+        }).to.be.throw('can\'t construct Int from <1.3>, Only supports integers, should use integer number, bigint, hex string or decimal string');
+
+        expect(() => {
+          new Int(1.401e30)
+        }).to.be.throw('can\'t construct Int from <1.401e+30>, <1.401e+30> is not safe integer, should use bigint, hex string or decimal string');
+
+        expect(new Int(1.401e10).toLiteral()).to.be.equal('14010000000');
+
+        expect(new Int(Number.MAX_SAFE_INTEGER).toLiteral()).to.be.equal('9007199254740991');
+
+        expect(new Int(Number.MIN_SAFE_INTEGER).toLiteral()).to.be.equal('-9007199254740991');
+
+
+        expect(() => {
+          new Int(Number.MIN_SAFE_INTEGER - 1)
+        }).to.be.throw('can\'t construct Int from <-9007199254740992>, <-9007199254740992> is not safe integer, should use bigint, hex string or decimal string');
+
+
+        expect(() => {
+          new Int(Number.MAX_SAFE_INTEGER + 1)
+        }).to.be.throw('can\'t construct Int from <9007199254740992>, <9007199254740992> is not safe integer, should use bigint, hex string or decimal string');
+
+        expect(() => {
+          new Int(1.401e-30)
+        }).to.be.throw('can\'t construct Int from <1.401e-30>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
       })
 
@@ -553,7 +582,7 @@ describe('string as bigInt', () => {
           [17, 18, 19, 20],
           [21, 22, 23, "1111111111111111h1111111111111111111"]
         ]]);
-      }).to.be.throw('can\'t get type from 1111111111111111h1111111111111111111, <1111111111111111h1111111111111111111> cannot be cast to ASM format, only sCrypt native types supported');
+      }).to.be.throw('can\'t construct Int from <1111111111111111h1111111111111111111>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
     })
 
