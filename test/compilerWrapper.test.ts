@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import path = require("path");
 import { loadDescription, getContractFilePath, getInvalidContractFilePath, deleteSource } from './helper'
-import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
+import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion, getDefaultScryptc } from '../src/compilerWrapper';
 import { compileContract, getCIScryptc } from '../src/utils';
 import * as minimist from 'minimist';
 import { writeFileSync, readFileSync } from 'fs';
@@ -92,6 +92,7 @@ describe('compile()', () => {
     if (argv.ci || !scryptc) {
       scryptc = getCIScryptc();
     }
+    scryptc = scryptc ? scryptc : getDefaultScryptc();
 
     const version = compilerVersion(scryptc);
     console.log('compilerVersion', version)
