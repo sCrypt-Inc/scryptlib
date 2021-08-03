@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.4.6
+
+- add `RelatedInformation` for diagnostics
+
+*Release Date: 2021/08/03*
+
+
 ## 0.4.5
 
 - fix crash when using negative numbers to construct structures
