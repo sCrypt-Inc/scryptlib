@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
 import path = require("path");
-import { loadDescription, getContractFilePath, getInvalidContractFilePath, deleteSource } from './helper'
+import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers } from './helper'
 import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion, getDefaultScryptc } from '../src/compilerWrapper';
 import { compileContract, getCIScryptc } from '../src/utils';
 import * as minimist from 'minimist';
@@ -145,7 +145,8 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
 
       }])
 
@@ -174,7 +175,8 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
       }])
     })
 
@@ -200,7 +202,8 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
       }])
     })
 
@@ -227,7 +230,8 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
       }])
     })
 
@@ -254,7 +258,8 @@ describe('compile()', () => {
             "line": 1
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
       }])
     })
 
@@ -281,7 +286,8 @@ describe('compile()', () => {
             "line": 8
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
       }, {
         filePath: "const.scrypt",
         message: "Expecting a compile time constant",
@@ -295,7 +301,8 @@ describe('compile()', () => {
             "line": 12
           }
         ],
-        type: "SemanticError"
+        type: "SemanticError",
+        relatedInformation: []
       }])
     })
 
@@ -445,84 +452,156 @@ describe('compile()', () => {
   })
 
 
-  describe('output warnings test', () => {
+  describe('output_warnings test', () => {
 
     function warningsTest(warnings) {
-      warnings.forEach(error => {
-        delete error.filePath;
-      });
-      assert.isTrue(warnings.length === 5);
 
-      expect(warnings).to.deep.include.members([
+      assert.isTrue(warnings.length === 5);
+      expect(excludeMembers(warnings, ['filePath'])).to.deep.include.members([
         {
-          type: 'Warning',
-          position: [
+          "type": "Warning",
+          "position": [
             {
-              "column": 17,
-              "line": 15
+              "line": 15,
+              "column": 17
             },
             {
-              "column": 18,
-              "line": 15
+              "line": 15,
+              "column": 18
             }
           ],
-          message: 'Variable `y` shadows existing binding at 11:22:11:23'
+          "message": "Variable `y` shadows existing binding at varshadow.scrypt(11,22)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 11,
+                  "column": 22
+                },
+                {
+                  "line": 11,
+                  "column": 23
+                }
+              ],
+              "message": ""
+            }
+          ]
         },
         {
-          type: 'Warning',
-          position: [
+          "type": "Warning",
+          "position": [
             {
-              "column": 21,
-              "line": 19
+              "line": 19,
+              "column": 21
             },
             {
-              "column": 22,
-              "line": 19
+              "line": 19,
+              "column": 22
             }
           ],
-          message: 'Variable `y` shadows existing binding at 15:17:15:18'
+          "message": "Variable `y` shadows existing binding at varshadow.scrypt(15,17)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 15,
+                  "column": 17
+                },
+                {
+                  "line": 15,
+                  "column": 18
+                }
+              ],
+              "message": ""
+            }
+          ]
         },
         {
-          type: 'Warning',
-          position: [
+          "type": "Warning",
+          "position": [
             {
-              "column": 17,
-              "line": 34
+              "line": 34,
+              "column": 17
             },
             {
-              "column": 18,
-              "line": 34
+              "line": 34,
+              "column": 18
             }
           ],
-          message: 'Variable `i` shadows existing binding at 32:9:36:10'
+          "message": "Variable `i` shadows existing binding at varshadow.scrypt(32,9)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 32,
+                  "column": 9
+                },
+                {
+                  "line": 36,
+                  "column": 10
+                }
+              ],
+              "message": ""
+            }
+          ]
         },
         {
-          type: 'Warning',
-          position: [
+          "type": "Warning",
+          "position": [
             {
-              "column": 17,
-              "line": 44
+              "line": 44,
+              "column": 17
             },
             {
-              "column": 18,
-              "line": 44
+              "line": 44,
+              "column": 18
             }
           ],
-          message: 'Variable `y` shadows existing binding at 41:32:41:33'
+          "message": "Variable `y` shadows existing binding at varshadow.scrypt(41,32)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 41,
+                  "column": 32
+                },
+                {
+                  "line": 41,
+                  "column": 33
+                }
+              ],
+              "message": ""
+            }
+          ]
         },
         {
-          type: 'Warning',
-          position: [
+          "type": "Warning",
+          "position": [
             {
-              "column": 17,
-              "line": 48
+              "line": 48,
+              "column": 17
             },
             {
-              "column": 18,
-              "line": 48
+              "line": 48,
+              "column": 18
             }
           ],
-          message: 'Variable `y` shadows existing binding at 41:32:41:33'
+          "message": "Variable `y` shadows existing binding at varshadow.scrypt(41,32)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 41,
+                  "column": 32
+                },
+                {
+                  "line": 41,
+                  "column": 33
+                }
+              ],
+              "message": ""
+            }
+          ]
         }
       ])
 
@@ -539,10 +618,9 @@ describe('compile()', () => {
 
       const result = compileContract(getInvalidContractFilePath('varshadow.scrypt'));
       warningsTest(result.warnings);
-      result.errors.forEach(error => {
-        delete error.filePath;
-      });
-      expect(result.errors).to.deep.include.members([
+
+
+      expect(excludeMembers(result.errors, ['filePath'])).to.deep.include.members([
         {
           type: 'SemanticError',
           position: [
@@ -555,7 +633,8 @@ describe('compile()', () => {
               "line": 13
             }
           ],
-          message: "Couldn't match expected type 'int' with actual type 'bytes'"
+          message: "Couldn't match expected type 'int' with actual type 'bytes'",
+          relatedInformation: []
         }
       ])
     })
@@ -564,57 +643,96 @@ describe('compile()', () => {
     it('warnings and errors should be right', () => {
 
       const result = compileContract(getInvalidContractFilePath('varshadow1.scrypt'));
-      result.warnings.forEach(warning => {
-        delete warning.filePath;
-      });
-      result.errors.forEach(error => {
-        delete error.filePath;
-      });
 
-      expect(result.warnings).to.deep.include.members([
+      expect(excludeMembers(result.warnings, ['filePath'])).to.deep.include.members([
         {
-          type: 'Warning',
-          position: [
+          "type": "Warning",
+          "position": [
             {
-              "column": 17,
-              "line": 5
+              "line": 5,
+              "column": 17
             },
             {
-              "column": 18,
-              "line": 5
+              "line": 5,
+              "column": 18
             }
           ],
-          message: 'Variable `x` shadows existing binding at 2:30:2:31'
-        }]
-      )
-      expect(result.errors).to.deep.include.members([
-        {
-          type: 'SemanticError',
-          position: [
+          "message": "Variable `x` shadows existing binding at varshadow1.scrypt(2,30)",
+          "relatedInformation": [
             {
-              "column": 13,
-              "line": 3
+              "position": [
+                {
+                  "line": 2,
+                  "column": 30
+                },
+                {
+                  "line": 2,
+                  "column": 31
+                }
+              ],
+              "message": ""
+            }
+          ]
+        }
+      ])
+      expect(excludeMembers(result.errors, ['filePath'])).to.deep.include.members([
+        {
+          "type": "SemanticError",
+          "position": [
+            {
+              "line": 3,
+              "column": 13
             },
             {
-              "column": 14,
-              "line": 3
+              "line": 3,
+              "column": 14
             }
           ],
-          message: "Symbol `x` already defined at 2:30:2:31"
+          "message": "Symbol `x` already defined at varshadow1.scrypt(2,30)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 2,
+                  "column": 30
+                },
+                {
+                  "line": 2,
+                  "column": 31
+                }
+              ],
+              "message": ""
+            }
+          ]
         },
         {
-          type: 'SemanticError',
-          position: [
+          "type": "SemanticError",
+          "position": [
             {
-              "column": 13,
-              "line": 7
+              "line": 7,
+              "column": 13
             },
             {
-              "column": 14,
-              "line": 7
+              "line": 7,
+              "column": 14
             }
           ],
-          message: "Symbol `x` already defined at 2:30:2:31"
+          "message": "Symbol `x` already defined at varshadow1.scrypt(2,30)",
+          "relatedInformation": [
+            {
+              "position": [
+                {
+                  "line": 2,
+                  "column": 30
+                },
+                {
+                  "line": 2,
+                  "column": 31
+                }
+              ],
+              "message": ""
+            }
+          ]
         }
       ])
     })
@@ -640,7 +758,7 @@ describe('compile()', () => {
 
   it('check foo ast', () => {
     const result = compileContract(getContractFilePath('foo.scrypt'));
-    deleteSource(result.ast)
+    excludeMembers(result.ast, ['source']);
     //writeFileSync(join(__dirname, './fixture/ast/foo.ast.json'), JSON.stringify(result.ast, null, 4));
     const content = readFileSync(join(__dirname, './fixture/ast/foo.ast.json')).toString();
     expect(JSON.parse(JSON.stringify(result.ast))).to.deep.equal(JSON.parse(content));

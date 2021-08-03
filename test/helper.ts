@@ -28,15 +28,22 @@ export function newTx(inputSatoshis: number) {
   return new bsv.Transaction().from(utxo);
 }
 
-export function deleteSource(o: any) {
-  Object.keys(o).forEach(key => {
+export function excludeMembers(o: any, members: string[]) {
 
-    if (key === 'source') {
-      delete o['source'];
-    }
+  if (Array.isArray(o)) {
+    return o.map(i => excludeMembers(i, members))
+  } else {
+    Object.keys(o).forEach(key => {
 
-    if (typeof o[key] === "object" && o[key] !== null) {
-      deleteSource(o[key])
-    }
-  })
+      if (members.indexOf(key) > -1) {
+        delete o[key];
+      }
+
+      if (typeof o[key] === "object" && o[key] !== null) {
+        excludeMembers(o[key], members)
+      }
+    })
+  }
+
+  return o;
 }

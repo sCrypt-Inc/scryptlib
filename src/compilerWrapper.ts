@@ -17,6 +17,7 @@ const JSONbigAlways = JSONbig({ alwaysParseAsBig: true, constructorAction: 'pres
 
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
 const CURRENT_CONTRACT_DESCRIPTION_VERSION = 4;
@@ -33,6 +34,19 @@ export enum BuildType {
   Release = 'release'
 }
 
+export interface RelatedInformation {
+  filePath: string;
+  position: [{
+    line: number;
+    column: number;
+  }, {
+    line: number;
+    column: number;
+  }?];
+  message: string;
+}
+
+
 export interface CompileErrorBase {
   type: string;
   filePath: string;
@@ -44,6 +58,7 @@ export interface CompileErrorBase {
     column: number;
   }?];
   message: string;
+  relatedInformation: RelatedInformation[]
 }
 
 export interface SyntaxError extends CompileErrorBase {
@@ -693,13 +708,46 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
   return result;
 }
 
+function getRelatedInformation(message: string, srcDir: string, sourceFileName: string): {
+  relatedInformation: RelatedInformation[],
+  message: string
+} {
+  const relatedInformation: RelatedInformation[] = [];
+  let result;
+
+
+  while ((result = RELATED_INFORMATION_REG.exec(message))) {
+    const relatedFilePath = result.groups.filePath;
+
+    const fullFilePath = getFullFilePath(relatedFilePath, srcDir, sourceFileName);
+    const line = parseInt(result.groups?.line || '-1');
+    const column = parseInt(result.groups?.column || '-1');
+    relatedInformation.push(
+      {
+        filePath: fullFilePath,
+        position: [{
+          line: line,
+          column: column,
+        }, {
+          line: parseInt(result.groups?.line1 || '-1'),
+          column: parseInt(result.groups?.column1 || '-1'),
+        }],
+        message: ''
+      }
+    );
+    message = message.replace(/([^\s]+):(\d+):(\d+):(\d+):(\d+)/, `${basename(fullFilePath)}(${line},${column})`);
+  }
+  return {
+    relatedInformation,
+    message
+  };
+}
+
 function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: string): CompileResult {
   const warnings: Warning[] = [...output.matchAll(WARNING_REG)].map(match => {
     const filePath = match.groups?.filePath || '';
-    let message = match.groups?.message || '';
-
-    message = message.replace(/Variable `(?<varName>\w+)` shadows existing binding at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
-      'Variable `$1` shadows existing binding at $3:$4:$5:$6');
+    const origin_message = match.groups?.message || '';
+    const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
     return {
       type: CompileErrorType.Warning,
       filePath: getFullFilePath(filePath, srcDir, sourceFileName),
@@ -710,7 +758,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
         line: parseInt(match.groups?.line1 || '-1'),
         column: parseInt(match.groups?.column1 || '-1'),
       }],
-      message: message
+      message: message,
+      relatedInformation: relatedInformation
     };
   });
 
@@ -728,7 +777,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
         }, {
           line: 1,
           column: 1
-        }]
+        }],
+        relatedInformation: []
       }]
     };
   } else if (output.includes('Syntax error:')) {
@@ -736,6 +786,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
       const filePath = match.groups?.filePath || '';
       const unexpected = match.groups?.unexpected || '';
       const expecting = match.groups?.expecting || '';
+      const origin_message = match.groups?.message || `unexpected ${unexpected}\nexpecting ${expecting}`;
+      const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
       return {
         type: CompileErrorType.SyntaxError,
         filePath: getFullFilePath(filePath, srcDir, sourceFileName),
@@ -743,9 +795,10 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
           line: parseInt(match.groups?.line || '-1'),
           column: parseInt(match.groups?.column || '-1'),
         }],
-        message: match.groups?.message || `unexpected ${unexpected}\nexpecting ${expecting}`,
+        message: message,
         unexpected,
         expecting,
+        relatedInformation: relatedInformation
       };
     });
     return {
@@ -756,11 +809,9 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
   else {
 
     const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
-      let message = match.groups?.message || '';
+      const origin_message = match.groups?.message || '';
       const filePath = match.groups?.filePath || '';
-
-      message = message.replace(/Symbol `(?<varName>\w+)` already defined at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
-        'Symbol `$1` already defined at $3:$4:$5:$6');
+      const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
 
       return {
         type: CompileErrorType.SemanticError,
@@ -772,7 +823,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
           line: parseInt(match.groups?.line1 || '-1'),
           column: parseInt(match.groups?.column1 || '-1'),
         }],
-        message: message
+        message: message,
+        relatedInformation: relatedInformation
       };
     });
     return {
