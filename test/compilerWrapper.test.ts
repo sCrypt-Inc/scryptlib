@@ -470,7 +470,7 @@ describe('compile()', () => {
               "column": 18
             }
           ],
-          "message": "Variable `y` shadows existing binding at varshadow.scrypt(11,22)",
+          "message": "Variable `y` shadows existing binding at ",
           "relatedInformation": [
             {
               "position": [
@@ -499,7 +499,7 @@ describe('compile()', () => {
               "column": 22
             }
           ],
-          "message": "Variable `y` shadows existing binding at varshadow.scrypt(15,17)",
+          "message": "Variable `y` shadows existing binding at ",
           "relatedInformation": [
             {
               "position": [
@@ -528,7 +528,7 @@ describe('compile()', () => {
               "column": 18
             }
           ],
-          "message": "Variable `i` shadows existing binding at varshadow.scrypt(32,9)",
+          "message": "Variable `i` shadows existing binding at ",
           "relatedInformation": [
             {
               "position": [
@@ -557,7 +557,7 @@ describe('compile()', () => {
               "column": 18
             }
           ],
-          "message": "Variable `y` shadows existing binding at varshadow.scrypt(41,32)",
+          "message": "Variable `y` shadows existing binding at ",
           "relatedInformation": [
             {
               "position": [
@@ -586,7 +586,7 @@ describe('compile()', () => {
               "column": 18
             }
           ],
-          "message": "Variable `y` shadows existing binding at varshadow.scrypt(41,32)",
+          "message": "Variable `y` shadows existing binding at ",
           "relatedInformation": [
             {
               "position": [
@@ -657,7 +657,7 @@ describe('compile()', () => {
               "column": 18
             }
           ],
-          "message": "Variable `x` shadows existing binding at varshadow1.scrypt(2,30)",
+          "message": "Variable `x` shadows existing binding at ",
           "relatedInformation": [
             {
               "position": [
@@ -688,7 +688,7 @@ describe('compile()', () => {
               "column": 14
             }
           ],
-          "message": "Symbol `x` already defined at varshadow1.scrypt(2,30)",
+          "message": "Symbol `x` already defined at ",
           "relatedInformation": [
             {
               "position": [
@@ -717,7 +717,7 @@ describe('compile()', () => {
               "column": 14
             }
           ],
-          "message": "Symbol `x` already defined at varshadow1.scrypt(2,30)",
+          "message": "Symbol `x` already defined at ",
           "relatedInformation": [
             {
               "position": [

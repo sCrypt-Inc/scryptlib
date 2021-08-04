@@ -735,7 +735,7 @@ function getRelatedInformation(message: string, srcDir: string, sourceFileName: 
         message: ''
       }
     );
-    message = message.replace(/([^\s]+):(\d+):(\d+):(\d+):(\d+)/, `${basename(fullFilePath)}(${line},${column})`);
+    message = message.replace(/([^\s]+):(\d+):(\d+):(\d+):(\d+)/, '');
   }
   return {
     relatedInformation,
