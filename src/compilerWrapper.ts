@@ -496,18 +496,19 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 
 
 function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
-  const resolvedConstIntType = resolveArrayTypeWithConstInt(contract, type, staticConstInt);
-  const resolvedAliasType = resolveType(alias, resolvedConstIntType);
 
-  if (isStructType(resolvedAliasType)) {
-    return getStructNameByType(resolvedAliasType);
-  } else if (isArrayType(resolvedAliasType)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedAliasType);
+  const resolvedAliasType = resolveType(alias, type);
+  const resolvedConstIntType = resolveArrayTypeWithConstInt(contract, resolvedAliasType, staticConstInt);
+
+  if (isStructType(resolvedConstIntType)) {
+    return getStructNameByType(resolvedConstIntType);
+  } else if (isArrayType(resolvedConstIntType)) {
+    const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedConstIntType);
     const elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
     return toLiteralArrayType(elemType, arraySizes);
   }
 
-  return resolvedAliasType;
+  return resolvedConstIntType;
 }
 
 export function resolveArrayTypeWithConstInt(contract: string, type: string, staticConstInt: Record<string, number>): string {

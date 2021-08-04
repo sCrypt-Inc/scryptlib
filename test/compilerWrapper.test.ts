@@ -763,4 +763,58 @@ describe('compile()', () => {
     const content = readFileSync(join(__dirname, './fixture/ast/foo.ast.json')).toString();
     expect(JSON.parse(JSON.stringify(result.ast))).to.deep.equal(JSON.parse(content));
   })
+
+
+  it('test_ctc_as_parameter_sub', () => {
+    const result = compileContract(getContractFilePath('ctc.scrypt'));
+
+    expect(result.abi).to.deep.equal([
+      {
+        "type": "function",
+        "name": "unlock",
+        "index": 0,
+        "params": [
+          {
+            "name": "st1",
+            "type": "St1"
+          },
+          {
+            "name": "a",
+            "type": "St1[2]"
+          },
+          {
+            "name": "b",
+            "type": "St1[2][3]"
+          },
+          {
+            "name": "c",
+            "type": "int[3]"
+          }
+        ]
+      },
+      {
+        "type": "constructor",
+        "params": [
+          {
+            "name": "st1",
+            "type": "St1"
+          },
+          {
+            "name": "a",
+            "type": "St1[2]"
+          },
+          {
+            "name": "b",
+            "type": "St1[2][3]"
+          },
+          {
+            "name": "c",
+            "type": "int[3]"
+          }
+        ]
+      }
+    ])
+
+  })
+
 })

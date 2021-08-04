@@ -625,10 +625,18 @@ export function arrayTypeAndSizeStr(arrayTypeName: string): [string, Array<strin
  */
 export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
   const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(arrayTypeName);
-  return [elemTypeName, arraySizes.map(size => parseInt(size))];
+  return [elemTypeName, arraySizes.map(size => {
+    const n = parseInt(size);
+
+    if (isNaN(n)) {
+      throw new Error(`arrayTypeAndSize error type ${arrayTypeName} with sub isNaN`);
+    }
+
+    return n;
+  })];
 }
 
-export function toLiteralArrayType(elemTypeName: string, sizes: Array<number>): string {
+export function toLiteralArrayType(elemTypeName: string, sizes: Array<number | string>): string {
   return [elemTypeName, sizes.map(size => `[${size}]`).join('')].join('');
 }
 
@@ -938,7 +946,7 @@ export function resolveType(alias: AliasEntity[], type: string): string {
 
 
   if (isArrayType(type)) {
-    const [elemTypeName, sizes] = arrayTypeAndSize(type);
+    const [elemTypeName, sizes] = arrayTypeAndSizeStr(type);
     return toLiteralArrayType(resolveType(alias, elemTypeName), sizes);
   }
 
