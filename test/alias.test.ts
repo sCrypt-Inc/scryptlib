@@ -3,32 +3,26 @@ import { assert, expect } from 'chai';
 import { buildContractClass, buildTypeClasses, buildTypeResolver } from '../src/contract';
 import { Bytes, Int } from '../src/scryptTypes';
 
-const jsonDescr = loadDescription('alias_desc.json');
-
-const AliasContract = buildContractClass(jsonDescr);
 
 
-
-const { Male, MaleAAA, Female, Name, Age, Token, Person, Block, Height, Time, Coinbase } = buildTypeClasses(jsonDescr);
-
-let man = new Person({
-  name: new Name("68656c6c6f20776f726c6421"),
-  age: new Age(33),
-  token: new Token(101)
-});
-
-
-
-
-
-const alias = new AliasContract(new Female({
-  name: new Name("68656c6c6f20776f726c6421"),
-  age: new Age(1),
-  token: new Token(101)
-}));
 
 
 describe('Alias type check', () => {
+  const AliasContract = buildContractClass(loadDescription('alias_desc.json'));
+
+  const { Male, MaleAAA, Female, Name, Age, Token, Person, Block, Height, Time, Coinbase } = buildTypeClasses(loadDescription('alias_desc.json'));
+
+  let man = new Person({
+    name: new Name("68656c6c6f20776f726c6421"),
+    age: new Age(33),
+    token: new Token(101)
+  });
+
+  const alias = new AliasContract(new Female({
+    name: new Name("68656c6c6f20776f726c6421"),
+    age: new Age(1),
+    token: new Token(101)
+  }));
 
   it('should success when using MaleAAA', () => {
 
@@ -122,7 +116,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver(jsonDescr.alias)
+      const finalTypeResolver = buildTypeResolver(loadDescription('alias_desc.json').alias)
       expect(finalTypeResolver("Age")).to.equal('int')
       expect(finalTypeResolver("Time")).to.equal('int')
       expect(finalTypeResolver("Name")).to.equal('bytes')
@@ -172,6 +166,32 @@ describe('Alias type check', () => {
       expect(finalTypeResolver("SigHashType")).to.equal('SigHashType')
       expect(finalTypeResolver("OpCodeType")).to.equal('OpCodeType')
 
+    })
+  })
+
+  describe('Alias1Contract check', () => {
+
+    const Alias1Contract = buildContractClass(loadDescription('alias1_desc.json'));
+
+    const { Tokens, TokenArray, Token } = buildTypeClasses(loadDescription('alias1_desc.json'));
+
+
+
+    it('should success when call buildTypeResolver', () => {
+
+      const finalTypeResolver = buildTypeResolver(loadDescription('alias1_desc.json').alias)
+      expect(finalTypeResolver("Tokens")).to.equal('int[3]')
+      expect(finalTypeResolver("TokenArray")).to.equal('int[1][3]')
+      expect(finalTypeResolver("TokenAA")).to.equal('int[4][5][1][3]')
+
+    })
+
+    const alias = new Alias1Contract([1, 3, 3], [[2, 1, 3]]);
+
+    it('should success when unlock', () => {
+
+      let result = alias.unlock([1, 3, 3], [[2, 1, 3]]).verify()
+      assert.isTrue(result.success, result.error);
     })
   })
 })

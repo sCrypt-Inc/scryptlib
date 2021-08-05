@@ -1,0 +1,22 @@
+
+type Integer = int;
+type Token = Integer;
+
+type Tokens = Token[3];
+type TokenArray = Tokens[1];
+type TokenAA = TokenArray[4][5];
+
+contract Alias {
+  Tokens tokens;
+  TokenArray ta;
+
+  constructor(Tokens tokens, TokenArray ta) {
+    this.tokens = tokens;
+    this.ta = ta;
+  }
+
+  public function unlock(Tokens tokens, TokenArray ta) {
+    require(this.tokens == tokens);
+    require(this.ta == ta);
+  }
+}

@@ -947,6 +947,12 @@ export function resolveType(alias: AliasEntity[], type: string): string {
 
   if (isArrayType(type)) {
     const [elemTypeName, sizes] = arrayTypeAndSizeStr(type);
+    const elemType = resolveType(alias, elemTypeName);
+
+    if (isArrayType(elemType)) {
+      const [elemTypeName_, sizes_] = arrayTypeAndSizeStr(elemType);
+      return toLiteralArrayType(elemTypeName_, sizes.concat(sizes_));
+    }
     return toLiteralArrayType(resolveType(alias, elemTypeName), sizes);
   }
 

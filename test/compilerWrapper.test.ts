@@ -784,7 +784,7 @@ describe('compile()', () => {
           },
           {
             "name": "b",
-            "type": "St1[2][3]"
+            "type": "St1[3][2]"
           },
           {
             "name": "c",
@@ -805,7 +805,7 @@ describe('compile()', () => {
           },
           {
             "name": "b",
-            "type": "St1[2][3]"
+            "type": "St1[3][2]"
           },
           {
             "name": "c",
