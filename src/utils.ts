@@ -1107,3 +1107,26 @@ export function isInteger(x: unknown): boolean {
 
   return false;
 }
+
+
+export function resolveStaticConst(contract: string, type: string, staticConstInt: Record<string, number>): string {
+
+  if (isArrayType(type)) {
+    const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
+
+    const sizes = arraySizes.map(size => {
+      if (/^(\d)+$/.test(size)) {
+        return parseInt(size);
+      } else {
+        if (size.indexOf('.') > 0) {
+          return staticConstInt[size];
+        } else {
+          return staticConstInt[`${contract}.${size}`];
+        }
+      }
+    });
+
+    return toLiteralArrayType(elemTypeName, sizes);
+  }
+  return type;
+}

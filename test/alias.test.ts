@@ -116,7 +116,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver(loadDescription('alias_desc.json').alias)
+      const finalTypeResolver = buildTypeResolver(loadDescription('alias_desc.json').alias, {})
       expect(finalTypeResolver("Age")).to.equal('int')
       expect(finalTypeResolver("Time")).to.equal('int')
       expect(finalTypeResolver("Name")).to.equal('bytes')
@@ -149,7 +149,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver([])
+      const finalTypeResolver = buildTypeResolver([], {})
       expect(finalTypeResolver("Person")).to.equal('struct Person {}')
       expect(finalTypeResolver("Block")).to.equal('struct Block {}')
 
@@ -179,7 +179,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver(loadDescription('alias1_desc.json').alias)
+      const finalTypeResolver = buildTypeResolver(loadDescription('alias1_desc.json').alias, {})
       expect(finalTypeResolver("Tokens")).to.equal('int[3]')
       expect(finalTypeResolver("TokenArray")).to.equal('int[1][3]')
       expect(finalTypeResolver("TokenAA")).to.equal('int[4][5][1][3]')

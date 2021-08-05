@@ -3,6 +3,10 @@ struct St1 {
   int[CLib.A] x;
 }
 
+struct St2 {
+  St1[CLib.N] st1s;
+}
+
 type St1Array = St1[CLib.N];
 
 library CLib {
@@ -11,16 +15,21 @@ library CLib {
   static const int A = 3;
 }
 
-contract CTC3 {
+contract CTC {
 
-    constructor(St1 st1, St1Array a, St1Array[CLib.M] b,  int[CLib.M] c){
+    St1 st1;
+    St2 st2;
+    St1Array a;
+    St1Array[CLib.M] b;
+    int[CLib.M] c;
 
-    }
 
-  public function unlock(St1 st1, St1Array a, St1Array[CLib.M] b,  int[CLib.M] c) {
-    auto aaa = 1;
-    require([1,2,3] == st1.x);
-
-    require([{[1,2,3]}, {[2,2,1]}] == a);
+  public function unlock(St1 st1, St2 st2, St1Array a, St1Array[CLib.M] b,  int[CLib.M] c) {
+    require(this.st1 == st1);
+    require(this.st2 == st2);
+    require(this.a == a);
+    require(this.b == b);
+    require(this.c == c);
+    require(b == [[{ [1, 3, 45] }, { [1, 3, 45] }], [{ [1, 3, 45] }, { [1, 3, 45] }], [{ [1, 3, 45] }, { [1, 3, 45] }]]);
   }
 }

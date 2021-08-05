@@ -269,8 +269,8 @@ export class ABICoder {
       }
     }
 
-
-    const finalTypeResolver = buildTypeResolver(this.alias);
+    const staticConst = Object.getPrototypeOf(contract).constructor.staticConst;
+    const finalTypeResolver = buildTypeResolver(this.alias, staticConst);
 
     const args: SupportedParamType[] = [];
     cParams.forEach((param, index) => {

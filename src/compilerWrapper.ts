@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdi
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize } from './utils';
+import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst } from './utils';
 import compareVersions = require('compare-versions');
 import JSONbig = require('json-bigint');
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -91,11 +91,12 @@ export interface CompileResult {
   compilerVersion?: string;
   contract?: string;
   md5?: string;
-  structs?: any;
-  alias?: any;
+  structs?: Array<StructEntity>;
+  alias?: Array<AliasEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
+  staticConst?: Record<string, number>
 }
 
 export enum DebugModeTag {
@@ -219,8 +220,8 @@ export function compile(
       result.dependencyAsts = allAst;
       result.alias = getAliasDeclaration(result.ast, allAst);
 
-      const staticConstInt = getStaticConstIntDeclaration(result.ast, allAst);
-      const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, staticConstInt);
+      result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
+      const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, result.staticConst);
 
       result.abi = abi;
       result.contract = name;
@@ -498,7 +499,7 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
 
   const resolvedAliasType = resolveType(alias, type);
-  const resolvedConstIntType = resolveArrayTypeWithConstInt(contract, resolvedAliasType, staticConstInt);
+  const resolvedConstIntType = resolveStaticConst(contract, resolvedAliasType, staticConstInt);
 
   if (isStructType(resolvedConstIntType)) {
     return getStructNameByType(resolvedConstIntType);
@@ -511,27 +512,6 @@ function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[
   return resolvedConstIntType;
 }
 
-export function resolveArrayTypeWithConstInt(contract: string, type: string, staticConstInt: Record<string, number>): string {
-
-  if (isArrayType(type)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
-
-    const sizes = arraySizes.map(size => {
-      if (/^(\d)+$/.test(size)) {
-        return parseInt(size);
-      } else {
-        if (size.indexOf('.') > 0) {
-          return staticConstInt[size];
-        } else {
-          return staticConstInt[`${contract}.${size}`];
-        }
-      }
-    });
-
-    return toLiteralArrayType(elemTypeName, sizes);
-  }
-  return type;
-}
 
 
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
@@ -675,6 +655,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     buildType: description.buildType || BuildType.Debug,
     errors: [],
     warnings: [],
+    staticConst: {},
     asm: asm.map((opcode, index) => {
       const item = description.sourceMap && description.sourceMap[index];
       if (item) {

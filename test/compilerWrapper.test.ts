@@ -6,6 +6,7 @@ import { compileContract, getCIScryptc } from '../src/utils';
 import * as minimist from 'minimist';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { buildContractClass, buildTypeClasses } from '../src/contract';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -767,7 +768,6 @@ describe('compile()', () => {
 
   it('test_ctc_as_parameter_sub', () => {
     const result = compileContract(getContractFilePath('ctc.scrypt'));
-
     expect(result.abi).to.deep.equal([
       {
         "type": "function",
@@ -777,6 +777,10 @@ describe('compile()', () => {
           {
             "name": "st1",
             "type": "St1"
+          },
+          {
+            "name": "st2",
+            "type": "St2"
           },
           {
             "name": "a",
@@ -800,6 +804,10 @@ describe('compile()', () => {
             "type": "St1"
           },
           {
+            "name": "st2",
+            "type": "St2"
+          },
+          {
             "name": "a",
             "type": "St1[2]"
           },
@@ -815,6 +823,20 @@ describe('compile()', () => {
       }
     ])
 
+
+    const CTCContract = buildContractClass(result);
+
+    const { St1, St2 } = buildTypeClasses(result);
+
+    let st1 = new St1({ x: [1, 3, 45] });
+
+    let st2 = new St2({ st1s: [st1, st1] });
+
+    const ctc = new CTCContract(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1, 3, 3]);
+
+    let verify_result = ctc.unlock(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1, 3, 3]).verify()
+
+    assert.isTrue(verify_result.success, "unlock CTCContract failed")
   })
 
 })
