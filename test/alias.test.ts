@@ -110,13 +110,22 @@ describe('Alias type check', () => {
   })
 
 
+  it('should success when parameter is array struct have member with alias', () => {
+    let result = alias.isPerson([new Female({
+      name: new Name("68656c6c6f20776f726c6421"),
+      age: new Age(1),
+      token: new Token(101)
+    })]).verify()
+    assert.isTrue(result.success, result.error);
+  })
+
 
   describe('Alias buildTypeResolver', () => {
 
 
     it('should success when call buildTypeResolver', () => {
-
-      const finalTypeResolver = buildTypeResolver(loadDescription('alias_desc.json').alias, {})
+      const jsondesc = loadDescription('alias_desc.json');
+      const finalTypeResolver = buildTypeResolver(jsondesc.alias, jsondesc.structs, {})
       expect(finalTypeResolver("Age")).to.equal('int')
       expect(finalTypeResolver("Time")).to.equal('int')
       expect(finalTypeResolver("Name")).to.equal('bytes')
@@ -131,6 +140,9 @@ describe('Alias type check', () => {
       expect(finalTypeResolver("Height")).to.equal('int')
       expect(finalTypeResolver("struct Person {}[3]")).to.equal('struct Person {}[3]')
       expect(finalTypeResolver("struct MaleAAA {}[3]")).to.equal('struct Person {}[3]')
+      expect(finalTypeResolver("struct MaleB {}[1]")).to.equal('struct Person {}[1][3]')
+      expect(finalTypeResolver("struct MaleC {}[5]")).to.equal('struct Person {}[5][2][3]')
+
 
       expect(finalTypeResolver("int")).to.equal('int')
       expect(finalTypeResolver("PubKey")).to.equal('PubKey')
@@ -149,9 +161,15 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver([], {})
-      expect(finalTypeResolver("Person")).to.equal('struct Person {}')
-      expect(finalTypeResolver("Block")).to.equal('struct Block {}')
+      const finalTypeResolver = buildTypeResolver([], [], {})
+
+      expect(() => {
+        finalTypeResolver("Person")
+      }).to.throw("typeResolver with unknown type Person")
+
+      expect(() => {
+        finalTypeResolver("Person[3]")
+      }).to.throw("typeResolver with unknown elemTypeName Person")
 
       expect(finalTypeResolver("int")).to.equal('int')
       expect(finalTypeResolver("PubKey")).to.equal('PubKey')
@@ -176,13 +194,14 @@ describe('Alias type check', () => {
     const { Tokens, TokenArray, Token } = buildTypeClasses(loadDescription('alias1_desc.json'));
 
 
-
     it('should success when call buildTypeResolver', () => {
-
-      const finalTypeResolver = buildTypeResolver(loadDescription('alias1_desc.json').alias, {})
+      const jsondesc = loadDescription('alias1_desc.json');
+      const finalTypeResolver = buildTypeResolver(jsondesc.alias, jsondesc.structs, {})
       expect(finalTypeResolver("Tokens")).to.equal('int[3]')
       expect(finalTypeResolver("TokenArray")).to.equal('int[1][3]')
       expect(finalTypeResolver("TokenAA")).to.equal('int[4][5][1][3]')
+      expect(finalTypeResolver("Tokens[1]")).to.equal('int[1][3]')
+      expect(finalTypeResolver("TokenArray[4][5]")).to.equal('int[4][5][1][3]')
 
     })
 
