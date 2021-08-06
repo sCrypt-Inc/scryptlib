@@ -1118,11 +1118,13 @@ export function resolveStaticConst(contract: string, type: string, staticConstIn
       if (/^(\d)+$/.test(size)) {
         return parseInt(size);
       } else {
-        if (size.indexOf('.') > 0) {
-          return staticConstInt[size];
-        } else {
-          return staticConstInt[`${contract}.${size}`];
+        const value = (size.indexOf('.') > 0) ? staticConstInt[size] : staticConstInt[`${contract}.${size}`];
+
+        if (!value) {
+          console.warn(`resolve array sub ${size} fail`);
+          return size;
         }
+        return value;
       }
     });
 

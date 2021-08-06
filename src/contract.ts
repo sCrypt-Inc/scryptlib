@@ -333,7 +333,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
 
 
   const staticConst = desc.staticConst || {};
-  const finalTypeResolver = buildTypeResolver(desc.alias || [], desc.structs || [], staticConst);
+  const finalTypeResolver = buildTypeResolver(desc.contract, desc.alias || [], desc.structs || [], staticConst);
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
@@ -372,7 +372,7 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 
   const structs: StructEntity[] = desc.structs || [];
   const alias: AliasEntity[] = desc.alias || [];
-  const finalTypeResolver = buildTypeResolver(alias, structs, desc['staticConst'] || {});
+  const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
   structs.forEach(element => {
     const name = element.name;
 
@@ -400,7 +400,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
   const aliasTypes: Record<string, typeof ScryptType> = {};
   const alias: AliasEntity[] = desc.alias || [];
   const structs: StructEntity[] = desc.structs || [];
-  const finalTypeResolver = buildTypeResolver(alias, structs, desc['staticConst'] || {});
+  const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
   alias.forEach(element => {
     const finalType = finalTypeResolver(element.name);
     if (isStructType(finalType)) {
@@ -459,11 +459,11 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
 
 
 
-export function buildTypeResolver(alias: AliasEntity[], structs: StructEntity[], staticConst: Record<string, number>): TypeResolver {
+export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], staticConst: Record<string, number>): TypeResolver {
   const resolvedTypes: Record<string, string> = {};
   alias.forEach(element => {
     const type = resolveType(alias, element.name);
-    const finalType = resolveStaticConst('', type, staticConst);
+    const finalType = resolveStaticConst(contract, type, staticConst);
     resolvedTypes[element.name] = finalType;
   });
   structs.forEach(element => {
@@ -482,7 +482,7 @@ export function buildTypeResolver(alias: AliasEntity[], structs: StructEntity[],
 
 
     if (isArrayType(type)) {
-      const finalType = resolveStaticConst('', type, staticConst);
+      const finalType = resolveStaticConst(contract, type, staticConst);
 
       const [elemTypeName, sizes] = arrayTypeAndSize(finalType);
 

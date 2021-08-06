@@ -1,0 +1,22 @@
+
+/**
+* struct St1
+*/
+struct St1 {
+  int x;
+}
+
+contract VarAsSub {
+  static const int SUB = 3;
+  static const int N = 2;
+  public function unlock(int[1][SUB] a, St1[N] sta) {
+
+    auto x = a[0][1];
+    auto xx = a[0];
+    auto xxx = sta[0];
+
+    St1[N] kkk = [{ 5 }, { 4 }];
+    require(a == [[1, 3, 3]]);
+    require(sta == [{ 1 }, { 3 }]);
+  }
+}
