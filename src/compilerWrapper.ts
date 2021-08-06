@@ -522,11 +522,12 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
+  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
 
   return allAst.map(ast => {
     return (ast.structs || []).map(s => ({
       name: s['name'],
-      params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+      params: s['fields'].map(p => { return { name: p['name'], type: resolveStaticConst('', p['type'], staticConst) }; }),
     }));
   }).flat(1);
 }
@@ -539,11 +540,11 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
-
+  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
   return allAst.map(ast => {
     return (ast.alias || []).map(s => ({
       name: s['alias'],
-      type: s['type'],
+      type: resolveStaticConst('', s['type'], staticConst),
     }));
   }).flat(1);
 }

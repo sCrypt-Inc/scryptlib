@@ -821,7 +821,36 @@ describe('compile()', () => {
           }
         ]
       }
+    ]);
+
+    expect(result.structs).to.deep.equal([
+      {
+        "name": "St1",
+        "params": [
+          {
+            "name": "x",
+            "type": "int[3]"
+          }
+        ]
+      },
+      {
+        "name": "St2",
+        "params": [
+          {
+            "name": "st1s",
+            "type": "St1[2]"
+          }
+        ]
+      }
     ])
+
+    expect(result.alias).to.deep.equal([
+      {
+        "name": "St1Array",
+        "type": "St1[2]"
+      }
+    ])
+
 
 
     const CTCContract = buildContractClass(result);
