@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.4.6
+
+- add `RelatedInformation` for diagnostics
+- support [Compile Time Constant](https://scryptdoc.readthedocs.io/en/latest/ctc.html) used in struct & typeAlias
+- fix typeAlias resolve issue #118
+
+*Release Date: 2021/08/06*
+
+
 ## 0.4.5
 
 - fix crash when using negative numbers to construct structures

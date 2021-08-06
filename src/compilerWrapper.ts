@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdi
 import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize } from './utils';
+import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst } from './utils';
 import compareVersions = require('compare-versions');
 import JSONbig = require('json-bigint');
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -17,6 +17,7 @@ const JSONbigAlways = JSONbig({ alwaysParseAsBig: true, constructorAction: 'pres
 
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
 const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
 const CURRENT_CONTRACT_DESCRIPTION_VERSION = 4;
@@ -33,6 +34,19 @@ export enum BuildType {
   Release = 'release'
 }
 
+export interface RelatedInformation {
+  filePath: string;
+  position: [{
+    line: number;
+    column: number;
+  }, {
+    line: number;
+    column: number;
+  }?];
+  message: string;
+}
+
+
 export interface CompileErrorBase {
   type: string;
   filePath: string;
@@ -44,6 +58,7 @@ export interface CompileErrorBase {
     column: number;
   }?];
   message: string;
+  relatedInformation: RelatedInformation[]
 }
 
 export interface SyntaxError extends CompileErrorBase {
@@ -76,11 +91,12 @@ export interface CompileResult {
   compilerVersion?: string;
   contract?: string;
   md5?: string;
-  structs?: any;
-  alias?: any;
+  structs?: Array<StructEntity>;
+  alias?: Array<AliasEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
+  staticConst?: Record<string, number>
 }
 
 export enum DebugModeTag {
@@ -204,8 +220,8 @@ export function compile(
       result.dependencyAsts = allAst;
       result.alias = getAliasDeclaration(result.ast, allAst);
 
-      const staticConstInt = getStaticConstIntDeclaration(result.ast, allAst);
-      const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, staticConstInt);
+      result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
+      const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, result.staticConst);
 
       result.abi = abi;
       result.contract = name;
@@ -481,41 +497,21 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
 
 
 function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
-  const resolvedConstIntType = resolveArrayTypeWithConstInt(contract, type, staticConstInt);
-  const resolvedAliasType = resolveType(alias, resolvedConstIntType);
 
-  if (isStructType(resolvedAliasType)) {
-    return getStructNameByType(resolvedAliasType);
-  } else if (isArrayType(resolvedAliasType)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedAliasType);
+  const resolvedAliasType = resolveType(alias, type);
+  const resolvedConstIntType = resolveStaticConst(contract, resolvedAliasType, staticConstInt);
+
+  if (isStructType(resolvedConstIntType)) {
+    return getStructNameByType(resolvedConstIntType);
+  } else if (isArrayType(resolvedConstIntType)) {
+    const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedConstIntType);
     const elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
     return toLiteralArrayType(elemType, arraySizes);
   }
 
-  return resolvedAliasType;
+  return resolvedConstIntType;
 }
 
-export function resolveArrayTypeWithConstInt(contract: string, type: string, staticConstInt: Record<string, number>): string {
-
-  if (isArrayType(type)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
-
-    const sizes = arraySizes.map(size => {
-      if (/^(\d)+$/.test(size)) {
-        return parseInt(size);
-      } else {
-        if (size.indexOf('.') > 0) {
-          return staticConstInt[size];
-        } else {
-          return staticConstInt[`${contract}.${size}`];
-        }
-      }
-    });
-
-    return toLiteralArrayType(elemTypeName, sizes);
-  }
-  return type;
-}
 
 
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
@@ -526,11 +522,12 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
+  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
 
   return allAst.map(ast => {
     return (ast.structs || []).map(s => ({
       name: s['name'],
-      params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+      params: s['fields'].map(p => { return { name: p['name'], type: resolveStaticConst('', p['type'], staticConst) }; }),
     }));
   }).flat(1);
 }
@@ -543,11 +540,11 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
-
+  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
   return allAst.map(ast => {
     return (ast.alias || []).map(s => ({
       name: s['alias'],
-      type: s['type'],
+      type: resolveStaticConst('', s['type'], staticConst),
     }));
   }).flat(1);
 }
@@ -659,6 +656,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     buildType: description.buildType || BuildType.Debug,
     errors: [],
     warnings: [],
+    staticConst: {},
     asm: asm.map((opcode, index) => {
       const item = description.sourceMap && description.sourceMap[index];
       if (item) {
@@ -693,13 +691,46 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
   return result;
 }
 
+function getRelatedInformation(message: string, srcDir: string, sourceFileName: string): {
+  relatedInformation: RelatedInformation[],
+  message: string
+} {
+  const relatedInformation: RelatedInformation[] = [];
+  let result;
+
+
+  while ((result = RELATED_INFORMATION_REG.exec(message))) {
+    const relatedFilePath = result.groups.filePath;
+
+    const fullFilePath = getFullFilePath(relatedFilePath, srcDir, sourceFileName);
+    const line = parseInt(result.groups?.line || '-1');
+    const column = parseInt(result.groups?.column || '-1');
+    relatedInformation.push(
+      {
+        filePath: fullFilePath,
+        position: [{
+          line: line,
+          column: column,
+        }, {
+          line: parseInt(result.groups?.line1 || '-1'),
+          column: parseInt(result.groups?.column1 || '-1'),
+        }],
+        message: ''
+      }
+    );
+    message = message.replace(/([^\s]+):(\d+):(\d+):(\d+):(\d+)/, '');
+  }
+  return {
+    relatedInformation,
+    message
+  };
+}
+
 function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: string): CompileResult {
   const warnings: Warning[] = [...output.matchAll(WARNING_REG)].map(match => {
     const filePath = match.groups?.filePath || '';
-    let message = match.groups?.message || '';
-
-    message = message.replace(/Variable `(?<varName>\w+)` shadows existing binding at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
-      'Variable `$1` shadows existing binding at $3:$4:$5:$6');
+    const origin_message = match.groups?.message || '';
+    const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
     return {
       type: CompileErrorType.Warning,
       filePath: getFullFilePath(filePath, srcDir, sourceFileName),
@@ -710,7 +741,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
         line: parseInt(match.groups?.line1 || '-1'),
         column: parseInt(match.groups?.column1 || '-1'),
       }],
-      message: message
+      message: message,
+      relatedInformation: relatedInformation
     };
   });
 
@@ -728,7 +760,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
         }, {
           line: 1,
           column: 1
-        }]
+        }],
+        relatedInformation: []
       }]
     };
   } else if (output.includes('Syntax error:')) {
@@ -736,6 +769,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
       const filePath = match.groups?.filePath || '';
       const unexpected = match.groups?.unexpected || '';
       const expecting = match.groups?.expecting || '';
+      const origin_message = match.groups?.message || `unexpected ${unexpected}\nexpecting ${expecting}`;
+      const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
       return {
         type: CompileErrorType.SyntaxError,
         filePath: getFullFilePath(filePath, srcDir, sourceFileName),
@@ -743,9 +778,10 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
           line: parseInt(match.groups?.line || '-1'),
           column: parseInt(match.groups?.column || '-1'),
         }],
-        message: match.groups?.message || `unexpected ${unexpected}\nexpecting ${expecting}`,
+        message: message,
         unexpected,
         expecting,
+        relatedInformation: relatedInformation
       };
     });
     return {
@@ -756,11 +792,9 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
   else {
 
     const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
-      let message = match.groups?.message || '';
+      const origin_message = match.groups?.message || '';
       const filePath = match.groups?.filePath || '';
-
-      message = message.replace(/Symbol `(?<varName>\w+)` already defined at (?<fileIndex>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/,
-        'Symbol `$1` already defined at $3:$4:$5:$6');
+      const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
 
       return {
         type: CompileErrorType.SemanticError,
@@ -772,7 +806,8 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
           line: parseInt(match.groups?.line1 || '-1'),
           column: parseInt(match.groups?.column1 || '-1'),
         }],
-        message: message
+        message: message,
+        relatedInformation: relatedInformation
       };
     });
     return {

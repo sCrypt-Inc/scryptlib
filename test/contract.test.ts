@@ -32,7 +32,7 @@ describe('check explicit  constructor()', () => {
 
     expect(() => {
       new DemoP2PKH(1);
-    }).to.throws(/wrong argument type, expected Ripemd160 or Ripemd160 but got int/);
+    }).to.throws(/wrong argument type, expected Ripemd160 but got int/);
   })
 })
 
@@ -53,7 +53,7 @@ describe('check implicit   constructor()', () => {
 
     expect(() => {
       new Cointoss(1, 1, 1, 1, 1);
-    }).to.throws(/wrong argument type, expected PubKey or PubKey but got int/);
+    }).to.throws(/wrong argument type, expected PubKey but got int/);
   })
 })
 
