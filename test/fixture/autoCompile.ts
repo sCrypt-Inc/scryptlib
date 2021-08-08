@@ -1,6 +1,6 @@
 import glob = require('glob');
 import { basename, join } from 'path';
-import { compileContract } from '../../src/utils';
+import { compileContract } from '../../src';
 import { exit } from 'process';
 import { copyFileSync, existsSync, mkdirSync } from 'fs';
 

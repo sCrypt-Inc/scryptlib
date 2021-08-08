@@ -1,12 +1,12 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
-import { ContractDescription } from './contract';
 import * as os from 'os';
 import md5 = require('md5');
-import { path2uri, isArrayType, arrayTypeAndSizeStr, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst } from './utils';
 import compareVersions = require('compare-versions');
 import JSONbig = require('json-bigint');
+import { path2uri, isArrayType, ContractDescription, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst } from './internal';
+
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG = /Internal error:(?<message>.+)/;
