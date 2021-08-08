@@ -1,6 +1,5 @@
-import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger } from './utils';
-import { StructEntity } from './compilerWrapper';
-import bsv = require('bsv');
+import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger, StructEntity, bsv } from './internal';
+
 export type TypeResolver = (type: string) => string;
 
 export type ValueType = number | bigint | boolean | string | StructObject;

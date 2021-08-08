@@ -1,8 +1,9 @@
-import { ABICoder, Arguments, FunctionCall, Script } from './abi';
-import { serializeState, State } from './serializer';
-import { bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType } from './utils';
-import { Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver } from './scryptTypes';
-import { StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity } from './compilerWrapper';
+import {
+  ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
+  Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity
+} from './internal';
+
 
 export interface TxContext {
   tx?: any;
