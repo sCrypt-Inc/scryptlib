@@ -765,6 +765,14 @@ describe('compile()', () => {
     expect(JSON.parse(JSON.stringify(result.ast))).to.deep.equal(JSON.parse(content));
   })
 
+  it('IDE stop working properly if got very big number in contract, issue #sCrypt-Inc/ide 367', () => {
+    const result = compileContract(getContractFilePath('ast0.scrypt'));
+    excludeMembers(result.ast, ['source']);
+    writeFileSync(join(__dirname, './fixture/ast/ast0.ast.json'), JSON.stringify(result.ast, null, 4));
+    const content = readFileSync(join(__dirname, './fixture/ast/ast0.ast.json')).toString();
+    expect(JSON.parse(JSON.stringify(result.ast))).to.deep.equal(JSON.parse(content));
+  })
+
 
   it('test_ctc_as_parameter_sub', () => {
     const result = compileContract(getContractFilePath('ctc.scrypt'));
