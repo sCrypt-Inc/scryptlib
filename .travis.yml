@@ -17,7 +17,7 @@ script:
   - cd compiler && npm run dl
   - cd -
   - npm run testlint
-  - npm test -- --ci=true
+  - npm run cov -- --ci=true
   # integration testing with boilerplate
   - npm link
   - git clone -b dev https://github.com/scrypt-sv/boilerplate.git
