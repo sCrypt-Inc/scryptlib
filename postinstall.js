@@ -1,33 +1,41 @@
 const { exec } = require("child_process");
 var fs = require('fs');
 var path = require('path');
+const { basename } = require("path");
 const { exit } = require("process");
 
 
 function apply(patches) {
-    let cmd = "git apply --ignore-whitespace  " + patches;
-    console.log(cmd)
-    exec(cmd, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`error: ${error.message}`);
-            console.log(`scryptlib: please delete bsv in the node_moudules and run npm install again.`);
-            return;
-        }
-        if (stderr) {
-            console.error(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`scryptlib: apply patches successfully: ${stdout}`);
-    });
+    patches.forEach(patch => {
+        let cmd = "git apply --ignore-whitespace  " + patch;
+        console.log(cmd)
+        exec(cmd, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`error: ${error.message}`);
+                console.log(`scryptlib: please delete module related to ${basename(patch)} in the node_modules and run npm install again.`);
+                return;
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return;
+            }
+            console.log(`scryptlib: apply ${patch} successfully: ${stdout}`);
+        });
+
+    })
+
 }
 
 
-let patches = path.join(__dirname, 'patches/bsv+1.5.6.patch');
+let patches = [path.join(__dirname, 'patches/bsv+1.5.6.patch'), path.join(__dirname, 'patches/json-bigint+1.0.0.patch')];
 
-if (!fs.existsSync(patches)) {
-    console.error(`can not found patches ...`);
-    exit(1);
-}
+patches.forEach(patch => {
+    if (!fs.existsSync(patch)) {
+        console.error(`can not found patch ${patch} ...`);
+        exit(1);
+    }
+})
+
 
 const cwd = process.cwd();
 console.log('scryptlib: cwd', cwd);
