@@ -16,3 +16,7 @@
 ## version = 4
 
 * add  `buildType`
+
+## version = 5
+
+* add  `hex`
