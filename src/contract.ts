@@ -31,6 +31,7 @@ export interface ContractDescription {
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
   asm: string;
+  hex: string;
   file: string;
   sources: Array<string>;
   sourceMap: Array<string>;

@@ -20,7 +20,7 @@ const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+
 const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 4;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 5;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
@@ -83,6 +83,7 @@ export type CompileError = SyntaxError | SemanticError | InternalError | Warning
 
 export interface CompileResult {
   asm?: OpCode[];
+  hex?: string;
   ast?: Record<string, unknown>;
   dependencyAsts?: Record<string, unknown>;
   abi?: Array<ABIEntity>;
@@ -190,7 +191,7 @@ export function compile(
   try {
     const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
     const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
-    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm --hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
     let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
@@ -237,6 +238,8 @@ export function compile(
 
       asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
       const sources = asmObj.sources;
+
+      result.hex = asmObj.output.map(item => item.hex).join('');
       result.asm = asmObj.output.map(item => {
 
         if (!settings.debug) {
@@ -321,6 +324,7 @@ export function compile(
         buildType: settings.buildType || BuildType.Debug,
         file: '',
         asm: result.asm.map(item => item['opcode'].trim()).join(' '),
+        hex: result.hex || '',
         sources: [],
         sourceMap: []
       };
@@ -657,6 +661,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     errors: [],
     warnings: [],
     staticConst: {},
+    hex: description.hex || '',
     asm: asm.map((opcode, index) => {
       const item = description.sourceMap && description.sourceMap[index];
       if (item) {

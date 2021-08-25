@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.5.0
+
+- add `hex` for Contract Description File
+- fix not working properly if got very big number in contract
+- fix circular dependencies
+
+*Release Date: 2021/08/25*
+
+
 ## 0.4.6
 
 - add `RelatedInformation` for diagnostics

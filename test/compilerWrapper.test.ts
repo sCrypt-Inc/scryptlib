@@ -876,4 +876,12 @@ describe('compile()', () => {
     assert.isTrue(verify_result.success, "unlock CTCContract failed")
   })
 
+  describe('test compileContract hex', () => {
+    it('compile successfully', () => {
+      const result = compileContract(getContractFilePath('p2pkh.scrypt'));
+
+      expect(result.hex).to.be.equal('6100<pubKeyHash>0079527a75517a75615179a95179876952795279ac777777')
+    })
+  })
+
 })
