@@ -857,6 +857,7 @@ export function compileContract(file: string, options?: {
     { path: file },
     {
       desc: true, debug: options.sourceMap, outputDir: options.out,
+      hex: true,
       cmdPrefix: scryptc
     }
   );
