@@ -345,7 +345,7 @@ export class OpCodeType extends ScryptType {
 }
 
 
-export type BasicType = ScryptType | boolean | number | bigint | string;
+export type BasicType = ScryptType | boolean | number | bigint | string | BasicType[];
 
 export type SingletonParamType = BasicType | BasicType[];
 

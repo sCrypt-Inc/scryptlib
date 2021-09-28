@@ -53,6 +53,12 @@ export class AbstractContract {
   public static asmContract: boolean;
   public static staticConst: Record<string, number>;
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  constructor(...ctorParams: SupportedParamType[]) {
+  }
+
+  [key: string]: any;
+
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
@@ -249,12 +255,24 @@ export class AbstractContract {
 
     return [];
   }
+
+
+  static fromASM(asm: string): AbstractContract {
+    return null;
+  }
+
+  static fromHex(hex: string): AbstractContract {
+    return null;
+  }
+  static fromTransaction(hex: string, outputIndex = 0): AbstractContract {
+    return null;
+  }
 }
 
 
 const invalidMethodName = ['arguments', 'setDataPart', 'run_verify', 'replaceAsmVars', 'asmVars', 'asmArguments', 'dataPart', 'lockingScript', 'txContext'];
 
-export function buildContractClass(desc: CompileResult | ContractDescription): any {
+export function buildContractClass(desc: CompileResult | ContractDescription): typeof AbstractContract {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');

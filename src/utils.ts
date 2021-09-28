@@ -1071,14 +1071,14 @@ export function createArray(contract: AbstractContract, type: string, name: stri
 }
 
 
-export function toLiteral(value: ScryptType): string {
+export function toLiteral(value: BasicType): string {
 
   if (Array.isArray(value)) {
 
     return `[${value.map(i => toLiteral(i))}]`;
   } else {
 
-    return value instanceof ScryptType ? value.toLiteral() : value;
+    return value instanceof ScryptType ? value.toLiteral() : value as string;
   }
 }
 export function isInteger(x: unknown): boolean {
