@@ -62,6 +62,7 @@ export class AbstractContract {
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
+  asmTemplateArgs: Map<string, string> = new Map();
 
   get lockingScript(): Script {
     let lsASM = this.scriptedConstructor.toASM();
@@ -256,7 +257,6 @@ export class AbstractContract {
     return [];
   }
 
-
   static fromASM(asm: string): AbstractContract {
     return null;
   }
@@ -370,6 +370,40 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
     if (invalidMethodName.indexOf(entity.name) > -1) {
       throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
     }
+
+
+    if (entity.type === 'constructor') {
+
+      entity.params.forEach(p => {
+        Object.defineProperty(ContractClass.prototype, p.name, {
+          get() {
+            const arg = this.arguments('constructor').find(arg => {
+              return arg.name === p.name;
+            });
+
+            if (arg) {
+              return arg.value;
+            } else {
+              throw new Error(`property ${p.name} does not exists`);
+            }
+          },
+          set(value: SupportedParamType) {
+            const arg = this.arguments('constructor').find(arg => {
+              return arg.name === p.name;
+            });
+
+            if (arg) {
+              ContractClass.abiCoder.encodeState(this, p, value);
+              arg.value = value;
+            } else {
+              throw new Error(`property ${p.name} does not exists`);
+            }
+          }
+        });
+      });
+
+    }
+
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
       const call = ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
       this.calls.set(entity.name, call);

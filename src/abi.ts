@@ -2,6 +2,7 @@ import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByTyp
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
+import { buildContractASM } from './internal';
 
 export interface Script {
   toASM(): string;
@@ -31,9 +32,6 @@ export interface DebugLaunch {
   configurations: DebugConfiguration[];
 }
 
-function escapeRegExp(stringToGoIntoTheRegex) {
-  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
 
 export interface Argument {
   name: string,
@@ -59,7 +57,10 @@ export class FunctionCall {
   }
 
   get lockingScript(): Script | undefined {
-    return this._lockingScriptAsm === undefined ? undefined : bsv.Script.fromASM(this._lockingScriptAsm);
+    if (this._lockingScriptAsm) {
+      return bsv.Script.fromASM(buildContractASM(this.contract.asmTemplateArgs, this._lockingScriptAsm));
+    }
+    return undefined;
   }
 
   init(asmVarValues: AsmVarValues): void {
@@ -227,18 +228,72 @@ export class ABICoder {
       }
     });
 
-    let lsASM = asmTemplate;
+
 
     cParams_.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
 
-      const re = param.name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\b`, 'g');
-      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param));
+      contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+
     });
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
+
+    return new FunctionCall('constructor', args, { contract, lockingScriptASM: asmTemplate });
+  }
+
+
+  encodeState(contract: AbstractContract, param: ParamEntity, value: SupportedParamType): void {
+
+    // handle array type
+    const cParams_: Array<ParamEntity> = [];
+    const args_: SupportedParamType[] = [];
+
+    param.type = this.finalTypeResolver(param.type);
+
+    if (isArrayType(param.type)) {
+      const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
+
+      if (Array.isArray(value)) {
+        if (checkArray(value, [elemTypeName, arraySizes])) {
+          // flattern array
+          flatternArray(value, param.name, param.type).forEach((e) => {
+            cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type) });
+            args_.push(e.value);
+          });
+        } else {
+          throw new Error(`state ${param.name} should be ${param.type}`);
+        }
+      } else {
+        throw new Error(`state ${param.name} should be ${param.type}`);
+      }
+    } else if (isStructType(param.type)) {
+
+      const argS = value as Struct;
+
+      if (param.type != argS.finalType) {
+        throw new Error(`state ${param.name} expect struct ${getStructNameByType(param.type)} but got struct ${argS.type}`);
+      }
+
+      flatternStruct(argS, param.name).forEach(v => {
+        cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type) });
+        args_.push(v.value);
+      });
+    }
+    else {
+      cParams_.push(param);
+      args_.push(value);
+    }
+
+    cParams_.forEach((param, index) => {
+      if (!contract.asmTemplateArgs.has(`$${param.name}`)) {
+        throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
+      }
+
+      contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+
+    });
   }
 
   encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
