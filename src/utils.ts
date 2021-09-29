@@ -1156,12 +1156,12 @@ export function buildContractASM(asmTemplateArgs: Map<string, string>, asmTempla
   }
 
   //append meta
-  if (lsASM.lastIndexOf('OP_RETURN') > -1) {
-    const state = lsASM.substring(lsASM.lastIndexOf('OP_RETURN') + 9).trim();
+  if (lsASM.lastIndexOf('$__meta') > -1) {
+    const state = lsASM.substring(lsASM.lastIndexOf('OP_RETURN') + 9, lsASM.lastIndexOf('$__meta')).trim();
     try {
       const stateHex: string = bsv.Script.fromASM(state).toHex();
       const stateLen = stateHex.length / 2;
-      lsASM = lsASM + ' ' + num2bin(stateLen, 4) + num2bin(CURRENT_STATE_VERSION, 1);
+      lsASM = lsASM.replace(new RegExp(`\\B${escapeRegExp('$__meta')}$`, 'g'), num2bin(stateLen, 4) + num2bin(CURRENT_STATE_VERSION, 1));
     } catch (error) {
       console.error('append meta error: state = ' + state, error);
     }

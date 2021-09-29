@@ -10,14 +10,14 @@ import { Bool, Bytes, Int } from '../src/scryptTypes';
 const { Person } = buildTypeClasses(loadDescription('state_desc.json'));
 
 
-const Counter = buildContractClass(loadDescription('state_desc.json'));
+const StateContract = buildContractClass(loadDescription('state_desc.json'));
 
 
 describe('state_test', () => {
 
 
     it('should serializer state success', () => {
-        const counter = new Counter(1000, new Person({
+        const counter = new StateContract(1000, new Person({
             isMale: false,
             age: 33,
             addr: new Bytes("68656c6c6f20776f726c6421")
@@ -39,12 +39,22 @@ describe('state_test', () => {
     });
 
 
-    it('should change state success', () => {
-
-    });
-
     it('should deserializer state success', () => {
+        const counter = new StateContract(1000, new Person({
+            isMale: false,
+            age: 33,
+            addr: new Bytes("68656c6c6f20776f726c6421")
+        }));
 
+        let newCounter = StateContract.fromASM(counter.lockingScript.toASM());
+
+        expect(newCounter.counter.equals(new Int(1000))).to.be.true;
+
+        expect(newCounter.some.equals(new Person({
+            isMale: false,
+            age: 33,
+            addr: new Bytes("68656c6c6f20776f726c6421")
+        }))).to.be.true;
     });
 
 })

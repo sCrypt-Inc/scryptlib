@@ -73,6 +73,10 @@ export class ScryptType {
 
     return value;
   }
+
+  public equals(obj: ScryptType): boolean {
+    return obj.toASM() === this.toASM();
+  }
 }
 
 export class Int extends ScryptType {
