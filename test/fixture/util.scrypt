@@ -61,8 +61,8 @@ library Util {
     }
 
     // serialize state size in fixed length
-    static function encodeStateSize(bytes state) : bytes {
-        return num2bin(len(state), Util.StateLen - 1 /* varint prefix byte */ );
+    static function encodeStateSize(bytes states) : bytes {
+        return num2bin(len(states), Util.StateLen - 1 /* varint prefix byte */ );
     }
 
     // get the byte at the given index

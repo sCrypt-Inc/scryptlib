@@ -8,10 +8,10 @@ export const STATE_LEN_2BYTES = 2;
 export const STATE_LEN_4BYTES = 4;
 
 function serializeBool(flag: boolean): string {
-  return flag ? 'OP_TRUE' : 'OP_FALSE';
+  return flag ? '01' : '00';
 }
 
-function serializeInt(n: number | bigint): string {
+export function serializeInt(n: number | bigint | string): string {
   const num = new BN(n);
   if (num.eqn(0)) {
     return '00';
@@ -50,7 +50,7 @@ function serializeWithSchema(state: State | StateArray, key: string | number, sc
   }
 }
 
-function serialize(x: boolean | number | bigint | string) {
+export function serialize(x: boolean | number | bigint | string): string {
   if (typeof x === 'boolean') {
     return serializeBool(x);
   }

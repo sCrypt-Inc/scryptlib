@@ -44,8 +44,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 0600')
-      expect(hex).to.equal('010b02123451020600')
+      expect(serial).to.equal('0b 1234 01 0700')
+      expect(hex).to.equal('010b0212340101020700')
     })
 
     it('object type with schema', () => {
@@ -57,8 +57,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 OP_1 2100')
-      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123451022100')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 01 2200')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b0212340101022200')
     })
 
 
@@ -68,8 +68,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('010b0212340100020700')
     })
 
     it('array type with schema', () => {
@@ -80,8 +80,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 0 2100')
-      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123400022100')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 00 2200')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b0212340100022200')
     })
 
     it('special number', () => {
@@ -90,8 +90,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('00 81 01 0b 1234 OP_1 0c00')
-      expect(hex).to.equal('010001810101010b02123451020c00')
+      expect(serial).to.equal('00 81 01 0b 1234 01 0d00')
+      expect(hex).to.equal('010001810101010b0212340101020d00')
     })
 
     it('special string', () => {
@@ -100,8 +100,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0 -1 OP_1 11 1234 OP_1 0900')
-      expect(hex).to.equal('004f51011102123451020900')
+      expect(serial).to.equal('0 -1 OP_1 11 1234 01 0a00')
+      expect(hex).to.equal('004f5101110212340101020a00')
     })
 
     it('special string with schema', () => {
@@ -132,8 +132,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('OP_1 0 0200')
-      expect(hex).to.equal('5100020200')
+      expect(serial).to.equal('01 00 0400')
+      expect(hex).to.equal('01010100020400')
     })
 
     it('bigint', () => {
@@ -195,8 +195,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 64 0800')
-      expect(hex).to.equal('010b021234510164020800')
+      expect(serial).to.equal('0b 1234 01 64 0900')
+      expect(hex).to.equal('010b02123401010164020900')
 
       const deStates = deserializeState(hex, states)
       expect(deStates).to.eql(states)
@@ -211,8 +211,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 OP_1 2100')
-      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123451022100')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 01 2200')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b0212340101022200')
 
       const deStates = deserializeState(hex, schema)
       expect(deStates).to.eql(states)
@@ -225,8 +225,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 0600')
-      expect(hex).to.equal('010b02123451020600')
+      expect(serial).to.equal('0b 1234 01 0700')
+      expect(hex).to.equal('010b0212340101020700')
 
       const deStates = deserializeState(hex, { counter: 'number', bytes: 'hex' })
       expect(deStates).to.eql({ counter: 11, bytes: '1234' })
@@ -239,8 +239,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 OP_1 0600')
-      expect(hex).to.equal('010b02123451020600')
+      expect(serial).to.equal('0b 1234 01 0700')
+      expect(hex).to.equal('010b0212340101020700')
 
       const deStates = deserializeState(hex, { counter: 'number', bytes: 'hex', flag: 'boolean', big: 'bigint', other: 'string' })
       expect(deStates).to.eql(states)
@@ -252,8 +252,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('010b0212340100020700')
 
       const deStates = deserializeState(hex)
       expect(deStates[0].toNumber()).to.equal(states[0])
@@ -269,8 +269,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 0 2100')
-      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b02123400022100')
+      expect(serial).to.equal('48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd 0b 1234 00 2200')
+      expect(hex).to.equal('1a48656c6c6fe38193e38293e381abe381a1e381afe4bda0e5a5bd010b0212340100022200')
 
       const deStates = deserializeState(hex, schema)
       expect(deStates).to.eql(states)
@@ -282,8 +282,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('010b0212340100020700')
 
       //schema from state
       const deStates = deserializeState(hex, states)
@@ -296,8 +296,8 @@ describe('serializer', () => {
       const script = Script.fromASM(serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('010b0212340100020700')
 
       //schema array
       const deStates = deserializeState(hex, ['number', 'hex', 'boolean'])
@@ -311,8 +311,8 @@ describe('serializer', () => {
       const serial = serializeState(states)
       const script = Script.fromASM('OP_TRUE OP_RETURN ' + serial)
       const hex = script.toHex()
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('516a010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('516a010b0212340100020700')
 
       const deStates = deserializeState(hex, ['number', 'hex', 'boolean'])
       expect(deStates).to.eql(states)
@@ -323,8 +323,8 @@ describe('serializer', () => {
       const serial = serializeState(states)
       const script = Script.fromASM('OP_TRUE OP_RETURN ' + serial)
       const hex = script.toHex()
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('516a010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('516a010b0212340100020700')
 
       //script object
       const deStates = deserializeState(hex, ['number', 'hex', 'boolean'])
@@ -336,8 +336,8 @@ describe('serializer', () => {
       const serial = serializeState(states)
       const script = Script.fromASM('OP_TRUE OP_RETURN ' + serial)
       const hex = script.toHex()
-      expect(serial).to.equal('0b 1234 0 0600')
-      expect(hex).to.equal('516a010b02123400020600')
+      expect(serial).to.equal('0b 1234 00 0700')
+      expect(hex).to.equal('516a010b0212340100020700')
 
       //script object
       const deStates = deserializeState(script.toASM(), ['number', 'hex', 'boolean'])
@@ -408,8 +408,8 @@ describe('serializer', () => {
       const script = Script.fromASM('OP_TRUE OP_RETURN ' + serial)
       const hex = script.toHex()
 
-      expect(serial).to.equal('OP_1 0 0200')
-      expect(hex).to.equal('516a5100020200')
+      expect(serial).to.equal('01 00 0400')
+      expect(hex).to.equal('516a01010100020400')
 
       const deStates = deserializeState(hex)
       expect(deStates[0].toBoolean()).to.equal(states[0])

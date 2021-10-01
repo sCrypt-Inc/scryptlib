@@ -11,7 +11,8 @@ export { ECIES };
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
-  getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri
+  getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
+  Arguments
 } from './internal';
 
 
@@ -430,6 +431,13 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
 
 export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
   const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromASM(inputLockingScriptASM), new bsv.crypto.BN(inputAmount), flags);
+  return new SigHashPreimage(preimageBuf.toString('hex'));
+}
+
+
+//If you use the state annotation, you must use HEX, you can no longer use ASM to calculate PREIMAGE
+export function getPreimageByHex(tx, inputLockingScriptHex: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromHex(inputLockingScriptHex), new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
@@ -1142,9 +1150,9 @@ function escapeRegExp(stringToGoIntoTheRegex) {
 }
 
 // state version
-const CURRENT_STATE_VERSION = 1;
+const CURRENT_STATE_VERSION = 0;
 
-export function buildContractASM(asmTemplateArgs: Map<string, string>, asmTemplate: string): string {
+export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTemplate: string): string {
 
 
   let lsASM = asmTemplate;
@@ -1155,19 +1163,47 @@ export function buildContractASM(asmTemplateArgs: Map<string, string>, asmTempla
     lsASM = lsASM.replace(re, value);
   }
 
-  //append meta
-  if (lsASM.lastIndexOf('$__meta') > -1) {
-    const state = lsASM.substring(lsASM.lastIndexOf('OP_RETURN') + 9, lsASM.lastIndexOf('$__meta')).trim();
-    try {
-      const stateHex: string = bsv.Script.fromASM(state).toHex();
-      const stateLen = stateHex.length / 2;
-      lsASM = lsASM.replace(new RegExp(`\\B${escapeRegExp('$__meta')}$`, 'g'), num2bin(stateLen, 4) + num2bin(CURRENT_STATE_VERSION, 1));
-    } catch (error) {
-      console.error('append meta error: state = ' + state, error);
-    }
+  return lsASM;
 
+}
+
+
+export function buildContractState(args: Arguments): string {
+
+  let state_hex = '';
+  let state_len = 0;
+  for (const arg of args) {
+
+    if (arg.state) {
+      if (arg.type == VariableType.BOOL) { //fixed length
+        state_hex += `${serializeSupportedParamType(arg.value)}`;
+      } else if (arg.type === VariableType.INT
+        || arg.type === VariableType.BYTES
+        || arg.type === VariableType.PUBKEY
+        || arg.type === VariableType.PRIVKEY
+        || arg.type === VariableType.PUBKEY
+        || arg.type === VariableType.SIG
+        || arg.type === VariableType.RIPEMD160
+        || arg.type === VariableType.SHA1
+        || arg.type === VariableType.SHA256
+        || arg.type === VariableType.SIGHASHTYPE
+        || arg.type === VariableType.SIGHASHPREIMAGE
+        || arg.type === VariableType.OPCODETYPE) {
+        state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
+      } else {
+
+        //TODO: ARRAY AND struct
+      }
+    }
   }
 
-  return lsASM;
+  //append meta
+  if (state_hex) {
+    state_len = state_hex.length / 2;
+    state_hex += num2bin(state_len, 4) + num2bin(CURRENT_STATE_VERSION, 1);
+    return state_hex;
+  }
+
+  return state_hex;
 
 }

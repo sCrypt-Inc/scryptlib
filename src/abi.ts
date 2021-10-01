@@ -2,7 +2,7 @@ import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByTyp
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { buildContractASM } from './internal';
+import { buildContractCodeASM } from './internal';
 
 export interface Script {
   toASM(): string;
@@ -36,6 +36,7 @@ export interface DebugLaunch {
 export interface Argument {
   name: string,
   type: string,
+  state: boolean,
   value: SupportedParamType
 }
 
@@ -95,6 +96,7 @@ export class FunctionCall {
         return {
           name: param.name,
           type: param.type,
+          state: param.state || false,
           value: params[index]
         };
       });
@@ -237,8 +239,9 @@ export class ABICoder {
 
     });
 
+    contract.asmTemplateArgs.set('$__codePart__', 'OP_0');
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: buildContractASM(contract.asmTemplateArgs, asmTemplate) });
+    return new FunctionCall('constructor', args, { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate) });
   }
 
 
@@ -303,7 +306,7 @@ export class ABICoder {
     const asmTemplateOpcodes = asmTemplate.split(' ');
     const asmOpcodes = lsASM.split(' ');
 
-
+    
     if (asmTemplateOpcodes.length > asmOpcodes.length) {
       throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
     }

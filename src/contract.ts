@@ -1,7 +1,7 @@
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState
 } from './internal';
 
 
@@ -64,16 +64,28 @@ export class AbstractContract {
   asmArgs: AsmVarValues | null = null;
   asmTemplateArgs: Map<string, string> = new Map();
 
-  get lockingScript(): Script {
-    let lsASM = this.scriptedConstructor.toASM();
-    if (typeof this._dataPart === 'string') {
-      const dp = this._dataPart.trim();
-      if (dp) {
-        lsASM += ` OP_RETURN ${dp}`;
-      } else {
-        lsASM += ' OP_RETURN';  // note there is no space after op_return
-      }
+  _prevLockingScript: Script | undefined;
+
+
+  get prevLockingScript(): Script {
+
+    if (this._prevLockingScript) {
+      return this._prevLockingScript;
     }
+
+    return this.lockingScript;
+  }
+
+
+  get lockingScript(): Script {
+
+    if (this.dataPart) {
+      const lsHex = this.codePart.toHex() + this.dataPart.toHex();
+      return bsv.Script.fromHex(lsHex);
+    }
+
+    const lsASM = this.scriptedConstructor.toASM();
+
     return bsv.Script.fromASM(lsASM.trim());
   }
 
@@ -91,6 +103,7 @@ export class AbstractContract {
   replaceAsmVars(asmVarValues: AsmVarValues): void {
     this.asmArgs = asmVarValues;
     this.scriptedConstructor.init(asmVarValues);
+    this.commitState();
   }
 
   static findSrcInfo(interpretStates: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
@@ -101,6 +114,12 @@ export class AbstractContract {
     }
   }
 
+  /**
+   * When we call the contract, the contract has a new state. The next time the contract is called, these latest states need to be included as part of prevLockingScript
+   */
+  commitState() {
+    this._prevLockingScript = this.lockingScript;
+  }
 
   getTypeClassByType(type: string): typeof ScryptType {
     const types: typeof ScryptType[] = Object.getPrototypeOf(this).constructor.types;
@@ -119,7 +138,7 @@ export class AbstractContract {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM.trim());
-    const ls = this.lockingScript;
+    const ls = this.prevLockingScript;
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
@@ -208,6 +227,13 @@ export class AbstractContract {
   }
 
   get dataPart(): Script | undefined {
+
+    const state = buildContractState(this.arguments('constructor'));
+
+    if (state) {
+      return bsv.Script.fromHex(state);
+    }
+
     return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
 
@@ -299,6 +325,9 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       super();
       if (!Contract.asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
+        if (ctorParams.length > 0) {
+          this.commitState();
+        }
       }
     }
 

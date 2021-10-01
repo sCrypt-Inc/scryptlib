@@ -87,10 +87,12 @@ describe('FunctionCall', () => {
       it('abiParams should be correct', () => {
         expect(target.args).to.deep.include.members([{
           name: 'sig',
+          state: false,
           type: 'Sig',
           value: sig
         }, {
           name: 'pubKey',
+          state: false,
           type: 'PubKey',
           value: pubkey
         }])
