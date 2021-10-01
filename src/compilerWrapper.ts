@@ -140,6 +140,7 @@ export enum ABIEntityType {
 export type ParamEntity = {
   name: string;
   type: string;
+  state?: boolean;
 }
 export interface ABIEntity {
   type: ABIEntityType;
@@ -445,7 +446,7 @@ function getConstructorDeclaration(mainContract): ABIEntity {
     if (mainContract['properties']) {
       return {
         type: ABIEntityType.CONSTRUCTOR,
-        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
+        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], state: p['state'] || false }; }),
       };
     }
   }

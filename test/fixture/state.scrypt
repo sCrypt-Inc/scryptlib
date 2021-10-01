@@ -1,0 +1,14 @@
+contract Counter {
+
+    @state
+    int counter;
+    
+    
+    public function increment(SigHashPreimage txPreimage, int amount) {
+        require(Tx.checkPreimage(txPreimage));
+        // increment counter
+        this.counter++;
+        bytes output = this.getStateScript();
+        require(hash256(output) == Util.hashOutputs(txPreimage));
+    }
+}

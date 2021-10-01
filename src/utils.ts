@@ -306,7 +306,7 @@ export function literal2ScryptType(l: string): ScryptType {
 }
 
 
-export function asm2ScryptType(type: string, asm: string) {
+export function asm2ScryptType(type: string, asm: string): ScryptType {
 
   switch (type) {
     case VariableType.BOOL:
@@ -1135,4 +1135,39 @@ export function resolveStaticConst(contract: string, type: string, staticConstIn
     return toLiteralArrayType(elemTypeName, sizes);
   }
   return type;
+}
+
+function escapeRegExp(stringToGoIntoTheRegex) {
+  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+// state version
+const CURRENT_STATE_VERSION = 1;
+
+export function buildContractASM(asmTemplateArgs: Map<string, string>, asmTemplate: string): string {
+
+
+  let lsASM = asmTemplate;
+  for (const entry of asmTemplateArgs.entries()) {
+    const name = entry[0];
+    const value = entry[1];
+    const re = name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(name)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(name)}\\b`, 'g');
+    lsASM = lsASM.replace(re, value);
+  }
+
+  //append meta
+  if (lsASM.lastIndexOf('$__meta') > -1) {
+    const state = lsASM.substring(lsASM.lastIndexOf('OP_RETURN') + 9, lsASM.lastIndexOf('$__meta')).trim();
+    try {
+      const stateHex: string = bsv.Script.fromASM(state).toHex();
+      const stateLen = stateHex.length / 2;
+      lsASM = lsASM.replace(new RegExp(`\\B${escapeRegExp('$__meta')}$`, 'g'), num2bin(stateLen, 4) + num2bin(CURRENT_STATE_VERSION, 1));
+    } catch (error) {
+      console.error('append meta error: state = ' + state, error);
+    }
+
+  }
+
+  return lsASM;
+
 }

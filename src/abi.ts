@@ -2,6 +2,7 @@ import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByTyp
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
+import { buildContractASM } from './internal';
 
 export interface Script {
   toASM(): string;
@@ -31,9 +32,6 @@ export interface DebugLaunch {
   configurations: DebugConfiguration[];
 }
 
-function escapeRegExp(stringToGoIntoTheRegex) {
-  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
 
 export interface Argument {
   name: string,
@@ -189,7 +187,8 @@ export class ABICoder {
     const args_: SupportedParamType[] = [];
     cParams.map(p => ({
       name: p.name,
-      type: this.finalTypeResolver(p.type)
+      type: this.finalTypeResolver(p.type),
+      state: p.state
     })).forEach((param, index) => {
       const arg = args[index];
       if (isArrayType(param.type)) {
@@ -199,7 +198,7 @@ export class ABICoder {
           if (checkArray(arg, [elemTypeName, arraySizes])) {
             // flattern array
             flatternArray(arg, param.name, param.type).forEach((e) => {
-              cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type) });
+              cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
               args_.push(e.value);
             });
           } else {
@@ -217,7 +216,7 @@ export class ABICoder {
         }
 
         flatternStruct(argS, param.name).forEach(v => {
-          cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type) });
+          cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type), state: param.state });
           args_.push(v.value);
         });
       }
@@ -227,18 +226,72 @@ export class ABICoder {
       }
     });
 
-    let lsASM = asmTemplate;
+
 
     cParams_.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
 
-      const re = param.name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\b`, 'g');
-      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param));
+      contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+
     });
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
+
+    return new FunctionCall('constructor', args, { contract, lockingScriptASM: buildContractASM(contract.asmTemplateArgs, asmTemplate) });
+  }
+
+
+  encodeState(contract: AbstractContract, param: ParamEntity, value: SupportedParamType): void {
+
+    // handle array type
+    const cParams_: Array<ParamEntity> = [];
+    const args_: SupportedParamType[] = [];
+
+    param.type = this.finalTypeResolver(param.type);
+
+    if (isArrayType(param.type)) {
+      const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
+
+      if (Array.isArray(value)) {
+        if (checkArray(value, [elemTypeName, arraySizes])) {
+          // flattern array
+          flatternArray(value, param.name, param.type).forEach((e) => {
+            cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
+            args_.push(e.value);
+          });
+        } else {
+          throw new Error(`state ${param.name} should be ${param.type}`);
+        }
+      } else {
+        throw new Error(`state ${param.name} should be ${param.type}`);
+      }
+    } else if (isStructType(param.type)) {
+
+      const argS = value as Struct;
+
+      if (param.type != argS.finalType) {
+        throw new Error(`state ${param.name} expect struct ${getStructNameByType(param.type)} but got struct ${argS.type}`);
+      }
+
+      flatternStruct(argS, param.name).forEach(v => {
+        cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type), state: param.state });
+        args_.push(v.value);
+      });
+    }
+    else {
+      cParams_.push(param);
+      args_.push(value);
+    }
+
+    cParams_.forEach((param, index) => {
+      if (!contract.asmTemplateArgs.has(`$${param.name}`)) {
+        throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
+      }
+
+      contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+
+    });
   }
 
   encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
@@ -305,7 +358,8 @@ export class ABICoder {
         }
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
-          type: this.finalTypeResolver(p.type)
+          type: this.finalTypeResolver(p.type),
+          state: p.state
         })));
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
@@ -323,7 +377,7 @@ export class ABICoder {
     return args.map((arg, i) => this.encodeParam(arg, paramsEntitys[i])).join(' ');
   }
 
-  encodeParamArray(args: SingletonParamType[], arrayParm: ParamEntity): string {
+  encodeParamArray(args: SingletonParamType[], arrayParam: ParamEntity): string {
     if (args.length === 0) {
       throw new Error('Empty array not allowed');
     }
@@ -334,13 +388,13 @@ export class ABICoder {
       throw new Error('Array arguments are not of the same type');
     }
 
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParm.type);
+    const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParam.type);
     if (checkArray(args, [elemTypeName, arraySizes])) {
-      return flatternArray(args, arrayParm.name, arrayParm.type).map(arg => {
-        return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type) });
+      return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
+        return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
       }).join(' ');
     } else {
-      throw new Error(`checkArray ${arrayParm.type} fail`);
+      throw new Error(`checkArray ${arrayParam.type} fail`);
     }
   }
 
