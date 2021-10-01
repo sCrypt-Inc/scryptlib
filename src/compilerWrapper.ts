@@ -166,6 +166,7 @@ export function compile(
   settings: {
     ast?: boolean,
     asm?: boolean,
+    hex?: boolean,
     debug?: boolean,
     desc?: boolean,
     outputDir?: string,
@@ -175,9 +176,6 @@ export function compile(
     cmdArgs?: string,
     buildType?: string,
     timeout?: number  // in ms
-  } = {
-    asm: true,
-    debug: true,
   }
 ): CompileResult {
   const st = Date.now();
@@ -191,7 +189,7 @@ export function compile(
   try {
     const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
     const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
-    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm --hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
     let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
@@ -239,7 +237,8 @@ export function compile(
       asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
       const sources = asmObj.sources;
 
-      result.hex = asmObj.output.map(item => item.hex).join('');
+      result.hex = settings.hex ? asmObj.output.map(item => item.hex).join('') : '';
+
       result.asm = asmObj.output.map(item => {
 
         if (!settings.debug) {
