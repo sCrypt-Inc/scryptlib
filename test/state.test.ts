@@ -31,11 +31,11 @@ describe('state_test', () => {
 
 
     it('should deserializer state success', () => {
-        const counter = new Counter(1000, new Bytes('0101'), true);
+        const counter = new Counter(new Int('0x02e9030301010100080000000002e90303010101000800000000'), new Bytes('0101'), true);
 
         let newCounter = Counter.fromHex(counter.lockingScript.toHex());
 
-        expect(newCounter.counter.equals(new Int(1000))).to.be.true;
+        expect(newCounter.counter.equals(new Int('0x02e9030301010100080000000002e90303010101000800000000'))).to.be.true;
         expect(newCounter.state_bytes.equals(new Bytes('0101'))).to.be.true;
         expect(newCounter.state_bool.equals(new Bool(true))).to.be.true;
     });

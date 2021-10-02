@@ -42,7 +42,7 @@ describe('FunctionCall', () => {
   describe('when it is the contract constructor', () => {
 
     before(() => {
-      target = new FunctionCall('constructor', [new Ripemd160(toHex(pubKeyHash))], { contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM() });
+      target = new FunctionCall('constructor', { contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM(), params: [new Ripemd160(toHex(pubKeyHash))] });
     })
 
     describe('toHex() / toString()', () => {
@@ -74,7 +74,7 @@ describe('FunctionCall', () => {
     before(() => {
       sig = new Sig(toHex(signTx(tx, privateKey, p2pkh.lockingScript.toASM(), inputSatoshis)));
       pubkey = new PubKey(toHex(publicKey));
-      target = new FunctionCall('unlock', [sig, pubkey], { contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' ') });
+      target = new FunctionCall('unlock', { contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' '), params: [sig, pubkey] });
     })
 
     describe('toHex() / toString()', () => {
@@ -144,11 +144,13 @@ describe('FunctionCall', () => {
   describe('when constructor with struct', () => {
 
     before(() => {
-      target = new FunctionCall('constructor', [new Person({
-        isMale: false,
-        age: 33,
-        addr: new Bytes("68656c6c6f20776f726c6421")
-      })], { contract: person, lockingScriptASM: person.lockingScript.toASM() });
+      target = new FunctionCall('constructor', {
+        contract: person, lockingScriptASM: person.lockingScript.toASM(), params: [new Person({
+          isMale: false,
+          age: 33,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        })]
+      });
     })
 
     describe('toHex() / toString()', () => {

@@ -1,3 +1,4 @@
+import { ABIEntityType } from '.';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
@@ -117,7 +118,7 @@ export class AbstractContract {
   /**
    * When we call the contract, the contract has a new state. The next time the contract is called, these latest states need to be included as part of prevLockingScript
    */
-  commitState() {
+  commitState(): void {
     this._prevLockingScript = this.lockingScript;
   }
 
@@ -283,6 +284,10 @@ export class AbstractContract {
     return [];
   }
 
+  public ctorArgs(): Arguments {
+    return this.arguments('constructor');
+  }
+
   static fromASM(asm: string): AbstractContract {
     return null;
   }
@@ -292,6 +297,11 @@ export class AbstractContract {
   }
   static fromTransaction(hex: string, outputIndex = 0): AbstractContract {
     return null;
+  }
+  static isStateful(contract: AbstractContract): boolean {
+    const abi: Array<ABIEntity> = Object.getPrototypeOf(contract).constructor.abi;
+    const constructorABI = abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
+    return constructorABI.params.findIndex(p => p['state'] === true) > -1;
   }
 }
 
@@ -339,11 +349,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
      * @param hex 
      */
     static fromASM(asm: string) {
-      Contract.asmContract = true;
-      const obj = new this();
-      Contract.asmContract = false;
-      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, Contract.asm, asm);
-      return obj;
+      return ContractClass.fromHex(bsv.Script.fromASM(asm).toHex());
     }
 
     /**
@@ -351,7 +357,12 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
      * @param hex 
      */
     static fromHex(hex: string) {
-      return ContractClass.fromASM((new bsv.Script(hex)).toASM());
+      Contract.asmContract = true;
+      const obj = new this();
+      Contract.asmContract = false;
+      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromRawHex(obj, Contract.asm, hex);
+      obj.commitState();
+      return obj;
     }
 
 
@@ -422,7 +433,6 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
             });
 
             if (arg) {
-              ContractClass.abiCoder.encodeState(this, p, value);
               arg.value = value;
             } else {
               throw new Error(`property ${p.name} does not exists`);

@@ -99,7 +99,7 @@ export class Int extends ScryptType {
   checkValue(value: IntValueType): IntValueType {
     super.checkValue(value);
     if (!isInteger(value)) {
-      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string' + value);
+      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string: ' + value);
     }
 
     if (typeof value == 'number' && !isNaN(value)) {
@@ -110,6 +110,10 @@ export class Int extends ScryptType {
     }
 
     return value;
+  }
+
+  toJSON(): string | unknown {
+    return this.value;
   }
   public serialize(): string {
     return serializeInt(this.value as IntValueType);

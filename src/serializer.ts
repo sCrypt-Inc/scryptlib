@@ -12,7 +12,13 @@ function serializeBool(flag: boolean): string {
 }
 
 export function serializeInt(n: number | bigint | string): string {
-  const num = new BN(n);
+  let num = new BN(n);
+  if (typeof n === 'string') {
+    if (n.startsWith('0x')) {
+      num = new BN(n.substr(2), 16);
+    }
+  }
+
   if (num.eqn(0)) {
     return '00';
   }
@@ -123,7 +129,7 @@ class OpState {
       return BigInt(this.op.opcodenum - Opcode.OP_2 + 2);
     } else {
       if (!this.op.buf) throw new Error('state does not have a number representation');
-      return bin2num(this.op.buf) as bigint;
+      return BigInt(bin2num(this.op.buf));
     }
   }
 

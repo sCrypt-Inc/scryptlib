@@ -2,7 +2,8 @@ import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByTyp
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { buildContractCodeASM } from './internal';
+import { buildContractCodeASM, readState } from './internal';
+import { bin2num, Bytes, VariableType } from '.';
 
 export interface Script {
   toASM(): string;
@@ -71,11 +72,11 @@ export class FunctionCall {
 
   constructor(
     public methodName: string,
-    public params: SupportedParamType[],
     binding: {
       contract: AbstractContract;
       lockingScriptASM?: string;
       unlockingScriptASM?: string;
+      params: SupportedParamType[];
     }
   ) {
 
@@ -97,7 +98,7 @@ export class FunctionCall {
           name: param.name,
           type: param.type,
           state: param.state || false,
-          value: params[index]
+          value: binding.params[index]
         };
       });
     }).flat(1);
@@ -135,16 +136,20 @@ export class FunctionCall {
 
   genLaunchConfigFile(txContext?: TxContext): FileUri {
 
-    const constructorArgs: SupportedParamType[] = this.contract.scriptedConstructor.params;
+    const Class = this.contract.constructor as typeof AbstractContract;
 
-    const pubFuncArgs: SupportedParamType[] = this.params;
+
+    const prevInstance = Class.fromHex(this.contract.prevLockingScript.toHex());
+    const constructorArgs: SupportedParamType[] = prevInstance.ctorArgs().map(p => p.value);
+    const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
     const name = `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
     const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
-    const dataPart: string = this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
-    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: dataPart });
+
+    const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state });
 
     return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
   }
@@ -234,18 +239,33 @@ export class ABICoder {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
+      if (param.state) {
+        //if param is state , we use default value to new contract.
+        if (param.type === VariableType.INT) {
+          contract.asmTemplateArgs.set(`$${param.name}`, 'OP_0');
+        } else if (param.type === VariableType.BOOL) {
+          contract.asmTemplateArgs.set(`$${param.name}`, 'OP_TRUE');
+        } else if (param.type === VariableType.BYTES) {
+          contract.asmTemplateArgs.set(`$${param.name}`, '00');
+        } else {
+          throw new Error(`param ${param.name} has unknown type ${param.type}`);
+        }
 
-      contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+      } else {
+        contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+      }
+
+
 
     });
 
     contract.asmTemplateArgs.set('$__codePart__', 'OP_0');
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate) });
+    return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
   }
 
 
-  encodeState(contract: AbstractContract, param: ParamEntity, value: SupportedParamType): void {
+  encodeState(asmTemplateArgs: Map<string, string>, param: ParamEntity, value: SupportedParamType): void {
 
     // handle array type
     const cParams_: Array<ParamEntity> = [];
@@ -288,37 +308,29 @@ export class ABICoder {
     }
 
     cParams_.forEach((param, index) => {
-      if (!contract.asmTemplateArgs.has(`$${param.name}`)) {
+      if (!asmTemplateArgs.has(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
 
-      contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+      asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
 
     });
   }
 
-  encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
+  encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
+    const script = bsv.Script.fromHex(raw);
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
     const contractName = Object.getPrototypeOf(contract).constructor.contractName;
-    const opcodesMap = new Map<string, string>();
 
     const asmTemplateOpcodes = asmTemplate.split(' ');
+
+    const lsASM = script.toASM();
     const asmOpcodes = lsASM.split(' ');
 
-    
     if (asmTemplateOpcodes.length > asmOpcodes.length) {
       throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
     }
-
-    asmTemplateOpcodes.forEach((opcode, index) => {
-
-      if (opcode.startsWith('$')) {
-        opcodesMap.set(opcode, asmOpcodes[index]);
-      } else if (bsv.Script.fromASM(opcode).toHex() !== bsv.Script.fromASM(asmOpcodes[index]).toHex()) {
-        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
-      }
-    });
 
     if (asmTemplateOpcodes.length < asmOpcodes.length) {
       const opcode = asmOpcodes[asmTemplateOpcodes.length];
@@ -327,29 +339,87 @@ export class ABICoder {
       }
     }
 
-    const args: SupportedParamType[] = [];
-    cParams.map(p => ({
-      name: p.name,
-      type: this.finalTypeResolver(p.type)
-    })).forEach((param) => {
+    asmTemplateOpcodes.forEach((opcode, index) => {
 
-      if (isStructType(param.type)) {
-
-        const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
-
-        args.push(createStruct(contract, stclass as typeof Struct, param.name, opcodesMap, this.finalTypeResolver));
-      } else if (isArrayType(param.type)) {
-
-        args.push(createArray(contract, param.type, param.name, opcodesMap, this.finalTypeResolver));
-
-      } else {
-        args.push(asm2ScryptType(param.type, opcodesMap.get(`$${param.name}`)));
+      if (opcode.startsWith('$')) {
+        contract.asmTemplateArgs.set(opcode, asmOpcodes[index]);
+      } else if (bsv.Script.fromASM(opcode).toHex() !== bsv.Script.fromASM(asmOpcodes[index]).toHex()) {
+        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
       }
-
     });
 
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
+
+    if (!AbstractContract.isStateful(contract)) {
+
+      const args: SupportedParamType[] = [];
+      cParams.map(p => ({
+        name: p.name,
+        type: this.finalTypeResolver(p.type),
+        state: p.state
+      })).forEach((param) => {
+
+        if (isStructType(param.type)) {
+
+          const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
+
+          args.push(createStruct(contract, stclass as typeof Struct, param.name, contract.asmTemplateArgs, this.finalTypeResolver));
+        } else if (isArrayType(param.type)) {
+
+          args.push(createArray(contract, param.type, param.name, contract.asmTemplateArgs, this.finalTypeResolver));
+
+        } else {
+          args.push(asm2ScryptType(param.type, contract.asmTemplateArgs.get(`$${param.name}`)));
+        }
+
+      });
+
+      return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, params: args });
+    } else {
+      const scriptHex = script.toHex();
+      const metaScript = script.toHex().substr(scriptHex.length - 10, 10);
+      const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
+      const stateLen = bin2num(metaScript.substr(0, 8)) as number;
+
+      const args: SupportedParamType[] = [];
+      switch (version) {
+        case 0:
+          {
+            const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
+            const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
+            if (opReturnHex != '6a') {
+              throw new Error('parse state fail, no OP_RETURN before state hex');
+            }
+
+            const br = new bsv.encoding.BufferReader(stateHex);
+
+            cParams.filter(p => p.state === true)
+              .map(p => ({
+                state: true,
+                name: p.name,
+                type: this.finalTypeResolver(p.type)
+              })).forEach((param) => {
+                const { data, opcodenum } = readState(br);
+                if (param.type === VariableType.BOOL) {
+                  args.push(new Bool(opcodenum === 1));
+                } else if (param.type === VariableType.INT) {
+                  args.push(new Int(bin2num(data)));
+                } else if (param.type === VariableType.BYTES) {
+                  args.push(new Bytes(data));
+                } else {
+                  //
+                  throw new Error('unsupport type ' + param.type);
+                }
+
+              });
+          }
+          break;
+      }
+
+      return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
+
+    }
+
   }
 
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
@@ -369,7 +439,7 @@ export class ABICoder {
           const pubFuncIndex = entity.index;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }
-        return new FunctionCall(name, args, { contract, unlockingScriptASM: asm });
+        return new FunctionCall(name, { contract, unlockingScriptASM: asm, params: args });
       }
     }
 

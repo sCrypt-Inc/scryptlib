@@ -478,7 +478,7 @@ export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): st
 }
 
 //Support Bigint
-export function bin2num(s: string | Buffer): number | bigint | string {
+export function bin2num(s: string | Buffer): number | string {
   const hex = s.toString('hex');
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);
@@ -494,9 +494,7 @@ export function bin2num(s: string | Buffer): number | bigint | string {
     bn = bn.neg();
   }
 
-  if (typeof BigInt === 'function') {
-    return BigInt(bn);
-  } else if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+  if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
     return bn.toNumber();
   } else {
     return bn.toString();
@@ -934,11 +932,14 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     configurations: [debugConfig]
   };
 
-  const jsonstr = JSON.stringify(launch, (key, value) => (
-    typeof value === 'bigint'
-      ? value.toString()
-      : value // return everything else unchanged
-  ), 2);
+  const jsonstr = JSON.stringify(launch, (key, value) => {
+
+    if (typeof value === 'bigint') {
+      return value.toString();
+    } else {
+      return value;
+    }
+  }, 2);
 
   if (isNode()) {
     const filename = `${name}-launch.json`;
@@ -998,7 +999,7 @@ export function ansiRegex({ onlyFirst = false } = {}) {
 }
 
 
-export function stripAnsi(string) {
+export function stripAnsi(string: string): string {
   if (typeof string !== 'string') {
     throw new TypeError(`Expected a \`string\`, got \`${typeof string}\``);
   }
@@ -1007,10 +1008,10 @@ export function stripAnsi(string) {
 }
 
 
-export function createStruct(contract: AbstractContract, sType: typeof Struct, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver) {
+export function createStruct(contract: AbstractContract, structClass: typeof Struct, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): Struct {
 
   const obj = Object.create({});
-  sType.structAst.params.forEach(param => {
+  structClass.structAst.params.forEach(param => {
 
     const finalType = finalTypeResolver(param.type);
 
@@ -1039,15 +1040,15 @@ export function createStruct(contract: AbstractContract, sType: typeof Struct, n
   });
 
 
-  return new sType(obj);
+  return new structClass(obj);
 }
 
 
 
 
-export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver) {
+export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): SupportedParamType {
 
-  const arrays = [];
+  const arrays: SupportedParamType = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);
 
   const arraylen = sizes[0];
@@ -1206,4 +1207,35 @@ export function buildContractState(args: Arguments): string {
 
   return state_hex;
 
+}
+
+
+export function readState(br: bsv.encoding.BufferReader): { data: string, opcodenum: number } {
+  try {
+    const opcodenum = br.readUInt8();
+
+    let len, data;
+    if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+      len = opcodenum;
+      data = br.read(len).toString('hex');
+    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
+      len = br.readUInt8();
+      data = br.read(len).toString('hex');
+    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA2) {
+      len = br.readUInt16LE();
+      data = br.read(len).toString('hex');
+    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA4) {
+      len = br.readUInt32LE();
+      data = br.read(len).toString('hex');
+    } else {
+      data = '';
+    }
+
+    return {
+      data: data,
+      opcodenum: opcodenum
+    };
+  } catch (e) {
+    throw new Error('read state hex error: ' + e);
+  }
 }

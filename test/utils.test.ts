@@ -49,17 +49,17 @@ describe('utils', () => {
 
   describe('bin2num()', () => {
     it('bin2num', () => {
-      expect(bin2num('00')).to.equal(0n)
-      expect(bin2num('0a')).to.equal(0x0an)
-      expect(bin2num('2301')).to.equal(0x123n)
-      expect(bin2num('debc9a78563412')).to.equal(0x123456789abcden)
-      expect(bin2num('e883')).to.equal(-1000n)
+      expect(bin2num('00')).to.equal(0)
+      expect(bin2num('0a')).to.equal(0x0a)
+      expect(bin2num('2301')).to.equal(0x123)
+      expect(bin2num('debc9a78563412')).to.equal(0x123456789abcde)
+      expect(bin2num('e883')).to.equal(-1000)
 
-      expect(bin2num('000000')).to.equal(0n)
-      expect(bin2num('0100')).to.equal(1n)
-      expect(bin2num('debc9a78563412000000')).to.equal(0x123456789abcden)
-      expect(bin2num('e8030080')).to.equal(-1000n)
-      expect(bin2num('15cd5b0700000080')).to.equal(-123456789n)
+      expect(bin2num('000000')).to.equal(0)
+      expect(bin2num('0100')).to.equal(1)
+      expect(bin2num('debc9a78563412000000')).to.equal(0x123456789abcde)
+      expect(bin2num('e8030080')).to.equal(-1000)
+      expect(bin2num('15cd5b0700000080')).to.equal(-123456789)
     })
   })
 
@@ -69,19 +69,19 @@ describe('utils', () => {
       let bn = BigInt(Number.MAX_SAFE_INTEGER)
       const bnZero = BigInt(0)
       expect(num2bin(bnZero, 32)).to.equal('00'.repeat(32))
-      expect(bin2num('00'.repeat(32))).to.equal(0n)
+      expect(bin2num('00'.repeat(32))).to.equal(0)
       const bnOne = BigInt(1)
       const bnHundred = BigInt(100)
       bn = bn + bnOne
       expect(num2bin(bn, 8)).to.equal('0000000000002000')
-      expect(bin2num('0000000000002000')).to.equal(bn)
+      expect(bin2num('0000000000002000')).to.equal(bn.toString())
       bn = bn + bnHundred
       expect(num2bin(bn, 8)).to.equal('6400000000002000')
-      expect(bin2num('6400000000002000')).to.equal(bn)
+      expect(bin2num('6400000000002000')).to.equal(bn.toString())
       //negative bigint
       bn = -bn
       expect(num2bin(bn, 8)).to.equal('6400000000002080')
-      expect(bin2num('6400000000002080')).to.equal(bn)
+      expect(bin2num('6400000000002080')).to.equal(bn.toString())
     })
 
     it('support BN.js type', () => {
