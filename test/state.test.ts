@@ -4,7 +4,7 @@ import { assert, expect } from 'chai';
 import { loadDescription, newTx } from './helper';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
 import { Bool, Bytes, Int, SigHashPreimage } from '../src/scryptTypes';
-import { bsv, toHex, getPreimageByHex } from '../src/utils';
+import { bsv, toHex, getPreimage } from '../src/utils';
 
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -55,7 +55,7 @@ describe('state_test', () => {
             satoshis: outputAmount
         }))
 
-        const preimage1 = getPreimageByHex(tx1, counter.prevLockingScript.toHex(), inputSatoshis)
+        const preimage1 = getPreimage(tx1, counter.prevLockingScript, inputSatoshis)
 
         counter.txContext = {
             tx: tx1,
@@ -81,7 +81,7 @@ describe('state_test', () => {
             satoshis: outputAmount
         }))
 
-        const preimage2 = getPreimageByHex(tx2, counter.prevLockingScript.toHex(), inputSatoshis)
+        const preimage2 = getPreimage(tx2, counter.prevLockingScript, inputSatoshis)
 
         counter.txContext = {
             tx: tx2,

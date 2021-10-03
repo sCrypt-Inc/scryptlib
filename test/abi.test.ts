@@ -72,7 +72,7 @@ describe('FunctionCall', () => {
     let pubkey: PubKey;
 
     before(() => {
-      sig = new Sig(toHex(signTx(tx, privateKey, p2pkh.lockingScript.toASM(), inputSatoshis)));
+      sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
       pubkey = new PubKey(toHex(publicKey));
       target = new FunctionCall('unlock', { contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' '), params: [sig, pubkey] });
     })

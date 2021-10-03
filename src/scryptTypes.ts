@@ -62,7 +62,14 @@ export class ScryptType {
   }
 
   toHex(): string {
-    return bsv.Script.fromASM(this._asm).toHex();
+    return this.serialize();
+  }
+
+  toString(format: string): string {
+    if (format === 'hex') {
+      return this.toHex();
+    }
+    return this.toLiteral();
   }
 
   toJSON(): string | unknown {

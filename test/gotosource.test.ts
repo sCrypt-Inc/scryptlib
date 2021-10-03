@@ -1,8 +1,8 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { DebugLaunch } from '../src/abi';
-import { buildContractClass, VerifyError, buildTypeClasses, AbstractContract } from '../src/contract';
-import { bsv, toHex, signTx, num2bin, getPreimage, uri2path, stripAnsi } from '../src/utils';
+import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { bsv, toHex, signTx, num2bin, getPreimage, uri2path } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
 import { readFileSync } from 'fs';
 
@@ -80,7 +80,7 @@ describe('VerifyError', () => {
     });
 
     it('need generate DemoP2PKH-launch.json', () => {
-      let sig: Sig = new Sig(toHex(signTx(tx, privateKey, p2pkh.lockingScript.toASM(), inputSatoshis)));
+      let sig: Sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
       let pubkey: PubKey = new PubKey(toHex(publicKey));
       result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx });
       expect(result.error).to.equal("VerifyError: SCRIPT_ERR_VERIFY");
@@ -108,7 +108,7 @@ describe('VerifyError', () => {
     });
 
 
-    const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1, inputlockingScript = undefined, inputAmount = 0) => {
+    const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1, inputlockingScriptASM = undefined, inputAmount = 0) => {
       let tx = new bsv.Transaction()
 
       tx.addInput(new bsv.Transaction.Input({
@@ -133,10 +133,10 @@ describe('VerifyError', () => {
 
       token.txContext = { tx: tx, inputIndex: 0, inputSatoshis }
 
-      const preimage = getPreimage(tx, inputlockingScript ? inputlockingScript : token.lockingScript.toASM(), inputAmount ? inputAmount : inputSatoshis)
-      const sig = signTx(tx, privKey, token.lockingScript.toASM(), inputSatoshis)
+      const preimage = getPreimage(tx, inputlockingScriptASM ? bsv.Script.fromASM(inputlockingScriptASM) : token.lockingScript, inputAmount ? inputAmount : inputSatoshis)
+      const sig = signTx(tx, privKey, token.lockingScript, inputSatoshis)
       return token.split(
-        new Sig(toHex(sig)),
+        sig,
         new PubKey(toHex(publicKey2)),
         balanceInput0,
         outputAmount,
@@ -206,7 +206,7 @@ describe('VerifyError', () => {
 
     it('stop at p2pkh.scrypt#10', () => {
 
-      let sig = new Sig(toHex(signTx(tx, new bsv.PrivateKey.fromRandom('testnet'), p2pkh.lockingScript.toASM(), inputSatoshis)));
+      let sig = signTx(tx, bsv.PrivateKey.fromRandom('testnet'), p2pkh.lockingScript, inputSatoshis);
       let pubkey = new PubKey(toHex(publicKey));
 
       p2pkh.txContext = { inputSatoshis, tx };
@@ -416,7 +416,7 @@ describe('VerifyError', () => {
         satoshis: outputAmount
       }))
 
-      const preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis)
+      const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
 
       const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify({
         tx,
@@ -449,7 +449,7 @@ describe('VerifyError', () => {
         satoshis: outputAmount
       }))
 
-      const preimage = getPreimage(tx, counter.lockingScript.toASM(), inputSatoshis)
+      const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
 
       const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify({
         tx,

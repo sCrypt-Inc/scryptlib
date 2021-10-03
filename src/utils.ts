@@ -12,7 +12,8 @@ import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
   getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
-  Arguments
+  Arguments,
+  Script
 } from './internal';
 
 
@@ -401,7 +402,7 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
   return ret;
 }
 
-export function signTx(tx, privateKey, lockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
+export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): Sig {
 
   if (!tx) {
     throw new Error('param tx can not be empty');
@@ -411,35 +412,30 @@ export function signTx(tx, privateKey, lockingScriptASM: string, inputAmount: nu
     throw new Error('param privateKey can not be empty');
   }
 
-  if (!lockingScriptASM) {
-    throw new Error('param lockingScriptASM can not be empty');
+  if (!lockingScript) {
+    throw new Error('param lockingScript can not be empty');
   }
 
   if (!inputAmount) {
     throw new Error('param inputAmount can not be empty');
   }
 
-  return bsv.Transaction.sighash.sign(
+  const buf = toHex(bsv.Transaction.sighash.sign(
     tx, privateKey, sighashType, inputIndex,
-    bsv.Script.fromASM(lockingScriptASM), new bsv.crypto.BN(inputAmount), flags
-  ).toTxFormat();
+    lockingScript, new bsv.crypto.BN(inputAmount), flags
+  ).toTxFormat());
+  return new Sig(buf);
 }
 
 export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
-export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromASM(inputLockingScriptASM), new bsv.crypto.BN(inputAmount), flags);
+export function getPreimage(tx: bsv.Transaction, inputLockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, inputLockingScript, new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
-
-//If you use the state annotation, you must use HEX, you can no longer use ASM to calculate PREIMAGE
-export function getPreimageByHex(tx, inputLockingScriptHex: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromHex(inputLockingScriptHex), new bsv.crypto.BN(inputAmount), flags);
-  return new SigHashPreimage(preimageBuf.toString('hex'));
-}
 
 // Converts a number into a sign-magnitude representation of certain size as a string
 // Throws if the number cannot be accommodated

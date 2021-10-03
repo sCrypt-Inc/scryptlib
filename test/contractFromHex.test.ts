@@ -135,7 +135,7 @@ describe('buildContractClass and create instance from script', () => {
       sig = signTx(
         tx,
         privateKey,
-        instance.lockingScript.toASM(),
+        instance.lockingScript,
         inputSatoshis
       )
       unlockingScriptASM = [toHex(sig), toHex(publicKey)].join(' ')
