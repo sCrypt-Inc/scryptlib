@@ -65,7 +65,7 @@ export class FunctionCall {
   init(asmVarValues: AsmVarValues): void {
     for (const key in asmVarValues) {
       const val = asmVarValues[key];
-      const re = new RegExp(`\\$${key}`, 'g');
+      const re = new RegExp(key.startsWith('$') ? `\\${key}` : `\\$${key}`, 'g');
       this._lockingScriptAsm = this._lockingScriptAsm.replace(re, val);
     }
   }

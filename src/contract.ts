@@ -104,7 +104,6 @@ export class AbstractContract {
   replaceAsmVars(asmVarValues: AsmVarValues): void {
     this.asmArgs = asmVarValues;
     this.scriptedConstructor.init(asmVarValues);
-    this.commitState();
   }
 
   static findSrcInfo(interpretStates: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
