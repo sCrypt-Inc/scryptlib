@@ -19,7 +19,7 @@ describe('Preimage', () => {
     let preimage: SigHashPreimage
 
     before(() => {
-      preimage = getPreimage(tx, p2pkh.lockingScript.toASM(), inputSatoshis, 0)
+      preimage = getPreimage(tx, p2pkh.lockingScript, inputSatoshis, 0)
     })
 
     it('outpoint', () => {

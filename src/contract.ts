@@ -1,7 +1,8 @@
+import { ABIEntityType } from '.';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState
 } from './internal';
 
 
@@ -53,20 +54,39 @@ export class AbstractContract {
   public static asmContract: boolean;
   public static staticConst: Record<string, number>;
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  constructor(...ctorParams: SupportedParamType[]) {
+  }
+
+  [key: string]: any;
+
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
+  asmTemplateArgs: Map<string, string> = new Map();
+
+  _prevLockingScript: Script | undefined;
+
+
+  get prevLockingScript(): Script {
+
+    if (this._prevLockingScript) {
+      return this._prevLockingScript;
+    }
+
+    return this.lockingScript;
+  }
+
 
   get lockingScript(): Script {
-    let lsASM = this.scriptedConstructor.toASM();
-    if (typeof this._dataPart === 'string') {
-      const dp = this._dataPart.trim();
-      if (dp) {
-        lsASM += ` OP_RETURN ${dp}`;
-      } else {
-        lsASM += ' OP_RETURN';  // note there is no space after op_return
-      }
+
+    if (this.dataPart) {
+      const lsHex = this.codePart.toHex() + this.dataPart.toHex();
+      return bsv.Script.fromHex(lsHex);
     }
+
+    const lsASM = this.scriptedConstructor.toASM();
+
     return bsv.Script.fromASM(lsASM.trim());
   }
 
@@ -94,6 +114,12 @@ export class AbstractContract {
     }
   }
 
+  /**
+   * When we call the contract, the contract has a new state. The next time the contract is called, these latest states need to be included as part of prevLockingScript
+   */
+  commitState(): void {
+    this._prevLockingScript = this.lockingScript;
+  }
 
   getTypeClassByType(type: string): typeof ScryptType {
     const types: typeof ScryptType[] = Object.getPrototypeOf(this).constructor.types;
@@ -112,7 +138,7 @@ export class AbstractContract {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM.trim());
-    const ls = this.lockingScript;
+    const ls = this.prevLockingScript;
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
@@ -201,6 +227,13 @@ export class AbstractContract {
   }
 
   get dataPart(): Script | undefined {
+
+    const state = buildContractState(this.arguments('constructor'));
+
+    if (state) {
+      return bsv.Script.fromHex(state);
+    }
+
     return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
 
@@ -211,6 +244,7 @@ export class AbstractContract {
     } else {
       this._dataPart = serializeState(state);
     }
+    this.commitState();
   }
 
   get codePart(): Script {
@@ -249,12 +283,32 @@ export class AbstractContract {
 
     return [];
   }
+
+  public ctorArgs(): Arguments {
+    return this.arguments('constructor');
+  }
+
+  static fromASM(asm: string): AbstractContract {
+    return null;
+  }
+
+  static fromHex(hex: string): AbstractContract {
+    return null;
+  }
+  static fromTransaction(hex: string, outputIndex = 0): AbstractContract {
+    return null;
+  }
+  static isStateful(contract: AbstractContract): boolean {
+    const abi: Array<ABIEntity> = Object.getPrototypeOf(contract).constructor.abi;
+    const constructorABI = abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
+    return constructorABI.params.findIndex(p => p['state'] === true) > -1;
+  }
 }
 
 
 const invalidMethodName = ['arguments', 'setDataPart', 'run_verify', 'replaceAsmVars', 'asmVars', 'asmArguments', 'dataPart', 'lockingScript', 'txContext'];
 
-export function buildContractClass(desc: CompileResult | ContractDescription): any {
+export function buildContractClass(desc: CompileResult | ContractDescription): typeof AbstractContract {
 
   if (!desc.contract) {
     throw new Error('missing field `contract` in description');
@@ -281,6 +335,9 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
       super();
       if (!Contract.asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
+        if (ctorParams.length > 0) {
+          this.commitState();
+        }
       }
     }
 
@@ -292,11 +349,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
      * @param hex 
      */
     static fromASM(asm: string) {
-      Contract.asmContract = true;
-      const obj = new this();
-      Contract.asmContract = false;
-      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromASM(obj, Contract.asm, asm);
-      return obj;
+      return ContractClass.fromHex(bsv.Script.fromASM(asm).toHex());
     }
 
     /**
@@ -304,7 +357,12 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
      * @param hex 
      */
     static fromHex(hex: string) {
-      return ContractClass.fromASM((new bsv.Script(hex)).toASM());
+      Contract.asmContract = true;
+      const obj = new this();
+      Contract.asmContract = false;
+      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromRawHex(obj, Contract.asm, hex);
+      obj.commitState();
+      return obj;
     }
 
 
@@ -352,6 +410,39 @@ export function buildContractClass(desc: CompileResult | ContractDescription): a
     if (invalidMethodName.indexOf(entity.name) > -1) {
       throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
     }
+
+
+    if (entity.type === 'constructor') {
+
+      entity.params.forEach(p => {
+        Object.defineProperty(ContractClass.prototype, p.name, {
+          get() {
+            const arg = this.ctorArgs().find(arg => {
+              return arg.name === p.name;
+            });
+
+            if (arg) {
+              return arg.value;
+            } else {
+              throw new Error(`property ${p.name} does not exists`);
+            }
+          },
+          set(value: SupportedParamType) {
+            const arg = this.ctorArgs().find(arg => {
+              return arg.name === p.name;
+            });
+
+            if (arg) {
+              arg.value = value;
+            } else {
+              throw new Error(`property ${p.name} does not exists`);
+            }
+          }
+        });
+      });
+
+    }
+
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
       const call = ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
       this.calls.set(entity.name, call);

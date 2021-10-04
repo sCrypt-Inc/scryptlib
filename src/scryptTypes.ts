@@ -1,8 +1,10 @@
 import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger, StructEntity, bsv } from './internal';
-
+import { serialize, serializeInt } from './serializer';
+const BN = bsv.crypto.BN;
 export type TypeResolver = (type: string) => string;
 
-export type ValueType = number | bigint | boolean | string | StructObject;
+export type IntValueType = number | bigint | string;
+export type ValueType = IntValueType | boolean | StructObject;
 
 
 export function toScryptType(a: ValueType): ScryptType {
@@ -59,6 +61,17 @@ export class ScryptType {
     return this._asm;
   }
 
+  toHex(): string {
+    return this.serialize();
+  }
+
+  toString(format: string): string {
+    if (format === 'hex') {
+      return this.toHex();
+    }
+    return this.toLiteral();
+  }
+
   toJSON(): string | unknown {
     return this.toLiteral();
   }
@@ -73,6 +86,14 @@ export class ScryptType {
 
     return value;
   }
+
+  public equals(obj: ScryptType): boolean {
+    return obj.toASM() === this.toASM();
+  }
+
+  public serialize(): string {
+    return '';
+  }
 }
 
 export class Int extends ScryptType {
@@ -82,10 +103,10 @@ export class Int extends ScryptType {
   toLiteral(): string {
     return this._value.toString();
   }
-  checkValue(value: ValueType): ValueType {
+  checkValue(value: IntValueType): IntValueType {
     super.checkValue(value);
     if (!isInteger(value)) {
-      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string');
+      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string: ' + value);
     }
 
     if (typeof value == 'number' && !isNaN(value)) {
@@ -97,6 +118,14 @@ export class Int extends ScryptType {
 
     return value;
   }
+
+  toJSON(): string | unknown {
+    return this.value;
+  }
+  public serialize(): string {
+    return serializeInt(this.value as IntValueType);
+  }
+
 }
 
 export class Bool extends ScryptType {
@@ -106,6 +135,10 @@ export class Bool extends ScryptType {
   toLiteral(): string {
     return this._value.toString();
   }
+
+  public serialize(): string {
+    return serialize(this.value as boolean);
+  }
 }
 
 export class Bytes extends ScryptType {
@@ -114,6 +147,10 @@ export class Bytes extends ScryptType {
   }
   toLiteral(): string {
     return `b'${getValidatedHexString(this._value.toString())}'`;
+  }
+
+  public serialize(): string {
+    return serialize(this.value as string);
   }
 }
 
@@ -129,6 +166,10 @@ export class PrivKey extends ScryptType {
       return `PrivKey(0x${intValue2hex(v)})`;
     }
   }
+
+  public serialize(): string {
+    return serializeInt(this.value as IntValueType);
+  }
 }
 
 export class PubKey extends ScryptType {
@@ -137,6 +178,10 @@ export class PubKey extends ScryptType {
   }
   toLiteral(): string {
     return `PubKey(b'${getValidatedHexString(this._value.toString())}')`;
+  }
+
+  public serialize(): string {
+    return serialize(this.value as string);
   }
 }
 
@@ -147,6 +192,10 @@ export class Sig extends ScryptType {
   toLiteral(): string {
     return `Sig(b'${getValidatedHexString(this._value.toString())}')`;
   }
+
+  public serialize(): string {
+    return serialize(this.value as string);
+  }
 }
 
 export class Ripemd160 extends ScryptType {
@@ -155,6 +204,10 @@ export class Ripemd160 extends ScryptType {
   }
   toLiteral(): string {
     return `Ripemd160(b'${getValidatedHexString(this._value.toString())}')`;
+  }
+
+  public serialize(): string {
+    return serialize(this.value as string);
   }
 }
 
@@ -165,6 +218,10 @@ export class Sha1 extends ScryptType {
   toLiteral(): string {
     return `Sha1(b'${getValidatedHexString(this._value.toString())}')`;
   }
+
+  public serialize(): string {
+    return serialize(this.value as string);
+  }
 }
 
 export class Sha256 extends ScryptType {
@@ -173,6 +230,10 @@ export class Sha256 extends ScryptType {
   }
   toLiteral(): string {
     return `Sha256(b'${getValidatedHexString(this._value.toString())}')`;
+  }
+
+  public serialize(): string {
+    return serialize(this.value as string);
   }
 }
 
@@ -196,6 +257,10 @@ export class SigHashType extends ScryptType {
       hexStr = '0' + hexStr;
     }
     return `SigHashType(b'${hexStr}')`;
+  }
+
+  public serialize(): string {
+    return serialize(this.value as number);
   }
 
   toString(): string {
@@ -333,6 +398,10 @@ export class SigHashPreimage extends ScryptType {
     };
   }
 
+  public serialize(): string {
+    return serialize(this.value as string);
+  }
+
 }
 
 export class OpCodeType extends ScryptType {
@@ -342,10 +411,14 @@ export class OpCodeType extends ScryptType {
   toLiteral(): string {
     return `OpCodeType(b'${getValidatedHexString(this._value.toString())}')`;
   }
+
+  public serialize(): string {
+    return serialize(this.value as string);
+  }
 }
 
 
-export type BasicType = ScryptType | boolean | number | bigint | string;
+export type BasicType = ScryptType | boolean | number | bigint | string | BasicType[];
 
 export type SingletonParamType = BasicType | BasicType[];
 
@@ -548,6 +621,9 @@ export class Struct extends ScryptType {
   static isStruct(arg: SupportedParamType): boolean {
     return arg instanceof Struct;
   }
+  public serialize(): string {
+    return serialize(this.value as string);
+  }
 }
 
 
@@ -590,3 +666,15 @@ export const BasicScryptType = {
   [VariableType.SIGHASHPREIMAGE]: SigHashPreimage
 };
 
+
+export function serializeSupportedParamType(x: SupportedParamType): string {
+
+  if (typeof x === 'number' || typeof x === 'bigint' || typeof x === 'boolean') {
+    return serialize(x);
+  } else if (x instanceof ScryptType) {
+    return x.serialize();
+  } else {
+    throw new Error('serializeSupportedParamType unsupported: ' + x);
+  }
+
+}

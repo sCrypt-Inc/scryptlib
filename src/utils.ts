@@ -11,7 +11,9 @@ export { ECIES };
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
-  getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri
+  getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
+  Arguments,
+  Script
 } from './internal';
 
 
@@ -306,7 +308,7 @@ export function literal2ScryptType(l: string): ScryptType {
 }
 
 
-export function asm2ScryptType(type: string, asm: string) {
+export function asm2ScryptType(type: string, asm: string): ScryptType {
 
   switch (type) {
     case VariableType.BOOL:
@@ -400,7 +402,7 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
   return ret;
 }
 
-export function signTx(tx, privateKey, lockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS) {
+export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): Sig {
 
   if (!tx) {
     throw new Error('param tx can not be empty');
@@ -410,28 +412,30 @@ export function signTx(tx, privateKey, lockingScriptASM: string, inputAmount: nu
     throw new Error('param privateKey can not be empty');
   }
 
-  if (!lockingScriptASM) {
-    throw new Error('param lockingScriptASM can not be empty');
+  if (!lockingScript) {
+    throw new Error('param lockingScript can not be empty');
   }
 
   if (!inputAmount) {
     throw new Error('param inputAmount can not be empty');
   }
 
-  return bsv.Transaction.sighash.sign(
+  const buf = toHex(bsv.Transaction.sighash.sign(
     tx, privateKey, sighashType, inputIndex,
-    bsv.Script.fromASM(lockingScriptASM), new bsv.crypto.BN(inputAmount), flags
-  ).toTxFormat();
+    lockingScript, new bsv.crypto.BN(inputAmount), flags
+  ).toTxFormat());
+  return new Sig(buf);
 }
 
 export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
-export function getPreimage(tx, inputLockingScriptASM: string, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, bsv.Script.fromASM(inputLockingScriptASM), new bsv.crypto.BN(inputAmount), flags);
+export function getPreimage(tx: bsv.Transaction, prevLockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, prevLockingScript, new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
+
 
 // Converts a number into a sign-magnitude representation of certain size as a string
 // Throws if the number cannot be accommodated
@@ -470,7 +474,7 @@ export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): st
 }
 
 //Support Bigint
-export function bin2num(s: string | Buffer): number | bigint | string {
+export function bin2num(s: string | Buffer): number | string {
   const hex = s.toString('hex');
   const lastByte = hex.substring(hex.length - 2);
   const rest = hex.substring(0, hex.length - 2);
@@ -486,9 +490,7 @@ export function bin2num(s: string | Buffer): number | bigint | string {
     bn = bn.neg();
   }
 
-  if (typeof BigInt === 'function') {
-    return BigInt(bn);
-  } else if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+  if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
     return bn.toNumber();
   } else {
     return bn.toString();
@@ -926,11 +928,14 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     configurations: [debugConfig]
   };
 
-  const jsonstr = JSON.stringify(launch, (key, value) => (
-    typeof value === 'bigint'
-      ? value.toString()
-      : value // return everything else unchanged
-  ), 2);
+  const jsonstr = JSON.stringify(launch, (key, value) => {
+
+    if (typeof value === 'bigint') {
+      return value.toString();
+    } else {
+      return value;
+    }
+  }, 2);
 
   if (isNode()) {
     const filename = `${name}-launch.json`;
@@ -990,7 +995,7 @@ export function ansiRegex({ onlyFirst = false } = {}) {
 }
 
 
-export function stripAnsi(string) {
+export function stripAnsi(string: string): string {
   if (typeof string !== 'string') {
     throw new TypeError(`Expected a \`string\`, got \`${typeof string}\``);
   }
@@ -999,10 +1004,10 @@ export function stripAnsi(string) {
 }
 
 
-export function createStruct(contract: AbstractContract, sType: typeof Struct, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver) {
+export function createStruct(contract: AbstractContract, structClass: typeof Struct, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): Struct {
 
   const obj = Object.create({});
-  sType.structAst.params.forEach(param => {
+  structClass.structAst.params.forEach(param => {
 
     const finalType = finalTypeResolver(param.type);
 
@@ -1031,15 +1036,15 @@ export function createStruct(contract: AbstractContract, sType: typeof Struct, n
   });
 
 
-  return new sType(obj);
+  return new structClass(obj);
 }
 
 
 
 
-export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver) {
+export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): SupportedParamType {
 
-  const arrays = [];
+  const arrays: SupportedParamType = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);
 
   const arraylen = sizes[0];
@@ -1071,14 +1076,14 @@ export function createArray(contract: AbstractContract, type: string, name: stri
 }
 
 
-export function toLiteral(value: ScryptType): string {
+export function toLiteral(value: BasicType): string {
 
   if (Array.isArray(value)) {
 
     return `[${value.map(i => toLiteral(i))}]`;
   } else {
 
-    return value instanceof ScryptType ? value.toLiteral() : value;
+    return value instanceof ScryptType ? value.toLiteral() : value as string;
   }
 }
 export function isInteger(x: unknown): boolean {
@@ -1135,4 +1140,98 @@ export function resolveStaticConst(contract: string, type: string, staticConstIn
     return toLiteralArrayType(elemTypeName, sizes);
   }
   return type;
+}
+
+function escapeRegExp(stringToGoIntoTheRegex) {
+  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+// state version
+const CURRENT_STATE_VERSION = 0;
+
+export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTemplate: string): string {
+
+
+  let lsASM = asmTemplate;
+  for (const entry of asmTemplateArgs.entries()) {
+    const name = entry[0];
+    const value = entry[1];
+    const re = name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(name)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(name)}\\b`, 'g');
+    lsASM = lsASM.replace(re, value);
+  }
+
+  return lsASM;
+
+}
+
+
+export function buildContractState(args: Arguments): string {
+
+  let state_hex = '';
+  let state_len = 0;
+  for (const arg of args) {
+
+    if (arg.state) {
+      if (arg.type == VariableType.BOOL) { //fixed length
+        state_hex += `${serializeSupportedParamType(arg.value)}`;
+      } else if (arg.type === VariableType.INT
+        || arg.type === VariableType.BYTES
+        || arg.type === VariableType.PUBKEY
+        || arg.type === VariableType.PRIVKEY
+        || arg.type === VariableType.PUBKEY
+        || arg.type === VariableType.SIG
+        || arg.type === VariableType.RIPEMD160
+        || arg.type === VariableType.SHA1
+        || arg.type === VariableType.SHA256
+        || arg.type === VariableType.SIGHASHTYPE
+        || arg.type === VariableType.SIGHASHPREIMAGE
+        || arg.type === VariableType.OPCODETYPE) {
+        state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
+      } else {
+
+        //TODO: ARRAY AND struct
+      }
+    }
+  }
+
+  //append meta
+  if (state_hex) {
+    state_len = state_hex.length / 2;
+    state_hex += num2bin(state_len, 4) + num2bin(CURRENT_STATE_VERSION, 1);
+    return state_hex;
+  }
+
+  return state_hex;
+
+}
+
+
+export function readState(br: bsv.encoding.BufferReader): { data: string, opcodenum: number } {
+  try {
+    const opcodenum = br.readUInt8();
+
+    let len, data;
+    if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+      len = opcodenum;
+      data = br.read(len).toString('hex');
+    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
+      len = br.readUInt8();
+      data = br.read(len).toString('hex');
+    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA2) {
+      len = br.readUInt16LE();
+      data = br.read(len).toString('hex');
+    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA4) {
+      len = br.readUInt32LE();
+      data = br.read(len).toString('hex');
+    } else {
+      data = '';
+    }
+
+    return {
+      data: data,
+      opcodenum: opcodenum
+    };
+  } catch (e) {
+    throw new Error('read state hex error: ' + e);
+  }
 }

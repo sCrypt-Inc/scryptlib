@@ -8,11 +8,17 @@ export const STATE_LEN_2BYTES = 2;
 export const STATE_LEN_4BYTES = 4;
 
 function serializeBool(flag: boolean): string {
-  return flag ? 'OP_TRUE' : 'OP_FALSE';
+  return flag ? '01' : '00';
 }
 
-function serializeInt(n: number | bigint): string {
-  const num = new BN(n);
+export function serializeInt(n: number | bigint | string): string {
+  let num = new BN(n);
+  if (typeof n === 'string') {
+    if (n.startsWith('0x')) {
+      num = new BN(n.substr(2), 16);
+    }
+  }
+
   if (num.eqn(0)) {
     return '00';
   }
@@ -50,7 +56,7 @@ function serializeWithSchema(state: State | StateArray, key: string | number, sc
   }
 }
 
-function serialize(x: boolean | number | bigint | string) {
+export function serialize(x: boolean | number | bigint | string): string {
   if (typeof x === 'boolean') {
     return serializeBool(x);
   }
@@ -123,7 +129,7 @@ class OpState {
       return BigInt(this.op.opcodenum - Opcode.OP_2 + 2);
     } else {
       if (!this.op.buf) throw new Error('state does not have a number representation');
-      return bin2num(this.op.buf) as bigint;
+      return BigInt(bin2num(this.op.buf));
     }
   }
 

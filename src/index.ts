@@ -6,8 +6,8 @@ export {
   findStructByType, findStructByName, isStructType, isArrayType, compileContract,
   arrayTypeAndSize, newCall, getStructNameByType, genLaunchConfigFile, subArrayType
 } from './internal';
-export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES } from './internal';
+export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType,
-  Struct, StructObject, VariableType, TypeResolver
+  Struct, StructObject, VariableType, TypeResolver, serializeSupportedParamType
 } from './internal';

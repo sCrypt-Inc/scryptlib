@@ -662,6 +662,7 @@
             "properties": [
                 {
                     "nodeType": "Property",
+                    "state": false,
                     "visibility": "Default",
                     "name": "x",
                     "const": false,

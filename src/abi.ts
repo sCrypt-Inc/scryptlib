@@ -1,7 +1,9 @@
 import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, flatternStruct, createStruct, createArray, asm2ScryptType } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
+import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
+import { buildContractCodeASM, readState } from './internal';
+import { bin2num, Bytes, VariableType } from '.';
 
 export interface Script {
   toASM(): string;
@@ -31,13 +33,11 @@ export interface DebugLaunch {
   configurations: DebugConfiguration[];
 }
 
-function escapeRegExp(stringToGoIntoTheRegex) {
-  return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
 
 export interface Argument {
   name: string,
   type: string,
+  state: boolean,
   value: SupportedParamType
 }
 
@@ -65,18 +65,18 @@ export class FunctionCall {
   init(asmVarValues: AsmVarValues): void {
     for (const key in asmVarValues) {
       const val = asmVarValues[key];
-      const re = new RegExp(`\\$${key}`, 'g');
+      const re = new RegExp(key.startsWith('$') ? `\\${key}` : `\\$${key}`, 'g');
       this._lockingScriptAsm = this._lockingScriptAsm.replace(re, val);
     }
   }
 
   constructor(
     public methodName: string,
-    public params: SupportedParamType[],
     binding: {
       contract: AbstractContract;
       lockingScriptASM?: string;
       unlockingScriptASM?: string;
+      params: SupportedParamType[];
     }
   ) {
 
@@ -97,7 +97,8 @@ export class FunctionCall {
         return {
           name: param.name,
           type: param.type,
-          value: params[index]
+          state: param.state || false,
+          value: binding.params[index]
         };
       });
     }).flat(1);
@@ -135,16 +136,20 @@ export class FunctionCall {
 
   genLaunchConfigFile(txContext?: TxContext): FileUri {
 
-    const constructorArgs: SupportedParamType[] = this.contract.scriptedConstructor.params;
+    const Class = this.contract.constructor as typeof AbstractContract;
 
-    const pubFuncArgs: SupportedParamType[] = this.params;
+
+    const prevInstance = Class.fromHex(this.contract.prevLockingScript.toHex());
+    const constructorArgs: SupportedParamType[] = prevInstance.ctorArgs().map(p => p.value);
+    const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
     const name = `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
     const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
 
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
-    const dataPart: string = this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
-    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: dataPart });
+
+    const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state });
 
     return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
   }
@@ -189,7 +194,8 @@ export class ABICoder {
     const args_: SupportedParamType[] = [];
     cParams.map(p => ({
       name: p.name,
-      type: this.finalTypeResolver(p.type)
+      type: this.finalTypeResolver(p.type),
+      state: p.state
     })).forEach((param, index) => {
       const arg = args[index];
       if (isArrayType(param.type)) {
@@ -199,7 +205,7 @@ export class ABICoder {
           if (checkArray(arg, [elemTypeName, arraySizes])) {
             // flattern array
             flatternArray(arg, param.name, param.type).forEach((e) => {
-              cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type) });
+              cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
               args_.push(e.value);
             });
           } else {
@@ -217,7 +223,7 @@ export class ABICoder {
         }
 
         flatternStruct(argS, param.name).forEach(v => {
-          cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type) });
+          cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type), state: param.state });
           args_.push(v.value);
         });
       }
@@ -227,42 +233,112 @@ export class ABICoder {
       }
     });
 
-    let lsASM = asmTemplate;
+
 
     cParams_.forEach((param, index) => {
       if (!asmTemplate.includes(`$${param.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
       }
+      if (param.state) {
+        //if param is state , we use default value to new contract.
+        if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
+          contract.asmTemplateArgs.set(`$${param.name}`, 'OP_0');
+        } else if (param.type === VariableType.BOOL) {
+          contract.asmTemplateArgs.set(`$${param.name}`, 'OP_TRUE');
+        } else if (param.type === VariableType.BYTES
+          || param.type === VariableType.PUBKEY
+          || param.type === VariableType.SIG
+          || param.type === VariableType.RIPEMD160
+          || param.type === VariableType.SHA1
+          || param.type === VariableType.SHA256
+          || param.type === VariableType.SIGHASHTYPE
+          || param.type === VariableType.SIGHASHPREIMAGE
+          || param.type === VariableType.OPCODETYPE) {
+          contract.asmTemplateArgs.set(`$${param.name}`, '00');
+        } else {
+          throw new Error(`param ${param.name} has unknown type ${param.type}`);
+        }
 
-      const re = param.name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(`$${param.name}`)}\\b`, 'g');
-      lsASM = lsASM.replace(re, this.encodeParam(args_[index], param));
+      } else {
+        contract.asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+      }
+
+
+
     });
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
+    contract.asmTemplateArgs.set('$__codePart__', 'OP_0');
+
+    return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
   }
 
-  encodeConstructorCallFromASM(contract: AbstractContract, asmTemplate: string, lsASM: string): FunctionCall {
+
+  encodeState(asmTemplateArgs: Map<string, string>, param: ParamEntity, value: SupportedParamType): void {
+
+    // handle array type
+    const cParams_: Array<ParamEntity> = [];
+    const args_: SupportedParamType[] = [];
+
+    param.type = this.finalTypeResolver(param.type);
+
+    if (isArrayType(param.type)) {
+      const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
+
+      if (Array.isArray(value)) {
+        if (checkArray(value, [elemTypeName, arraySizes])) {
+          // flattern array
+          flatternArray(value, param.name, param.type).forEach((e) => {
+            cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
+            args_.push(e.value);
+          });
+        } else {
+          throw new Error(`state ${param.name} should be ${param.type}`);
+        }
+      } else {
+        throw new Error(`state ${param.name} should be ${param.type}`);
+      }
+    } else if (isStructType(param.type)) {
+
+      const argS = value as Struct;
+
+      if (param.type != argS.finalType) {
+        throw new Error(`state ${param.name} expect struct ${getStructNameByType(param.type)} but got struct ${argS.type}`);
+      }
+
+      flatternStruct(argS, param.name).forEach(v => {
+        cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type), state: param.state });
+        args_.push(v.value);
+      });
+    }
+    else {
+      cParams_.push(param);
+      args_.push(value);
+    }
+
+    cParams_.forEach((param, index) => {
+      if (!asmTemplateArgs.has(`$${param.name}`)) {
+        throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
+      }
+
+      asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
+
+    });
+  }
+
+  encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
+    const script = bsv.Script.fromHex(raw);
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
     const contractName = Object.getPrototypeOf(contract).constructor.contractName;
-    const opcodesMap = new Map<string, string>();
 
     const asmTemplateOpcodes = asmTemplate.split(' ');
-    const asmOpcodes = lsASM.split(' ');
 
+    const lsASM = script.toASM();
+    const asmOpcodes = lsASM.split(' ');
 
     if (asmTemplateOpcodes.length > asmOpcodes.length) {
       throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
     }
-
-    asmTemplateOpcodes.forEach((opcode, index) => {
-
-      if (opcode.startsWith('$')) {
-        opcodesMap.set(opcode, asmOpcodes[index]);
-      } else if (bsv.Script.fromASM(opcode).toHex() !== bsv.Script.fromASM(asmOpcodes[index]).toHex()) {
-        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
-      }
-    });
 
     if (asmTemplateOpcodes.length < asmOpcodes.length) {
       const opcode = asmOpcodes[asmTemplateOpcodes.length];
@@ -271,29 +347,107 @@ export class ABICoder {
       }
     }
 
-    const args: SupportedParamType[] = [];
-    cParams.map(p => ({
-      name: p.name,
-      type: this.finalTypeResolver(p.type)
-    })).forEach((param) => {
+    asmTemplateOpcodes.forEach((opcode, index) => {
 
-      if (isStructType(param.type)) {
-
-        const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
-
-        args.push(createStruct(contract, stclass as typeof Struct, param.name, opcodesMap, this.finalTypeResolver));
-      } else if (isArrayType(param.type)) {
-
-        args.push(createArray(contract, param.type, param.name, opcodesMap, this.finalTypeResolver));
-
-      } else {
-        args.push(asm2ScryptType(param.type, opcodesMap.get(`$${param.name}`)));
+      if (opcode.startsWith('$')) {
+        contract.asmTemplateArgs.set(opcode, asmOpcodes[index]);
+      } else if (bsv.Script.fromASM(opcode).toHex() !== bsv.Script.fromASM(asmOpcodes[index]).toHex()) {
+        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
       }
-
     });
 
 
-    return new FunctionCall('constructor', args, { contract, lockingScriptASM: lsASM });
+
+    if (!AbstractContract.isStateful(contract)) {
+
+      const args: SupportedParamType[] = [];
+      cParams.map(p => ({
+        name: p.name,
+        type: this.finalTypeResolver(p.type),
+        state: p.state
+      })).forEach((param) => {
+
+        if (isStructType(param.type)) {
+
+          const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
+
+          args.push(createStruct(contract, stclass as typeof Struct, param.name, contract.asmTemplateArgs, this.finalTypeResolver));
+        } else if (isArrayType(param.type)) {
+
+          args.push(createArray(contract, param.type, param.name, contract.asmTemplateArgs, this.finalTypeResolver));
+
+        } else {
+          args.push(asm2ScryptType(param.type, contract.asmTemplateArgs.get(`$${param.name}`)));
+        }
+
+      });
+
+      return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, params: args });
+    } else {
+      const scriptHex = script.toHex();
+      const metaScript = script.toHex().substr(scriptHex.length - 10, 10);
+      const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
+      const stateLen = bin2num(metaScript.substr(0, 8)) as number;
+
+      const args: SupportedParamType[] = [];
+      switch (version) {
+        case 0:
+          {
+            const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
+            const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
+            if (opReturnHex != '6a') {
+              throw new Error('parse state fail, no OP_RETURN before state hex');
+            }
+
+            const br = new bsv.encoding.BufferReader(stateHex);
+
+            cParams.filter(p => p.state === true)
+              .map(p => ({
+                state: true,
+                name: p.name,
+                type: this.finalTypeResolver(p.type)
+              })).forEach((param) => {
+
+                if (param.type === VariableType.BOOL) {
+                  const opcodenum = br.readUInt8();
+                  args.push(new Bool(opcodenum === 1));
+                } else {
+                  const { data } = readState(br);
+                  if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
+                    args.push(new Int(bin2num(data)));
+                  } else if (param.type === VariableType.BYTES) {
+                    args.push(new Bytes(data));
+                  } else if (param.type === VariableType.PUBKEY) {
+                    args.push(new PubKey(data));
+                  } else if (param.type === VariableType.SIG) {
+                    args.push(new Sig(data));
+                  } else if (param.type === VariableType.RIPEMD160) {
+                    args.push(new Ripemd160(data));
+                  } else if (param.type === VariableType.SHA1) {
+                    args.push(new Sha1(data));
+                  } else if (param.type === VariableType.SHA256) {
+                    args.push(new Sha256(data));
+                  } else if (param.type === VariableType.SIGHASHTYPE) {
+                    args.push(new SigHashType(bin2num(data) as number));
+                  } else if (param.type === VariableType.SIGHASHPREIMAGE) {
+                    args.push(new SigHashPreimage(data));
+                  } else if (param.type === VariableType.OPCODETYPE) {
+                    args.push(new OpCodeType(data));
+                  } else {
+                    //
+                    throw new Error('unsupport type ' + param.type);
+                  }
+                }
+
+              });
+          }
+          break;
+      }
+
+      return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
+
+    }
+
   }
 
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
@@ -305,14 +459,15 @@ export class ABICoder {
         }
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
-          type: this.finalTypeResolver(p.type)
+          type: this.finalTypeResolver(p.type),
+          state: p.state
         })));
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }
-        return new FunctionCall(name, args, { contract, unlockingScriptASM: asm });
+        return new FunctionCall(name, { contract, unlockingScriptASM: asm, params: args });
       }
     }
 
@@ -323,7 +478,7 @@ export class ABICoder {
     return args.map((arg, i) => this.encodeParam(arg, paramsEntitys[i])).join(' ');
   }
 
-  encodeParamArray(args: SingletonParamType[], arrayParm: ParamEntity): string {
+  encodeParamArray(args: SingletonParamType[], arrayParam: ParamEntity): string {
     if (args.length === 0) {
       throw new Error('Empty array not allowed');
     }
@@ -334,13 +489,13 @@ export class ABICoder {
       throw new Error('Array arguments are not of the same type');
     }
 
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParm.type);
+    const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParam.type);
     if (checkArray(args, [elemTypeName, arraySizes])) {
-      return flatternArray(args, arrayParm.name, arrayParm.type).map(arg => {
-        return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type) });
+      return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
+        return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
       }).join(' ');
     } else {
-      throw new Error(`checkArray ${arrayParm.type} fail`);
+      throw new Error(`checkArray ${arrayParam.type} fail`);
     }
   }
 
