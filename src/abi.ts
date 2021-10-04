@@ -1,6 +1,6 @@
 import { int2Asm, bsv, arrayTypeAndSize, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, flatternStruct, createStruct, createArray, asm2ScryptType } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
+import { ScryptType, Bool, Int, SingletonParamType, SupportedParamType, Struct, TypeResolver, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
 import { buildContractCodeASM, readState } from './internal';
 import { bin2num, Bytes, VariableType } from '.';
@@ -241,11 +241,19 @@ export class ABICoder {
       }
       if (param.state) {
         //if param is state , we use default value to new contract.
-        if (param.type === VariableType.INT) {
+        if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
           contract.asmTemplateArgs.set(`$${param.name}`, 'OP_0');
         } else if (param.type === VariableType.BOOL) {
           contract.asmTemplateArgs.set(`$${param.name}`, 'OP_TRUE');
-        } else if (param.type === VariableType.BYTES) {
+        } else if (param.type === VariableType.BYTES
+          || param.type === VariableType.PUBKEY
+          || param.type === VariableType.SIG
+          || param.type === VariableType.RIPEMD160
+          || param.type === VariableType.SHA1
+          || param.type === VariableType.SHA256
+          || param.type === VariableType.SIGHASHTYPE
+          || param.type === VariableType.SIGHASHPREIMAGE
+          || param.type === VariableType.OPCODETYPE) {
           contract.asmTemplateArgs.set(`$${param.name}`, '00');
         } else {
           throw new Error(`param ${param.name} has unknown type ${param.type}`);
@@ -399,16 +407,36 @@ export class ABICoder {
                 name: p.name,
                 type: this.finalTypeResolver(p.type)
               })).forEach((param) => {
-                const { data, opcodenum } = readState(br);
+
                 if (param.type === VariableType.BOOL) {
+                  const opcodenum = br.readUInt8();
                   args.push(new Bool(opcodenum === 1));
-                } else if (param.type === VariableType.INT) {
-                  args.push(new Int(bin2num(data)));
-                } else if (param.type === VariableType.BYTES) {
-                  args.push(new Bytes(data));
                 } else {
-                  //
-                  throw new Error('unsupport type ' + param.type);
+                  const { data } = readState(br);
+                  if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
+                    args.push(new Int(bin2num(data)));
+                  } else if (param.type === VariableType.BYTES) {
+                    args.push(new Bytes(data));
+                  } else if (param.type === VariableType.PUBKEY) {
+                    args.push(new PubKey(data));
+                  } else if (param.type === VariableType.SIG) {
+                    args.push(new Sig(data));
+                  } else if (param.type === VariableType.RIPEMD160) {
+                    args.push(new Ripemd160(data));
+                  } else if (param.type === VariableType.SHA1) {
+                    args.push(new Sha1(data));
+                  } else if (param.type === VariableType.SHA256) {
+                    args.push(new Sha256(data));
+                  } else if (param.type === VariableType.SIGHASHTYPE) {
+                    args.push(new SigHashType(bin2num(data) as number));
+                  } else if (param.type === VariableType.SIGHASHPREIMAGE) {
+                    args.push(new SigHashPreimage(data));
+                  } else if (param.type === VariableType.OPCODETYPE) {
+                    args.push(new OpCodeType(data));
+                  } else {
+                    //
+                    throw new Error('unsupport type ' + param.type);
+                  }
                 }
 
               });

@@ -1,5 +1,5 @@
 import "util.scrypt";
-contract Counter {
+contract StateExample {
 
     @state
     int counter;
@@ -10,7 +10,29 @@ contract Counter {
     @state
     bool state_bool;
 
-    public function increment(SigHashPreimage txPreimage, int amount) {
+    @state
+    PrivKey privKey;
+
+    @state
+    PubKey pubkey;
+
+    @state
+    Ripemd160 ripemd160;
+
+    @state
+    Sha256 sha256;
+
+    @state
+    OpCodeType opCodeType;
+
+    @state
+    SigHashType sigHashType;
+
+    @state
+    Sig sig;
+    
+
+    public function unlock(SigHashPreimage txPreimage, int amount) {
         require(Tx.checkPreimage(txPreimage));
         // increment counter
         this.counter++;
