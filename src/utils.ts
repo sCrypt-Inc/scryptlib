@@ -431,8 +431,8 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
-export function getPreimage(tx: bsv.Transaction, inputLockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, inputLockingScript, new bsv.crypto.BN(inputAmount), flags);
+export function getPreimage(tx: bsv.Transaction, prevLockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, prevLockingScript, new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
