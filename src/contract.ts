@@ -244,6 +244,7 @@ export class AbstractContract {
     } else {
       this._dataPart = serializeState(state);
     }
+    this.commitState();
   }
 
   get codePart(): Script {
@@ -416,7 +417,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       entity.params.forEach(p => {
         Object.defineProperty(ContractClass.prototype, p.name, {
           get() {
-            const arg = this.arguments('constructor').find(arg => {
+            const arg = this.ctorArgs().find(arg => {
               return arg.name === p.name;
             });
 
@@ -427,7 +428,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
             }
           },
           set(value: SupportedParamType) {
-            const arg = this.arguments('constructor').find(arg => {
+            const arg = this.ctorArgs().find(arg => {
               return arg.name === p.name;
             });
 
