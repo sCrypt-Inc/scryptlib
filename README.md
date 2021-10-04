@@ -226,6 +226,16 @@ const codePartASM = instance.codePart.toASM();
 const codePartHex = instance.codePart.toHex();
 ```
 
+Another way to access the state is to use the `state` decorator in the sCrypt contract. 
+Then you can read and write the state by accessing the properties of the contract instance.
+
+```typescript
+// update state
+stateExample.counter++;
+stateExample.state_bytes = new Bytes('010101');
+stateExample.state_bool = false;
+```
+
 ## Instantiate Inline Assembly Variables
 Assembly variables can be replaced with literal Script in ASM format using `replace()`. Each variable is prefixed by its unique scope, namely, the contract and the function it is under.
 ```typescript

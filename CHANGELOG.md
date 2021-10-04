@@ -1,10 +1,11 @@
 # CHANGELOG
 
-## 0.5.1
+## 0.6.0
 
+- support `state` decorator
 - add `hex` Compile setting, default `true`
 
-*Release Date: 2021/09/01*
+*Release Date: 2021/10/04*
 
 ## 0.5.0
 
