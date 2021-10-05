@@ -137,7 +137,7 @@ export class Bool extends ScryptType {
   }
 
   public serialize(): string {
-    return serialize(this.value as boolean);
+    return this.value ? '01' : '00';
   }
 }
 
@@ -668,8 +668,9 @@ export const BasicScryptType = {
 
 
 export function serializeSupportedParamType(x: SupportedParamType): string {
-
-  if (typeof x === 'number' || typeof x === 'bigint' || typeof x === 'boolean') {
+  if (typeof x === 'boolean') {
+    return new Bool(x).serialize();
+  } else if (typeof x === 'number' || typeof x === 'bigint') {
     return serialize(x);
   } else if (x instanceof ScryptType) {
     return x.serialize();
