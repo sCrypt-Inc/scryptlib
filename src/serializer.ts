@@ -8,7 +8,7 @@ export const STATE_LEN_2BYTES = 2;
 export const STATE_LEN_4BYTES = 4;
 
 function serializeBool(flag: boolean): string {
-  return flag ? '01' : '00';
+  return flag ? 'OP_TRUE' : 'OP_FALSE';
 }
 
 export function serializeInt(n: number | bigint | string): string {

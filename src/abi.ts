@@ -272,59 +272,6 @@ export class ABICoder {
     return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
   }
 
-
-  encodeState(asmTemplateArgs: Map<string, string>, param: ParamEntity, value: SupportedParamType): void {
-
-    // handle array type
-    const cParams_: Array<ParamEntity> = [];
-    const args_: SupportedParamType[] = [];
-
-    param.type = this.finalTypeResolver(param.type);
-
-    if (isArrayType(param.type)) {
-      const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
-
-      if (Array.isArray(value)) {
-        if (checkArray(value, [elemTypeName, arraySizes])) {
-          // flattern array
-          flatternArray(value, param.name, param.type).forEach((e) => {
-            cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
-            args_.push(e.value);
-          });
-        } else {
-          throw new Error(`state ${param.name} should be ${param.type}`);
-        }
-      } else {
-        throw new Error(`state ${param.name} should be ${param.type}`);
-      }
-    } else if (isStructType(param.type)) {
-
-      const argS = value as Struct;
-
-      if (param.type != argS.finalType) {
-        throw new Error(`state ${param.name} expect struct ${getStructNameByType(param.type)} but got struct ${argS.type}`);
-      }
-
-      flatternStruct(argS, param.name).forEach(v => {
-        cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type), state: param.state });
-        args_.push(v.value);
-      });
-    }
-    else {
-      cParams_.push(param);
-      args_.push(value);
-    }
-
-    cParams_.forEach((param, index) => {
-      if (!asmTemplateArgs.has(`$${param.name}`)) {
-        throw new Error(`abi constructor params mismatch with args provided: missing ${param.name} in ASM tempalte`);
-      }
-
-      asmTemplateArgs.set(`$${param.name}`, this.encodeParam(args_[index], param));
-
-    });
-  }
-
   encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
     const script = bsv.Script.fromHex(raw);
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
@@ -333,7 +280,7 @@ export class ABICoder {
 
     const asmTemplateOpcodes = asmTemplate.split(' ');
 
-    const lsASM = script.toASM();
+    let lsASM = script.toASM();
     const asmOpcodes = lsASM.split(' ');
 
     if (asmTemplateOpcodes.length > asmOpcodes.length) {
@@ -356,40 +303,46 @@ export class ABICoder {
       }
     });
 
+    const args: Arguments = cParams.map(p => ({
+      type: this.finalTypeResolver(p.type),
+      name: p.name,
+      value: undefined,
+      state: p.state
+    })).map(param => {
+
+      let value;
+
+      if (isStructType(param.type)) {
+
+        const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
+
+        value = createStruct(contract, stclass as typeof Struct, param.name, contract.asmTemplateArgs, this.finalTypeResolver);
+      } else if (isArrayType(param.type)) {
+
+        value = createArray(contract, param.type, param.name, contract.asmTemplateArgs, this.finalTypeResolver);
+
+      } else {
+        value = asm2ScryptType(param.type, contract.asmTemplateArgs.get(`$${param.name}`));
+      }
+
+      return {
+        name: param.name,
+        type: this.finalTypeResolver(param.type),
+        state: param.state,
+        value: value
+      };
+
+    });
 
 
-    if (!AbstractContract.isStateful(contract)) {
+    if (AbstractContract.isStateful(contract)) {
 
-      const args: SupportedParamType[] = [];
-      cParams.map(p => ({
-        name: p.name,
-        type: this.finalTypeResolver(p.type),
-        state: p.state
-      })).forEach((param) => {
 
-        if (isStructType(param.type)) {
-
-          const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
-
-          args.push(createStruct(contract, stclass as typeof Struct, param.name, contract.asmTemplateArgs, this.finalTypeResolver));
-        } else if (isArrayType(param.type)) {
-
-          args.push(createArray(contract, param.type, param.name, contract.asmTemplateArgs, this.finalTypeResolver));
-
-        } else {
-          args.push(asm2ScryptType(param.type, contract.asmTemplateArgs.get(`$${param.name}`)));
-        }
-
-      });
-
-      return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, params: args });
-    } else {
       const scriptHex = script.toHex();
       const metaScript = script.toHex().substr(scriptHex.length - 10, 10);
       const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
       const stateLen = bin2num(metaScript.substr(0, 8)) as number;
 
-      const args: SupportedParamType[] = [];
       switch (version) {
         case 0:
           {
@@ -401,52 +354,48 @@ export class ABICoder {
 
             const br = new bsv.encoding.BufferReader(stateHex);
 
-            cParams.filter(p => p.state === true)
-              .map(p => ({
-                state: true,
-                name: p.name,
-                type: this.finalTypeResolver(p.type)
-              })).forEach((param) => {
-
-                if (param.type === VariableType.BOOL) {
+            args.forEach((arg) => {
+              if (arg.state) {
+                if (arg.type === VariableType.BOOL) {
                   const opcodenum = br.readUInt8();
-                  args.push(new Bool(opcodenum === 1));
+                  arg.value = new Bool(opcodenum === 1);
                 } else {
                   const { data } = readState(br);
-                  if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
-                    args.push(new Int(bin2num(data)));
-                  } else if (param.type === VariableType.BYTES) {
-                    args.push(new Bytes(data));
-                  } else if (param.type === VariableType.PUBKEY) {
-                    args.push(new PubKey(data));
-                  } else if (param.type === VariableType.SIG) {
-                    args.push(new Sig(data));
-                  } else if (param.type === VariableType.RIPEMD160) {
-                    args.push(new Ripemd160(data));
-                  } else if (param.type === VariableType.SHA1) {
-                    args.push(new Sha1(data));
-                  } else if (param.type === VariableType.SHA256) {
-                    args.push(new Sha256(data));
-                  } else if (param.type === VariableType.SIGHASHTYPE) {
-                    args.push(new SigHashType(bin2num(data) as number));
-                  } else if (param.type === VariableType.SIGHASHPREIMAGE) {
-                    args.push(new SigHashPreimage(data));
-                  } else if (param.type === VariableType.OPCODETYPE) {
-                    args.push(new OpCodeType(data));
+                  if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
+                    arg.value = new Int(bin2num(data));
+                  } else if (arg.type === VariableType.BYTES) {
+                    arg.value = new Bytes(data);
+                  } else if (arg.type === VariableType.PUBKEY) {
+                    arg.value = new PubKey(data);
+                  } else if (arg.type === VariableType.SIG) {
+                    arg.value = new Sig(data);
+                  } else if (arg.type === VariableType.RIPEMD160) {
+                    arg.value = new Ripemd160(data);
+                  } else if (arg.type === VariableType.SHA1) {
+                    arg.value = new Sha1(data);
+                  } else if (arg.type === VariableType.SHA256) {
+                    arg.value = new Sha256(data);
+                  } else if (arg.type === VariableType.SIGHASHTYPE) {
+                    arg.value = new SigHashType(bin2num(data) as number);
+                  } else if (arg.type === VariableType.SIGHASHPREIMAGE) {
+                    arg.value = new SigHashPreimage(data);
+                  } else if (arg.type === VariableType.OPCODETYPE) {
+                    arg.value = new OpCodeType(data);
                   } else {
                     //
-                    throw new Error('unsupport type ' + param.type);
+                    throw new Error('unsupport type ' + arg.type);
                   }
                 }
-
-              });
+              }
+            });
           }
           break;
       }
 
-      return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
-
+      lsASM = buildContractCodeASM(contract.asmTemplateArgs, asmTemplate);
     }
+
+    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, params: args.map(arg => arg.value) });
 
   }
 

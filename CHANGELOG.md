@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.6.1
+
+- fix state issue
+- revert `serializeBool`
+
+*Release Date: 2021/10/05*
+
 ## 0.6.0
 
 - support `state` decorator
