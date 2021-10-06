@@ -490,7 +490,7 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 export function buildTypeClasses(desc: CompileResult | ContractDescription): Record<string, typeof ScryptType> {
 
   const structClasses = buildStructsClass(desc);
-  const aliasTypes: Record<string, typeof ScryptType> = {};
+  const allTypeClasses: Record<string, typeof ScryptType> = {};
   const alias: AliasEntity[] = desc.alias || [];
   const structs: StructEntity[] = desc.structs || [];
   const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
@@ -498,7 +498,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
     const finalType = finalTypeResolver(element.name);
     if (isStructType(finalType)) {
       const type = getStructNameByType(finalType);
-      Object.assign(aliasTypes, {
+      Object.assign(allTypeClasses, {
         [element.name]: class extends structClasses[type] {
           constructor(o: StructObject) {
             super(o);
@@ -508,22 +508,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
         }
       });
     } else if (isArrayType(finalType)) {
-      //TODO: just return some class, but they are useless
-      const [elemTypeName, _] = arrayTypeAndSize(finalType);
-
-      const C = BasicScryptType[elemTypeName];
-      if (C) {
-        Object.assign(aliasTypes, {
-          [element.name]: class extends Array<typeof C> { }
-        });
-      } else if (isStructType(elemTypeName)) {
-        const type = getStructNameByType(elemTypeName);
-        const C = structClasses[type];
-        Object.assign(aliasTypes, {
-          [element.name]: class extends Array<typeof C> { }
-        });
-      }
-
+      //not need to build class type for array, we only build class type for array element
     } else {
       const C = BasicScryptType[finalType];
       if (C) {
@@ -536,7 +521,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
           }
         };
 
-        Object.assign(aliasTypes, {
+        Object.assign(allTypeClasses, {
           [element.name]: aliasClass
         });
       } else {
@@ -545,9 +530,10 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
     }
   });
 
-  Object.assign(aliasTypes, structClasses);
+  Object.assign(allTypeClasses, structClasses);
+  Object.assign(allTypeClasses, BasicScryptType);
 
-  return aliasTypes;
+  return allTypeClasses;
 }
 
 

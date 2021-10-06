@@ -18,12 +18,12 @@ describe('state_test', () => {
 
 
     it('should serializer state success', () => {
-        const stateExample = new StateExample(1000, new Bytes('0101'), true,
+        const stateExample = new StateExample(1000, new Bytes("0101"), true,
             new PrivKey("11"),
             new PubKey("03f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf"),
             new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
-            new OpCodeType('76'),
+            new OpCodeType("76"),
             new SigHashType(SigHash.ALL | SigHash.FORKID),
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541"),
         );
@@ -74,6 +74,8 @@ describe('state_test', () => {
             new SigHashType(SigHash.ALL | SigHash.FORKID),
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
+
+
         // update state
         stateExample.counter = 1001
         stateExample.state_bytes = new Bytes('010101');
