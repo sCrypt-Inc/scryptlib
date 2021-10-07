@@ -166,7 +166,7 @@ export class AbstractContract {
 
 
 
-    // some time there is no opcodes, such as when sourcemap flag is closeed. 
+    // some time there is no opcodes, such as when sourcemap flag is disabled. 
     if (opcodes) {
       const offset = unlockingScriptASM.trim().split(' ').length;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
