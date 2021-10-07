@@ -19,90 +19,8 @@ By using `scryptlib`, both scripts can be obtained with ease.
 
 ## Contract Description File
 
-The compiler outputs results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a **contract description file**. Here's its structure:
+The compiler outputs results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract description file**](docs/counter_debug_desc.json).
 
-```json
-{
-  "version": 2,  // version of description file, you can look at VERSIONLOG.md to see what has changed in each version
-  "compilerVersion": "0.1.0+commit.312f643",    // version of compiler used to produce this file
-  "contract": "DemoP2PKH",    // name of the contract
-  "md5": "01234...",    // md5 of the contract source code file
-  "structs": [          // All structures defined in the contracts, including dependent contracts
-        {
-            "name": "Person",
-            "params": [
-                {
-                    "name": "age",
-                    "type": "Age",
-                    "finalType": "int"
-                },
-                {
-                    "name": "name",
-                    "type": "Name",
-                    "finalType": "bytes"
-                },
-                {
-                    "name": "token",
-                    "type": "Token",
-                    "finalType": "int"
-                }
-            ]
-        },
-        ...
-    ],
-  "alias": [  // All type alias defined in the contracts, including dependent contracts
-        {
-            "name": "Male",
-            "type": "Person"
-        },
-        {
-            "name": "Female",
-            "type": "Person"
-        },
-        ...
-    ],
-  "abi": [    // ABI of the contract: interfaces of its public functions and constructor.
-    {
-        "type": "constructor",
-        "name": "constructor",
-        "params": [
-            {
-                "name": "pubKeyHash",
-                "type": "Ripemd160"
-            }
-        ]
-    },
-    {
-        "type": "function",
-        "name": "unlock",
-        "index": 0,
-        "params": [
-            {
-                "name": "sig",
-                "type": "Sig"
-            },
-            {
-                "name": "pubKey",
-                "type": "PubKey"
-            }
-        ]
-    },
-
-    ...
-  ],
-  "file": "file:///C:/Users/sCrypt/code/project/mainContract.scrypt", //file uri of the main contract source code file.
-  "asm": "$pubKeyHash OP_OVER OP_HASH160 ...",    // locking script of the contract in ASM format, including placeholders for constructor parameters
-  "sources": [ // all compiled sources file related to the contract
-        "std",
-        "C:\\Users\\sCrypt\\code\\project\\util.scrypt"
-        "C:\\Users\\sCrypt\\code\\project\\contract.scrypt"
-  ],
-  "sourceMap": [  //sourceMap, you need to enable sourceMap setting in sCrypt IDE, default is disabled.
-    "0:76:53:76:58",
-    ...
-  ]
-}
-```
 
 There are two ways to generate this file (named as `xxx_desc.json`):
 
@@ -206,35 +124,62 @@ assert.isFalse(result.success, result.error);
 ```
 
 ## Contracts with State
-sCrypt offers [stateful contracts](https://medium.com/xiaohuiliu/stateful-smart-contracts-on-bitcoin-sv-c24f83a0f783). `OP_RETURN` data of the contract locking script can be accessed by using an accessor named `dataPart`, for example:
+sCrypt offers [stateful contracts](https://scryptdoc.readthedocs.io/en/latest/state.html#stateful-contract). Declare any property that is part of the state with a decorator `@state` in sCrypt contract, for example:
 ```typescript
-const dataPart = instance.dataPart;
-const dataPartASM = instance.dataPart.toASM();
-const dataPartHex = instance.dataPart.toHex();
-// to set it using ASM
-instance.setDataPart(dataInASM);
-// to set it using state object (no nesting)
-let state = {'counter': 11, 'bytes': '1234', 'flag': true}
-instance.setDataPart(state)
-```
-After that, the `instance.lockingScript` would include the data part automatically.
+contract Counter {
+    @state
+    int counter;
 
-If you want to access the code part of the contract's locking script including the trailing `OP_RETURN`, use:
-```typescript
-const codePart = instance.codePart;
-const codePartASM = instance.codePart.toASM();
-const codePartHex = instance.codePart.toHex();
+    constructor(int counter) {
+        this.counter = counter;
+    }
+}
 ```
 
-Another way to access the state is to use the `state` decorator in the sCrypt contract. 
+Use the initial state to instantiate the contract.
+
+```typescript
+const instance = new Counter(1000);
+```
+
 Then you can read and write the state by accessing the properties of the contract instance.
 
+
 ```typescript
+// read state
+let state = instance.counter;
+
 // update state
-stateExample.counter++;
-stateExample.state_bytes = new Bytes('010101');
-stateExample.state_bool = false;
+instance.counter++;
 ```
+
+Finally, you can use `lockingScript` to build transaction output and use `prevLockingScript` to get Sighash Preimage of the transaction.
+
+```typescript
+tx.addOutput(new bsv.Transaction.Output({
+  script: instance.lockingScript,
+  satoshis: outputAmount
+}))
+
+preimage = getPreimage(tx, instance.prevLockingScript, inputSatoshis)
+
+// set txContext for verification
+instance.txContext = {
+  tx,
+  inputIndex,
+  inputSatoshis
+}
+```
+
+If you want to update the states for the next time, you need to save the latest states of the contract by calling `commitState`.
+
+```typescript
+//Save updated states
+instance.commitState();
+```
+
+Another way to maintain state is to directly access the OP_RETURN data of the contract through [dataPart](docs/DATAPART.md)
+
 
 ## Instantiate Inline Assembly Variables
 Assembly variables can be replaced with literal Script in ASM format using `replace()`. Each variable is prefixed by its unique scope, namely, the contract and the function it is under.
@@ -254,15 +199,15 @@ You could find more examples using `scryptlib` in the [boilerplate](https://gith
 In addition to using the constructor to construct the contract, you can also use raw transactions to construct the contract.
 
 ```typescript
-    const axios = require('axios');
+const axios = require('axios');
 
-    const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
-    let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
-    // constructor from raw Transaction.
-    let counter = Counter.fromTransaction(response.data, 0/** output index**/);
+const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
+let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
+// constructor from raw Transaction.
+let counter = Counter.fromTransaction(response.data, 0/** output index**/);
 
-    // constructor from Utxo lockingScript
-    let counterClone = Counter.fromHex(counter.lockingScript.toHex());
+// constructor from Utxo lockingScript
+let counterClone = Counter.fromHex(counter.lockingScript.toHex());
 
 ```
 
