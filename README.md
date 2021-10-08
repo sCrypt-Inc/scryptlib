@@ -19,8 +19,89 @@ By using `scryptlib`, both scripts can be obtained with ease.
 
 ## Contract Description File
 
-The compiler outputs results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract description file**](docs/counter_debug_desc.json).
+The compiler output results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract description file**](docs/counter_debug_desc.json).
 
+```json
+{
+  "version": 2,  // version of description file, you can look at VERSIONLOG.md to see what has changed in each version
+  "compilerVersion": "0.1.0+commit.312f643",    // version of compiler used to produce this file
+  "contract": "DemoP2PKH",    // name of the contract
+  "md5": "01234...",    // md5 of the contract source code file
+  "structs": [          // All structures defined in the contracts, including dependent contracts
+        {
+            "name": "Person",
+            "params": [
+                {
+                    "name": "age",
+                    "type": "Age",
+                    "finalType": "int"
+                },
+                {
+                    "name": "name",
+                    "type": "Name",
+                    "finalType": "bytes"
+                },
+                {
+                    "name": "token",
+                    "type": "Token",
+                    "finalType": "int"
+                }
+            ]
+        },
+        ...
+    ],
+  "alias": [  // All type alias defined in the contracts, including dependent contracts
+        {
+            "name": "Male",
+            "type": "Person"
+        },
+        {
+            "name": "Female",
+            "type": "Person"
+        },
+        ...
+    ],
+  "abi": [    // ABI of the contract: interfaces of its public functions and constructor.
+    {
+        "type": "constructor",
+        "name": "constructor",
+        "params": [
+            {
+                "name": "pubKeyHash",
+                "type": "Ripemd160"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "unlock",
+        "index": 0,
+        "params": [
+            {
+                "name": "sig",
+                "type": "Sig"
+            },
+            {
+                "name": "pubKey",
+                "type": "PubKey"
+            }
+        ]
+    },
+    ...
+  ],
+  "file": "file:///C:/Users/sCrypt/code/project/mainContract.scrypt", //file uri of the main contract source code file.
+  "asm": "$pubKeyHash OP_OVER OP_HASH160 ...",    // locking script of the contract in ASM format, including placeholders for constructor parameters
+  "sources": [ // all compiled sources file related to the contract
+        "std",
+        "C:\\Users\\sCrypt\\code\\project\\util.scrypt"
+        "C:\\Users\\sCrypt\\code\\project\\contract.scrypt"
+  ],
+  "sourceMap": [  //sourceMap, you need to enable sourceMap setting in sCrypt IDE, default is disabled.
+    "0:76:53:76:58",
+    ...
+  ]
+}
+```
 
 There are two ways to generate this file (named as `xxx_desc.json`):
 
@@ -124,7 +205,7 @@ assert.isFalse(result.success, result.error);
 ```
 
 ## Contracts with State
-sCrypt offers [stateful contracts](https://scryptdoc.readthedocs.io/en/latest/state.html#stateful-contract). Declare any property that is part of the state with a decorator `@state` in sCrypt contract, for example:
+sCrypt offers [stateful contracts](https://scryptdoc.readthedocs.io/en/latest/state.html#stateful-contract). Declare any property that is part of the state with a decorator `@state` in a contract, for example:
 ```typescript
 contract Counter {
     @state
@@ -136,32 +217,27 @@ contract Counter {
 }
 ```
 
-Use the initial state to instantiate the contract.
+Use the initial state to instantiate the contract and read the state by accessing the properties of the contract instance.
 
 ```typescript
-const instance = new Counter(1000);
-```
+const instance = new Counter(0);
 
-Then you can read and write the state by accessing the properties of the contract instance.
-
-
-```typescript
-// read state
 let state = instance.counter;
-
-// update state
-instance.counter++;
 ```
 
-Finally, you can use `lockingScript` to build transaction output and use `prevLockingScript` to get Sighash Preimage of the transaction.
-
+Then use `counter.getStateScript` to get a locking script include the new state automatically and use `counter.lockingScript` to get Sighash Preimage of the transaction.  
 ```typescript
+const tx = newTx(inputSatoshis);
+let newLockingScript = stateExample.getStateScript({
+    counter: 1
+});
+
 tx.addOutput(new bsv.Transaction.Output({
-  script: instance.lockingScript,
+  script: newLockingScript,
   satoshis: outputAmount
 }))
 
-preimage = getPreimage(tx, instance.prevLockingScript, inputSatoshis)
+preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
 
 // set txContext for verification
 instance.txContext = {
@@ -171,14 +247,15 @@ instance.txContext = {
 }
 ```
 
-If you want to update the states for the next time, you need to save the latest states of the contract by calling `commitState`.
+
+Before the next call to the contract, save the latest state
 
 ```typescript
-//Save updated states
-instance.commitState();
+//Update states
+stateExample.counter++;
 ```
 
-Another way to maintain state is to directly access the OP_RETURN data of the contract through [dataPart](docs/DATAPART.md)
+You can also maintain state manually to, for example, optimize your contract or use customized state de/serialization [rawstate](docs/rawstate.md)
 
 
 ## Instantiate Inline Assembly Variables
@@ -196,7 +273,7 @@ You could find more examples using `scryptlib` in the [boilerplate](https://gith
 
 ## Construct contracts from raw transactions
 
-In addition to using the constructor to construct the contract, you can also use raw transactions to construct the contract.
+In addition to using a constructor to create a contract, you can also use a raw transaction to construct it.
 
 ```typescript
 const axios = require('axios');
