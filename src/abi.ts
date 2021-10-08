@@ -138,9 +138,7 @@ export class FunctionCall {
 
     const Class = this.contract.constructor as typeof AbstractContract;
 
-
-    const prevInstance = Class.fromHex(this.contract.prevLockingScript.toHex());
-    const constructorArgs: SupportedParamType[] = prevInstance.ctorArgs().map(p => p.value);
+    const constructorArgs: SupportedParamType[] = this.contract.ctorArgs().map(p => p.value);
     const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
     const name = `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
@@ -197,37 +195,33 @@ export class ABICoder {
       type: this.finalTypeResolver(p.type),
       state: p.state
     })).forEach((param, index) => {
-      const arg = args[index];
-      if (isArrayType(param.type)) {
-        const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
 
-        if (Array.isArray(arg)) {
-          if (checkArray(arg, [elemTypeName, arraySizes])) {
-            // flattern array
-            flatternArray(arg, param.name, param.type).forEach((e) => {
-              cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
-              args_.push(e.value);
-            });
-          } else {
-            throw new Error(`constructor ${index}-th parameter should be ${param.type}`);
-          }
+      if (isArrayType(param.type)) {
+        const arg = args[index] as SupportedParamType[];
+        if (checkArray(arg, param.type)) {
+          // flattern array
+          flatternArray(arg, param.name, param.type).forEach((e) => {
+            cParams_.push({ name: e.name, type: this.finalTypeResolver(e.type), state: param.state });
+            args_.push(e.value);
+          });
         } else {
           throw new Error(`constructor ${index}-th parameter should be ${param.type}`);
         }
+
       } else if (isStructType(param.type)) {
+        const arg = args[index] as Struct;
 
-        const argS = arg as Struct;
-
-        if (param.type != argS.finalType) {
-          throw new Error(`expect struct ${getStructNameByType(param.type)} but got struct ${argS.type}`);
+        if (param.type != arg.finalType) {
+          throw new Error(`expect struct ${getStructNameByType(param.type)} but got struct ${arg.type}`);
         }
 
-        flatternStruct(argS, param.name).forEach(v => {
+        flatternStruct(arg, param.name).forEach(v => {
           cParams_.push({ name: `${v.name}`, type: this.finalTypeResolver(v.type), state: param.state });
           args_.push(v.value);
         });
       }
       else {
+        const arg = args[index] as SupportedParamType;
         cParams_.push(param);
         args_.push(arg);
       }
@@ -438,8 +432,7 @@ export class ABICoder {
       throw new Error('Array arguments are not of the same type');
     }
 
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayParam.type);
-    if (checkArray(args, [elemTypeName, arraySizes])) {
+    if (checkArray(args, arrayParam.type)) {
       return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
         return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
       }).join(' ');

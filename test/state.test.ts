@@ -1,5 +1,3 @@
-
-
 import { assert, expect } from 'chai';
 import { loadDescription, newTx } from './helper';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
@@ -75,18 +73,19 @@ describe('state_test', () => {
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
 
+        let newLockingScript = stateExample.getStateScript({
+            counter: 1001,
+            state_bytes: new Bytes('010101'),
+            state_bool: false
+        });
 
-        // update state
-        stateExample.counter = 1001
-        stateExample.state_bytes = new Bytes('010101');
-        stateExample.state_bool = false;
         const tx1 = newTx(inputSatoshis);
         tx1.addOutput(new bsv.Transaction.Output({
-            script: bsv.Script.fromHex(stateExample.lockingScript.toHex()),
+            script: newLockingScript,
             satoshis: outputAmount
         }))
 
-        const preimage1 = getPreimage(tx1, stateExample.prevLockingScript, inputSatoshis)
+        const preimage1 = getPreimage(tx1, stateExample.lockingScript, inputSatoshis)
 
         stateExample.txContext = {
             tx: tx1,
@@ -97,22 +96,25 @@ describe('state_test', () => {
         const result1 = stateExample.unlock(new SigHashPreimage(toHex(preimage1)), outputAmount).verify()
         expect(result1.success, result1.error).to.be.true
 
-        //should call commitState to update counter.prevLockingScript
-        stateExample.commitState();
+        //commit new state
+        stateExample.counter = 1001
+        stateExample.state_bytes = new Bytes('010101');
+        stateExample.state_bool = false;
 
 
-        stateExample.counter = 1002
-        stateExample.state_bytes = new Bytes('01010101');
-        stateExample.state_bool = true;
-
+        newLockingScript = stateExample.getStateScript({
+            counter: 1002,
+            state_bytes: new Bytes('01010101'),
+            state_bool: true
+        })
 
         const tx2 = newTx(inputSatoshis);
         tx2.addOutput(new bsv.Transaction.Output({
-            script: bsv.Script.fromHex(stateExample.lockingScript.toHex()),
+            script: newLockingScript,
             satoshis: outputAmount
         }))
 
-        const preimage2 = getPreimage(tx2, stateExample.prevLockingScript, inputSatoshis)
+        const preimage2 = getPreimage(tx2, stateExample.lockingScript, inputSatoshis)
 
         stateExample.txContext = {
             tx: tx2,
@@ -122,6 +124,45 @@ describe('state_test', () => {
 
         const result2 = stateExample.unlock(new SigHashPreimage(toHex(preimage2)), outputAmount).verify()
         expect(result2.success, result2.error).to.be.true
+
+    });
+
+    it('should throw if provider state that not exists', () => {
+
+        const stateExample = new StateExample(1000, new Bytes('0101'), true,
+            new PrivKey("11"),
+            new PubKey("03f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf"),
+            new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
+            new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+            new OpCodeType('76'),
+            new SigHashType(SigHash.ALL | SigHash.FORKID),
+            new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
+        );
+
+
+        expect(() => {
+            stateExample.getStateScript({
+                coun1ter: 1002,
+                state_bytes: new Bytes('01010101'),
+                state_bool: true
+            })
+        }).to.throw('Contract StateExample does not have @state coun1ter');
+
+    });
+
+
+    it('should throw if constract without state', () => {
+
+        const Counter = buildContractClass(loadDescription('counter_desc.json'));
+        let counter = new Counter();
+
+        expect(() => {
+            counter.getStateScript({
+                coun1ter: 1002,
+                state_bytes: new Bytes('01010101'),
+                state_bool: true
+            })
+        }).to.throw('Contract Counter does not have any @state');
 
     });
 

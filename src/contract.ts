@@ -1,7 +1,7 @@
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray
 } from './internal';
 
 
@@ -53,6 +53,8 @@ export class AbstractContract {
   public static asmContract: boolean;
   public static staticConst: Record<string, number>;
 
+  public static typeResolver: TypeResolver;
+
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   constructor(...ctorParams: SupportedParamType[]) {
   }
@@ -63,19 +65,6 @@ export class AbstractContract {
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
   asmTemplateArgs: Map<string, string> = new Map();
-
-  _prevLockingScript: Script | undefined;
-
-
-  get prevLockingScript(): Script {
-
-    if (this._prevLockingScript) {
-      return this._prevLockingScript;
-    }
-
-    return this.lockingScript;
-  }
-
 
   get lockingScript(): Script {
 
@@ -113,13 +102,6 @@ export class AbstractContract {
     }
   }
 
-  /**
-   * When we call the contract, the contract has a new state. The next time the contract is called, these latest states need to be included as part of prevLockingScript
-   */
-  commitState(): void {
-    this._prevLockingScript = this.lockingScript;
-  }
-
   getTypeClassByType(type: string): typeof ScryptType {
     const types: typeof ScryptType[] = Object.getPrototypeOf(this).constructor.types;
 
@@ -133,11 +115,65 @@ export class AbstractContract {
     }
   }
 
+
+  getStateScript(states: Record<string, SupportedParamType>): Script {
+
+    const stateArgs = this.ctorArgs().filter(arg => arg.state);
+    const contractName = Object.getPrototypeOf(this).constructor.contractName;
+    if (stateArgs.length === 0) {
+      throw new Error(`Contract ${contractName} does not have any @state`);
+    }
+    const finalTypeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
+    const resolveKeys: string[] = [];
+    const newState: Arguments = stateArgs.map(arg => {
+      const finalType = finalTypeResolver(arg.type);
+      if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
+        resolveKeys.push(arg.name);
+        if (isArrayType(finalType)) {
+          const array = states[arg.name] as SupportedParamType[];
+          if (!checkArray(array, finalType)) {
+            throw new Error(`@state ${arg.name} should be ${arg.type}`);
+          }
+        } else if (isStructType(finalType)) {
+
+          if (states[arg.name] instanceof Struct) {
+            const st = states[arg.name] as Struct;
+            if (finalType != st.finalType) {
+              throw new Error(`@state ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${st.type}`);
+            }
+          } else {
+            throw new Error(`@state ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${states[arg.name]}`);
+          }
+        }
+
+        return Object.assign(
+          {
+            ...arg
+          },
+          {
+            value: states[arg.name]
+          }
+        );
+      } else {
+        return arg;
+      }
+    });
+
+
+    Object.keys(states).forEach(key => {
+      if (resolveKeys.indexOf(key) === -1) {
+        throw new Error(`Contract ${contractName} does not have @state ${key}`);
+      }
+    });
+
+    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState));
+  }
+
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = bsv.Script.fromASM(unlockingScriptASM.trim());
-    const ls = this.prevLockingScript;
+    const ls = this.lockingScript;
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
@@ -243,7 +279,6 @@ export class AbstractContract {
     } else {
       this._dataPart = serializeState(state);
     }
-    this.commitState();
   }
 
   get codePart(): Script {
@@ -334,9 +369,6 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       super();
       if (!Contract.asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
-        if (ctorParams.length > 0) {
-          this.commitState();
-        }
       }
     }
 
@@ -360,7 +392,6 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       const obj = new this();
       Contract.asmContract = false;
       obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromRawHex(obj, Contract.asm, hex);
-      obj.commitState();
       return obj;
     }
 
@@ -392,12 +423,12 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 
 
   const staticConst = desc.staticConst || {};
-  const finalTypeResolver = buildTypeResolver(desc.contract, desc.alias || [], desc.structs || [], staticConst);
+  ContractClass.typeResolver = buildTypeResolver(desc.contract, desc.alias || [], desc.structs || [], staticConst);
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm.map(item => item['opcode'].trim()).join(' ');
-  ContractClass.abiCoder = new ABICoder(desc.abi, finalTypeResolver);
+  ContractClass.abiCoder = new ABICoder(desc.abi, ContractClass.typeResolver);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
   ContractClass.structs = desc.structs;
