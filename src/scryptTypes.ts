@@ -417,16 +417,6 @@ export class OpCodeType extends ScryptType {
   }
 }
 
-
-export type BasicType = ScryptType | boolean | number | bigint | string | BasicType[];
-
-export type SingletonParamType = BasicType | BasicType[];
-
-
-export type StructObject = Record<string, SingletonParamType>;
-
-
-
 export class Struct extends ScryptType {
 
   sorted = false;
@@ -627,7 +617,17 @@ export class Struct extends ScryptType {
 }
 
 
-export type SupportedParamType = SingletonParamType | SingletonParamType[];
+export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct | PrimitiveTypes[];
+
+export type RawTypes = boolean | number | bigint | string | RawTypes[];
+
+
+export type SingletonParamType = PrimitiveTypes | RawTypes;
+
+
+export type StructObject = Record<string, SingletonParamType>;
+
+export type SupportedParamType = SingletonParamType | SupportedParamType[];
 
 
 
@@ -651,7 +651,7 @@ export enum VariableType {
 
 export const BasicType = Object.keys(VariableType).map(key => VariableType[key]);
 
-export const BasicScryptType = {
+export const BasicScryptType: Record<string, typeof ScryptType> = {
   [VariableType.BOOL]: Bool,
   [VariableType.INT]: Int,
   [VariableType.BYTES]: Bytes,

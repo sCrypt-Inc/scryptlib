@@ -1044,7 +1044,7 @@ export function createStruct(contract: AbstractContract, structClass: typeof Str
 
 export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): SupportedParamType {
 
-  const arrays: SupportedParamType = [];
+  const arrays: SupportedParamType[] = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);
 
   const arraylen = sizes[0];
@@ -1076,11 +1076,11 @@ export function createArray(contract: AbstractContract, type: string, name: stri
 }
 
 
-export function toLiteral(value: BasicType): string {
+export function toLiteral(value: SupportedParamType): string {
 
   if (Array.isArray(value)) {
-
-    return `[${value.map(i => toLiteral(i))}]`;
+    const v = value as SupportedParamType[];
+    return `[${v.map(i => toLiteral(i))}]`;
   } else {
 
     return value instanceof ScryptType ? value.toLiteral() : value as string;

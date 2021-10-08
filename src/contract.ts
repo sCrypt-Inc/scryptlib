@@ -1,8 +1,7 @@
-import { ABIEntityType } from '.';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType
 } from './internal';
 
 
@@ -512,8 +511,7 @@ export function buildTypeClasses(desc: CompileResult | ContractDescription): Rec
     } else {
       const C = BasicScryptType[finalType];
       if (C) {
-        const Class = C as typeof ScryptType;
-        const aliasClass = class extends Class {
+        const aliasClass = class extends C {
           constructor(o: ValueType) {
             super(o);
             this._type = element.name;

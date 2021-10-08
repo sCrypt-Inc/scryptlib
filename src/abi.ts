@@ -427,7 +427,7 @@ export class ABICoder {
     return args.map((arg, i) => this.encodeParam(arg, paramsEntitys[i])).join(' ');
   }
 
-  encodeParamArray(args: SingletonParamType[], arrayParam: ParamEntity): string {
+  encodeParamArray(args: SupportedParamType[], arrayParam: ParamEntity): string {
     if (args.length === 0) {
       throw new Error('Empty array not allowed');
     }
