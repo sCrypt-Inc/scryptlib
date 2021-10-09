@@ -12,6 +12,28 @@ index 22a5d8f..88d809e 100644
    $.checkArgument(buf.length <= nMaxNumSize, new Error('script number overflow'))
    if (fRequireMinimal && buf.length > 0) {
      // Check that the number is encoded with the minimum possible
+diff --git a/node_modules/bsv/lib/crypto/ecdsa.js b/node_modules/bsv/lib/crypto/ecdsa.js
+index 2fa7dfd..2c3f1e5 100644
+--- a/node_modules/bsv/lib/crypto/ecdsa.js
++++ b/node_modules/bsv/lib/crypto/ecdsa.js
+@@ -9,7 +9,7 @@ var Hash = require('./hash')
+ var _ = require('../util/_')
+ var $ = require('../util/preconditions')
+ 
+-var ECDSA = function ECDSA (obj) {
++var ECDSA = function ECDSA(obj) {
+   if (!(this instanceof ECDSA)) {
+     return new ECDSA(obj)
+   }
+@@ -205,7 +205,7 @@ ECDSA.prototype._findSignature = function (d, e) {
+     badrs++
+     k = this.k
+     Q = G.mul(k)
+-    r = Q.x.umod(N)
++    r = new BN(1).mul(Q.x.umod(N))
+     s = k.invm(N).mul(e.add(d.mul(r))).umod(N)
+   } while (r.cmp(BN.Zero) <= 0 || s.cmp(BN.Zero) <= 0)
+ 
 diff --git a/node_modules/bsv/lib/script/index.js b/node_modules/bsv/lib/script/index.js
 index 46683f1..b59a70c 100644
 --- a/node_modules/bsv/lib/script/index.js
