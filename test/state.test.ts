@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
 import { loadDescription, newTx } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { buildContractClass } from '../src/contract';
 import { Bool, Bytes, Int, PrivKey, PubKey, Ripemd160, Sha256, SigHashPreimage, SigHashType, OpCodeType, SigHash, Sig } from '../src/scryptTypes';
 import { bsv, toHex, getPreimage } from '../src/utils';
 
@@ -96,7 +96,7 @@ describe('state_test', () => {
         const result1 = stateExample.unlock(new SigHashPreimage(toHex(preimage1)), outputAmount).verify()
         expect(result1.success, result1.error).to.be.true
 
-        //commit new state
+        // update state
         stateExample.counter = 1001
         stateExample.state_bytes = new Bytes('010101');
         stateExample.state_bool = false;
@@ -127,7 +127,7 @@ describe('state_test', () => {
 
     });
 
-    it('should throw if provider state that not exists', () => {
+    it('should throw if providing state that not exist', () => {
 
         const stateExample = new StateExample(1000, new Bytes('0101'), true,
             new PrivKey("11"),
@@ -146,12 +146,12 @@ describe('state_test', () => {
                 state_bytes: new Bytes('01010101'),
                 state_bool: true
             })
-        }).to.throw('Contract StateExample does not have @state coun1ter');
+        }).to.throw('Contract StateExample does not have stateful property coun1ter');
 
     });
 
 
-    it('should throw if constract without state', () => {
+    it('should throw if constract does not have any', () => {
 
         const Counter = buildContractClass(loadDescription('counter_desc.json'));
         let counter = new Counter();
@@ -162,7 +162,7 @@ describe('state_test', () => {
                 state_bytes: new Bytes('01010101'),
                 state_bool: true
             })
-        }).to.throw('Contract Counter does not have any @state');
+        }).to.throw('Contract Counter does not have any stateful property');
 
     });
 

@@ -4,7 +4,7 @@ One way to implement state in contract is dividing the contract in the locking s
 
 ![](https://miro.medium.com/max/936/0*Bc4mNeNnhN24G45E)
 
-sCrypt offers [stateful contracts](https://medium.com/xiaohuiliu/stateful-smart-contracts-on-bitcoin-sv-c24f83a0f783). Let us look at a simple example of a stateful contract: a counter contract tracking how many times its function increment() has been called. Its code is shown below with comments inline.
+sCrypt offers [stateful contracts](https://medium.com/xiaohuiliu/stateful-smart-contracts-on-bitcoin-sv-c24f83a0f783). Let us look at a simple example of a stateful contract: a counter contract tracking how many times its function `increment()` has been called. Its code is shown below with comments inline.
 
 ```javascript
 contract Counter {

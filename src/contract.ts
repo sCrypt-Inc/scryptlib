@@ -116,12 +116,19 @@ export class AbstractContract {
   }
 
 
+  /**
+   * Then use `getStateScript` to get a locking script that includes the new state. The function parameter accepts a javascript/typescript object,
+   *  each key of the object is the name of the state property, and the value corresponding to the key is the value of the state property. 
+   * If you only give part of the state properties, this function will combine other unspecified properties to calculate the latest state of the contract.
+   * @param states 
+   * @returns a locking script that includes the new states
+   */
   getStateScript(states: Record<string, SupportedParamType>): Script {
 
     const stateArgs = this.ctorArgs().filter(arg => arg.state);
     const contractName = Object.getPrototypeOf(this).constructor.contractName;
     if (stateArgs.length === 0) {
-      throw new Error(`Contract ${contractName} does not have any @state`);
+      throw new Error(`Contract ${contractName} does not have any stateful property`);
     }
     const finalTypeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
     const resolveKeys: string[] = [];
@@ -132,17 +139,17 @@ export class AbstractContract {
         if (isArrayType(finalType)) {
           const array = states[arg.name] as SupportedParamType[];
           if (!checkArray(array, finalType)) {
-            throw new Error(`@state ${arg.name} should be ${arg.type}`);
+            throw new Error(`stateful property ${arg.name} should be ${arg.type}`);
           }
         } else if (isStructType(finalType)) {
 
           if (states[arg.name] instanceof Struct) {
             const st = states[arg.name] as Struct;
             if (finalType != st.finalType) {
-              throw new Error(`@state ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${st.type}`);
+              throw new Error(`stateful property ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${st.type}`);
             }
           } else {
-            throw new Error(`@state ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${states[arg.name]}`);
+            throw new Error(`stateful property ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${states[arg.name]}`);
           }
         }
 
@@ -162,7 +169,7 @@ export class AbstractContract {
 
     Object.keys(states).forEach(key => {
       if (resolveKeys.indexOf(key) === -1) {
-        throw new Error(`Contract ${contractName} does not have @state ${key}`);
+        throw new Error(`Contract ${contractName} does not have stateful property ${key}`);
       }
     });
 
