@@ -431,8 +431,8 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
-export function getPreimage(tx: bsv.Transaction, prevLockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, prevLockingScript, new bsv.crypto.BN(inputAmount), flags);
+export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
@@ -584,13 +584,8 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
     } else if (finalType != paramFinalType) {
       if (isArrayType(paramFinalType)) {
-        const [elemTypeName, arraySize] = arrayTypeAndSize(paramFinalType);
-        if (Array.isArray(arg.value[p.name])) {
-          if (!checkArray(arg.value[p.name] as SupportedParamType[], [elemTypeName, arraySize])) {
-            throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
-          }
-        } else {
-          throw new Error(`struct ${s.name} property ${p.name} should be ${paramFinalType}`);
+        if (!checkArray(arg.value[p.name] as SupportedParamType[], paramFinalType)) {
+          throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
         }
       } else {
         throw new Error(`wrong argument type, expected ${paramFinalType} but got ${finalType}`);
@@ -656,9 +651,8 @@ export function subArrayType(arrayTypeName: string): string {
 }
 
 
-export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array<number>]): boolean {
-
-  const [elemTypeName, arraySizes] = arrayInfo;
+export function checkArray(args: SupportedParamType[], arrayFinallyType: string): boolean {
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayFinallyType);
 
   if (!Array.isArray(args)) {
     return false;
@@ -676,7 +670,7 @@ export function checkArray(args: SupportedParamType[], arrayInfo: [string, Array
 
   if (!args.every(arg => {
     if (Array.isArray(arg)) {
-      return checkArray(arg, [elemTypeName, arraySizes.slice(1)]);
+      return checkArray(arg, subArrayType(arrayFinallyType));
     } else {
 
       const scryptType = typeOfArg(arg);
@@ -1044,7 +1038,7 @@ export function createStruct(contract: AbstractContract, structClass: typeof Str
 
 export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): SupportedParamType {
 
-  const arrays: SupportedParamType = [];
+  const arrays: SupportedParamType[] = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);
 
   const arraylen = sizes[0];
@@ -1076,11 +1070,11 @@ export function createArray(contract: AbstractContract, type: string, name: stri
 }
 
 
-export function toLiteral(value: BasicType): string {
+export function toLiteral(value: SupportedParamType): string {
 
   if (Array.isArray(value)) {
-
-    return `[${value.map(i => toLiteral(i))}]`;
+    const v = value as SupportedParamType[];
+    return `[${v.map(i => toLiteral(i))}]`;
   } else {
 
     return value instanceof ScryptType ? value.toLiteral() : value as string;

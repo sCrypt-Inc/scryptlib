@@ -22,7 +22,7 @@ describe('Contract description old version test', () => {
 
       const Classes = buildTypeClasses(jsonDescr);
 
-      assert.deepEqual(Classes, {})
+      expect(Object.keys(Classes)).to.includes.members(["bool", "int", "bytes", "PubKey", "PrivKey", "Sig", "Sha1", "Ripemd160", "Sha256", "SigHashType", "OpCodeType", "SigHashPreimage"])
 
     });
   });
@@ -34,8 +34,7 @@ describe('Contract description old version test', () => {
       expect(typeof Contract === typeof AbstractContract).to.be.true;
 
       const Classes = buildTypeClasses(jsonDescr);
-
-      expect(Object.keys(Classes)).to.includes.members(["Age", "Block", "Coinbase", "Person", "Female", "Height", "Integer", "Male", "MaleAAA", "Name", "Time", "Tokens"])
+      expect(Object.keys(Classes)).to.includes.members(["Age", "Block", "Coinbase", "Person", "Female", "Height", "Integer", "Male", "MaleAAA", "Name", "Time"])
 
       Object.keys(Classes).forEach(t => {
         assert.isTrue(Classes[t] instanceof Function)

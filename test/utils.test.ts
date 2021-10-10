@@ -346,54 +346,54 @@ describe('utils', () => {
   describe('checkArray()', () => {
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, 3], ['int', [3]])).to.true;
+      expect(checkArray([3, 3, 3], 'int[3]')).to.true;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3], ['int', [3]])).to.false;
+      expect(checkArray([3, 3], 'int[3]')).to.false;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, 1, 3], ['int', [3]])).to.false;
+      expect(checkArray([3, 3, 1, 3], 'int[3]')).to.false;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, new Int(2)], ['int', [3]])).to.true;
+      expect(checkArray([3, 3, new Int(2)], 'int[3]')).to.true;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, new Bool(true)], ['int', [3]])).to.false;
+      expect(checkArray([3, 3, new Bool(true)], 'int[3]')).to.false;
     })
 
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3]], ['int', [2, 3]])).to.true;
+      expect(checkArray([[3, 3, 3], [3, 12, 3]], 'int[2][3]')).to.true;
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3], [1, 1, 1]], ['int', [2, 3]])).to.false;
+      expect(checkArray([[3, 3, 3], [3, 12, 3], [1, 1, 1]], 'int[2][3]')).to.false;
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12]], ['int', [2, 3]])).to.false;
+      expect(checkArray([[3, 3, 3], [3, 12]], 'int[2][3]')).to.false;
     })
 
     it('checkArray int[2][1][3]', () => {
-      expect(checkArray([[[3, 3, 3]], [[3, 12, 3]]], ['int', [2, 1, 3]])).to.true;
+      expect(checkArray([[[3, 3, 3]], [[3, 12, 3]]], 'int[2][1][3]')).to.true;
     })
 
     it('checkArray int[2][1][3]', () => {
-      expect(checkArray([[[3, 3, 3], 1], [[3, 12, 3]]], ['int', [2, 1, 3]])).to.false;
+      expect(checkArray([[[3, 3, 3], 1], [[3, 12, 3]]], 'int[2][1][3]')).to.false;
     })
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], ['int', [2, 2, 3]])).to.true;
+      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], 'int[2][2][3]')).to.true;
     })
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], ['int', [2, 2, 3]])).to.true;
+      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], 'int[2][2][3]')).to.true;
     })
 
 
@@ -407,11 +407,11 @@ describe('utils', () => {
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-      ]], ['int', [2, 3, 4]])).to.true;
+      ]], 'int[2][3][4]')).to.true;
     })
 
     it('checkArray int[2][3][4]', () => {
-      expect(checkArray([[1, 3, 5], [2, 4, 6]], ['int', [2, 3, 4]])).to.false;
+      expect(checkArray([[1, 3, 5], [2, 4, 6]], 'int[2][3][4]')).to.false;
     })
 
   })

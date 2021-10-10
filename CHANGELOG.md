@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.6.2
+
+- fix bsv library issue:  Signature error in the browser environment
+- add `getStateScript`, see [Contracts with State](https://github.com/sCrypt-Inc/scryptlib/tree/master#contracts-with-state)
+
+*Release Date: 2021/10/09*
+
+
+
 ## 0.6.1
 
 - fix state issue

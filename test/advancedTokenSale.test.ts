@@ -64,7 +64,7 @@ describe('Test advancedTokenSale.test', () => {
       satoshis: changeAmount
     }))
 
-    preimage = getPreimage(tx, saler.prevLockingScript, inputSatoshis, 0, sighashType)
+    preimage = getPreimage(tx, saler.lockingScript, inputSatoshis, 0, sighashType)
 
 
     const context = { tx, inputIndex, inputSatoshis }

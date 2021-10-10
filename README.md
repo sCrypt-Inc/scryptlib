@@ -19,7 +19,7 @@ By using `scryptlib`, both scripts can be obtained with ease.
 
 ## Contract Description File
 
-The compiler outputs results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a **contract description file**. Here's its structure:
+The compiler output results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract description file**](docs/counter_debug_desc.json).
 
 ```json
 {
@@ -87,7 +87,6 @@ The compiler outputs results in a JSON file. It’s a representation used to bui
             }
         ]
     },
-
     ...
   ],
   "file": "file:///C:/Users/sCrypt/code/project/mainContract.scrypt", //file uri of the main contract source code file.
@@ -206,35 +205,52 @@ assert.isFalse(result.success, result.error);
 ```
 
 ## Contracts with State
-sCrypt offers [stateful contracts](https://medium.com/xiaohuiliu/stateful-smart-contracts-on-bitcoin-sv-c24f83a0f783). `OP_RETURN` data of the contract locking script can be accessed by using an accessor named `dataPart`, for example:
+sCrypt offers [stateful contracts](https://scryptdoc.readthedocs.io/en/latest/state.html#stateful-contract). Declare any property that is part of the state with a decorator `@state` in a contract, for example:
 ```typescript
-const dataPart = instance.dataPart;
-const dataPartASM = instance.dataPart.toASM();
-const dataPartHex = instance.dataPart.toHex();
-// to set it using ASM
-instance.setDataPart(dataInASM);
-// to set it using state object (no nesting)
-let state = {'counter': 11, 'bytes': '1234', 'flag': true}
-instance.setDataPart(state)
-```
-After that, the `instance.lockingScript` would include the data part automatically.
+contract Counter {
+    @state
+    int counter;
 
-If you want to access the code part of the contract's locking script including the trailing `OP_RETURN`, use:
-```typescript
-const codePart = instance.codePart;
-const codePartASM = instance.codePart.toASM();
-const codePartHex = instance.codePart.toHex();
+    constructor(int counter) {
+        this.counter = counter;
+    }
+}
 ```
 
-Another way to access the state is to use the `state` decorator in the sCrypt contract. 
-Then you can read and write the state by accessing the properties of the contract instance.
+Use the initial state to instantiate the contract and read the state by accessing the properties of the contract instance.
 
 ```typescript
-// update state
-stateExample.counter++;
-stateExample.state_bytes = new Bytes('010101');
-stateExample.state_bool = false;
+const instance = new Counter(0);
+
+let state = instance.counter;
 ```
+
+Then use `counter.getStateScript` to get a locking script that includes the new state. The function parameter accepts a javascript/typescript object, each key of the object is the name of the state property, and the value corresponding to the key is the value of the state property. If you only give part of the state properties, this function will combine other unspecified properties to calculate the latest state of the contract.
+
+```typescript
+const tx = newTx(inputSatoshis);
+let newLockingScript = stateExample.getStateScript({
+    counter: 1
+});
+
+tx.addOutput(new bsv.Transaction.Output({
+  script: newLockingScript,
+  satoshis: outputAmount
+}))
+
+preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
+
+
+```
+
+Before the next call to the contract, save the latest state
+
+```typescript
+stateExample.counter++; //Update states
+```
+
+You can also maintain state manually to, for example, optimize your contract or use customized state de/serialization [rawstate](docs/rawstate.md)
+
 
 ## Instantiate Inline Assembly Variables
 Assembly variables can be replaced with literal Script in ASM format using `replace()`. Each variable is prefixed by its unique scope, namely, the contract and the function it is under.
@@ -251,18 +267,18 @@ You could find more examples using `scryptlib` in the [boilerplate](https://gith
 
 ## Construct contracts from raw transactions
 
-In addition to using the constructor to construct the contract, you can also use raw transactions to construct the contract.
+In addition to using a constructor to create a contract, you can also use a raw transaction to construct it.
 
 ```typescript
-    const axios = require('axios');
+const axios = require('axios');
 
-    const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
-    let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
-    // constructor from raw Transaction.
-    let counter = Counter.fromTransaction(response.data, 0/** output index**/);
+const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
+let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
+// constructor from raw Transaction.
+let counter = Counter.fromTransaction(response.data, 0/** output index**/);
 
-    // constructor from Utxo lockingScript
-    let counterClone = Counter.fromHex(counter.lockingScript.toHex());
+// constructor from Utxo lockingScript
+let counterClone = Counter.fromHex(counter.lockingScript.toHex());
 
 ```
 
