@@ -127,7 +127,7 @@ describe('state_test', () => {
 
     });
 
-    it('should throw if providing state that not exist', () => {
+    it('should throw if providing non-existent state', () => {
 
         const stateExample = new StateExample(1000, new Bytes('0101'), true,
             new PrivKey("11"),
@@ -151,7 +151,7 @@ describe('state_test', () => {
     });
 
 
-    it('should throw if constract does not have any', () => {
+    it('should throw if constract does not have any stateful property', () => {
 
         const Counter = buildContractClass(loadDescription('counter_desc.json'));
         let counter = new Counter();

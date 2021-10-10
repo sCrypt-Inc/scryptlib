@@ -117,11 +117,8 @@ export class AbstractContract {
 
 
   /**
-   * Then use `getStateScript` to get a locking script that includes the new state. The function parameter accepts a javascript/typescript object,
-   *  each key of the object is the name of the state property, and the value corresponding to the key is the value of the state property. 
-   * If you only give part of the state properties, this function will combine other unspecified properties to calculate the latest state of the contract.
-   * @param states 
-   * @returns a locking script that includes the new states
+   * @param states an object. Each key of the object is the name of a state property, and each value is the value of the state property.
+   * @returns a locking script that includes the new states. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
    */
   getStateScript(states: Record<string, SupportedParamType>): Script {
 

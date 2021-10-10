@@ -141,13 +141,15 @@ Use the initial state to instantiate the contract and read the state by accessin
 const instance = new Counter(0);
 
 let state = instance.counter;
+// update state
+instance.counter++;
 ```
 
-Then use `counter.getStateScript` to get a locking script that includes the new state. The function parameter accepts a javascript/typescript object, each key of the object is the name of the state property, and the value corresponding to the key is the value of the state property. If you only give part of the state properties, this function will combine other unspecified properties to calculate the latest state of the contract.
+Then use `instance.getStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
 
 ```typescript
 const tx = newTx(inputSatoshis);
-let newLockingScript = stateExample.getStateScript({
+let newLockingScript = instance.getStateScript({
     counter: 1
 });
 
@@ -158,16 +160,9 @@ tx.addOutput(new bsv.Transaction.Output({
 
 preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
 
-
 ```
 
-Before the next call to the contract, save the latest state
-
-```typescript
-stateExample.counter++; //Update states
-```
-
-You can also maintain state manually to, for example, optimize your contract or use customized state de/serialization [rawstate](docs/rawstate.md)
+You can also maintain state manually to, for example, optimize your contract or use customized state de/serialization [rawstate](docs/rawstate.md).
 
 
 ## Instantiate Inline Assembly Variables
