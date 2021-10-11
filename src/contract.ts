@@ -223,6 +223,13 @@ export class AbstractContract {
             opcodes.push({ opcode: data, stack: [] });
           });
         }
+      } else if (AbstractContract.isStateful(this)) {
+        opcodes.push({ opcode: 'OP_RETURN', stack: [] });
+        const stateHex = this.dataPart.toHex();
+        const dp = bsv.Script.fromHex(stateHex).toASM();
+        dp.split(' ').forEach(data => {
+          opcodes.push({ opcode: data, stack: [] });
+        });
       }
 
       const opcodeIndex = lastStepIndex - offset;

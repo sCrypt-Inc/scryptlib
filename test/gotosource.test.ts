@@ -10,6 +10,8 @@ const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
+
+const inputIndex = 0;
 const tx = newTx(inputSatoshis);
 
 const jsonDescr = loadDescription('p2pkh_desc.json');
@@ -467,6 +469,41 @@ describe('VerifyError', () => {
         }
       )
     });
+
+
+    it('should stop at statecounter.scrypt#24', () => {
+
+      const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
+      let counter = new StateCounter(0, true);
+
+      let newLockingScript = counter.getStateScript({
+        counter: 1,
+        done: false
+      })
+
+      const tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: newLockingScript,
+        satoshis: outputAmount
+      }))
+
+      const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+      counter.txContext = {
+        tx: tx,
+        inputIndex,
+        inputSatoshis
+      }
+
+      const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+      expect(result.error).to.contains("fails at OP_RETURN");
+      expect(result.error).to.contains("statecounter.scrypt#24");
+      const launch = readLaunchJson(result.error);
+      expect(launch).not.undefined;
+      expect(launch.configurations[0].program).to.contains("statecounter.scrypt");
+
+    });
+
 
   });
 
