@@ -166,4 +166,62 @@ describe('state_test', () => {
 
     });
 
+
+    it('should success when not all state properties are provided in getStateScript() ', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
+        let counter = new StateCounter(0, true);
+
+        let newLockingScript = counter.getStateScript({
+            counter: 1
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result2 = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result2.success, result2.error).to.be.true
+
+    });
+
+
+    it('should fail when wrong value state properties are provided in getStateScript() ', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
+        let counter = new StateCounter(0, true);
+
+        let newLockingScript = counter.getStateScript({
+            counter: 1,
+            done: false
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result2 = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result2.success, result2.error).to.be.false
+
+    });
 })
