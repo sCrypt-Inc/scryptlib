@@ -32,7 +32,7 @@ describe('check explicit  constructor()', () => {
 
     expect(() => {
       new DemoP2PKH(1);
-    }).to.throws(/wrong argument type, expected Ripemd160 but got int/);
+    }).to.throws(/The type of parameter pubKeyHash is wrong, expected Ripemd160 but got int/);
   })
 })
 
@@ -53,7 +53,7 @@ describe('check implicit   constructor()', () => {
 
     expect(() => {
       new Cointoss(1, 1, 1, 1, 1);
-    }).to.throws(/wrong argument type, expected PubKey but got int/);
+    }).to.throws(/The type of parameter alice is wrong, expected PubKey but got int/);
   })
 })
 
@@ -69,7 +69,7 @@ describe('buildContractClass()', () => {
 
   describe('instance of the returned contract class', () => {
 
-    let instance: any;
+    let instance: AbstractContract;
     let sig: Sig;
     let unlockingScriptASM: string;
     let result: VerifyResult;
@@ -81,7 +81,7 @@ describe('buildContractClass()', () => {
     })
 
     it("test arguments", () => {
-      expect(instance.arguments('constructor')).to.deep.include.members([{
+      expect(instance.ctorArgs()).to.deep.include.members([{
         name: "pubKeyHash",
         state: false,
         type: "Ripemd160",
@@ -138,7 +138,7 @@ describe('buildContractClass()', () => {
 
       describe('when dataPart is to be set using setter', () => {
         it('should throw', () => {
-          expect(() => { instance.dataPart = 'FF' }).to.throw('Setter for dataPart is not available. Please use: setDataPart() instead');
+          expect(() => { instance.dataPart = bsv.Script.fromHex('FF') }).to.throw('Setter for dataPart is not available. Please use: setDataPart() instead');
         })
       })
 

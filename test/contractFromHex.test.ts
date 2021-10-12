@@ -398,7 +398,7 @@ describe('buildContractClass and create instance from script', () => {
 
           let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 
-          assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
+          assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)),
             `[2,11111111111111111111,false,b'1234567890',{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}},[[{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}},{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}],[{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}},{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}]],[[[1,25555555555555555555555555555]]]]`
           )
         })
@@ -467,7 +467,7 @@ describe('buildContractClass and create instance from script', () => {
         assert.isTrue(result.success)
 
         let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
-        assert.deepEqual(toLiteral(newContract.arguments('constructor').map(i => i.value)),
+        assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)),
           `[2,11111111111111111111,false,b'1234567890',{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}},[[{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}},{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}],[{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}},{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}]],[[[1,25555555555555555555555555555]]]]`
         )
       })

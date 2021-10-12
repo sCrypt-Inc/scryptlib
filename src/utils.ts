@@ -4,7 +4,7 @@ import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
 import * as minimist from 'minimist';
-import { tmpdir } from 'os';
+import { tmpdir, type } from 'os';
 export { bsv };
 export { ECIES };
 
@@ -56,7 +56,7 @@ export function int2Asm(str: string): string {
 
     if (number.eqn(-1)) { return 'OP_1NEGATE'; }
 
-    if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
+    if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
 
     const m = number.toSM({ endian: 'little' });
     return m.toString('hex');
@@ -318,7 +318,7 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
     case VariableType.BYTES:
       return new Bytes(asm);
     case VariableType.PRIVKEY:
-      return new PrivKey(asm2int(asm) as bigint);
+      return new PrivKey(asm2int(asm));
     case VariableType.PUBKEY:
       return new PubKey(asm);
     case VariableType.SIG:
@@ -1159,33 +1159,29 @@ export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTe
 }
 
 
-export function buildContractState(args: Arguments): string {
+export function buildContractState(args: Arguments, finalTypeResolver: TypeResolver): string {
 
   let state_hex = '';
   let state_len = 0;
-  for (const arg of args) {
+  const args_ = flatternStateArgs(args, finalTypeResolver);
 
-    if (arg.state) {
-      if (arg.type == VariableType.BOOL) { //fixed length
-        state_hex += `${serializeSupportedParamType(arg.value)}`;
-      } else if (arg.type === VariableType.INT
-        || arg.type === VariableType.BYTES
-        || arg.type === VariableType.PUBKEY
-        || arg.type === VariableType.PRIVKEY
-        || arg.type === VariableType.PUBKEY
-        || arg.type === VariableType.SIG
-        || arg.type === VariableType.RIPEMD160
-        || arg.type === VariableType.SHA1
-        || arg.type === VariableType.SHA256
-        || arg.type === VariableType.SIGHASHTYPE
-        || arg.type === VariableType.SIGHASHPREIMAGE
-        || arg.type === VariableType.OPCODETYPE) {
-        state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
-      } else {
-
-        //TODO: ARRAY AND struct
-      }
-    }
+  for (const arg of args_) {
+    if (arg.type == VariableType.BOOL) { //fixed length
+      state_hex += `${serializeSupportedParamType(arg.value)}`;
+    } else if (arg.type === VariableType.INT
+      || arg.type === VariableType.BYTES
+      || arg.type === VariableType.PUBKEY
+      || arg.type === VariableType.PRIVKEY
+      || arg.type === VariableType.PUBKEY
+      || arg.type === VariableType.SIG
+      || arg.type === VariableType.RIPEMD160
+      || arg.type === VariableType.SHA1
+      || arg.type === VariableType.SHA256
+      || arg.type === VariableType.SIGHASHTYPE
+      || arg.type === VariableType.SIGHASHPREIMAGE
+      || arg.type === VariableType.OPCODETYPE) {
+      state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
+    } 
   }
 
   //append meta
@@ -1228,4 +1224,49 @@ export function readState(br: bsv.encoding.BufferReader): { data: string, opcode
   } catch (e) {
     throw new Error('read state hex error: ' + e);
   }
+}
+
+
+
+export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
+  const args_: Arguments = [];
+  args.forEach((arg) => {
+    const finalType = finalTypeResolver(arg.type);
+    if (isStructType(finalType)) {
+      flatternStruct(arg.value, arg.name).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value,
+          state: arg.state
+        });
+      });
+    } else if (isArrayType(finalType)) {
+      flatternArray(arg.value as SupportedParamType[], arg.name, finalType).forEach(e => {
+
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value,
+          state: arg.state
+        });
+      });
+
+    } else {
+      args_.push({
+        name: arg.name,
+        type: finalType,
+        value: arg.value,
+        state: arg.state
+      });
+    }
+  });
+
+  return args_;
+}
+
+
+
+export function flatternStateArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
+  return flatternArgs(args.filter(a => a.state), finalTypeResolver);
 }

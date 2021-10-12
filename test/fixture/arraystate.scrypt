@@ -1,0 +1,22 @@
+import "util.scrypt";
+
+contract Counter {
+
+    @state
+    int[3] counters;
+
+    public function increment(SigHashPreimage txPreimage, int amount) {
+        require(Tx.checkPreimage(txPreimage));
+
+        require(this.counters == [0, 1, 2]);
+        this.counters[0]++;
+        this.counters[1]++;
+        this.counters[2]++;
+
+        bytes outputScript = this.getStateScript();
+        bytes output = Util.buildOutput(outputScript, amount);
+        // ensure output is expected: amount is same with specified
+        // also output script is the same with scriptCode except counter incremented
+        require(hash256(output) == Util.hashOutputs(txPreimage));
+    }
+}

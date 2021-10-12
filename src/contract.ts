@@ -173,7 +173,7 @@ export class AbstractContract {
       }
     });
 
-    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState));
+    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState, finalTypeResolver));
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
@@ -277,7 +277,8 @@ export class AbstractContract {
 
   get dataPart(): Script | undefined {
 
-    const state = buildContractState(this.arguments('constructor'));
+    const finalTypeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
+    const state = buildContractState(this.ctorArgs(), finalTypeResolver);
 
     if (state) {
       return bsv.Script.fromHex(state);

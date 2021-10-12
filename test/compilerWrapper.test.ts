@@ -38,15 +38,18 @@ describe('compile()', () => {
         "params": [
           {
             "name": "_x",
-            "type": "int"
+            "type": "int",
+            "state": false
           },
           {
             "name": "y",
-            "type": "int"
+            "type": "int",
+            "state": false
           },
           {
             "name": "z",
-            "type": "int"
+            "type": "int",
+            "state": false
           }
         ]
       }
