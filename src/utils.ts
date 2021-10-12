@@ -868,7 +868,7 @@ export function compileContract(file: string, options?: {
 }
 
 
-export function newCall(Cls, args: Array<SupportedParamType>) {
+export function newCall(Cls: typeof AbstractContract, args: Array<SupportedParamType>): AbstractContract {
   return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
 }
 

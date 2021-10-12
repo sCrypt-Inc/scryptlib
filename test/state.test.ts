@@ -291,105 +291,112 @@ describe('state_test', () => {
     });
 
 
-    // it('should state property is struct', () => {
+    it('should success state property is mix struct and array', () => {
 
-    //     const Counter = buildContractClass(loadDescription('ststate_desc.json'));
-    //     const { States, StatesA } = buildTypeClasses(loadDescription('ststate_desc.json'));
-    //     let counter = new Counter(new States({
-    //         counter: 1000,
-    //         done: true
-    //     }), [new StatesA({
-    //         states: [new States({
-    //             counter: 0,
-    //             done: true
-    //         }), new States({
-    //             counter: 1,
-    //             done: false
-    //         })],
-    //         hex: new Bytes('02')
-    //     })]);
-
-    //     console.log('state', counter.lockingScript.toHex())
+        const Counter = buildContractClass(loadDescription('mixstate_desc.json'));
+        const { States, StatesA } = buildTypeClasses(loadDescription('mixstate_desc.json'));
+        let counter = new Counter(new States({
+            counter: 1000,
+            done: true
+        }), [new StatesA({
+            states: [new States({
+                counter: 0,
+                done: true
+            }), new States({
+                counter: 1,
+                done: false
+            })],
+            hex: new Bytes('02')
+        })]);
 
 
-    //     let newLockingScript = counter.getStateScript({
-    //         states: new States({
-    //             counter: 1001,
-    //             done: false
-    //         }),
-    //         sss: [new StatesA({
-    //             states: [new States({
-    //                 counter: 0,
-    //                 done: true
-    //             }), new States({
-    //                 counter: 1,
-    //                 done: false
-    //             })],
-    //             hex: new Bytes('0201')
-    //         })]
-    //     })
-
-    //     console.log('newLockingScript', newLockingScript.toHex())
-
-    //     const tx = newTx(inputSatoshis);
-    //     tx.addOutput(new bsv.Transaction.Output({
-    //         script: newLockingScript,
-    //         satoshis: outputAmount
-    //     }))
-
-    //     const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
-
-    //     counter.txContext = {
-    //         tx: tx,
-    //         inputIndex,
-    //         inputSatoshis
-    //     }
-
-    //     const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
-    //     expect(result.success, result.error).to.be.true
-    // });
-
-    // it('should fail state property which is struct with wrong value', () => {
-
-    //     const Counter = buildContractClass(loadDescription('ststate_desc.json'));
-    //     const { States, StatesA } = buildTypeClasses(loadDescription('ststate_desc.json'));
-    //     let counter = new Counter(new States({
-    //         counter: 1000,
-    //         done: true
-    //     }), [new StatesA({
-    //         states: [new StatesA({
-    //             counter: 0,
-    //             done: true
-    //         }), new StatesA({
-    //             counter: 1,
-    //             done: false
-    //         })],
-    //         hex: new Bytes('02')
-    //     })]);
+        let newLockingScript = counter.getStateScript({
+            states: new States({
+                counter: 1001,
+                done: false
+            }),
+            sss: [new StatesA({
+                states: [new States({
+                    counter: 0,
+                    done: true
+                }), new States({
+                    counter: 1,
+                    done: false
+                })],
+                hex: new Bytes('0201')
+            })]
+        })
 
 
-    //     let newLockingScript = counter.getStateScript({
-    //         states: new States({
-    //             counter: 1002,
-    //             done: false
-    //         })
-    //     })
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
 
-    //     const tx = newTx(inputSatoshis);
-    //     tx.addOutput(new bsv.Transaction.Output({
-    //         script: newLockingScript,
-    //         satoshis: outputAmount
-    //     }))
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
 
-    //     const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
 
-    //     counter.txContext = {
-    //         tx: tx,
-    //         inputIndex,
-    //         inputSatoshis
-    //     }
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
+    });
 
-    //     const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
-    //     expect(result.success, result.error).to.be.false
-    // });
+    it('should fail state property with wrong value', () => {
+
+        const Counter = buildContractClass(loadDescription('mixstate_desc.json'));
+        const { States, StatesA } = buildTypeClasses(loadDescription('mixstate_desc.json'));
+        let counter = new Counter(new States({
+            counter: 1000,
+            done: true
+        }), [new StatesA({
+            states: [new States({
+                counter: 0,
+                done: true
+            }), new States({
+                counter: 1,
+                done: false
+            })],
+            hex: new Bytes('02')
+        })]);
+
+
+        let newLockingScript = counter.getStateScript({
+            states: new States({
+                counter: 1001,
+                done: false
+            }),
+            sss: [new StatesA({
+                states: [new States({
+                    counter: 0,
+                    done: true
+                }), new States({
+                    counter: 1,
+                    done: true
+                })],
+                hex: new Bytes('0201')
+            })]
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.false
+    });
 })
