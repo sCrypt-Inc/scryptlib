@@ -1,9 +1,8 @@
-import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, flatternStruct, createStruct, createArray, asm2ScryptType } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, asm2ScryptType, bin2num } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver } from './scryptTypes';
+import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
 import { buildContractCodeASM, flatternArgs, flatternStateArgs, readState } from './internal';
-import { bin2num, VariableType } from '.';
 
 export interface Script {
   toASM(): string;
@@ -289,30 +288,10 @@ export class ABICoder {
       name: p.name,
       value: undefined,
       state: p.state
-    })).map(param => {
+    })).map(arg => {
 
-      let value;
-
-      if (isStructType(param.type)) {
-
-        const stclass = contract.getTypeClassByType(getStructNameByType(param.type));
-
-        value = createStruct(contract, stclass as typeof Struct, param.name, contract.asmTemplateArgs, this.finalTypeResolver);
-      } else if (isArrayType(param.type)) {
-
-        value = createArray(contract, param.type, param.name, contract.asmTemplateArgs, this.finalTypeResolver);
-
-      } else {
-        value = asm2ScryptType(param.type, contract.asmTemplateArgs.get(`$${param.name}`));
-      }
-
-      return {
-        name: param.name,
-        type: this.finalTypeResolver(param.type),
-        state: param.state,
-        value: value
-      };
-
+      deserializeArgfromASM(contract, arg, contract.asmTemplateArgs, this.finalTypeResolver);
+      return arg;
     });
 
 
@@ -356,22 +335,7 @@ export class ABICoder {
 
       args.filter(a => a.state).forEach(arg => {
 
-        let value;
-
-        if (isStructType(arg.type)) {
-
-          const stclass = contract.getTypeClassByType(getStructNameByType(arg.type));
-
-          value = createStruct(contract, stclass as typeof Struct, arg.name, stateAsmTemplateArgs, this.finalTypeResolver);
-        } else if (isArrayType(arg.type)) {
-
-          value = createArray(contract, arg.type, arg.name, stateAsmTemplateArgs, this.finalTypeResolver);
-
-        } else {
-          value = asm2ScryptType(arg.type, stateAsmTemplateArgs.get(`$${arg.name}`));
-        }
-
-        arg.value = value;
+        deserializeArgfromASM(contract, arg, stateAsmTemplateArgs, this.finalTypeResolver);
       });
 
       lsASM = buildContractCodeASM(contract.asmTemplateArgs, asmTemplate);

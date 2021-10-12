@@ -12,7 +12,7 @@ import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
   getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
-  Arguments,
+  Arguments, Argument,
   Script
 } from './internal';
 
@@ -1181,7 +1181,7 @@ export function buildContractState(args: Arguments, finalTypeResolver: TypeResol
       || arg.type === VariableType.SIGHASHPREIMAGE
       || arg.type === VariableType.OPCODETYPE) {
       state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
-    } 
+    }
   }
 
   //append meta
@@ -1269,4 +1269,25 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
 
 export function flatternStateArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
   return flatternArgs(args.filter(a => a.state), finalTypeResolver);
+}
+
+
+export function deserializeArgfromASM(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): void {
+
+  let value;
+
+  if (isStructType(arg.type)) {
+
+    const stclass = contract.getTypeClassByType(getStructNameByType(arg.type));
+
+    value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap, finalTypeResolver);
+  } else if (isArrayType(arg.type)) {
+
+    value = createArray(contract, arg.type, arg.name, opcodesMap, finalTypeResolver);
+
+  } else {
+    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+  }
+
+  arg.value = value;
 }
