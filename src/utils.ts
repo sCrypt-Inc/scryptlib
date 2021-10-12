@@ -651,10 +651,16 @@ export function subArrayType(arrayTypeName: string): string {
 }
 
 
-export function checkArray(args: SupportedParamType[], arrayFinallyType: string): boolean {
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayFinallyType);
+export function checkArray(args: SupportedParamType[], finalType: string): boolean {
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
   if (!Array.isArray(args)) {
+    return false;
+  }
+
+  const t = typeOfArg(args[0]);
+
+  if (!args.every(arg => typeOfArg(arg) === t)) {
     return false;
   }
 
@@ -670,7 +676,7 @@ export function checkArray(args: SupportedParamType[], arrayFinallyType: string)
 
   if (!args.every(arg => {
     if (Array.isArray(arg)) {
-      return checkArray(arg, subArrayType(arrayFinallyType));
+      return checkArray(arg, subArrayType(finalType));
     } else {
 
       const scryptType = typeOfArg(arg);
@@ -779,7 +785,7 @@ export function typeOfArg(arg: SupportedParamType): string {
   }
 
   if (typeofArg === 'string') {
-    return 'int';
+    return new Int(arg as string).finalType;
   }
 
   return typeof arg;

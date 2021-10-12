@@ -242,7 +242,7 @@ describe('FunctionCall', () => {
   describe('struct type check', () => {
 
     it('should throw with wrong struct type', () => {
-      expect(() => { person.main(block, 18, true) }).to.throw('expect struct Person but got struct Block');
+      expect(() => { person.main(block, 18, true) }).to.throw('The type of parameter p is wrong, expected Person but got Block');
     })
 
     it('should throw with wrong struct type', () => {

@@ -176,10 +176,10 @@ export class ABICoder {
 
   constructor(public abi: ABIEntity[], public finalTypeResolver: TypeResolver) { }
 
-  checkArgs(params: ParamEntity[], ...args: SupportedParamType[]): void {
+  checkArgs(fname: string, params: ParamEntity[], ...args: SupportedParamType[]): void {
 
     if (args.length !== params.length) {
-      throw new Error(`wrong number of arguments for #constructor, expected ${params.length} but got ${args.length}`);
+      throw new Error(`wrong number of arguments for #${fname}, expected ${params.length} but got ${args.length}`);
     }
 
     params.map(p => ({
@@ -207,7 +207,7 @@ export class ABICoder {
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
 
-    this.checkArgs(cParams, ...args);
+    this.checkArgs('constructor', cParams, ...args);
 
     // handle array type
     const flatteredArgs = flatternArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
@@ -349,9 +349,7 @@ export class ABICoder {
 
     for (const entity of this.abi) {
       if (entity.name === name) {
-        if (entity.params.length !== args.length) {
-          throw new Error(`wrong number of arguments for #${name}, expected ${entity.params.length} but got ${args.length}`);
-        }
+        this.checkArgs(name, entity.params, ...args);
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
           type: this.finalTypeResolver(p.type),
@@ -374,72 +372,35 @@ export class ABICoder {
   }
 
   encodeParamArray(args: SupportedParamType[], arrayParam: ParamEntity): string {
-    if (args.length === 0) {
-      throw new Error('Empty array not allowed');
-    }
-
-    const t = typeof args[0];
-
-    if (!args.every(arg => typeof arg === t)) {
-      throw new Error('Array arguments are not of the same type');
-    }
-
-    if (checkArray(args, arrayParam.type)) {
-      return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
-        return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
-      }).join(' ');
-    } else {
-      throw new Error(`checkArray ${arrayParam.type} fail`);
-    }
+    return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
+      return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
+    }).join(' ');
   }
 
 
   encodeParam(arg: SupportedParamType, paramEntity: ParamEntity): string {
 
     if (isArrayType(paramEntity.type)) {
-      if (Array.isArray(arg)) {
-        return this.encodeParamArray(arg, paramEntity);
-      } else {
-        const scryptType = typeOfArg(arg);
-        throw new Error(`expect param ${paramEntity.name} as ${paramEntity.type} but got ${scryptType}`);
-      }
+      return this.encodeParamArray(arg as SupportedParamType[], paramEntity);
     }
 
-    if (isStructType(paramEntity.type)) {
-
-      if (Struct.isStruct(arg)) {
-        const argS = arg as Struct;
-        if (paramEntity.type != argS.finalType) {
-          throw new Error(`expect struct ${getStructNameByType(paramEntity.type)} but got struct ${argS.type}`);
-        }
-      } else {
-        const scryptType = (arg as ScryptType).type;
-        throw new Error(`expect param ${paramEntity.name} as struct ${getStructNameByType(paramEntity.type)} but got ${scryptType}`);
-      }
-    }
-
-
-    const scryptType = typeOfArg(arg);
-    if (scryptType != paramEntity.type) {
-      throw new Error(`wrong argument type, expected ${paramEntity.type} but got ${scryptType}`);
+    if (arg instanceof ScryptType) {
+      return arg.toASM();
     }
 
     const typeofArg = typeof arg;
 
     if (typeofArg === 'boolean') {
       arg = new Bool(arg as boolean);
-    }
-
-    if (typeofArg === 'number') {
+    } else if (typeofArg === 'number') {
       arg = new Int(arg as number);
-    }
-
-    if (typeofArg === 'bigint') {
+    } else if (typeofArg === 'bigint') {
       arg = new Int(arg as bigint);
-    }
-
-    if (typeof arg === 'string') {
+    } else if (typeof arg === 'string') {
       arg = new Int(arg as string);
+    } else {
+      //we call checkArg before encodeParam, shouldn't get here under normal circumstances
+      throw new Error(`The value of parameter ${paramEntity.name} is unknown type: ${typeofArg}`);
     }
 
     return (arg as ScryptType).toASM();
