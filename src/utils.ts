@@ -1017,7 +1017,6 @@ export function compileContract(file: string, options?: {
     scryptc = getCIScryptc();
   }
 
-  console.log('aaaa', compilerVersion(scryptc));
   const result = compile(
     { path: file },
     {
