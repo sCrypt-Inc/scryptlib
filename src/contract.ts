@@ -88,6 +88,16 @@ export class AbstractContract {
     return this._txContext;
   }
 
+  get typeResolver(): TypeResolver {
+    const typeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
+    return typeResolver;
+  }
+
+  get allTypes(): Record<string, typeof ScryptType> {
+    const allTypes = Object.getPrototypeOf(this).constructor.types as Record<string, typeof ScryptType>;
+    return allTypes;
+  }
+
   // replace assembly variables with assembly values
   replaceAsmVars(asmVarValues: AsmVarValues): void {
     this.asmArgs = asmVarValues;
@@ -130,10 +140,10 @@ export class AbstractContract {
     if (stateArgs.length === 0) {
       throw new Error(`Contract ${contractName} does not have any stateful property`);
     }
-    const finalTypeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
+
     const resolveKeys: string[] = [];
     const newState: Arguments = stateArgs.map(arg => {
-      const finalType = finalTypeResolver(arg.type);
+      const finalType = this.typeResolver(arg.type);
       if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
         resolveKeys.push(arg.name);
         if (isArrayType(finalType)) {
@@ -173,7 +183,7 @@ export class AbstractContract {
       }
     });
 
-    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState, finalTypeResolver));
+    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState, this.typeResolver));
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
@@ -277,8 +287,7 @@ export class AbstractContract {
 
   get dataPart(): Script | undefined {
 
-    const finalTypeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
-    const state = buildContractState(this.ctorArgs(), finalTypeResolver);
+    const state = buildContractState(this.ctorArgs(), this.typeResolver);
 
     if (state) {
       return bsv.Script.fromHex(state);

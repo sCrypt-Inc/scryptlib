@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
-import { getContractFilePath, newTx, loadDescription } from './helper';
-import { ABICoder, FunctionCall } from '../src/abi';
+import { newTx, loadDescription } from './helper';
+import { FunctionCall } from '../src/abi';
 import { buildContractClass, buildTypeClasses, VerifyResult } from '../src/contract';
 import { bsv, toHex, signTx } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Sha256, Int } from '../src/scryptTypes';
@@ -42,7 +42,15 @@ describe('FunctionCall', () => {
   describe('when it is the contract constructor', () => {
 
     before(() => {
-      target = new FunctionCall('constructor', { contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM(), params: [new Ripemd160(toHex(pubKeyHash))] });
+      target = new FunctionCall('constructor', {
+        contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM(), args: [{
+          name: 'pubKeyHash',
+          type: 'Ripemd160',
+          state: false,
+          value: new Ripemd160(toHex(pubKeyHash))
+        }
+        ]
+      });
     })
 
     describe('toHex() / toString()', () => {
@@ -74,7 +82,19 @@ describe('FunctionCall', () => {
     before(() => {
       sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
       pubkey = new PubKey(toHex(publicKey));
-      target = new FunctionCall('unlock', { contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' '), params: [sig, pubkey] });
+      target = new FunctionCall('unlock', {
+        contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' '), args: [{
+          name: 'sig',
+          type: 'Sig',
+          state: false,
+          value: sig
+        }, {
+          name: 'pubkey',
+          type: 'PubKey',
+          state: false,
+          value: pubkey
+        }]
+      });
     })
 
     describe('toHex() / toString()', () => {
@@ -91,7 +111,7 @@ describe('FunctionCall', () => {
           type: 'Sig',
           value: sig
         }, {
-          name: 'pubKey',
+          name: 'pubkey',
           state: false,
           type: 'PubKey',
           value: pubkey
@@ -145,11 +165,17 @@ describe('FunctionCall', () => {
 
     before(() => {
       target = new FunctionCall('constructor', {
-        contract: person, lockingScriptASM: person.lockingScript.toASM(), params: [new Person({
-          isMale: false,
-          age: 33,
-          addr: new Bytes("68656c6c6f20776f726c6421")
-        })]
+        contract: person, lockingScriptASM: person.lockingScript.toASM(), args: [{
+          name: 'some',
+          type: 'Person',
+          state: false,
+          value: new Person({
+            isMale: false,
+            age: 33,
+            addr: new Bytes("68656c6c6f20776f726c6421")
+          })
+
+        }]
       });
     })
 

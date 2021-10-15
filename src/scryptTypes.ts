@@ -453,7 +453,7 @@ export class Struct extends ScryptType {
     }
 
     this._asm = flatternStruct(this, '').map(v => {
-      return v.value.toASM();
+      return (v.value as ScryptType).toASM();
     }).join(' ');
     return this._asm;
   }

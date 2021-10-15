@@ -75,7 +75,7 @@ export class FunctionCall {
       contract: AbstractContract;
       lockingScriptASM?: string;
       unlockingScriptASM?: string;
-      params: SupportedParamType[];
+      args: Arguments;
     }
   ) {
 
@@ -85,22 +85,7 @@ export class FunctionCall {
 
     this.contract = binding.contract;
 
-
-    this.args = Object.getPrototypeOf(this.contract).constructor.abi.filter((entity: ABIEntity) => {
-      if ('constructor' === methodName) {
-        return entity.type === 'constructor';
-      }
-      return entity.name === methodName;
-    }).map((entity: ABIEntity) => {
-      return entity.params.map((param, index) => {
-        return {
-          name: param.name,
-          type: param.type,
-          state: param.state || false,
-          value: binding.params[index]
-        };
-      });
-    }).flat(1);
+    this.args = binding.args;
 
     if (binding.lockingScriptASM) {
       this._lockingScriptAsm = binding.lockingScriptASM;
@@ -249,7 +234,18 @@ export class ABICoder {
 
     contract.asmTemplateArgs.set('$__codePart__', 'OP_0');
 
-    return new FunctionCall('constructor', { contract, lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate), params: args });
+
+    return new FunctionCall('constructor', {
+      contract,
+      lockingScriptASM: buildContractCodeASM(contract.asmTemplateArgs, asmTemplate),
+      args: cParams.map((param, index) => ({
+        name: param.name,
+        type: param.type,
+        state: param.state,
+        value: args[index]
+      }))
+    });
+
   }
 
   encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
@@ -290,7 +286,7 @@ export class ABICoder {
       state: p.state
     })).map(arg => {
 
-      deserializeArgfromASM(contract, arg, contract.asmTemplateArgs, this.finalTypeResolver);
+      deserializeArgfromASM(contract, arg, contract.asmTemplateArgs);
       return arg;
     });
 
@@ -335,13 +331,13 @@ export class ABICoder {
 
       args.filter(a => a.state).forEach(arg => {
 
-        deserializeArgfromASM(contract, arg, stateAsmTemplateArgs, this.finalTypeResolver);
+        deserializeArgfromASM(contract, arg, stateAsmTemplateArgs);
       });
 
       lsASM = buildContractCodeASM(contract.asmTemplateArgs, asmTemplate);
     }
 
-    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, params: args.map(arg => arg.value) });
+    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, args: args });
 
   }
 
@@ -360,7 +356,14 @@ export class ABICoder {
           const pubFuncIndex = entity.index;
           asm += ` ${int2Asm(pubFuncIndex.toString())}`;
         }
-        return new FunctionCall(name, { contract, unlockingScriptASM: asm, params: args });
+        return new FunctionCall(name, {
+          contract, unlockingScriptASM: asm, args: entity.params.map((param, index) => ({
+            name: param.name,
+            type: param.type,
+            state: false,
+            value: args[index]
+          }))
+        });
       }
     }
 
