@@ -1,7 +1,10 @@
 import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
-import { num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int } from '../src/utils'
+import {
+  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript,
+  flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int
+} from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
 import { tmpdir } from 'os'
 
@@ -1026,22 +1029,76 @@ describe('utils', () => {
 
 
   describe('toLiteral() ', () => {
-    expect(toLiteral(new PrivKey("111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
-    expect(toLiteral(new PrivKey("111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
-    expect(toLiteral(new PrivKey("0x111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
-    expect(toLiteral(new PrivKey(111111111111111111111111111111111111111111n))).to.be.equal("PrivKey(0x014686b59ab3939851acf5c2e071c71c71c7)");
-    expect(toLiteral(new PrivKey(0x111111111111111111111111111111111111111111n))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
-    expect(toLiteral(new PrivKey(24942961277114076470676221145024563535461248733457n))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
-    expect(toLiteral(new PrivKey("24942961277114076470676221145024563535461248733457"))).to.be.equal("PrivKey(24942961277114076470676221145024563535461248733457)");
 
-    expect(toLiteral(new Int("111111111111111111111111111111111111111111"))).to.be.equal("111111111111111111111111111111111111111111");
-    expect(toLiteral(new Int("0x111111111111111111111111111111111111111111"))).to.be.equal("0x111111111111111111111111111111111111111111");
-    expect(toLiteral(new Int(111111111111111111111111111111111111111111n))).to.be.equal("111111111111111111111111111111111111111111");
-    expect(toLiteral(new Int(0x111111111111111111111111111111111111111111n))).to.be.equal("24942961277114076470676221145024563535461248733457");
-    expect(toLiteral(new Int(24942961277114076470676221145024563535461248733457n))).to.be.equal("24942961277114076470676221145024563535461248733457");
-    expect(toLiteral(new Int("24942961277114076470676221145024563535461248733457"))).to.be.equal("24942961277114076470676221145024563535461248733457");
-    expect(toLiteral(new Int(1))).to.be.equal("1");
-    expect(toLiteral(new Int(0))).to.be.equal("0");
+    it('toLiteral should returns right', () => {
+      expect(toLiteral(new PrivKey("111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
+      expect(toLiteral(new PrivKey("111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
+      expect(toLiteral(new PrivKey("0x111111111111111111111111111111111111111111"))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
+      expect(toLiteral(new PrivKey(111111111111111111111111111111111111111111n))).to.be.equal("PrivKey(0x014686b59ab3939851acf5c2e071c71c71c7)");
+      expect(toLiteral(new PrivKey(0x111111111111111111111111111111111111111111n))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
+      expect(toLiteral(new PrivKey(24942961277114076470676221145024563535461248733457n))).to.be.equal("PrivKey(0x111111111111111111111111111111111111111111)");
+      expect(toLiteral(new PrivKey("24942961277114076470676221145024563535461248733457"))).to.be.equal("PrivKey(24942961277114076470676221145024563535461248733457)");
+
+      expect(toLiteral(new Int("111111111111111111111111111111111111111111"))).to.be.equal("111111111111111111111111111111111111111111");
+      expect(toLiteral(new Int("0x111111111111111111111111111111111111111111"))).to.be.equal("0x111111111111111111111111111111111111111111");
+      expect(toLiteral(new Int(111111111111111111111111111111111111111111n))).to.be.equal("111111111111111111111111111111111111111111");
+      expect(toLiteral(new Int(0x111111111111111111111111111111111111111111n))).to.be.equal("24942961277114076470676221145024563535461248733457");
+      expect(toLiteral(new Int(24942961277114076470676221145024563535461248733457n))).to.be.equal("24942961277114076470676221145024563535461248733457");
+      expect(toLiteral(new Int("24942961277114076470676221145024563535461248733457"))).to.be.equal("24942961277114076470676221145024563535461248733457");
+      expect(toLiteral(new Int(1))).to.be.equal("1");
+      expect(toLiteral(new Int(0))).to.be.equal("0");
+    });
+
+
+  })
+
+
+
+  describe('flatternParams() ', () => {
+
+    const Counter = buildContractClass(loadDescription('mixstate_desc.json'));
+
+    const types = buildTypeClasses(loadDescription('mixstate_desc.json'));
+
+
+    const Alias = buildContractClass(loadDescription('alias_desc.json'));
+
+
+
+    it('flattern struct', () => {
+      expect(flatternParams([{ name: 'a', type: 'StatesA' }], Counter.typeResolver, types).map(a => a.name).join(' ')).to.be.equal("a.states[0].counter a.states[0].done a.states[1].counter a.states[1].done a.hex");
+
+      expect(flatternParams([{ name: 'a', type: 'States' }], Counter.typeResolver, types).map(a => a.name).join(' ')).to.be.equal("a.counter a.done");
+    })
+
+
+    it('flattern basic', () => {
+      expect(flatternParams([{ name: 'a', type: 'int' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+        .to.be.equal("a b c");
+
+    })
+
+    it('flattern array', () => {
+      expect(flatternParams([{ name: 'a', type: 'int[1][3]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+        .to.be.equal("a[0][0] a[0][1] a[0][2] b c");
+
+      expect(flatternParams([{ name: 'a', type: 'StatesA[2]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+        .to.be.equal("a[0].states[0].counter a[0].states[0].done a[0].states[1].counter a[0].states[1].done a[0].hex a[1].states[0].counter a[1].states[0].done a[1].states[1].counter a[1].states[1].done a[1].hex b c");
+    })
+
+
+
+    it('flattern alias', () => {
+
+
+      expect(flatternParams([{ name: 'a', type: 'Female' }, { name: 'b', type: 'MaleB' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
+        .to.be.equal("a.age a.name a.token b[0].age b[0].name b[0].token b[1].age b[1].name b[1].token b[2].age b[2].name b[2].token");
+
+      expect(flatternParams([{ name: 'a', type: 'Tokens[2]' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
+        .to.be.equal("a[0][0] a[0][1] a[0][2] a[1][0] a[1][1] a[1][2]");
+    })
+
+
   })
 
 })

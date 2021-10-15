@@ -439,7 +439,7 @@ function getConstructorDeclaration(mainContract): ABIEntity {
   if (mainContract['constructor']) {
     return {
       type: ABIEntityType.CONSTRUCTOR,
-      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'], state: false }; }),
     };
   } else {
     // implicit constructor

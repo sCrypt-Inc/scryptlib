@@ -2,10 +2,11 @@
 
 ## 0.6.2
 
-- fix bsv library issue:  Signature error in the browser environment
+- support array/struct state
 - add `getStateScript`, see [Contracts with State](https://github.com/sCrypt-Inc/scryptlib/tree/master#contracts-with-state)
+- fix bsv library issue:  Signature error in the browser environment
 
-*Release Date: 2021/10/09*
+*Release Date: 2021/10/15*
 
 
 

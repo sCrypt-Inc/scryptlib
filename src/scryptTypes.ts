@@ -88,7 +88,7 @@ export class ScryptType {
   }
 
   public equals(obj: ScryptType): boolean {
-    return obj.toASM() === this.toASM();
+    return obj.finalType === this.finalType && obj.toASM() === this.toASM();
   }
 
   public serialize(): string {
@@ -154,8 +154,8 @@ export class Bytes extends ScryptType {
   }
 }
 
-export class PrivKey extends ScryptType {
-  constructor(intVal: bigint | string) {
+export class PrivKey extends Int {
+  constructor(intVal: bigint | string | number) {
     super(intVal);
   }
   toLiteral(): string {
@@ -453,7 +453,7 @@ export class Struct extends ScryptType {
     }
 
     this._asm = flatternStruct(this, '').map(v => {
-      return v.value.toASM();
+      return (v.value as ScryptType).toASM();
     }).join(' ');
     return this._asm;
   }

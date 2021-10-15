@@ -4,7 +4,7 @@ import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
 import * as minimist from 'minimist';
-import { tmpdir } from 'os';
+import { tmpdir, type } from 'os';
 export { bsv };
 export { ECIES };
 
@@ -12,9 +12,10 @@ import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
   getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
-  Arguments,
-  Script
+  Arguments, Argument,
+  Script, ParamEntity
 } from './internal';
+import { compilerVersion } from './compilerWrapper';
 
 
 const BN = bsv.crypto.BN;
@@ -56,7 +57,7 @@ export function int2Asm(str: string): string {
 
     if (number.eqn(-1)) { return 'OP_1NEGATE'; }
 
-    if (number.gten(0) && number.lten(16)) { return 'OP_' + str; }
+    if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
 
     const m = number.toSM({ endian: 'little' });
     return m.toString('hex');
@@ -318,7 +319,7 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
     case VariableType.BYTES:
       return new Bytes(asm);
     case VariableType.PRIVKEY:
-      return new PrivKey(asm2int(asm) as bigint);
+      return new PrivKey(asm2int(asm));
     case VariableType.PUBKEY:
       return new PubKey(asm);
     case VariableType.SIG:
@@ -418,6 +419,10 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
 
   if (!inputAmount) {
     throw new Error('param inputAmount can not be empty');
+  }
+
+  if (typeof lockingScript === 'string') {
+    throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
   }
 
   const buf = toHex(bsv.Transaction.sighash.sign(
@@ -651,10 +656,16 @@ export function subArrayType(arrayTypeName: string): string {
 }
 
 
-export function checkArray(args: SupportedParamType[], arrayFinallyType: string): boolean {
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(arrayFinallyType);
+export function checkArray(args: SupportedParamType[], finalType: string): boolean {
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
   if (!Array.isArray(args)) {
+    return false;
+  }
+
+  const t = typeOfArg(args[0]);
+
+  if (!args.every(arg => typeOfArg(arg) === t)) {
     return false;
   }
 
@@ -670,7 +681,7 @@ export function checkArray(args: SupportedParamType[], arrayFinallyType: string)
 
   if (!args.every(arg => {
     if (Array.isArray(arg)) {
-      return checkArray(arg, subArrayType(arrayFinallyType));
+      return checkArray(arg, subArrayType(finalType));
     } else {
 
       const scryptType = typeOfArg(arg);
@@ -695,7 +706,7 @@ export function subscript(index: number, arraySizes: Array<number>): string {
   }
 }
 
-export function flatternArray(arg: Array<any>, name: string, finalType: string): Array<{ value: ScryptType, name: string, type: string }> {
+export function flatternArray(arg: SupportedParamType[], name: string, finalType: string): Arguments {
 
   if (!Array.isArray(arg)) {
     throw new Error('flatternArray only work on array');
@@ -725,10 +736,10 @@ export function flatternArray(arg: Array<any>, name: string, finalType: string):
       name: `${name}${subscript(index, arraySizes)}`,
       type: elemTypeName
     };
-  }).flat(Infinity) as Array<{ value: ScryptType, name: string, type: string }>;
+  }).flat(Infinity) as Arguments;
 }
 
-export function flatternStruct(arg: SupportedParamType, name: string): Array<{ value: ScryptType, name: string, type: string }> {
+export function flatternStruct(arg: SupportedParamType, name: string): Arguments {
   if (Struct.isStruct(arg)) {
     const argS = arg as Struct;
     const keys = argS.getMembers();
@@ -748,12 +759,173 @@ export function flatternStruct(arg: SupportedParamType, name: string): Array<{ v
           type: member.type
         };
       }
-    }).flat(Infinity) as Array<{ value: ScryptType, name: string, type: string }>;
+    }).flat(Infinity) as Arguments;
 
   } else {
     throw new Error(`${arg} should be struct`);
   }
 }
+
+
+export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
+  const args_: Arguments = [];
+  args.forEach((arg) => {
+    const finalType = finalTypeResolver(arg.type);
+    if (isStructType(finalType)) {
+      flatternStruct(arg.value, arg.name).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value,
+          state: arg.state
+        });
+      });
+    } else if (isArrayType(finalType)) {
+      flatternArray(arg.value as SupportedParamType[], arg.name, finalType).forEach(e => {
+
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value,
+          state: arg.state
+        });
+      });
+
+    } else {
+      args_.push({
+        name: arg.name,
+        type: finalType,
+        value: arg.value,
+        state: arg.state
+      });
+    }
+  });
+
+  return args_;
+}
+
+
+
+export function flatternStateArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
+  return flatternArgs(args.filter(a => a.state), finalTypeResolver);
+}
+
+function flatternStructParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
+  if (isStructType(param.type)) {
+    const structName = getStructNameByType(param.type);
+    const StructClass = types[structName] as typeof Struct;
+    return StructClass.structAst.params.map(p => {
+      p.type = typeResolver(p.type);
+      if (isStructType(p.type)) {
+        return flatternStructParam({
+          name: `${param.name}.${p.name}`,
+          type: p.type
+        }, typeResolver, types);
+
+      } else if (isArrayType(p.type)) {
+        return flatternArrayParam({
+          name: `${param.name}.${p.name}`,
+          type: p.type
+        }, typeResolver, types);
+      }
+      else {
+        return {
+          value: undefined,
+          name: `${param.name}.${p.name}`,
+          type: p.type
+        };
+      }
+    }).flat(Infinity) as Arguments;
+
+  } else {
+    throw new Error(`ParamEntity ${param.name} should be struct`);
+  }
+}
+
+
+function flatternArrayParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
+
+  param.type = typeResolver(param.type);
+  if (!isArrayType(param.type)) {
+    throw new Error(`ParamEntity ${param.name} should be array`);
+  }
+
+  const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
+
+  const args: Arguments = [];
+
+  for (let index = 0; index < arraySizes[0]; index++) {
+
+    if (arraySizes.length > 1) {
+      flatternArrayParam({
+        name: `${param.name}[${index}]`,
+        type: subArrayType(param.type)
+      }, typeResolver, types).forEach(a => {
+        args.push(a);
+      });
+    } else if (isStructType(elemTypeName)) {
+      flatternStructParam({
+        name: `${param.name}[${index}]`,
+        type: elemTypeName
+      }, typeResolver, types).forEach(a => {
+        args.push(a);
+      });
+    } else {
+      args.push({
+        value: undefined,
+        name: `${param.name}${subscript(index, arraySizes)}`,
+        type: elemTypeName,
+        state: param.state
+      });
+    }
+  }
+
+  return args.flat(Infinity) as Arguments;
+}
+
+
+
+
+
+
+
+
+export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
+  const args_: Arguments = [];
+  params.forEach((param) => {
+    param.type = typeResolver(param.type);
+    if (isStructType(param.type)) {
+      flatternStructParam(param, typeResolver, types).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: e.type,
+          value: e.value,
+          state: param.state
+        });
+      });
+    } else if (isArrayType(param.type)) {
+      flatternArrayParam(param, typeResolver, types).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: e.type,
+          value: e.value,
+          state: param.state
+        });
+      });
+
+    } else {
+      args_.push({
+        name: param.name,
+        type: param.type,
+        state: param.state,
+        value: undefined
+      });
+    }
+  });
+
+  return args_;
+}
+
 
 
 
@@ -779,7 +951,7 @@ export function typeOfArg(arg: SupportedParamType): string {
   }
 
   if (typeofArg === 'string') {
-    return 'int';
+    return new Int(arg as string).finalType;
   }
 
   return typeof arg;
@@ -862,7 +1034,7 @@ export function compileContract(file: string, options?: {
 }
 
 
-export function newCall(Cls, args: Array<SupportedParamType>) {
+export function newCall(Cls: typeof AbstractContract, args: Array<SupportedParamType>): AbstractContract {
   return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
 }
 
@@ -998,25 +1170,25 @@ export function stripAnsi(string: string): string {
 }
 
 
-export function createStruct(contract: AbstractContract, structClass: typeof Struct, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): Struct {
+export function createStruct(contract: AbstractContract, structClass: typeof Struct, name: string, opcodesMap: Map<string, string>): Struct {
 
   const obj = Object.create({});
   structClass.structAst.params.forEach(param => {
 
-    const finalType = finalTypeResolver(param.type);
+    const finalType = contract.typeResolver(param.type);
 
     if (isStructType(finalType)) {
 
       const stclass = contract.getTypeClassByType(param.type);
 
       Object.assign(obj, {
-        [param.name]: createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap, finalTypeResolver)
+        [param.name]: createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap)
       });
 
     } else if (isArrayType(finalType)) {
 
       Object.assign(obj, {
-        [param.name]: createArray(contract, finalType, `${name}.${param.name}`, opcodesMap, finalTypeResolver)
+        [param.name]: createArray(contract, finalType, `${name}.${param.name}`, opcodesMap)
       });
 
     } else {
@@ -1036,7 +1208,7 @@ export function createStruct(contract: AbstractContract, structClass: typeof Str
 
 
 
-export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>, finalTypeResolver: TypeResolver): SupportedParamType {
+export function createArray(contract: AbstractContract, type: string, name: string, opcodesMap: Map<string, string>): SupportedParamType {
 
   const arrays: SupportedParamType[] = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);
@@ -1044,12 +1216,12 @@ export function createArray(contract: AbstractContract, type: string, name: stri
   const arraylen = sizes[0];
   if (sizes.length === 1) {
     for (let index = 0; index < arraylen; index++) {
-      const finalType = finalTypeResolver(elemTypeName);
+      const finalType = contract.typeResolver(elemTypeName);
 
       if (isStructType(finalType)) {
 
         const stclass = contract.getTypeClassByType(finalType);
-        arrays.push(createStruct(contract, stclass as typeof Struct, `${name}[${index}]`, opcodesMap, finalTypeResolver));
+        arrays.push(createStruct(contract, stclass as typeof Struct, `${name}[${index}]`, opcodesMap));
       } else {
 
         arrays.push(asm2ScryptType(finalType, opcodesMap.get(`$${name}[${index}]`)));
@@ -1060,9 +1232,9 @@ export function createArray(contract: AbstractContract, type: string, name: stri
   } else {
 
     for (let index = 0; index < arraylen; index++) {
-      const finalType = finalTypeResolver(elemTypeName);
+      const finalType = contract.typeResolver(elemTypeName);
       const subArrayType = [finalType, sizes.slice(1).map(size => `[${size}]`).join('')].join('');
-      arrays.push(createArray(contract, subArrayType, `${name}[${index}]`, opcodesMap, finalTypeResolver));
+      arrays.push(createArray(contract, subArrayType, `${name}[${index}]`, opcodesMap));
     }
   }
 
@@ -1159,32 +1331,28 @@ export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTe
 }
 
 
-export function buildContractState(args: Arguments): string {
+export function buildContractState(args: Arguments, finalTypeResolver: TypeResolver): string {
 
   let state_hex = '';
   let state_len = 0;
-  for (const arg of args) {
+  const args_ = flatternStateArgs(args, finalTypeResolver);
 
-    if (arg.state) {
-      if (arg.type == VariableType.BOOL) { //fixed length
-        state_hex += `${serializeSupportedParamType(arg.value)}`;
-      } else if (arg.type === VariableType.INT
-        || arg.type === VariableType.BYTES
-        || arg.type === VariableType.PUBKEY
-        || arg.type === VariableType.PRIVKEY
-        || arg.type === VariableType.PUBKEY
-        || arg.type === VariableType.SIG
-        || arg.type === VariableType.RIPEMD160
-        || arg.type === VariableType.SHA1
-        || arg.type === VariableType.SHA256
-        || arg.type === VariableType.SIGHASHTYPE
-        || arg.type === VariableType.SIGHASHPREIMAGE
-        || arg.type === VariableType.OPCODETYPE) {
-        state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
-      } else {
-
-        //TODO: ARRAY AND struct
-      }
+  for (const arg of args_) {
+    if (arg.type == VariableType.BOOL) { //fixed length
+      state_hex += `${serializeSupportedParamType(arg.value)}`;
+    } else if (arg.type === VariableType.INT
+      || arg.type === VariableType.BYTES
+      || arg.type === VariableType.PUBKEY
+      || arg.type === VariableType.PRIVKEY
+      || arg.type === VariableType.PUBKEY
+      || arg.type === VariableType.SIG
+      || arg.type === VariableType.RIPEMD160
+      || arg.type === VariableType.SHA1
+      || arg.type === VariableType.SHA256
+      || arg.type === VariableType.SIGHASHTYPE
+      || arg.type === VariableType.SIGHASHPREIMAGE
+      || arg.type === VariableType.OPCODETYPE) {
+      state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
     }
   }
 
@@ -1228,4 +1396,27 @@ export function readState(br: bsv.encoding.BufferReader): { data: string, opcode
   } catch (e) {
     throw new Error('read state hex error: ' + e);
   }
+}
+
+
+
+
+export function deserializeArgfromASM(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>): void {
+
+  let value;
+
+  if (isStructType(arg.type)) {
+
+    const stclass = contract.getTypeClassByType(getStructNameByType(arg.type));
+
+    value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
+  } else if (isArrayType(arg.type)) {
+
+    value = createArray(contract, arg.type, arg.name, opcodesMap);
+
+  } else {
+    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+  }
+
+  arg.value = value;
 }

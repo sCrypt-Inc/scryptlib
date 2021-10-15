@@ -1,0 +1,34 @@
+import "util.scrypt";
+
+type Integer = int;
+struct States {
+
+    Integer counter;
+    bool done;
+    bytes hex;
+}
+
+
+type MyStates = States;
+
+contract Counter {
+
+    @state
+    MyStates states;
+
+    public function increment(SigHashPreimage txPreimage, int amount) {
+        require(Tx.checkPreimage(txPreimage));
+
+        require(this.states.hex == b'02');
+
+        this.states.counter++;
+        this.states.done = !this.states.done;
+        this.states.hex = this.states.hex + b'01';
+
+        bytes outputScript = this.getStateScript();
+        bytes output = Util.buildOutput(outputScript, amount);
+        // ensure output is expected: amount is same with specified
+        // also output script is the same with scriptCode except counter incremented
+        require(hash256(output) == Util.hashOutputs(txPreimage));
+    }
+}
