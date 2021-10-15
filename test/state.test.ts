@@ -229,7 +229,7 @@ describe('state_test', () => {
     it('should success when state property is struct', () => {
 
         const Counter = buildContractClass(loadDescription('ststate_desc.json'));
-        const { States } = buildTypeClasses(loadDescription('ststate_desc.json'));
+        const { States, MyStates } = buildTypeClasses(loadDescription('ststate_desc.json'));
         let counter = new Counter(new States({
             counter: 1000,
             done: true,
@@ -237,7 +237,7 @@ describe('state_test', () => {
         }));
 
         let newLockingScript = counter.getStateScript({
-            states: new States({
+            states: new MyStates({
                 counter: 1001,
                 done: false,
                 hex: new Bytes('0201')

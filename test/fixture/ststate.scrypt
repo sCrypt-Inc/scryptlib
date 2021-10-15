@@ -1,16 +1,20 @@
 import "util.scrypt";
 
+type Integer = int;
 struct States {
 
-    int counter;
+    Integer counter;
     bool done;
     bytes hex;
 }
 
+
+type MyStates = States;
+
 contract Counter {
 
     @state
-    States states;
+    MyStates states;
 
     public function increment(SigHashPreimage txPreimage, int amount) {
         require(Tx.checkPreimage(txPreimage));
