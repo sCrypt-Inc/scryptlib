@@ -421,6 +421,10 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
     throw new Error('param inputAmount can not be empty');
   }
 
+  if (typeof lockingScript === 'string') {
+    throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
+  }
+
   const buf = toHex(bsv.Transaction.sighash.sign(
     tx, privateKey, sighashType, inputIndex,
     lockingScript, new bsv.crypto.BN(inputAmount), flags
