@@ -120,8 +120,6 @@ export class FunctionCall {
 
   genLaunchConfigFile(txContext?: TxContext): FileUri {
 
-    const Class = this.contract.constructor as typeof AbstractContract;
-
     const constructorArgs: SupportedParamType[] = this.contract.ctorArgs().map(p => p.value);
     const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
