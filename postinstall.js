@@ -1,9 +1,12 @@
 const { exec } = require("child_process");
-var fs = require('fs');
-var path = require('path');
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const https = require('https');
+const request = require('request');
 const { basename } = require("path");
 const { exit } = require("process");
-
 
 function apply(patches) {
     patches.forEach(patch => {
@@ -60,4 +63,23 @@ if (fs.existsSync(bsv)) {
     }
 }
 
+// download binary
 
+let FILENAME = "Windows.exe";
+const VERSION = "1.4.0"; // TODO: get it dynamically
+
+if (os.platform() === 'linux') {
+    FILENAME = "Linux";
+} else if (os.platform() === 'darwin') {
+    FILENAME = "macOS";
+}
+
+const urlCompiler= `https://github.com/sCrypt-Inc/compiler_dist/releases/download/v${VERSION}/scryptc-${VERSION}-${FILENAME}`
+const filePathCompiler = `${__dirname}/bin/scryptc-${FILENAME}`;
+
+request(urlCompiler)
+.pipe(fs.createWriteStream(filePathCompiler))
+.on('close', function () {
+    console.log('File written!');
+    fs.chmodSync(filePathCompiler, '755');
+});
