@@ -11,7 +11,8 @@ function main() {
       FILENAME = "macOS";
   }
 
-  exec(`./node_modules/scryptlib/bin/scryptc-${FILENAME} ${process.argv.slice(2).join(' ')}`, (error, stdout, stderr) => {
+  let scryptBinaryPath = process.env.npm_config_user_agent ? `./node_modules/scryptlib/bin/scryptc-${FILENAME}` : `./bin/scryptc-${FILENAME}`;
+  exec(`${scryptBinaryPath} ${process.argv.slice(2).join(' ')}`, (error, stdout, stderr) => {
     if (error) {
         console.log(`error: ${error.message}`);
         return;
