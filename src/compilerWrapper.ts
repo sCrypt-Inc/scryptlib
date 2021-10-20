@@ -5,7 +5,7 @@ import * as os from 'os';
 import md5 = require('md5');
 import compareVersions = require('compare-versions');
 import JSONbig = require('json-bigint');
-import { path2uri, isArrayType, ContractDescription, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst } from './internal';
+import { path2uri, isArrayType, ContractDescription, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst, buildTypeResolver, TypeResolver, arrayTypeAndSizeStr } from './internal';
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
@@ -218,14 +218,29 @@ export function compile(
       result.ast = allAst[sourceUri];
       delete allAst[sourceUri];
       result.dependencyAsts = allAst;
-      result.alias = getAliasDeclaration(result.ast, allAst);
+
+      const alias = getAliasDeclaration(result.ast, allAst);
+      const structs = getStructDeclaration(result.ast, allAst);
 
       result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
-      const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, result.staticConst);
+
+      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, result.staticConst);
+
+      result.alias = alias.map(a => ({
+        name: a.name,
+        type: shortType(typeResolver(a.type))
+      }));
+
+      result.structs = structs.map(a => ({
+        name: a.name,
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+      }));
+
+
+      const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
       result.abi = abi;
       result.contract = name;
-      result.structs = getStructDeclaration(result.ast, allAst);
 
     }
 
@@ -470,8 +485,28 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 }
 
 
+function getContractName(astRoot): string {
+  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  if (!mainContract) {
+    return '';
+  }
+  return mainContract['name'] || '';
+}
 
-export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt: Record<string, number>): ABI {
+function shortType(finalType: string): string {
+  let shortType = finalType;
+  if (isStructType(finalType)) {
+    shortType = getStructNameByType(finalType);
+  } else if (isArrayType(finalType)) {
+    const [elemType, sizes] = arrayTypeAndSizeStr(finalType);
+    if (isStructType(elemType)) {
+      shortType = toLiteralArrayType(getStructNameByType(elemType), sizes);
+    }
+  }
+  return shortType;
+}
+
+export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
     return {
@@ -488,34 +523,16 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
   interfaces.forEach(abi => {
     abi.params = abi.params.map(param => {
       return Object.assign(param, {
-        type: resolveAbiParamType(mainContract['name'], param.type, alias, staticConstInt)
+        type: shortType(typeResolver(param.type))
       });
     });
   });
 
   return {
-    contract: mainContract['name'],
+    contract: getContractName(astRoot),
     abi: interfaces
   };
 }
-
-
-function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
-
-  const resolvedAliasType = resolveType(alias, type);
-  const resolvedConstIntType = resolveStaticConst(contract, resolvedAliasType, staticConstInt);
-
-  if (isStructType(resolvedConstIntType)) {
-    return getStructNameByType(resolvedConstIntType);
-  } else if (isArrayType(resolvedConstIntType)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedConstIntType);
-    const elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
-    return toLiteralArrayType(elemType, arraySizes);
-  }
-
-  return resolvedConstIntType;
-}
-
 
 
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
@@ -526,12 +543,11 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
-  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
 
   return allAst.map(ast => {
     return (ast.structs || []).map(s => ({
       name: s['name'],
-      params: s['fields'].map(p => { return { name: p['name'], type: resolveStaticConst('', p['type'], staticConst) }; }),
+      params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
     }));
   }).flat(1);
 }
@@ -544,11 +560,11 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
-  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
+
   return allAst.map(ast => {
     return (ast.alias || []).map(s => ({
       name: s['alias'],
-      type: resolveStaticConst('', s['type'], staticConst),
+      type: s['type'],
     }));
   }).flat(1);
 }

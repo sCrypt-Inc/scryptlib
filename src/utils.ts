@@ -554,7 +554,7 @@ export function isStructType(type: string): boolean {
 
 // test struct Token {}[3], int[3], st.b.c[3]
 export function isArrayType(type: string): boolean {
-  return /^\w[\w.\s{}]+(\[[\w.]+\])+$/.test(type);
+  return /^\w[\w.\s{}]*(\[[\w.]+\])+$/.test(type);
 }
 
 export function getStructNameByType(type: string): string {

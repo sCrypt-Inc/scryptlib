@@ -1,0 +1,33 @@
+import "util.scrypt";
+
+struct ST {
+    int x;
+    bool y;
+    bytes z;
+}
+type A = ST;
+type B = A;
+
+contract StateProp {
+    static const int S = 2;
+
+    @state
+    B[S] st;
+
+    public function unlock(SigHashPreimage preimg, bytes b) {
+        this.st[0].x = this.st[1].x;
+        this.st[1].x = this.getX(0) + 1;
+        this.st[0].y = this.st[1].y;
+        this.st[1].y = !this.st[0].y;
+        this.st[0].z = this.st[1].z;
+        this.st[1].z = this.st[1].z + b;
+        bytes stateScript = this.getStateScript();
+        bytes output = Util.buildOutput(stateScript, Util.value(preimg));
+
+        require(hash256(output) == Util.hashOutputs(preimg));
+    }
+
+    function getX(int i) : int {
+        return this.st[i].x;
+    }
+}

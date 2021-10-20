@@ -538,7 +538,14 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 
 
 
-export function buildTypeClasses(desc: CompileResult | ContractDescription): Record<string, typeof ScryptType> {
+export function buildTypeClasses(descOrClas: CompileResult | ContractDescription | typeof AbstractContract): Record<string, typeof ScryptType> {
+
+  if (Object.prototype.hasOwnProperty.call(descOrClas, 'types')) {
+    const CLASS = descOrClas as typeof AbstractContract;
+    return CLASS.types;
+  }
+
+  const desc = descOrClas as CompileResult | ContractDescription;
 
   const structClasses = buildStructsClass(desc);
   const allTypeClasses: Record<string, typeof ScryptType> = {};
