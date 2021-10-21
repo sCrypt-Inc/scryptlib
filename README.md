@@ -21,7 +21,7 @@ By using `scryptlib`, both scripts can be obtained with ease.
 
 The compiler output results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract description file**](docs/counter_debug_desc.json).
 
-There are three ways to generate this file (named as `xxx_desc.json`):
+There are two ways to generate this file (named as `xxx_desc.json`):
 
 1. Use [**sCrypt VS Code extension**](https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt) to compile manually;
 2. Use the function `compile` programmatically:
@@ -43,10 +43,6 @@ There are three ways to generate this file (named as `xxx_desc.json`):
   );
 ```
 
-3. Use `npx` in CLI:
-```sh
-  npx scryptlib compile your_directory/your_scrypt.scrypt --asm
-```
 ## Deploy A Contract and Call Its Function
 
 Both **deploying a contract** and **calling a contract function**are achieved by sending a transaction. Generally speaking,
@@ -220,6 +216,10 @@ let demo = new Demo("11111111111111111111111111111111111", 1);
 let result = demo.add(new Int("11111111111111111111111111111111112")).verify();
 
 console.assert(result.success, result.error)
+```
 
+## Compile Contract into ASM Format
 
+```sh
+  npx scryptlib compile your_directory/your_scrypt.scrypt --asm
 ```
