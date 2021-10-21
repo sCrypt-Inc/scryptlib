@@ -4,7 +4,7 @@ const path = require('path');
 const os = require('os');
 const { basename } = require("path");
 const { exit } = require("process");
-const { getBinary } = require("./util/get-binary");
+const getBinary = require("./util/getBinary");
 
 function apply(patches) {
     patches.forEach(patch => {
@@ -22,9 +22,7 @@ function apply(patches) {
             }
             console.log(`scryptlib: apply ${patch} successfully: ${stdout}`);
         });
-
     })
-
 }
 
 
