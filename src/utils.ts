@@ -15,7 +15,6 @@ import {
   Arguments, Argument,
   Script, ParamEntity
 } from './internal';
-import { compilerVersion } from './compilerWrapper';
 
 
 const BN = bsv.crypto.BN;

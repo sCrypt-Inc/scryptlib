@@ -1,15 +1,14 @@
 const { exec } = require("child_process");
 const fs = require('fs');
-const path = require('path');
 const os = require('os');
 const { basename } = require("path");
+const { basename, join } = require("path");
 const { exit } = require("process");
 const getBinary = require("./util/getBinary");
 
 function apply(patches) {
     patches.forEach(patch => {
         let cmd = "git apply --ignore-whitespace  " + patch;
-        console.log(cmd)
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
                 console.error(`error: ${error.message}`);
@@ -26,7 +25,7 @@ function apply(patches) {
 }
 
 
-let patches = [path.join(__dirname, 'patches/bsv+1.5.6.patch'), path.join(__dirname, 'patches/json-bigint+1.0.0.patch')];
+let patches = [join(__dirname, 'patches/bsv+1.5.6.patch'), join(__dirname, 'patches/json-bigint+1.0.0.patch')];
 
 patches.forEach(patch => {
     if (!fs.existsSync(patch)) {
@@ -41,14 +40,14 @@ console.log('scryptlib: cwd', cwd);
 
 console.log('scryptlib: patches', patches);
 
-let bsv = path.join(__dirname, 'node_modules', 'bsv');
+let bsv = join(__dirname, 'node_modules', 'bsv');
 
 
 if (fs.existsSync(bsv)) {
     apply(patches)
 } else {
 
-    bsv = path.join(__dirname, '..', 'bsv');
+    bsv = join(__dirname, '..', 'bsv');
     if (fs.existsSync(bsv)) {
 
         //chdir
