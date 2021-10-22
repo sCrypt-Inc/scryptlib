@@ -5,11 +5,14 @@ const { execSync } = require("child_process");
 
 
 function isDev() {
-    let target = join(__dirname, 'node_modules', "bsv");
-    return fs.existsSync(target);
+    const cwd = process.cwd();
+    if (cwd.indexOf("node_modules") > -1) {
+        return false;
+    }
+
+    return true;
 }
 
-const isDevEnv = isDev();
 
 function rmdir(m) {
 
@@ -18,9 +21,10 @@ function rmdir(m) {
             rmdir(dir);
         })
     } else {
-        let target = isDevEnv ? join(__dirname, 'node_modules', m) : join(__dirname, '..', m);
+        let target = isDev() ? join(__dirname, 'node_modules', m) : join(__dirname, '..', m);
 
         if (fs.existsSync(target)) {
+            console.log('deleted node_modules:' + m);
             fs.rmdirSync(target, { recursive: true });
         } else {
             console.error('target' + target + " not found")
@@ -29,12 +33,4 @@ function rmdir(m) {
 }
 
 
-if (isDevEnv) {
-    rmdir(['bsv', 'json-bigint']);
-} else {
-    console.log('uninstalling scryptlib ...')
-    const output = execSync("npm uninstall scryptlib --no-save");
-    console.log('uninstalled scryptlib：', output.toString())
-}
-
-
+rmdir(['bsv', 'json-bigint']);

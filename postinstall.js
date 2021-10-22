@@ -1,61 +1,23 @@
-const { exec } = require("child_process");
-const fs = require('fs');
-const os = require('os');
-const { basename } = require("path");
-const { basename, join } = require("path");
+
+const { execSync } = require("child_process");
 const { exit } = require("process");
-const getBinary = require("./util/getBinary");
-
-function apply(patches) {
-    patches.forEach(patch => {
-        let cmd = "git apply --ignore-whitespace  " + patch;
-        exec(cmd, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`error: ${error.message}`);
-                console.log(`scryptlib: please delete module related to ${basename(patch)} in the node_modules and run npm install again.`);
-                return;
-            }
-            if (stderr) {
-                console.error(`stderr: ${stderr}`);
-                return;
-            }
-            console.log(`scryptlib: apply ${patch} successfully: ${stdout}`);
-        });
-    })
-}
 
 
-let patches = [join(__dirname, 'patches/bsv+1.5.6.patch'), join(__dirname, 'patches/json-bigint+1.0.0.patch')];
 
-patches.forEach(patch => {
-    if (!fs.existsSync(patch)) {
-        console.error(`can not found patch ${patch} ...`);
-        exit(1);
-    }
-})
-
-
-const cwd = process.cwd();
-console.log('scryptlib: cwd', cwd);
-
-console.log('scryptlib: patches', patches);
-
-let bsv = join(__dirname, 'node_modules', 'bsv');
-
-
-if (fs.existsSync(bsv)) {
-    apply(patches)
-} else {
-
-    bsv = join(__dirname, '..', 'bsv');
-    if (fs.existsSync(bsv)) {
-
-        //chdir
+try {
+    const cwd = process.cwd();
+    console.log('workspace:', cwd)
+    if (cwd.indexOf("node_modules") > -1) {
         process.chdir('../../');
-        apply(patches)
-        //restore dir
-        process.chdir(cwd);
+        console.log('changed workspace:', process.cwd())
+
+        execSync("npx patch-package --patch-dir node_modules/scryptlib/patches", { stdio: 'inherit' })
+    } else {
+        execSync("npx patch-package", { stdio: 'inherit' });
     }
+} catch (error) {
+    console.error(error)
+    exit(-1)
 }
 
 // download binary
