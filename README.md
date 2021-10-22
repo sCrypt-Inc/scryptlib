@@ -200,6 +200,28 @@ let counterClone = Counter.fromHex(counter.lockingScript.toHex());
 
 ```
 
+## Structure
+
+When creating a structure, all members must specify values. Use dot to access structure members.
+
+```typescript
+const PersonContract = buildContractClass(loadDescription('person_desc.json'));
+
+const { Person } = buildTypeClasses(PersonContract);
+
+let man = new Person({
+    isMale: true,
+    age: 14,
+    addr: new Bytes("68656c6c6f20776f726c6421")
+  });
+
+man.age = 20;
+
+man.addr = new Bytes("00")
+
+```
+
+
 
 ## Support browsers that are not compatible with BigInt
 

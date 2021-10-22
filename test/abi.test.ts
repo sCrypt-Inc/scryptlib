@@ -259,7 +259,7 @@ describe('FunctionCall', () => {
           age: 14,
           addr: new Bytes("68656c6c6f20776f726c6421")
         }), 18, true)
-      }).to.throw('wrong argument type, expected bool but got int');
+      }).to.throw('Member isMale of struct Person is of wrong type, expected bool but got int');
     })
 
   })

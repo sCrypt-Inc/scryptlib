@@ -575,26 +575,35 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 
+export function checkStructField(s: StructEntity, param: ParamEntity, arg: SupportedParamType, typeResolver: TypeResolver): void {
+
+  const expectedType = typeResolver(param.type);
+
+  if (isArrayType(expectedType)) {
+    if (!checkArray(arg as SupportedParamType[], expectedType)) {
+
+      throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${param.type}`);
+    }
+  } else {
+    const realType = typeOfArg(arg);
+
+    if (expectedType != realType) {
+      throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${expectedType} but got ${realType}`);
+    }
+  }
+}
+
 export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeResolver): void {
 
   s.params.forEach(p => {
     const member = arg.memberByKey(p.name);
 
-    const finalType = typeOfArg(member);
-
-    const paramFinalType = typeResolver(p.type);
-
-    if (finalType === 'undefined') {
+    if (member) {
+      checkStructField(s, p, member, typeResolver);
+    } else {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    } else if (finalType != paramFinalType) {
-      if (isArrayType(paramFinalType)) {
-        if (!checkArray(arg.value[p.name] as SupportedParamType[], paramFinalType)) {
-          throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
-        }
-      } else {
-        throw new Error(`wrong argument type, expected ${paramFinalType} but got ${finalType}`);
-      }
     }
+
   });
 
   const members = s.params.map(p => p.name);
