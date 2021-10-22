@@ -1,9 +1,10 @@
 const { exec } = require("child_process");
-var fs = require('fs');
-var path = require('path');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const { basename } = require("path");
 const { exit } = require("process");
-
+const getBinary = require("./util/getBinary");
 
 function apply(patches) {
     patches.forEach(patch => {
@@ -21,9 +22,7 @@ function apply(patches) {
             }
             console.log(`scryptlib: apply ${patch} successfully: ${stdout}`);
         });
-
     })
-
 }
 
 
@@ -60,4 +59,5 @@ if (fs.existsSync(bsv)) {
     }
 }
 
-
+// download binary
+getBinary();

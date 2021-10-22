@@ -111,3 +111,5 @@ compiler/
 boilerplate/
 
 out/
+
+.DS_Store
