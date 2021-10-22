@@ -11,7 +11,7 @@ const getBinary = async () => {
   if (VERSION.length === 0) {
     const fromAPI = await fetch('https://api.github.com/repos/scrypt-inc/compiler_dist/releases');
     const res = await fromAPI.json();
-    VERSION = res[0]?.tag_name.substring(1);
+    VERSION = res[0]?.tag_name?.substring(1);
   }
 
   console.log('getting VERSION', VERSION);
