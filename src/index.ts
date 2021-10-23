@@ -11,3 +11,7 @@ export {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType,
   Struct, StructObject, VariableType, TypeResolver, serializeSupportedParamType, PrimitiveTypes, RawTypes
 } from './internal';
+
+export {
+  getPlatformScryptc, findCompiler
+} from './internal';

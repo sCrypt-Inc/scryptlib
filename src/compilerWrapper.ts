@@ -1,11 +1,13 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
-import * as os from 'os';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 'fs';
 import md5 = require('md5');
-import compareVersions = require('compare-versions');
 import JSONbig = require('json-bigint');
-import { path2uri, isArrayType, ContractDescription, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst, buildTypeResolver, TypeResolver, arrayTypeAndSizeStr } from './internal';
+import {
+  path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
+  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr
+} from './internal';
+
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
@@ -189,7 +191,7 @@ export function compile(
   const outputFiles = {};
   try {
     const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-    const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
+    const cmdPrefix = settings.cmdPrefix || findCompiler();
     const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
     let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
@@ -330,7 +332,7 @@ export function compile(
       outputFiles['desc'] = outputFilePath;
       const description: ContractDescription = {
         version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
-        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc()),
+        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
         contract: result.contract,
         md5: md5(sourceContent),
         structs: result.structs || [],
@@ -590,67 +592,6 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
     });
   }).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
 }
-
-
-export function getPlatformScryptc(): string {
-  switch (os.platform()) {
-    case 'win32':
-      return 'compiler/scryptc/win32/scryptc.exe';
-    case 'linux':
-      return 'compiler/scryptc/linux/scryptc';
-    case 'darwin':
-      return 'compiler/scryptc/mac/scryptc';
-    default:
-      throw `sCrypt doesn't support ${os.platform()}`;
-  }
-}
-
-function vscodeExtensionPath(): string {
-  const homedir = os.homedir();
-  const extensionPath = join(homedir, '.vscode/extensions');
-  if (!existsSync(extensionPath)) {
-    throw 'No Visual Studio Code extensions found. Please ensure Visual Studio Code is installed.';
-  }
-  return extensionPath;
-}
-
-function findVscodeScrypt(extensionPath: string): string {
-  const sCryptPrefix = 'bsv-scrypt.scrypt-';
-  let versions = readdirSync(extensionPath).reduce((filtered, item) => {
-    if (item.indexOf(sCryptPrefix) > -1) {
-      const version = item.substring(sCryptPrefix.length);
-      if (compareVersions.validate(version)) {
-        filtered.push(version);
-      }
-    }
-    return filtered;
-  }, []);
-
-  // compareVersions is ascending, so reverse.
-  versions = versions.sort(compareVersions).reverse();
-  return sCryptPrefix + versions[0];
-}
-
-export function getDefaultScryptc(): string {
-
-
-  const extensionPath = vscodeExtensionPath();
-
-  const sCrypt = findVscodeScrypt(extensionPath);
-  if (!sCrypt) {
-    throw `No sCrypt extension found. Please install it at extension marketplace:
-		https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
-  }
-
-  const scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
-
-  if (!existsSync(scryptc)) {
-    throw 'No sCrypt compiler found. Please update your sCrypt extension to the latest version';
-  }
-
-  return scryptc;
-}
-
 
 
 export function desc2CompileResult(description: ContractDescription): CompileResult {

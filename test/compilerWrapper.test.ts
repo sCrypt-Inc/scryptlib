@@ -1,12 +1,12 @@
 import { assert, expect } from 'chai';
 import path = require("path");
 import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers } from './helper'
-import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion, getDefaultScryptc } from '../src/compilerWrapper';
-import { compileContract, getCIScryptc } from '../src/utils';
-import * as minimist from 'minimist';
+import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
+import { compileContract } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
+import { findCompiler } from '../src/findCompiler';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -90,13 +90,8 @@ describe('compile()', () => {
   })
 
   describe('test compilerVersion', () => {
-    const argv = minimist(process.argv.slice(2));
 
-    let scryptc = argv.scryptc;
-    if (argv.ci || !scryptc) {
-      scryptc = getCIScryptc();
-    }
-    scryptc = scryptc ? scryptc : getDefaultScryptc();
+    let scryptc = findCompiler();
 
     const version = compilerVersion(scryptc);
     console.log('compilerVersion', version)

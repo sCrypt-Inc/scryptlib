@@ -4,3 +4,4 @@ export * from './serializer';
 export * from './contract';
 export * from './compilerWrapper';
 export * from './abi';
+export * from './findCompiler';

@@ -2,20 +2,20 @@ import { pathToFileURL, fileURLToPath } from 'url';
 import bsv = require('bsv');
 import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
-import { dirname, join, resolve, sep } from 'path';
-import * as minimist from 'minimist';
-import { tmpdir, type } from 'os';
+import { join, sep } from 'path';
+import { tmpdir } from 'os';
 export { bsv };
 export { ECIES };
+
+
 
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
-  getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
+  findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
   Arguments, Argument,
   Script, ParamEntity
 } from './internal';
-
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -986,28 +986,8 @@ export function isEmpty(obj: unknown): boolean {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 }
 
-function findCompiler(directory): string | undefined {
-  if (!directory) {
-    directory = dirname(module.parent.filename);
-  }
-  const compiler = resolve(directory, 'compiler');
-  if (fs.existsSync(compiler) && fs.statSync(compiler).isDirectory()) {
-    const scryptc = join(compiler, '..', getPlatformScryptc());
-    return scryptc;
-  }
-  const parent = resolve(directory, '..');
-  if (parent === directory) {
-    return undefined;
-  }
-  return findCompiler(parent);
-}
 
 
-
-export function getCIScryptc(): string | undefined {
-  const scryptc = findCompiler(__dirname);
-  return fs.existsSync(scryptc) ? scryptc : undefined;
-}
 
 export function compileContract(file: string, options?: {
   out?: string,
@@ -1026,19 +1006,13 @@ export function compileContract(file: string, options?: {
     fs.mkdirSync(options.out);
   }
 
-  const argv = minimist(process.argv.slice(2));
-
-  let scryptc = argv.scryptc;
-  if (argv.ci || !scryptc) {
-    scryptc = getCIScryptc();
-  }
 
   const result = compile(
     { path: file },
     {
       desc: true, debug: options.sourceMap, outputDir: options.out,
       hex: true,
-      cmdPrefix: scryptc
+      cmdPrefix: findCompiler()
     }
   );
 

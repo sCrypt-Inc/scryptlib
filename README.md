@@ -45,6 +45,9 @@ There are three ways to generate this file (named as `xxx_desc.json`):
 
 3. Run `npx` command in CLI:
 ```sh
+  # install compiler binary
+  npx scryptlib download
+  # compiling contract
   npx scryptlib your_directory/your_scrypt.scrypt
 ```
 
