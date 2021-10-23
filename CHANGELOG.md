@@ -1,8 +1,10 @@
 # CHANGELOG
 
 
-## 0.6.3
+## 0.7.0
 
+- support access structure members
+- support the use of commands to compile contracts,  see [command in CLI](./README.md#contract-description-file)
 - change `getStateScript` to `getNewStateScript`
 
 
