@@ -476,7 +476,7 @@ describe('VerifyError', () => {
       const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
       let counter = new StateCounter(0, true);
 
-      let newLockingScript = counter.getStateScript({
+      let newLockingScript = counter.getNewStateScript({
         counter: 1,
         done: false
       })

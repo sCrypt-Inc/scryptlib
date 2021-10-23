@@ -1,5 +1,14 @@
 # CHANGELOG
 
+
+## 0.6.3
+
+- change `getStateScript` to `getNewStateScript`
+
+
+*Release Date: 2021/10/23*
+
+
 ## 0.6.2
 
 - support array/struct state

@@ -150,11 +150,11 @@ let state = instance.counter;
 instance.counter++;
 ```
 
-Then use `instance.getStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
+Then use `instance.getNewStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
 
 ```typescript
 const tx = newTx(inputSatoshis);
-let newLockingScript = instance.getStateScript({
+let newLockingScript = instance.getNewStateScript({
     counter: 1
 });
 
@@ -166,6 +166,17 @@ tx.addOutput(new bsv.Transaction.Output({
 preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
 
 ```
+
+You can also access the state of the contract by accessing the properties of the instance.
+
+
+```typescript
+
+instance.counter++;
+instance.person.name = new Bytes('0001');
+
+```
+
 
 You can also maintain state manually to, for example, optimize your contract or use customized state de/serialization [rawstate](docs/rawstate.md).
 

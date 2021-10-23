@@ -73,7 +73,7 @@ describe('state_test', () => {
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
 
-        let newLockingScript = stateExample.getStateScript({
+        let newLockingScript = stateExample.getNewStateScript({
             counter: 1001,
             state_bytes: new Bytes('010101'),
             state_bool: false
@@ -102,7 +102,7 @@ describe('state_test', () => {
         stateExample.state_bool = false;
 
 
-        newLockingScript = stateExample.getStateScript({
+        newLockingScript = stateExample.getNewStateScript({
             counter: 1002,
             state_bytes: new Bytes('01010101'),
             state_bool: true
@@ -141,7 +141,7 @@ describe('state_test', () => {
 
 
         expect(() => {
-            stateExample.getStateScript({
+            stateExample.getNewStateScript({
                 coun1ter: 1002,
                 state_bytes: new Bytes('01010101'),
                 state_bool: true
@@ -157,7 +157,7 @@ describe('state_test', () => {
         let counter = new Counter();
 
         expect(() => {
-            counter.getStateScript({
+            counter.getNewStateScript({
                 coun1ter: 1002,
                 state_bytes: new Bytes('01010101'),
                 state_bool: true
@@ -167,12 +167,12 @@ describe('state_test', () => {
     });
 
 
-    it('should success when not all state properties are provided in getStateScript() ', () => {
+    it('should success when not all state properties are provided in getNewStateScript() ', () => {
 
         const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
         let counter = new StateCounter(0, true);
 
-        let newLockingScript = counter.getStateScript({
+        let newLockingScript = counter.getNewStateScript({
             counter: 1
         })
 
@@ -196,12 +196,12 @@ describe('state_test', () => {
     });
 
 
-    it('should fail when wrong value state properties are provided in getStateScript() ', () => {
+    it('should fail when wrong value state properties are provided in getNewStateScript() ', () => {
 
         const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
         let counter = new StateCounter(0, true);
 
-        let newLockingScript = counter.getStateScript({
+        let newLockingScript = counter.getNewStateScript({
             counter: 1,
             done: false
         })
@@ -236,7 +236,7 @@ describe('state_test', () => {
             hex: new Bytes('02')
         }));
 
-        let newLockingScript = counter.getStateScript({
+        let newLockingScript = counter.getNewStateScript({
             states: new MyStates({
                 counter: 1001,
                 done: false,
@@ -268,7 +268,7 @@ describe('state_test', () => {
         const Counter = buildContractClass(loadDescription('arraystate_desc.json'));
         let counter = new Counter([0, 1, 2]);
 
-        let newLockingScript = counter.getStateScript({
+        let newLockingScript = counter.getNewStateScript({
             counters: [1, 2, 3]
         })
 
@@ -310,7 +310,7 @@ describe('state_test', () => {
         })]);
 
 
-        let newLockingScript = counter.getStateScript({
+        let newLockingScript = counter.getNewStateScript({
             states: new States({
                 counter: 1001,
                 done: false
@@ -365,7 +365,7 @@ describe('state_test', () => {
         })]);
 
 
-        let newLockingScript = counter.getStateScript({
+        let newLockingScript = counter.getNewStateScript({
             states: new States({
                 counter: 1001,
                 done: false

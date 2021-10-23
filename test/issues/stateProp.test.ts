@@ -21,7 +21,7 @@ describe('Test sCrypt contract stateProp In Javascript', () => {
             new ST({ x: 0, y: true, z: new Bytes('00') })
         ]);
 
-        let newLockingScript = test.getStateScript({
+        let newLockingScript = test.getNewStateScript({
             st: [
                 new ST({ x: 0, y: true, z: new Bytes('00') }),
                 new ST({ x: 1, y: false, z: new Bytes('0001') })
