@@ -1,8 +1,8 @@
 
 const { execSync } = require("child_process");
 const { exit } = require("process");
-const { join, basename } = require("path");
-const { existsSync, rmdirSync } = require('fs');
+
+const chalk = require("chalk");
 
 function isDev() {
     const cwd = process.cwd();
@@ -16,36 +16,39 @@ function isDev() {
 const _isDev = isDev();
 
 
-function rmNodeModules() {
+function apply(changeDir) {
 
-    let target = _isDev ? join(__dirname, 'node_modules') : join(__dirname, '..');
-    if (basename(target) === "node_modules" && existsSync(target)) {
-        rmdirSync(target, { recursive: true });
-        console.log('deleted node_modules ');
-    } else {
-        console.error('target [' + target + "] not found")
-    }
-}
-
-try {
     const cwd = process.cwd();
     console.log('workspace:', cwd)
     if (!_isDev) {
-        process.chdir('../../');
-        console.log('changed workspace:', process.cwd())
+        if (changeDir) {
+            process.chdir('../../');
+            console.log('changed workspace:', process.cwd())
+        }
+
 
         execSync("npx patch-package --patch-dir node_modules/scryptlib/patches --error-on-fail", { stdio: 'inherit' })
     } else {
         execSync("npx patch-package --error-on-fail", { stdio: 'inherit' });
     }
+}
+
+try {
+    apply(true);
 
 } catch (error) {
 
     try {
 
-        console.log('Patch failed, removing node_modules and trying again ...')
-        rmNodeModules();
-        execSync("npm install", { stdio: 'inherit' });
+
+        if (_isDev) {
+            execSync("npm i bsv", { stdio: 'inherit' });
+            execSync("npm i json-bigint", { stdio: 'inherit' });
+
+            apply(false);
+        } else {
+            console.log(`⛔️ ${chalk.red.bold("Applying patches failed")} , please run ${chalk.yellow.bold("npm ci")} to try again ...`)
+        }
 
     } catch (error) {
 
