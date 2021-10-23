@@ -5,9 +5,18 @@ const fs = require('fs');
 const { compile, getPlatformScryptc, getOutputFilePath } = require('../dist/compilerWrapper.js');
 const chalk = require("chalk");
 const { exit } = require("process");
+const getBinary = require("../util/getBinary");
+
 
 function main() {
 
+  const arg = process.argv.slice(2)[0];
+
+
+  if (arg === 'download') {
+    getBinary()
+    return;
+  }
 
   let scryptBinaryPath = process.env.npm_config_user_agent ? `./node_modules/scryptlib/${getPlatformScryptc()}` : `${getPlatformScryptc()}`;
 

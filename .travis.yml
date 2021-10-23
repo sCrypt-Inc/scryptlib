@@ -15,6 +15,7 @@ os:
 #  - npm i -g npm@latest
 
 script:
+  - npx scryptlib download
   - npm run testlint
   - npm run cov -- --ci=true
   # integration testing with boilerplate

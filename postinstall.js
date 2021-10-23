@@ -1,7 +1,6 @@
 
 const { execSync } = require("child_process");
 const { exit } = require("process");
-const getBinary = require("./util/getBinary");
 const chalk = require("chalk");
 
 function isDev() {
@@ -15,6 +14,12 @@ function isDev() {
 
 const _isDev = isDev();
 
+function printFinish() {
+    console.info(`${chalk.green("✔")} ${chalk.green.bold("The patches has been successfully applied.")}`)
+
+    console.info(`
+${chalk.grey("•")}`, `If you want to use sCrypt compiler binary, run ${chalk.yellow.bold("npx scryptlib download")} to download the compiler binary.`)
+}
 
 function apply(changeDir) {
 
@@ -35,7 +40,7 @@ function apply(changeDir) {
 
 try {
     apply(true);
-
+    printFinish();
 } catch (error) {
 
     try {
@@ -46,6 +51,7 @@ try {
             execSync("npm i json-bigint", { stdio: 'inherit' });
 
             apply(false);
+            printFinish();
         } else {
             console.log(`⛔️ ${chalk.red.bold("Applying patches failed")} , please run ${chalk.yellow.bold("npm ci")} to try again ...`)
         }
@@ -59,4 +65,4 @@ try {
 }
 
 // download binary
-getBinary();
+// getBinary();

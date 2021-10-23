@@ -33,7 +33,7 @@ function compilerVersion(cwd) {
 
 const getBinary = async () => {
   let FILENAME = "Windows.exe";
-  let VERSION = process.argv.slice(2);
+  let VERSION = process.argv.slice(3);
 
   if (VERSION.length === 0) {
     const fromAPI = await fetch('https://api.github.com/repos/scrypt-inc/compiler_dist/releases');
