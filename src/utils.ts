@@ -1022,6 +1022,10 @@ export function compileContract(file: string, options?: {
     throw (`file ${file} not exists!`);
   }
 
+  if (!fs.existsSync(options.out)) {
+    fs.mkdirSync(options.out);
+  }
+
   const argv = minimist(process.argv.slice(2));
 
   let scryptc = argv.scryptc;
