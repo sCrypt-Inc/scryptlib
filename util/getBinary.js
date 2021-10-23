@@ -1,8 +1,12 @@
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const os = require('os');
 const fs = require('fs');
 const stream = require('stream');
 const util = require('util');
+const path = require('path');
+const { compilerVersion, getPlatformScryptc } = require("../dist/compilerWrapper");
+const chalk = require("chalk");
+
 
 const getBinary = async () => {
   let FILENAME = "Windows.exe";
@@ -14,25 +18,32 @@ const getBinary = async () => {
     VERSION = res[0]?.tag_name?.substring(1);
   }
 
-  console.log('getting VERSION', VERSION);
+  console.log(`${chalk.yellow("Downloading compiler ...")}`);
 
   if (os.platform() === 'linux') {
-      FILENAME = "Linux";
+    FILENAME = "Linux";
   } else if (os.platform() === 'darwin') {
-      FILENAME = "macOS";
+    FILENAME = "macOS";
   }
 
   const streamPipeline = util.promisify(stream.pipeline);
-  const urlCompiler= `https://github.com/sCrypt-Inc/compiler_dist/releases/download/v${VERSION}/scryptc-${VERSION}-${FILENAME}`
-  const filePathCompiler = `${__dirname}/../bin/scryptc-${FILENAME}`;
+  const urlCompiler = `https://github.com/sCrypt-Inc/compiler_dist/releases/download/v${VERSION}/scryptc-${VERSION}-${FILENAME}`
+  const filePathCompiler = path.join(__dirname, '..', getPlatformScryptc());
+  const dirCompiler = path.dirname(filePathCompiler);
+
+  if (!fs.existsSync(dirCompiler)) {
+    fs.mkdirSync(dirCompiler, { recursive: true });
+  }
+
   const fromRelease = await fetch(urlCompiler);
 
   if (!fromRelease.ok) {
-    console.log(`Download Unsuccesful: ${fromRelease.statusText}`);
+    console.log(`⛔️ ${chalk.red('Download Unsuccesful:')} ${fromRelease.statusText}`);
   } else {
     await streamPipeline(fromRelease.body, fs.createWriteStream(filePathCompiler));
     fs.chmodSync(filePathCompiler, '755');
-    console.log(`Download Successful`);
+    console.log(`Download Successful, path: ${filePathCompiler}`);
+    console.log(`Compiler vesion: ${chalk.green.bold(compilerVersion(filePathCompiler))} ${chalk.green("✔")}`);
   }
 }
 

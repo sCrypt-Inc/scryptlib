@@ -1,7 +1,7 @@
 
 const { execSync } = require("child_process");
 const { exit } = require("process");
-
+const getBinary = require("./util/getBinary");
 const chalk = require("chalk");
 
 function isDev() {
