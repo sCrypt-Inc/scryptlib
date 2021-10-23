@@ -4,8 +4,31 @@ const fs = require('fs');
 const stream = require('stream');
 const util = require('util');
 const path = require('path');
-const { compilerVersion, getPlatformScryptc } = require("../dist/compilerWrapper");
+var child_process_1 = require("child_process");
 const chalk = require("chalk");
+
+function getPlatformScryptc() {
+  switch (os.platform()) {
+    case 'win32':
+      return 'compiler/scryptc/win32/scryptc.exe';
+    case 'linux':
+      return 'compiler/scryptc/linux/scryptc';
+    case 'darwin':
+      return 'compiler/scryptc/mac/scryptc';
+    default:
+      throw "sCrypt doesn't support " + os.platform();
+  }
+}
+
+function compilerVersion(cwd) {
+  try {
+    var text = child_process_1.execSync(cwd + " version").toString();
+    return /Version:\s*([^\s]+)\s*/.exec(text)[1];
+  }
+  catch (e) {
+    throw new Error("compilerVersion fail when run: " + cwd + " version");
+  }
+}
 
 
 const getBinary = async () => {

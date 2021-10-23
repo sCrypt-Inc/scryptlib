@@ -55,7 +55,6 @@
     "glob": "^7.1.6",
     "husky": "^5.2.0",
     "mocha": "^6.2.2",
-    "node-fetch": "^3.0.0",
     "nyc": "^15.1.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
@@ -64,6 +63,7 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
+    "node-fetch": "^3.0.0",
     "bsv": "^1.5.6",
     "compare-versions": "^3.6.0",
     "json-bigint": "^1.0.0",
