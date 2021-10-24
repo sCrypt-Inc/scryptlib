@@ -2,7 +2,8 @@
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
-const { compile, getPlatformScryptc, getOutputFilePath } = require('../dist/compilerWrapper.js');
+const { compile } = require('../dist/compilerWrapper.js');
+const { findCompiler } = require('../dist/findCompiler.js');
 const chalk = require("chalk");
 const { exit } = require("process");
 const getBinary = require("../util/getBinary");
@@ -18,7 +19,7 @@ function main() {
     return;
   }
 
-  let scryptBinaryPath = process.env.npm_config_user_agent ? `./node_modules/scryptlib/${getPlatformScryptc()}` : `${getPlatformScryptc()}`;
+  let scryptBinaryPath = findCompiler();
 
   let sourcePath = path.isAbsolute(process.argv.slice(2)[0]) ? process.argv.slice(2)[0] : path.resolve(process.argv.slice(2)[0]);
 
@@ -44,7 +45,7 @@ function main() {
         asm: true,
         optimize: false,
         sourceMap: true,
-        cmdPrefix: path.join(__dirname, '..', scryptBinaryPath)
+        cmdPrefix: scryptBinaryPath
       }
     );
 
