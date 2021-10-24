@@ -2,21 +2,20 @@ import { pathToFileURL, fileURLToPath } from 'url';
 import bsv = require('bsv');
 import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
-import { dirname, join, resolve, sep } from 'path';
-import * as minimist from 'minimist';
-import { tmpdir, type } from 'os';
+import { join, sep } from 'path';
+import { tmpdir } from 'os';
 export { bsv };
 export { ECIES };
+
+
 
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
-  getPlatformScryptc, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
+  findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
   Arguments, Argument,
   Script, ParamEntity
 } from './internal';
-import { compilerVersion } from './compilerWrapper';
-
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -29,7 +28,7 @@ export const DEFAULT_FLAGS =
   Interp.SCRIPT_VERIFY_DERSIG |
   Interp.SCRIPT_VERIFY_MINIMALDATA | Interp.SCRIPT_VERIFY_NULLDUMMY |
   Interp.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
-  Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
+  Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY | Interp.SCRIPT_VERIFY_CLEANSTACK;
 
 export const DEFAULT_SIGHASH_TYPE =
   bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
@@ -554,7 +553,7 @@ export function isStructType(type: string): boolean {
 
 // test struct Token {}[3], int[3], st.b.c[3]
 export function isArrayType(type: string): boolean {
-  return /^\w[\w.\s{}]+(\[[\w.]+\])+$/.test(type);
+  return /^\w[\w.\s{}]*(\[[\w.]+\])+$/.test(type);
 }
 
 export function getStructNameByType(type: string): string {
@@ -576,26 +575,35 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 
+export function checkStructField(s: StructEntity, param: ParamEntity, arg: SupportedParamType, typeResolver: TypeResolver): void {
+
+  const expectedType = typeResolver(param.type);
+
+  if (isArrayType(expectedType)) {
+    if (!checkArray(arg as SupportedParamType[], expectedType)) {
+
+      throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${param.type}`);
+    }
+  } else {
+    const realType = typeOfArg(arg);
+
+    if (expectedType != realType) {
+      throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${expectedType} but got ${realType}`);
+    }
+  }
+}
+
 export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeResolver): void {
 
   s.params.forEach(p => {
     const member = arg.memberByKey(p.name);
 
-    const finalType = typeOfArg(member);
-
-    const paramFinalType = typeResolver(p.type);
-
-    if (finalType === 'undefined') {
+    if (member) {
+      checkStructField(s, p, member, typeResolver);
+    } else {
       throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    } else if (finalType != paramFinalType) {
-      if (isArrayType(paramFinalType)) {
-        if (!checkArray(arg.value[p.name] as SupportedParamType[], paramFinalType)) {
-          throw new Error(`checkArray fail, struct ${s.name} property ${p.name} should be ${paramFinalType}`);
-        }
-      } else {
-        throw new Error(`wrong argument type, expected ${paramFinalType} but got ${finalType}`);
-      }
     }
+
   });
 
   const members = s.params.map(p => p.name);
@@ -978,28 +986,8 @@ export function isEmpty(obj: unknown): boolean {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 }
 
-function findCompiler(directory): string | undefined {
-  if (!directory) {
-    directory = dirname(module.parent.filename);
-  }
-  const compiler = resolve(directory, 'compiler');
-  if (fs.existsSync(compiler) && fs.statSync(compiler).isDirectory()) {
-    const scryptc = join(compiler, '..', getPlatformScryptc());
-    return scryptc;
-  }
-  const parent = resolve(directory, '..');
-  if (parent === directory) {
-    return undefined;
-  }
-  return findCompiler(parent);
-}
 
 
-
-export function getCIScryptc(): string | undefined {
-  const scryptc = findCompiler(__dirname);
-  return fs.existsSync(scryptc) ? scryptc : undefined;
-}
 
 export function compileContract(file: string, options?: {
   out?: string,
@@ -1014,19 +1002,17 @@ export function compileContract(file: string, options?: {
     throw (`file ${file} not exists!`);
   }
 
-  const argv = minimist(process.argv.slice(2));
-
-  let scryptc = argv.scryptc;
-  if (argv.ci || !scryptc) {
-    scryptc = getCIScryptc();
+  if (!fs.existsSync(options.out)) {
+    fs.mkdirSync(options.out);
   }
+
 
   const result = compile(
     { path: file },
     {
       desc: true, debug: options.sourceMap, outputDir: options.out,
       hex: true,
-      cmdPrefix: scryptc
+      cmdPrefix: findCompiler()
     }
   );
 

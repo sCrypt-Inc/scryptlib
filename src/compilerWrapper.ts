@@ -1,11 +1,13 @@
 import { basename, dirname, join } from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, readdirSync } from 'fs';
-import * as os from 'os';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 'fs';
 import md5 = require('md5');
-import compareVersions = require('compare-versions');
 import JSONbig = require('json-bigint');
-import { path2uri, isArrayType, ContractDescription, toLiteralArrayType, resolveType, isStructType, getStructNameByType, arrayTypeAndSize, resolveStaticConst } from './internal';
+import {
+  path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
+  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr
+} from './internal';
+
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
 const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
@@ -189,7 +191,7 @@ export function compile(
   const outputFiles = {};
   try {
     const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-    const cmdPrefix = settings.cmdPrefix || getDefaultScryptc();
+    const cmdPrefix = settings.cmdPrefix || findCompiler();
     const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
     let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
@@ -218,14 +220,29 @@ export function compile(
       result.ast = allAst[sourceUri];
       delete allAst[sourceUri];
       result.dependencyAsts = allAst;
-      result.alias = getAliasDeclaration(result.ast, allAst);
+
+      const alias = getAliasDeclaration(result.ast, allAst);
+      const structs = getStructDeclaration(result.ast, allAst);
 
       result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
-      const { contract: name, abi } = getABIDeclaration(result.ast, result.alias, result.staticConst);
+
+      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, result.staticConst);
+
+      result.alias = alias.map(a => ({
+        name: a.name,
+        type: shortType(typeResolver(a.type))
+      }));
+
+      result.structs = structs.map(a => ({
+        name: a.name,
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+      }));
+
+
+      const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
       result.abi = abi;
       result.contract = name;
-      result.structs = getStructDeclaration(result.ast, allAst);
 
     }
 
@@ -315,7 +332,7 @@ export function compile(
       outputFiles['desc'] = outputFilePath;
       const description: ContractDescription = {
         version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
-        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : getDefaultScryptc()),
+        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
         contract: result.contract,
         md5: md5(sourceContent),
         structs: result.structs || [],
@@ -470,8 +487,28 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 }
 
 
+function getContractName(astRoot): string {
+  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  if (!mainContract) {
+    return '';
+  }
+  return mainContract['name'] || '';
+}
 
-export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt: Record<string, number>): ABI {
+function shortType(finalType: string): string {
+  let shortType = finalType;
+  if (isStructType(finalType)) {
+    shortType = getStructNameByType(finalType);
+  } else if (isArrayType(finalType)) {
+    const [elemType, sizes] = arrayTypeAndSizeStr(finalType);
+    if (isStructType(elemType)) {
+      shortType = toLiteralArrayType(getStructNameByType(elemType), sizes);
+    }
+  }
+  return shortType;
+}
+
+export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
     return {
@@ -488,34 +525,16 @@ export function getABIDeclaration(astRoot, alias: AliasEntity[], staticConstInt:
   interfaces.forEach(abi => {
     abi.params = abi.params.map(param => {
       return Object.assign(param, {
-        type: resolveAbiParamType(mainContract['name'], param.type, alias, staticConstInt)
+        type: shortType(typeResolver(param.type))
       });
     });
   });
 
   return {
-    contract: mainContract['name'],
+    contract: getContractName(astRoot),
     abi: interfaces
   };
 }
-
-
-function resolveAbiParamType(contract: string, type: string, alias: AliasEntity[], staticConstInt: Record<string, number>): string {
-
-  const resolvedAliasType = resolveType(alias, type);
-  const resolvedConstIntType = resolveStaticConst(contract, resolvedAliasType, staticConstInt);
-
-  if (isStructType(resolvedConstIntType)) {
-    return getStructNameByType(resolvedConstIntType);
-  } else if (isArrayType(resolvedConstIntType)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSize(resolvedConstIntType);
-    const elemType = isStructType(elemTypeName) ? getStructNameByType(elemTypeName) : elemTypeName;
-    return toLiteralArrayType(elemType, arraySizes);
-  }
-
-  return resolvedConstIntType;
-}
-
 
 
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
@@ -526,12 +545,11 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
-  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
 
   return allAst.map(ast => {
     return (ast.structs || []).map(s => ({
       name: s['name'],
-      params: s['fields'].map(p => { return { name: p['name'], type: resolveStaticConst('', p['type'], staticConst) }; }),
+      params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
     }));
   }).flat(1);
 }
@@ -544,11 +562,11 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
-  const staticConst = getStaticConstIntDeclaration(astRoot, dependencyAsts);
+
   return allAst.map(ast => {
     return (ast.alias || []).map(s => ({
       name: s['alias'],
-      type: resolveStaticConst('', s['type'], staticConst),
+      type: s['type'],
     }));
   }).flat(1);
 }
@@ -574,67 +592,6 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
     });
   }).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
 }
-
-
-export function getPlatformScryptc(): string {
-  switch (os.platform()) {
-    case 'win32':
-      return 'compiler/scryptc/win32/scryptc.exe';
-    case 'linux':
-      return 'compiler/scryptc/linux/scryptc';
-    case 'darwin':
-      return 'compiler/scryptc/mac/scryptc';
-    default:
-      throw `sCrypt doesn't support ${os.platform()}`;
-  }
-}
-
-function vscodeExtensionPath(): string {
-  const homedir = os.homedir();
-  const extensionPath = join(homedir, '.vscode/extensions');
-  if (!existsSync(extensionPath)) {
-    throw 'No Visual Studio Code extensions found. Please ensure Visual Studio Code is installed.';
-  }
-  return extensionPath;
-}
-
-function findVscodeScrypt(extensionPath: string): string {
-  const sCryptPrefix = 'bsv-scrypt.scrypt-';
-  let versions = readdirSync(extensionPath).reduce((filtered, item) => {
-    if (item.indexOf(sCryptPrefix) > -1) {
-      const version = item.substring(sCryptPrefix.length);
-      if (compareVersions.validate(version)) {
-        filtered.push(version);
-      }
-    }
-    return filtered;
-  }, []);
-
-  // compareVersions is ascending, so reverse.
-  versions = versions.sort(compareVersions).reverse();
-  return sCryptPrefix + versions[0];
-}
-
-export function getDefaultScryptc(): string {
-
-
-  const extensionPath = vscodeExtensionPath();
-
-  const sCrypt = findVscodeScrypt(extensionPath);
-  if (!sCrypt) {
-    throw `No sCrypt extension found. Please install it at extension marketplace:
-		https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt`;
-  }
-
-  const scryptc = join(extensionPath, sCrypt, getPlatformScryptc());
-
-  if (!existsSync(scryptc)) {
-    throw 'No sCrypt compiler found. Please update your sCrypt extension to the latest version';
-  }
-
-  return scryptc;
-}
-
 
 
 export function desc2CompileResult(description: ContractDescription): CompileResult {

@@ -130,7 +130,7 @@ export class AbstractContract {
    * @param states an object. Each key of the object is the name of a state property, and each value is the value of the state property.
    * @returns a locking script that includes the new states. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
    */
-  getStateScript(states: Record<string, SupportedParamType>): Script {
+  getNewStateScript(states: Record<string, SupportedParamType>): Script {
 
     const stateArgs = this.ctorArgs().filter(arg => arg.state);
     const contractName = Object.getPrototypeOf(this).constructor.contractName;
@@ -538,7 +538,14 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 
 
 
-export function buildTypeClasses(desc: CompileResult | ContractDescription): Record<string, typeof ScryptType> {
+export function buildTypeClasses(descOrClas: CompileResult | ContractDescription | typeof AbstractContract): Record<string, typeof ScryptType> {
+
+  if (Object.prototype.hasOwnProperty.call(descOrClas, 'types')) {
+    const CLASS = descOrClas as typeof AbstractContract;
+    return CLASS.types;
+  }
+
+  const desc = descOrClas as CompileResult | ContractDescription;
 
   const structClasses = buildStructsClass(desc);
   const allTypeClasses: Record<string, typeof ScryptType> = {};

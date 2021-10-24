@@ -159,10 +159,10 @@ export class ABICoder {
 
   constructor(public abi: ABIEntity[], public finalTypeResolver: TypeResolver) { }
 
-  checkArgs(fname: string, params: ParamEntity[], ...args: SupportedParamType[]): void {
+  checkArgs(contractname: string, funname: string, params: ParamEntity[], ...args: SupportedParamType[]): void {
 
     if (args.length !== params.length) {
-      throw new Error(`wrong number of arguments for #${fname}, expected ${params.length} but got ${args.length}`);
+      throw new Error(`wrong number of arguments for '${contractname}.${funname}', expected ${params.length} but got ${args.length}`);
     }
 
     params.map(p => ({
@@ -189,8 +189,8 @@ export class ABICoder {
 
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
-
-    this.checkArgs('constructor', cParams, ...args);
+    const contractName = Object.getPrototypeOf(contract).constructor.contractName as string;
+    this.checkArgs(contractName, 'constructor', cParams, ...args);
 
     // handle array type
     const flatteredArgs = flatternArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
@@ -340,10 +340,10 @@ export class ABICoder {
   }
 
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
-
+    const contractName = Object.getPrototypeOf(contract).constructor.contractName as string;
     for (const entity of this.abi) {
       if (entity.name === name) {
-        this.checkArgs(name, entity.params, ...args);
+        this.checkArgs(contractName, name, entity.params, ...args);
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
           type: this.finalTypeResolver(p.type),
@@ -365,7 +365,7 @@ export class ABICoder {
       }
     }
 
-    throw new Error(`no function named '${name}' found in abi`);
+    throw new Error(`no function named '${name}' found in contract '${contractName}'`);
   }
 
   encodeParams(args: SupportedParamType[], paramsEntitys: ParamEntity[]): string {

@@ -8,3 +8,8 @@ compiler
 boilerplate
 out
 .husky
+.travis.yml
+publishcheck.sh
+.nycrc
+coverage
+.nyc_output

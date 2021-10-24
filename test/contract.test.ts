@@ -20,11 +20,11 @@ describe('check explicit  constructor()', () => {
 
   const DemoP2PKH = buildContractClass(jsonDescr);
 
-  it('should throw when wrong number of arguments', () => {
+  it('should throw when wrong number of arguments: constructor function', () => {
 
     expect(() => {
       new DemoP2PKH();
-    }).to.throws(/wrong number of arguments for #constructor, expected 1 but got 0/);
+    }).to.throws(/wrong number of arguments for \'DemoP2PKH\.constructor\', expected 1 but got 0/);
   })
 
 
@@ -33,6 +33,14 @@ describe('check explicit  constructor()', () => {
     expect(() => {
       new DemoP2PKH(1);
     }).to.throws(/The type of parameter pubKeyHash is wrong, expected Ripemd160 but got int/);
+  })
+
+  it('should throw when wrong number of arguments: public function', () => {
+
+    expect(() => {
+      let demo = new DemoP2PKH(new Ripemd160('00'));
+      demo.unlock(1).verify();
+    }).to.throws(/wrong number of arguments for \'DemoP2PKH\.unlock\', expected 2 but got 1/);
   })
 })
 
@@ -45,7 +53,7 @@ describe('check implicit   constructor()', () => {
 
     expect(() => {
       new Cointoss();
-    }).to.throws(/wrong number of arguments for #constructor, expected 5 but got 0/);
+    }).to.throws(/wrong number of arguments for \'CoinToss\.constructor\', expected 5 but got 0/);
   })
 
 

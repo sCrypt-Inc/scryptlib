@@ -45,6 +45,9 @@ There are three ways to generate this file (named as `xxx_desc.json`):
 
 3. Run `npx` command in CLI:
 ```sh
+  # install compiler binary
+  npx scryptlib download
+  # compiling contract
   npx scryptlib your_directory/your_scrypt.scrypt
 ```
 
@@ -150,11 +153,11 @@ let state = instance.counter;
 instance.counter++;
 ```
 
-Then use `instance.getStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
+Then use `instance.getNewStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
 
 ```typescript
 const tx = newTx(inputSatoshis);
-let newLockingScript = instance.getStateScript({
+let newLockingScript = instance.getNewStateScript({
     counter: 1
 });
 
@@ -166,6 +169,17 @@ tx.addOutput(new bsv.Transaction.Output({
 preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
 
 ```
+
+You can also access the state of the contract by accessing the properties of the instance.
+
+
+```typescript
+
+instance.counter++;
+instance.person.name = new Bytes('0001');
+
+```
+
 
 You can also maintain state manually to, for example, optimize your contract or use customized state de/serialization [rawstate](docs/rawstate.md).
 
@@ -199,6 +213,28 @@ let counter = Counter.fromTransaction(response.data, 0/** output index**/);
 let counterClone = Counter.fromHex(counter.lockingScript.toHex());
 
 ```
+
+## Structure
+
+When creating a structure, all members must specify values. Use dot to access structure members.
+
+```typescript
+const PersonContract = buildContractClass(loadDescription('person_desc.json'));
+
+const { Person } = buildTypeClasses(PersonContract);
+
+let man = new Person({
+    isMale: true,
+    age: 14,
+    addr: new Bytes("68656c6c6f20776f726c6421")
+  });
+
+man.age = 20;
+
+man.addr = new Bytes("00")
+
+```
+
 
 
 ## Support browsers that are not compatible with BigInt

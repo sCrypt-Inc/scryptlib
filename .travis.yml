@@ -15,16 +15,15 @@ os:
 #  - npm i -g npm@latest
 
 script:
-  - git clone -b master https://github.com/sCrypt-Inc/compiler_dist.git compiler
-  - cd compiler && npm run dl
-  - cd -
+  - npm run getBinary
   - npm run testlint
-  - npm run cov -- --ci=true
+  - npm run cov
   # integration testing with boilerplate
   - npm link
-  - git clone -b state https://github.com/scrypt-sv/boilerplate.git
+  - git clone -b dev https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
   - npm link scryptlib # use this version
   #- npm ls scryptlib    # double check the latest version is used
-  - npm test -- --ci=true
+  - npm test
+  - npx scryptlib contracts/demo.scrypt

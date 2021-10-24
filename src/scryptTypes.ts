@@ -1,4 +1,4 @@
-import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger, StructEntity, bsv } from './internal';
+import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField } from './internal';
 import { serialize, serializeInt } from './serializer';
 const BN = bsv.crypto.BN;
 export type TypeResolver = (type: string) => string;
@@ -26,6 +26,8 @@ export class ScryptType {
   protected _asm: string;
   protected _type: string;
   protected _typeResolver: TypeResolver;
+
+  [key: string]: any;
 
   constructor(value: ValueType) {
     try {
@@ -445,6 +447,19 @@ export class Struct extends ScryptType {
     this.sorted = true;
     this._type = structAst.name;
     this._value = ordered;
+
+    structAst.params.forEach(p => {
+      Object.defineProperty(this, p.name, {
+        get() {
+          return this.memberByKey(p.name);
+        },
+        set(value: SupportedParamType) {
+          checkStructField(structAst, p, value, this._typeResolver);
+          this._value[p.name] = value;
+        }
+      });
+    });
+
   }
 
   toASM(): string {

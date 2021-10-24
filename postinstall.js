@@ -1,63 +1,68 @@
-const { exec } = require("child_process");
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { basename } = require("path");
-const { exit } = require("process");
-const getBinary = require("./util/getBinary");
 
-function apply(patches) {
-    patches.forEach(patch => {
-        let cmd = "git apply --ignore-whitespace  " + patch;
-        console.log(cmd)
-        exec(cmd, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`error: ${error.message}`);
-                console.log(`scryptlib: please delete module related to ${basename(patch)} in the node_modules and run npm install again.`);
-                return;
-            }
-            if (stderr) {
-                console.error(`stderr: ${stderr}`);
-                return;
-            }
-            console.log(`scryptlib: apply ${patch} successfully: ${stdout}`);
-        });
-    })
+const { execSync } = require("child_process");
+const { exit } = require("process");
+const chalk = require("chalk");
+
+function isDev() {
+    const cwd = process.cwd();
+    if (cwd.indexOf("node_modules") > -1) {
+        return false;
+    }
+
+    return true;
 }
 
+const _isDev = isDev();
 
-let patches = [path.join(__dirname, 'patches/bsv+1.5.6.patch'), path.join(__dirname, 'patches/json-bigint+1.0.0.patch')];
+function printFinish() {
+    console.info(`${chalk.green("✔")} ${chalk.green.bold("The patches has been successfully applied.")}`)
 
-patches.forEach(patch => {
-    if (!fs.existsSync(patch)) {
-        console.error(`can not found patch ${patch} ...`);
-        exit(1);
+    console.info(`
+${chalk.grey("•")}`, `If you want to use sCrypt compiler binary, run ${chalk.yellow.bold("npx scryptlib download")} to download the compiler binary.`)
+}
+
+function apply(changeDir) {
+
+    const cwd = process.cwd();
+    console.log('workspace:', cwd)
+    if (!_isDev) {
+        if (changeDir) {
+            process.chdir('../../');
+            console.log('changed workspace:', process.cwd())
+        }
+
+
+        execSync("npx patch-package --patch-dir node_modules/scryptlib/patches --error-on-fail", { stdio: 'inherit' })
+    } else {
+        execSync("npx patch-package --error-on-fail", { stdio: 'inherit' });
     }
-})
+}
+
+try {
+    apply(true);
+    printFinish();
+} catch (error) {
+
+    try {
 
 
-const cwd = process.cwd();
-console.log('scryptlib: cwd', cwd);
+        if (_isDev) {
+            execSync("npm i bsv", { stdio: 'inherit' });
+            execSync("npm i json-bigint", { stdio: 'inherit' });
 
-console.log('scryptlib: patches', patches);
+            apply(false);
+            printFinish();
+        } else {
+            console.log(`⛔️ ${chalk.red.bold("Applying patches failed")} , please run ${chalk.yellow.bold("npm ci")} to try again ...`)
+        }
 
-let bsv = path.join(__dirname, 'node_modules', 'bsv');
+    } catch (error) {
 
-
-if (fs.existsSync(bsv)) {
-    apply(patches)
-} else {
-
-    bsv = path.join(__dirname, '..', 'bsv');
-    if (fs.existsSync(bsv)) {
-
-        //chdir
-        process.chdir('../../');
-        apply(patches)
-        //restore dir
-        process.chdir(cwd);
+        console.error('retry failed', error);
+        exit(-1)
     }
+
 }
 
 // download binary
-getBinary();
+// getBinary();

@@ -1,6 +1,6 @@
 {
   "name": "scryptlib",
-  "version": "0.6.2-alpha",
+  "version": "0.7.0",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
     "node": ">=14.0.0"
@@ -19,10 +19,10 @@
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "testlint": "eslint src --ext .ts,.js",
     "test": "npm run td",
-    "td": "mocha -r ts-node/register test/**/*.test.ts --timeout 600000",
+    "td": "mocha -r ts-node/register 'test/**/*.test.ts' --timeout 600000",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "husky install && npm run compile",
-    "postinstall": "node postinstall",
+    "postinstall": "node postinstall.js",
     "publishcheck": "sh ./publishcheck.sh",
     "prepublishOnly": "npm run publishcheck && npm run lint && npm run compile",
     "getBinary": "node ./util/getBinary.js"
@@ -55,9 +55,7 @@
     "glob": "^7.1.6",
     "husky": "^5.2.0",
     "mocha": "^6.2.2",
-    "node-fetch": "^3.0.0",
     "nyc": "^15.1.0",
-    "patch-package": "^6.4.7",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
     "typescript": "^3.9.5",
@@ -68,6 +66,8 @@
     "bsv": "^1.5.6",
     "compare-versions": "^3.6.0",
     "json-bigint": "^1.0.0",
-    "md5": "^2.2.1"
+    "md5": "^2.2.1",
+    "node-fetch": "^3.0.0",
+    "patch-package": "^6.4.7"
   }
 }

@@ -1,5 +1,5 @@
 diff --git a/node_modules/json-bigint/lib/parse.js b/node_modules/json-bigint/lib/parse.js
-index bb4e5eb..dd54122 100644
+index bb4e5eb..65f467b 100644
 --- a/node_modules/json-bigint/lib/parse.js
 +++ b/node_modules/json-bigint/lib/parse.js
 @@ -1,4 +1,4 @@
@@ -8,11 +8,13 @@ index bb4e5eb..dd54122 100644
  
  // regexpxs extracted from
  // (c) BSD-3-Clause
-@@ -202,10 +202,9 @@ var json_parse = function (options) {
+@@ -202,10 +202,11 @@ var json_parse = function (options) {
          }
        }
        number = +string;
 -      if (!isFinite(number)) {
++	  // If the string is too long, this addition operation will return Infinity. 
++	  // If we want to support infinitely long numbers, we cannot make this judgment.
 +      if (/*!isFinite(number)*/false) {
          error('Bad number');
        } else {
@@ -20,7 +22,7 @@ index bb4e5eb..dd54122 100644
          //if (number > 9007199254740992 || number < -9007199254740992)
          // Bignumber has stricter check: everything with length > 15 digits disallowed
          if (string.length > 15)
-@@ -213,13 +212,13 @@ var json_parse = function (options) {
+@@ -213,13 +214,13 @@ var json_parse = function (options) {
              ? string
              : _options.useNativeBigInt
              ? BigInt(string)

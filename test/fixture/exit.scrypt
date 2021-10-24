@@ -1,0 +1,82 @@
+contract Exit {
+    int x;
+
+    public function unlock(int z) {
+
+        int x = 3;
+        int b = 3;
+        exit(true);
+
+        int c = 3;
+        require(false);
+    }
+
+    public function unlockif(int z) {
+
+        if (z > 0) {
+            int x = 3;
+            exit(true);
+        }
+
+        require(false);
+    }
+
+    public function unlockelse(int z) {
+
+        if (z > 0) {
+            int x = 3;
+        }
+        else {
+            int x = 3;
+            exit(true);
+        }
+
+        require(false);
+    }
+
+    public function unlockloopif(int z) {
+
+        loop (3) : i {
+            if (z == i) {
+                int x = 3;
+                exit(true);
+            }
+
+        }
+
+        require(false);
+    }
+
+    public function unlockifif(int z) {
+
+        loop (3) : i {
+            if (z == i) {
+
+                if (false) {
+                }
+                else {
+                    int x = 3;
+                    exit(true);
+                }
+
+            }
+
+        }
+
+        require(false);
+    }
+
+    public function unlockfalse(int z) {
+
+        loop (3) : i {
+            if (z == i) {
+
+                exit(false);
+
+            }
+
+        }
+
+        require(true);
+    }
+}
