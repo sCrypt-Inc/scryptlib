@@ -190,7 +190,7 @@ describe('VerifyError', () => {
 
       let result = person.main(man, 44, false).verify()
 
-      expect(result.error).to.contains("person.scrypt#26");
+      expect(result.error).to.contains("person.scrypt#28");
       expect(result.error).to.contains("Main-launch.json");
       expect(result.error).to.contains("fails at OP_VERIFY");
     })
@@ -199,7 +199,7 @@ describe('VerifyError', () => {
 
       let result = person.main(man, 10, true).verify()
 
-      expect(result.error).to.contains("person.scrypt#25");
+      expect(result.error).to.contains("person.scrypt#27");
       expect(result.error).to.contains("Main-launch.json");
       expect(result.error).to.contains("fails at OP_VERIFY");
 

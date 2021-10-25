@@ -10,6 +10,8 @@ struct Block {
     int time;
 }
 
+type Male = Person;
+type Female = Person;
 contract Main {
     Person person;
     int x;
