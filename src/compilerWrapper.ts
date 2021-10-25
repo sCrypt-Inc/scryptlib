@@ -663,7 +663,7 @@ function getRelatedInformation(message: string, srcDir: string, sourceFileName: 
 
   while ((result = RELATED_INFORMATION_REG.exec(message))) {
     const relatedFilePath = result.groups.filePath;
-
+    if (relatedFilePath === 'null') continue;
     const fullFilePath = getFullFilePath(relatedFilePath, srcDir, sourceFileName);
     const line = parseInt(result.groups?.line || '-1');
     const column = parseInt(result.groups?.column || '-1');
