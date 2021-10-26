@@ -641,6 +641,30 @@ describe('compile()', () => {
       ])
     })
 
+    it('No relatedInformation when relatedInformation in std contract', () => {
+
+      const result = compileContract(getInvalidContractFilePath('relatedInformation.scrypt'));
+
+      expect(excludeMembers(result.errors, ['filePath'])).to.deep.include.members([
+        {
+          "type": "SemanticError",
+          "position": [
+            {
+              "line": 1,
+              "column": 10
+            },
+            {
+              "line": 1,
+              "column": 25
+            }
+          ],
+          "message": "Symbol `SigHashPreimage` already defined at null:1:1:1:1",
+          "relatedInformation": [
+          ]
+        }
+      ])
+
+    })
 
     it('warnings and errors should be right', () => {
 

@@ -1,0 +1,7 @@
+contract SigHashPreimage {
+    int x;
+
+    public function add(int y) {
+        require(y > 0);
+    }
+}
