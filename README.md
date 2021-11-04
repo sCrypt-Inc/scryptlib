@@ -267,6 +267,9 @@ let counterClone = Counter.fromHex(counter.lockingScript.toHex());
 
 ```
 
+## Chain Api
+
+[Chain Api](./docs/chain_api_en.md) makes building transactions more efficient and simple
 
 ## Support browsers that are not compatible with BigInt
 
