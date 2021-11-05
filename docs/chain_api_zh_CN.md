@@ -29,7 +29,11 @@ async function deployContract(contract, amount) {
 
 ## 调用合约
 
-### 合约公共函数不包含 `SigHashPreimage` 类型的参数
+调用合约公共函数时分两种情况：
+1. 该公共函数不包含 `SigHashPreimage` 类型的参数
+2. 改公共函数包含 `SigHashPreimage` 类型的参数
+
+### 包含 `SigHashPreimage`
 
 如果合约的公共函数不包含 `SigHashPreimage` 类型的参数，则构造调用合约的交易比较简单。一般可以按照以下步骤构建交易：
 
@@ -59,7 +63,7 @@ unlockingTx.addInput(createInputFromPrevTx(deployTx))
 await sendTx(unlockingTx)
 ```
 
-### 合约公共函数包含 `SigHashPreimage` 类型的参数
+### 包含 `SigHashPreimage`
 
 如果合约的公共函数包含 `SigHashPreimage` 类型的参数，则构造调用合约的交易比较复杂。因为解锁脚本的大小影响到交易费用的计算，从而影响输出中的 `satoshis` 余额。输出中的 `satoshis` 余额又会影响 `preimage` 的计算。使用 **scryptlib** 的链式 APIs 隐藏了处理这些繁琐计算的细节。 你只需按照以下方式来构造交易：
 
