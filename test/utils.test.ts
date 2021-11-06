@@ -2,8 +2,10 @@ import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
 import {
-  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray, flatternArray, subscript,
+  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
+  flatternArray, subscript, flattenSha256,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int
+
 } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
 import { tmpdir } from 'os'
@@ -1097,6 +1099,56 @@ describe('utils', () => {
       expect(flatternParams([{ name: 'a', type: 'Tokens[2]' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
         .to.be.equal("a[0][0] a[0][1] a[0][2] a[1][0] a[1][1] a[1][2]");
     })
+
+
+  })
+
+
+  describe('flattenSha256() ', () => {
+
+    it('flattern data', () => {
+
+
+      expect(flattenSha256(1))
+        .to.be.equal("4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a");
+
+      expect(flattenSha256(11111))
+        .to.be.equal("5b915ddcebcd384637b13712bb52dc4deaa4b1ce2951aeb34ae61db66dfba9f9");
+
+      expect(flattenSha256(new Bytes('')))
+        .to.be.equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
+      expect(flattenSha256(false))
+        .to.be.equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+      expect(flattenSha256(0))
+        .to.be.equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
+      expect(flattenSha256(true))
+        .to.be.equal("4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a");
+
+      expect(flattenSha256([1, 2, 3, 0]))
+        .to.be.equal("8b6f70403ba37d5b70d867904b81fbe60056fed2a9e6e1bb21670e79381a6c10");
+      expect(flattenSha256([new Int(1), new Int(2), new Int(3), new Int(0)]))
+        .to.be.equal("8b6f70403ba37d5b70d867904b81fbe60056fed2a9e6e1bb21670e79381a6c10");
+
+      const person = new Person({
+        name: new Bytes('7361746f736869206e616b616d6f746f'),
+        addr: new Bytes('6666'),
+        isMale: true,
+        age: 33,
+        blk: new Block({
+          time: 10000,
+          hash: new Bytes('68656c6c6f20776f726c6421'),
+          header: new Bytes('1156'),
+        })
+      });
+      expect(flattenSha256(person))
+        .to.be.equal("46fb1bc7b9494a2cd2ebac253782c0fdbe2a00a146417b8ab3503fdaa29209ef");
+
+      expect(flattenSha256([person, person]))
+        .to.be.equal("3a51045a7c808a07675b298a383e6d2dbf1c26416b53443dee0941ea4eddca45");
+    })
+
 
 
   })

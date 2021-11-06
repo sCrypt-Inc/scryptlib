@@ -14,7 +14,7 @@ import {
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
   findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
   Arguments, Argument,
-  Script, ParamEntity
+  Script, ParamEntity, SingletonParamType
 } from './internal';
 
 const BN = bsv.crypto.BN;
@@ -1405,4 +1405,53 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
   }
 
   arg.value = value;
+}
+
+function flattenData(data: SingletonParamType): ScryptType[] {
+
+  if (Array.isArray(data)) {
+    const arg: SingletonParamType[] = data;
+    return arg.map((item) => {
+      return flattenData(item);
+    }).flat(Infinity) as ScryptType[];
+  } else if (Struct.isStruct(data)) {
+    const argS = data as Struct;
+    const keys = argS.getMembers();
+
+    return keys.map(key => {
+      const member = argS.memberByKey(key);
+      return flattenData(member);
+    }).flat(Infinity) as ScryptType[];
+
+  } else if (typeof data === 'boolean') {
+    return [new Bool(data as boolean)];
+  } else if (typeof data === 'number' || typeof data === 'bigint' || typeof data === 'string') {
+    return [new Int(data)];
+  } else if (data instanceof ScryptType) {
+    return [data];
+  }
+}
+
+
+export function flattenSha256(data: SingletonParamType): string {
+  const flattened = flattenData(data);
+  if (flattened.length === 1) {
+    let hex = flattened[0].toHex();
+    if ((flattened[0] instanceof Bool || flattened[0] instanceof Int) && hex === '00'
+    ) {
+      hex = '';
+    }
+    return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
+  } else {
+    const jointbytes = flattened.map(item => {
+      let hex = item.toHex();
+      if ((item instanceof Bool || item instanceof Int) && hex === '00'
+      ) {
+        hex = '';
+      }
+      return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
+    }).join('');
+
+    return bsv.crypto.Hash.sha256(Buffer.from(jointbytes, 'hex')).toString('hex');
+  }
 }
