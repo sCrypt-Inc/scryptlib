@@ -152,10 +152,11 @@ Input.prototype.setScript = function (script) {
  * @abstract
  */
 Input.prototype.getSignatures = function () {
-  throw new errors.AbstractMethodInvoked(
-    'Trying to sign unsupported output type (only P2PKH and P2SH multisig inputs are supported)' +
-    ' for input: ' + JSON.stringify(this)
-  )
+  // throw new errors.AbstractMethodInvoked(
+  //   'Trying to sign unsupported output type (only P2PKH and P2SH multisig inputs are supported)' +
+  //   ' for input: ' + JSON.stringify(this)
+  // )
+  return []
 }
 
 Input.prototype.isFullySigned = function () {

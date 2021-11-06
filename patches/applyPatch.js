@@ -46,6 +46,8 @@ const patches = [
     'bsv/lib/script/interpreter.js',
     'bsv/lib/script/stack.js',
     'bsv/lib/transaction/input/input.js',
+    'bsv/lib/transaction/transaction.js',
+    'bsv/lib/errors/spec.js',
     'json-bigint/lib/parse.js',
 ]
 
