@@ -1,6 +1,6 @@
 # Using Chained APIs
 
-Chained APIs [简体中文版](chain_api_zh_CN.md)
+Chained APIs [简体中文版](chained_api_zh_CN.md)
 
 In the process of deploying the contract and calling the contract, it is usually necessary to calculate the transaction fee and change the output. Without knowing the size of the unlocking script, it is difficult to accurately calculate transaction fees and change output. **scryptlib** extends the **BSV** library and provides a set of chain APIs to construct transactions. This makes it easy to calculate transaction fees and change output even in this case.
 

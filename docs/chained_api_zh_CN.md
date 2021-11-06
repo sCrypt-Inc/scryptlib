@@ -1,6 +1,6 @@
 # 使用链式 APIs
 
-链式 APIs [English Version](chain_api_en.md)
+链式 APIs [English Version](chained_api_en.md)
 
 在部署合约和调用合约的过程中构造，通常需要计算交易费用和找零输出。在不知道解锁脚本大小的情况，很难准确地计算交易费用以及找零输出。**scryptlib** 扩展了 **BSV** 库， 提供一套链式 APIs 来构造交易。使得即使在这种情况下，计算交易费用和找零都变得简单。
 
