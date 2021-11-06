@@ -2,7 +2,7 @@
 
 链式 APIs [English Version](chained_api_en.md)
 
-在部署合约和调用合约的过程中构造，通常需要计算交易费用和找零输出。在不知道解锁脚本大小的情况，很难准确地计算交易费用以及找零输出。**scryptlib** 扩展了 **BSV** 库， 提供一套链式 APIs 来构造交易。使得即使在这种情况下，计算交易费用和找零都变得简单。
+在部署合约和调用合约的过程中，通常需要计算交易费用和找零输出。在不知道解锁脚本大小的情况，很难准确地计算交易费用以及找零输出。**scryptlib** 扩展了 **[bsv](https://github.com/moneybutton/bsv)** 库， 提供一套链式 APIs 来构造交易。使得即使在这种情况下，计算交易费用和找零都变得简单。
 
 ## 部署
 
@@ -16,11 +16,12 @@ async function deployContract(contract, amount) {
   const tx = new bsv.Transaction()
   tx.from(await fetchUtxos(address))  // 添加用来支付矿工费用和锁进合约的比特币的UTXO。钱包通常会在这里做 UTXO 的筛选，以防止添加过多 UTXO
   .addOutput(new bsv.Transaction.Output({  
-    script: contract.lockingScript, // 将合约部署到 0-th 输出的锁定脚本
+    script: contract.lockingScript, // 将合约部署到第0个输出的锁定脚本
     satoshis: amount,
   }))
   .change(address)   // 添加找零输出
-  .sign(privateKey) // 私钥签名
+  .sign(privateKey) // 私钥签名, 只对P2PKH输入有效
+  
   await sendTx(tx) // 广播交易
   return tx
 }
@@ -33,7 +34,7 @@ async function deployContract(contract, amount) {
 1. 该公共函数不包含 `SigHashPreimage` 类型的参数
 2. 改公共函数包含 `SigHashPreimage` 类型的参数
 
-### 包含 `SigHashPreimage`
+### 不包含 `SigHashPreimage`
 
 如果合约的公共函数不包含 `SigHashPreimage` 类型的参数，则构造调用合约的交易比较简单。一般可以按照以下步骤构建交易：
 
@@ -53,7 +54,7 @@ const unlockingTx = new bsv.Transaction();
 
 unlockingTx.addInput(createInputFromPrevTx(deployTx))
 .change(privateKey.toAddress())
-.setInputScript(0, (_) => {  //设置 0-th 输入的解锁脚本
+.setInputScript(0, (_) => {  //设置第0个输入的解锁脚本
     return demo.add(11).toScript();
 })
 .feePerKb(250) // 设置交易费率，可选，默认是每KB 500 satoshis
@@ -65,9 +66,9 @@ await sendTx(unlockingTx)
 
 ### 包含 `SigHashPreimage`
 
-如果合约的公共函数包含 `SigHashPreimage` 类型的参数，则构造调用合约的交易比较复杂。因为解锁脚本的大小影响到交易费用的计算，从而影响输出中的 `satoshis` 余额。输出中的 `satoshis` 余额又会影响 `preimage` 的计算。使用 **scryptlib** 的链式 APIs 隐藏了处理这些繁琐计算的细节。 你只需按照以下方式来构造交易：
+如果合约的公共函数包含 `SigHashPreimage` 类型的参数，则构造调用合约的交易比较复杂。因为解锁脚本的大小影响到交易费用的计算，从而影响输出中的 `satoshis` 余额。输出中的 `satoshis` 余额又会影响 `SigHashPreimage` 的计算。使用 **scryptlib** 的链式 APIs 隐藏了处理这些繁琐计算的细节。 你只需按照以下方式来构造交易：
 
-#### **交易费用是由合约支付：**
+#### **交易费用是由合约里的余额支付：**
 
 这种情况下不包含独立的找零输出。所有输出的余额在构造交易之前是未知的。交易费用会影响所有输出的余额的计算。
 
@@ -103,12 +104,12 @@ unlockingTx.addInput(createInputFromPrevTx(prevTx))
         satoshis: newAmount,
         })
 })
-.setInputScript(0, (tx, output) => {  // output 包含输入对应的锁定脚本和 satoshis 余额
+.setInputScript(0, (tx, output) => {  // output 包含输入/UTXO对应的锁定脚本和 satoshis 余额
     const preimage = getPreimage(tx, output.script, output.satoshis)
-    const newAmount =  amount - tx.getEstimateFee(); //计算合约的新余额，需要减去交易的费用
+    const newAmount = amount - tx.getEstimateFee(); //计算合约的新余额，需要减去交易的费用
     return counter.unlock(new SigHashPreimage(toHex(preimage)), newAmount).toScript()
 })
-.seal() // 封印交易, 同时自动计算出正确的交易费用和找零余额
+.seal() // 封印交易
 
 // 广播交易
 await sendTx(unlockingTx)
