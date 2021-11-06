@@ -1455,3 +1455,47 @@ export function flattenSha256(data: SingletonParamType): string {
     return bsv.crypto.Hash.sha256(Buffer.from(jointbytes, 'hex')).toString('hex');
   }
 }
+
+
+export function sortmap(map: Map<SingletonParamType, SingletonParamType>): Map<SingletonParamType, SingletonParamType> {
+  return new Map([...map.entries()].sort((a, b) => {
+    return BN.fromSM(Buffer.from(flattenSha256(a[0]), 'hex'), {
+      endian: 'little'
+    }).cmp(BN.fromSM(Buffer.from(flattenSha256(b[0]), 'hex'), {
+      endian: 'little'
+    }));
+  }));
+
+}
+
+
+export function findKeyIndex(map: Map<SingletonParamType, SingletonParamType>, key: SingletonParamType): number {
+
+  const sortedMap = sortmap(map);
+  const m = [];
+
+  for (const entry of sortedMap.entries()) {
+    m.push(entry);
+  }
+
+  return m.findIndex((entry) => {
+    if (entry[0] === key) {
+      return true;
+    }
+    return false;
+  });
+}
+
+
+
+export function toStorage(map: Map<SingletonParamType, SingletonParamType>): Bytes {
+  const sortedMap = sortmap(map);
+
+  let storage = '';
+
+  for (const entry of sortedMap.entries()) {
+    storage += flattenSha256(entry[0]) + flattenSha256(entry[1]);
+  }
+
+  return new Bytes(storage);
+}

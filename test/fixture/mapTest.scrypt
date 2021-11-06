@@ -1,0 +1,72 @@
+
+struct MapEntry {
+    int key;
+    int val;
+    int keyIndex;
+}
+
+
+contract MapTest {
+    static const int MAX = 10;
+
+    // @state
+    bytes _mpData;
+
+    public function unlock(int key, int val, int keyIndex)// var length array
+     {
+
+        HashedMap<int, int> map = new HashedMap(this._mpData);
+        require(map.set(key, val, keyIndex));
+        require(map.canGet(key, val, keyIndex));
+        require(map.has(key, keyIndex));
+        require(map.storage() != b'');
+
+        int s = map.size();
+        loop (MAX) : i {
+            if (i < s && i == keyIndex) {
+                require(map.has(key, i));
+            }
+        }
+        require(map.delete(key, keyIndex));
+        require(!map.has(key, keyIndex));
+        require(!map.canGet(key, val, keyIndex));
+
+        require(map.set(key, val + 1, keyIndex));
+        require(map.set(key, val + 2, keyIndex));
+        require(map.has(key, keyIndex));
+        require(!map.canGet(key, val + 1, keyIndex));
+        require(map.canGet(key, val + 2, keyIndex));
+
+        require(map.set(key + 3, val + 3, keyIndex));
+        require(!map.has(key, keyIndex));
+        require(map.has(key + 3, keyIndex));
+
+        require(map.set(key + 2, val + 5, keyIndex + 1)); // not working as intuition bcoz of hased key orders
+        require(map.set(key, val + 4, keyIndex + 2));
+        require(map.size() == 3);
+        require(map.delete(key + 2, keyIndex + 1));
+        require(map.size() == 2);
+        require(map.delete(key, keyIndex + 1));
+        require(map.size() == 1);
+        require(map.delete(key + 3, keyIndex));
+        require(map.size() == 0);
+
+        HashedMap<bytes, bool> map2 = new HashedMap(b'');
+        require(map2.set(b'0102', true, keyIndex));
+        require(map2.canGet(b'0102', true, keyIndex));
+        require(true);
+    }
+
+    public function testInsert(MapEntry[MAX] entrys, bytes storage)// var length array
+     {
+
+        HashedMap<int, int> map = new HashedMap(this._mpData);
+
+        loop (MAX) : i {
+            require(map.set(entrys[i].key, entrys[i].val, entrys[i].keyIndex));
+        }
+
+        require(map.size() == MAX);
+        require(map.storage() == storage);
+    }
+}

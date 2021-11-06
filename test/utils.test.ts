@@ -3,7 +3,7 @@ import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
 import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
-  flatternArray, subscript, flattenSha256,
+  flatternArray, subscript, flattenSha256, findKeyIndex,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int
 
 } from '../src/utils'
@@ -1149,7 +1149,34 @@ describe('utils', () => {
         .to.be.equal("3a51045a7c808a07675b298a383e6d2dbf1c26416b53443dee0941ea4eddca45");
     })
 
+  })
 
+
+
+
+  describe('findKeyIndex() ', () => {
+
+    it('findKeyIndex data', () => {
+
+      const map = new Map<number, number>();
+
+      map.set(1, 33);
+      map.set(99, 55);
+      map.set(5, 77);
+      map.set(78765, 77);
+      map.set(66, 77);
+      map.set(42, 77);
+      map.set(546, 77);
+      expect(findKeyIndex(map, 66))
+        .to.be.equal(5);
+
+      expect(findKeyIndex(map, 546))
+        .to.be.equal(6);
+
+      expect(findKeyIndex(map, 11111))
+        .to.be.equal(-1);
+
+    })
 
   })
 
