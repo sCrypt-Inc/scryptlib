@@ -43,6 +43,7 @@ function main() {
         outputDir: out,
         desc: true,
         asm: true,
+        hex: true,
         optimize: false,
         hex: true,
         debug: true,
