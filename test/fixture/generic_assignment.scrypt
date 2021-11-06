@@ -1,0 +1,20 @@
+
+library GenericLibray<T> {
+
+    function set(T x) : T {
+        T a = x;
+        return a;
+    }
+}
+
+contract TestGenericLibray {
+    
+    public function unlock(int x) {
+    
+        GenericLibray<int> lib = new GenericLibray();
+
+        auto a = lib.set(1);
+
+        require(true);
+    }
+}
