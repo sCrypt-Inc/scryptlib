@@ -1,0 +1,29 @@
+
+/**
+* library library_name
+*/
+library GenericLibray<T, K, C, D> {
+    
+    T a;
+    
+    static function unlock(K x, D d) : D {
+
+        return d;
+    }
+}
+
+
+/**
+* contract contract_name
+*/
+contract TestGenericLibray {
+    
+    int property;
+    
+    public function unlock(int x) {
+    
+        GenericLibray<int, int, int, int> lib = new GenericLibray(1);
+
+        require(true);
+    }
+}
