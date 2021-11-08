@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.8.0
+
+- provides a set of chained APIs to simplify building transactions
+
+*Release Date: 2021/11/8*
 
 ## 0.7.0
 
