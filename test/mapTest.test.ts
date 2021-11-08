@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
+import { buildContractClass, buildStructsClass, buildTypeClasses } from '../src/contract'
 import { Bytes, Struct } from '../src/scryptTypes'
-import { findKeyIndex, sortmap, toStorage } from '../src/internal'
+import { findKeyIndex, num2bin, sortmap, toStorage } from '../src/internal'
 
 function getRandomInt() {
     return Math.floor(Math.random() * 10000000);
@@ -15,6 +15,26 @@ function getRandomMap(n: number) {
     }
     return map;
 }
+
+
+function getRandomBytesMap(n: number) {
+    let map = new Map<Bytes, Bytes>();
+    for (; map.size < n;) {
+        map.set(new Bytes(num2bin(getRandomInt(), 8)), new Bytes(num2bin(getRandomInt(), 8)));
+    }
+    return map;
+}
+
+function getRandomBoolMap(n: number) {
+    let map = new Map<number, boolean>();
+    for (; map.size < n;) {
+        map.set(getRandomInt(), getRandomInt() % 2 === 0);
+    }
+    return map;
+}
+
+
+
 
 describe('test.mapTest', () => {
     describe('mapTest', () => {
@@ -48,6 +68,75 @@ describe('test.mapTest', () => {
 
 
             const result = mapTest.testInsert(mapEntrys, toStorage(map)).verify()
+            expect(result.success, result.error).to.be.true;
+
+        })
+
+
+        it('test testInsertMapEntryBool', () => {
+            const { MapEntryBool } = buildTypeClasses(MapTest);
+
+            let map = getRandomBoolMap(10);
+
+
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+            .map(entry => new MapEntryBool(entry)).sort((a, b) => {
+                return a.keyIndex - b.keyIndex;
+            })
+
+
+            const result = mapTest.testInsertMapEntryBool(mapEntrys, toStorage(map)).verify()
+            expect(result.success, result.error).to.be.true;
+
+        })
+
+        it('test testInsertMapEntryBytes', () => {
+            const { MapEntryBytes } = buildTypeClasses(MapTest);
+
+            let map = getRandomBytesMap(10);
+
+
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+            .map(entry => new MapEntryBytes(entry)).sort((a, b) => {
+                return a.keyIndex - b.keyIndex;
+            })
+
+
+            const result = mapTest.testInsertMapEntryBytes(mapEntrys, toStorage(map)).verify()
+            expect(result.success, result.error).to.be.true;
+
+        })
+
+
+        it('test testInsertMapEntrySt', () => {
+            const { MapEntrySt, ST } = buildTypeClasses(MapTest);
+
+            const _MapEntrySt = MapEntrySt as (typeof Struct);
+            const _ST = ST as (typeof Struct);
+
+
+            function getRandomStMap(n: number) {
+                let map = new Map<Struct, number[]>();
+                for (; map.size < n;) {
+                    map.set(new _ST({
+                        a: getRandomInt(),
+                        b: getRandomInt() % 2 === 0,
+                        c: [new Bytes(num2bin(getRandomInt(), 8)), new Bytes(num2bin(getRandomInt(), 8)), new Bytes(num2bin(getRandomInt(), 8))]
+                    }), [getRandomInt(), getRandomInt(), getRandomInt()]);
+                }
+                return map;
+            }
+
+            let map = getRandomStMap(10);
+
+
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+            .map(entry => new _MapEntrySt(entry)).sort((a, b) => {
+                return a.keyIndex - b.keyIndex;
+            })
+
+
+            const result = mapTest.testInsertMapEntrySt(mapEntrys, toStorage(map)).verify()
             expect(result.success, result.error).to.be.true;
 
         })
