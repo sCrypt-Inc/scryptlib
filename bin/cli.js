@@ -44,7 +44,8 @@ function main() {
         desc: true,
         asm: true,
         optimize: false,
-        sourceMap: true,
+        hex: true,
+        debug: true,
         cmdPrefix: scryptBinaryPath
       }
     );
