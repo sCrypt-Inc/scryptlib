@@ -45,7 +45,7 @@ contract MapTest {
         require(map.set(key, val, keyIndex));
         require(map.canGet(key, val, keyIndex));
         require(map.has(key, keyIndex));
-        require(map.storage() != b'');
+        require(map.data() != b'');
 
         int s = map.size();
         loop (MAX) : i {
@@ -91,7 +91,7 @@ contract MapTest {
         require(map.set(7989009, 9061514, 1));
     }
 
-    public function testInsert(MapEntry[MAX] entries, bytes storage)// var length array
+    public function testInsert(MapEntry[MAX] entries, bytes data)// var length array
      {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
@@ -105,7 +105,7 @@ contract MapTest {
         }
 
         require(map.size() == MAX);
-        require(map.storage() == storage);
+        require(map.data() == data);
 
         require(map.delete(entries[5].key, entries[5].keyIndex));
 
@@ -137,7 +137,7 @@ contract MapTest {
   
     }
 
-    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes storage)// var length array
+    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes data)// var length array
     {
 
         HashedMap<bytes, bytes> map = new HashedMap(this._mpData);
@@ -151,7 +151,7 @@ contract MapTest {
         }
 
         require(map.size() == MAX);
-        require(map.storage() == storage);
+        require(map.data() == data);
 
         require(map.delete(entries[5].key, entries[5].keyIndex));
 
@@ -167,7 +167,7 @@ contract MapTest {
         require(map.size() == MAX -2);
     }
 
-    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes storage)// var length array
+    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes data)// var length array
     {
 
         HashedMap<int, bool> map = new HashedMap(this._mpData);
@@ -181,7 +181,7 @@ contract MapTest {
         }
 
         require(map.size() == MAX);
-        require(map.storage() == storage);
+        require(map.data() == data);
 
         require(map.delete(entries[5].key, entries[5].keyIndex));
 
@@ -197,7 +197,7 @@ contract MapTest {
         require(map.size() == MAX -2);
     }
 
-    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes storage)// var length array
+    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes data)// var length array
     {
 
         HashedMap<ST, int[3]> map = new HashedMap(this._mpData);
@@ -214,6 +214,6 @@ contract MapTest {
         }
 
         require(map.size() == MAX);
-        require(map.storage() == storage);
+        require(map.data() == data);
     }
 }
