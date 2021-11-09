@@ -73,6 +73,11 @@ describe('test.mapTest', () => {
         })
 
 
+        it('test testInsertMiddle', () => {
+            const result = mapTest.testInsertMiddle(1).verify()
+            expect(result.success, result.error).to.be.true;
+        })
+
         it('test testInsertMapEntryBool', () => {
             const { MapEntryBool } = buildTypeClasses(MapTest);
 

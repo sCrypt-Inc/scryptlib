@@ -121,6 +121,22 @@ contract MapTest {
         require(map.size() == MAX -2);
     }
 
+
+    public function testInsertMiddle(int x)// var length array
+     {
+
+        HashedMap<int, int> map = new HashedMap(this._mpData);
+        MapEntry[2] entries = [{118542, 2713441, 0}, {6816853, 870415, 1}];
+        loop (2) : i {
+            require(map.set(entries[i].key, entries[i].val, entries[i].keyIndex));
+        }
+        //InsertMiddle
+        require(map.set(563862, 8317837, 1));
+        require(map.has(563862, 1));
+        require(map.size() == 3);
+  
+    }
+
     public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes storage)// var length array
     {
 
