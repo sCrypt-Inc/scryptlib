@@ -96,6 +96,7 @@ export interface CompileResult {
   md5?: string;
   structs?: Array<StructEntity>;
   alias?: Array<AliasEntity>;
+  generics?: Array<GenericEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
@@ -161,6 +162,11 @@ export interface AliasEntity {
   type: string;
 }
 
+export interface GenericEntity {
+  library: string;
+  genericTypes: Array<string>;
+}
+
 export function compile(
   source: {
     path: string,
@@ -223,6 +229,7 @@ export function compile(
 
       const alias = getAliasDeclaration(result.ast, allAst);
       const structs = getStructDeclaration(result.ast, allAst);
+      const generics = getGenericDeclaration(result.ast, allAst);
 
       result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
 
@@ -238,6 +245,7 @@ export function compile(
         params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
       }));
 
+      result.generics = generics;
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
@@ -337,6 +345,7 @@ export function compile(
         md5: md5(sourceContent),
         structs: result.structs || [],
         alias: result.alias || [],
+        generics: result.generics || [],
         abi: result.abi || [],
         buildType: settings.buildType || BuildType.Debug,
         file: '',
@@ -571,6 +580,27 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   }).flat(1);
 }
 
+export function getGenericDeclaration(astRoot, dependencyAsts): Array<GenericEntity> {
+
+  const allAst = [astRoot];
+
+  Object.keys(dependencyAsts).forEach(key => {
+    allAst.push(dependencyAsts[key]);
+  });
+
+  return allAst.map(ast => {
+    return (ast.contracts || []).map(contract => {
+      if (Array.isArray(contract.genericTypes)) {
+        return {
+          genericTypes: contract.genericTypes,
+          library: contract.name,
+        };
+      }
+    });
+  }).flat(Infinity).filter(item => typeof item === 'object');
+}
+
+
 export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
 
   const allAst = [astRoot];
@@ -613,6 +643,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     abi: description.abi,
     structs: description.structs,
     alias: description.alias,
+    generics: description.generics,
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
     errors: [],

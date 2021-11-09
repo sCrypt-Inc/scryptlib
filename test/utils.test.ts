@@ -3,8 +3,8 @@ import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
 import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
-  flatternArray, subscript, flattenSha256, findKeyIndex,
-  flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int
+  flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
+  flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int, isGenericType
 
 } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
@@ -1180,4 +1180,49 @@ describe('utils', () => {
 
   })
 
+
+  describe('isGenericType() ', () => {
+
+    it('isGenericType', () => {
+
+      expect(isGenericType("AA<D>"))
+        .to.be.true;
+      expect(isGenericType("AA<D, a>"))
+        .to.be.true;
+
+      expect(isGenericType("A<Da, da>"))
+        .to.be.true;
+
+    })
+
+    it('parseGenericType', () => {
+
+      expect(parseGenericType("HashedMap<int, int>", [{
+        library: "HashedMap",
+        genericTypes: ["K", "V"]
+      }]))
+        .to.deep.eq({
+          "K": "int",
+          "V": "int"
+        });
+
+        expect(parseGenericType("HashedMap<int, bytes>", [{
+          library: "HashedMap",
+          genericTypes: ["K", "V"]
+        }]))
+          .to.deep.eq({
+            "K": "int",
+            "V": "bytes"
+          });
+
+      expect(parseGenericType("Mylib < int, bool >", [{
+        library: "Mylib",
+        genericTypes: ["D", "V"]
+      }]))
+        .to.deep.eq({
+          "D": "int",
+          "V": "bool"
+        });
+    })
+  })
 })

@@ -16,6 +16,7 @@ import {
   Arguments, Argument,
   Script, ParamEntity, SingletonParamType
 } from './internal';
+import { GenericEntity } from './compilerWrapper';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -542,6 +543,18 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
   return s.find(s => {
     return s.name == name;
   });
+}
+
+export function findLibraryByGeneric(type: string): string {
+
+  if(isGenericType(type)) {
+    const group = type.split('<');
+    const library = group[0].trim();
+    return library;
+  }
+
+  throw new Error(type + ' is not generic type');
+  
 }
 
 
@@ -1432,7 +1445,8 @@ function flattenData(data: SingletonParamType): ScryptType[] {
   }
 }
 
-
+// struct / array: sha256 every single element of the flattened struct / array, and concat the result to a joint byte, and sha256 again 
+// basic type: sha256 every single element
 export function flattenSha256(data: SingletonParamType): string {
   const flattened = flattenData(data);
   if (flattened.length === 1) {
@@ -1456,7 +1470,7 @@ export function flattenSha256(data: SingletonParamType): string {
   }
 }
 
-
+// sort the map by the result of flattenSha256 of the key
 export function sortmap(map: Map<SingletonParamType, SingletonParamType>): Map<SingletonParamType, SingletonParamType> {
   return new Map([...map.entries()].sort((a, b) => {
     return BN.fromSM(Buffer.from(flattenSha256(a[0]), 'hex'), {
@@ -1465,10 +1479,10 @@ export function sortmap(map: Map<SingletonParamType, SingletonParamType>): Map<S
       endian: 'little'
     }));
   }));
-
 }
 
 
+// returns index of the map by the key
 export function findKeyIndex(map: Map<SingletonParamType, SingletonParamType>, key: SingletonParamType): number {
 
   const sortedMap = sortmap(map);
@@ -1487,7 +1501,7 @@ export function findKeyIndex(map: Map<SingletonParamType, SingletonParamType>, k
 }
 
 
-
+// serialize the map, but only flattenSha256 of the key and value
 export function toStorage(map: Map<SingletonParamType, SingletonParamType>): Bytes {
   const sortedMap = sortmap(map);
 
@@ -1499,3 +1513,25 @@ export function toStorage(map: Map<SingletonParamType, SingletonParamType>): Byt
 
   return new Bytes(storage);
 }
+
+export function isGenericType(type: string): boolean {
+  return /^[a-zA-Z][\w\s]*(<[\w,\s]+>)+$/.test(type);
+}
+
+export function parseGenericType(type: string, generics: Array<GenericEntity>): Record<string, string> {
+
+  if(isGenericType(type)) {
+    const group = type.split('<');
+
+    const library = group[0].trim();
+    const realTypes = group[1].split(',').map(t => t.trim().replace('>', '').trim());
+
+    const g = generics.find(g => g.library === library);
+
+    if(g) {
+      return g.genericTypes.reduce((a, v, index) => ({ ...a, [v]: realTypes[index]}), {}); 
+    }
+  }
+  return {};
+}
+
