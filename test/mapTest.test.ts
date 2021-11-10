@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildStructsClass, buildTypeClasses } from '../src/contract'
+import { buildContractClass,  buildTypeClasses } from '../src/contract'
 import { Bytes, Struct } from '../src/scryptTypes'
-import { findKeyIndex, num2bin, sortmap, toStorage } from '../src/internal'
+import { findKeyIndex, num2bin,  toData } from '../src/internal'
 
 function getRandomInt() {
     return Math.floor(Math.random() * 10000000);
@@ -67,7 +67,7 @@ describe('test.mapTest', () => {
             })
 
 
-            const result = mapTest.testInsert(mapEntrys, toStorage(map)).verify()
+            const result = mapTest.testInsert(mapEntrys, toData(map)).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -90,7 +90,7 @@ describe('test.mapTest', () => {
             })
 
 
-            const result = mapTest.testInsertMapEntryBool(mapEntrys, toStorage(map)).verify()
+            const result = mapTest.testInsertMapEntryBool(mapEntrys, toData(map)).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -107,7 +107,7 @@ describe('test.mapTest', () => {
             })
 
 
-            const result = mapTest.testInsertMapEntryBytes(mapEntrys, toStorage(map)).verify()
+            const result = mapTest.testInsertMapEntryBytes(mapEntrys, toData(map)).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -141,7 +141,7 @@ describe('test.mapTest', () => {
             })
 
 
-            const result = mapTest.testInsertMapEntrySt(mapEntrys, toStorage(map)).verify()
+            const result = mapTest.testInsertMapEntrySt(mapEntrys, toData(map)).verify()
             expect(result.success, result.error).to.be.true;
 
         })

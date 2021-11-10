@@ -38,7 +38,7 @@ contract MapTest {
     // @state
     bytes _mpData;
 
-    public function unlock(int key, int val, int keyIndex)// var length array
+    public function unlock(int key, int val, int keyIndex)
      {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
@@ -84,14 +84,14 @@ contract MapTest {
     }
 
     // test compiler/issues/384
-    public function testIssue384(int x)// var length array
+    public function testIssue384(int x)
     {
         HashedMap<int, int> map = new HashedMap(this._mpData);
         require(map.set(9708714, 284112, 0));
         require(map.set(7989009, 9061514, 1));
     }
 
-    public function testInsert(MapEntry[MAX] entries, bytes data)// var length array
+    public function testInsert(MapEntry[MAX] entries, bytes data)
      {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
@@ -122,7 +122,7 @@ contract MapTest {
     }
 
 
-    public function testInsertMiddle(int x)// var length array
+    public function testInsertMiddle(int x)
      {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
@@ -137,7 +137,7 @@ contract MapTest {
   
     }
 
-    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes data)// var length array
+    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes data)
     {
 
         HashedMap<bytes, bytes> map = new HashedMap(this._mpData);
@@ -167,7 +167,7 @@ contract MapTest {
         require(map.size() == MAX -2);
     }
 
-    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes data)// var length array
+    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes data)
     {
 
         HashedMap<int, bool> map = new HashedMap(this._mpData);
@@ -197,7 +197,7 @@ contract MapTest {
         require(map.size() == MAX -2);
     }
 
-    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes data)// var length array
+    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes data)
     {
 
         HashedMap<ST, int[3]> map = new HashedMap(this._mpData);

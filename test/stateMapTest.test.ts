@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildStructsClass, buildTypeClasses } from '../src/contract'
+import { buildContractClass, buildTypeClasses } from '../src/contract'
 import { Bytes, Struct } from '../src/scryptTypes'
-import { findKeyIndex, num2bin, sortmap, toStorage } from '../src/internal'
+import { findKeyIndex, toData } from '../src/internal'
 import { bsv, toHex, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -17,9 +17,31 @@ describe('test.stateMapTest', () => {
         before(() => {
             const jsonDescr = loadDescription('stateMap_desc.json')
             StateMapTest = buildContractClass(jsonDescr)
-            MapEntry = buildTypeClasses(StateMapTest).MapEntry;
-            mapTest = new StateMapTest(new Bytes(''))
+            MapEntry = buildTypeClasses(StateMapTest).MapEntry
+            mapTest = new StateMapTest(new Bytes('')) // empty initial map
         })
+
+        function preHook(map: Map<number, number>) {
+            let newLockingScript = mapTest.getNewStateScript({
+                _mpData: toData(map),
+            });
+
+            const tx = newTx(inputSatoshis);
+            tx.addOutput(new bsv.Transaction.Output({
+                script: newLockingScript,
+                satoshis: outputAmount
+            }))
+
+            const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
+
+            mapTest.txContext = {
+                tx: tx,
+                inputIndex,
+                inputSatoshis
+            }
+
+            return preimage;
+        }
 
 
         it('test insert', () => {
@@ -28,24 +50,8 @@ describe('test.stateMapTest', () => {
             function testInsert(key: number, val: number) {
 
                 map.set(key, val);
-                let newLockingScript = mapTest.getNewStateScript({
-                    _mpData: toStorage(map),
-                });
-
-                const tx = newTx(inputSatoshis);
-                tx.addOutput(new bsv.Transaction.Output({
-                    script: newLockingScript,
-                    satoshis: outputAmount
-                }))
-
-                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-
-                mapTest.txContext = {
-                    tx: tx,
-                    inputIndex,
-                    inputSatoshis
-                }
-
+                
+                const preimage = preHook(map);
                 const result = mapTest.insert(new MapEntry({
                     key: key,
                     val: val,
@@ -53,7 +59,7 @@ describe('test.stateMapTest', () => {
                 }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest._mpData = toStorage(map)
+                mapTest._mpData = toData(map)
             }
 
             testInsert(3, 1);
@@ -74,23 +80,7 @@ describe('test.stateMapTest', () => {
 
                 map.set(key, val);
 
-                let newLockingScript = mapTest.getNewStateScript({
-                    _mpData: toStorage(map),
-                });
-
-                const tx = newTx(inputSatoshis);
-                tx.addOutput(new bsv.Transaction.Output({
-                    script: newLockingScript,
-                    satoshis: outputAmount
-                }))
-
-                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-
-                mapTest.txContext = {
-                    tx: tx,
-                    inputIndex,
-                    inputSatoshis
-                }
+                const preimage = preHook(map);
 
                 const result = mapTest.update(new MapEntry({
                     key: key,
@@ -99,7 +89,7 @@ describe('test.stateMapTest', () => {
                 }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest._mpData = toStorage(map)
+                mapTest._mpData = toData(map)
             }
 
 
@@ -119,28 +109,12 @@ describe('test.stateMapTest', () => {
                 const keyIndex = findKeyIndex(map, key);
                 map.delete(key);
 
-                let newLockingScript = mapTest.getNewStateScript({
-                    _mpData: toStorage(map),
-                });
-
-                const tx = newTx(inputSatoshis);
-                tx.addOutput(new bsv.Transaction.Output({
-                    script: newLockingScript,
-                    satoshis: outputAmount
-                }))
-
-                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-
-                mapTest.txContext = {
-                    tx: tx,
-                    inputIndex,
-                    inputSatoshis
-                }
+                const preimage = preHook(map);
 
                 const result = mapTest.delete(key, keyIndex, preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest._mpData = toStorage(map)
+                mapTest._mpData = toData(map)
             }
 
 

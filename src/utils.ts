@@ -553,7 +553,7 @@ export function findLibraryByGeneric(type: string): string {
     return library;
   }
 
-  throw new Error(type + ' is not generic type');
+  throw new Error(type + ' is not a generic type');
   
 }
 
@@ -1502,7 +1502,7 @@ export function findKeyIndex(map: Map<SingletonParamType, SingletonParamType>, k
 
 
 // serialize the map, but only flattenSha256 of the key and value
-export function toStorage(map: Map<SingletonParamType, SingletonParamType>): Bytes {
+export function toData(map: Map<SingletonParamType, SingletonParamType>): Bytes {
   const sortedMap = sortmap(map);
 
   let storage = '';
@@ -1518,6 +1518,12 @@ export function isGenericType(type: string): boolean {
   return /^[a-zA-Z][\w\s]*(<[\w,\s]+>)+$/.test(type);
 }
 
+/**
+ * 
+ * @param type eg. HashedMap<int, int>
+ * @param eg. [{"library": "HashedMap", genericTypes: ["K", "V"]}] An array generic types returned by @getGenericDeclaration
+ * @returns {"K": "int", "V": "int"}
+ */
 export function parseGenericType(type: string, generics: Array<GenericEntity>): Record<string, string> {
 
   if(isGenericType(type)) {

@@ -20,10 +20,7 @@ contract StateMapTest {
         require(!map.has(entry.key, entry.keyIndex));
         map.set(entry.key, entry.val, entry.keyIndex);
         require(map.size() == size + 1);
-        this._mpData = map.data();
-        bytes outputScript = this.getStateScript();
-        bytes output = Util.buildOutput(outputScript, Util.value(preimage));
-        require(hash256(output) == Util.hashOutputs(preimage));
+        require(this.passMap(map.data(), preimage));
     }
 
     public function update(MapEntry entry, SigHashPreimage preimage)  {
@@ -31,20 +28,21 @@ contract StateMapTest {
         HashedMap<int, int> map = new HashedMap(this._mpData);
         require(map.has(entry.key, entry.keyIndex));
         map.set(entry.key, entry.val, entry.keyIndex);
-        this._mpData = map.data();
-        bytes outputScript = this.getStateScript();
-        bytes output = Util.buildOutput(outputScript, Util.value(preimage));
-        require(hash256(output) == Util.hashOutputs(preimage));
+        require(this.passMap(map.data(), preimage));
     }
 
     public function delete(int key, int keyIndex, SigHashPreimage preimage)  {
         require(Tx.checkPreimage(preimage));
         HashedMap<int, int> map = new HashedMap(this._mpData);
         require(map.delete(key,  keyIndex));
-        this._mpData = map.data();
+        require(this.passMap(map.data(), preimage));
+    }
+
+    function passMap(bytes newData, SigHashPreimage preimage) : bool {
+        this._mpData = newData;
         bytes outputScript = this.getStateScript();
         bytes output = Util.buildOutput(outputScript, Util.value(preimage));
-        require(hash256(output) == Util.hashOutputs(preimage));
+        return (hash256(output) == Util.hashOutputs(preimage));
     }
 
 }
