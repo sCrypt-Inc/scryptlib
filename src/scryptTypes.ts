@@ -1,6 +1,8 @@
 import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField } from './internal';
 import { serialize, serializeInt } from './serializer';
-const BN = bsv.crypto.BN;
+
+
+// A type resolver that can resolve type aliases to final types
 export type TypeResolver = (type: string) => string;
 
 export type IntValueType = number | bigint | string;

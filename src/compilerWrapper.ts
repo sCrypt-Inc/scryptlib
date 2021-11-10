@@ -517,6 +517,12 @@ function shortType(finalType: string): string {
   return shortType;
 }
 
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param typeResolver a Type Resolver
+ * @returns All function ABIs defined by the main contract, including constructors
+ */
 export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
@@ -545,7 +551,12 @@ export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   };
 }
 
-
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined structures of the main contract and dependent contracts
+ */
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
 
 
@@ -563,7 +574,12 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   }).flat(1);
 }
 
-
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined type aliaes of the main contract and dependent contracts
+ */
 export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity> {
 
   const allAst = [astRoot];
@@ -580,7 +596,13 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   }).flat(1);
 }
 
-export function getGenericDeclaration(astRoot, dependencyAsts): Array<GenericEntity> {
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined generic type of the main contract and dependent contracts
+ */
+export function getGenericDeclaration(astRoot: any, dependencyAsts: any): Array<GenericEntity> {
 
   const allAst = [astRoot];
 
@@ -600,7 +622,12 @@ export function getGenericDeclaration(astRoot, dependencyAsts): Array<GenericEnt
   }).flat(Infinity).filter(item => typeof item === 'object');
 }
 
-
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined static const int literal of the main contract and dependent contracts
+ */
 export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
 
   const allAst = [astRoot];
@@ -623,7 +650,11 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
   }).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
 }
 
-
+/**
+ * Convert the JSON object of the contract description file to CompileResult, and fill in the default values for the partially missing fields
+ * @param description Contract description JSON object
+ * @returns CompileResult
+ */
 export function desc2CompileResult(description: ContractDescription): CompileResult {
   const sources = description.sources;
   const asm = description.asm.split(' ');
