@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.9.0
+
+- support map
+- contract description file adds `generic` field
+
+*Release Date: 2021/11/10*
+
+
 ## 0.8.0
 
 - provides a set of chained APIs to simplify building transactions
