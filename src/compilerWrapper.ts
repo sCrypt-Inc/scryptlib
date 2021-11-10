@@ -22,7 +22,7 @@ const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+
 const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 5;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 6;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
@@ -672,9 +672,9 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     contract: description.contract,
     md5: description.md5,
     abi: description.abi,
-    structs: description.structs,
-    alias: description.alias,
-    generics: description.generics,
+    structs: description.structs || [],
+    alias: description.alias || [],
+    generics: description.generics || [],
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
     errors: [],
