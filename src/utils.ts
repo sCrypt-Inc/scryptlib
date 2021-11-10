@@ -547,14 +547,14 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
 
 export function findLibraryByGeneric(type: string): string {
 
-  if(isGenericType(type)) {
+  if (isGenericType(type)) {
     const group = type.split('<');
     const library = group[0].trim();
     return library;
   }
 
   throw new Error(type + ' is not a generic type');
-  
+
 }
 
 
@@ -1420,6 +1420,11 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
   arg.value = value;
 }
 
+/**
+ * 
+ * @param data 
+ * @returns flat ScryptType array
+ */
 function flattenData(data: SingletonParamType): ScryptType[] {
 
   if (Array.isArray(data)) {
@@ -1526,7 +1531,7 @@ export function isGenericType(type: string): boolean {
  */
 export function parseGenericType(type: string, generics: Array<GenericEntity>): Record<string, string> {
 
-  if(isGenericType(type)) {
+  if (isGenericType(type)) {
     const group = type.split('<');
 
     const library = group[0].trim();
@@ -1534,8 +1539,8 @@ export function parseGenericType(type: string, generics: Array<GenericEntity>): 
 
     const g = generics.find(g => g.library === library);
 
-    if(g) {
-      return g.genericTypes.reduce((a, v, index) => ({ ...a, [v]: realTypes[index]}), {}); 
+    if (g) {
+      return g.genericTypes.reduce((a, v, index) => ({ ...a, [v]: realTypes[index] }), {});
     }
   }
   return {};
