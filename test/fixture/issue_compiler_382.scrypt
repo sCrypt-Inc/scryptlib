@@ -1,0 +1,32 @@
+struct ST {
+    int a;
+    bytes b;
+    bool c;
+}
+
+library GenericLibray<T, S> {
+
+    function set(T x) : T {
+        T a = x;
+        return a;
+    }
+
+    function getST(S s) : S {
+        S a = s;
+        return a;
+    }
+}
+
+contract TestGenericLibray {
+    
+    public function unlock(int x) {
+    
+        GenericLibray<int, ST> lib = new GenericLibray();
+        int a = lib.set(1);
+        require(a == 1);
+
+        ST st = {3, b'2221', true};
+
+        require(lib.getST(st) == st);
+    }
+}
