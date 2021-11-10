@@ -5,7 +5,6 @@ struct MapEntry {
     int keyIndex;
 }
 
-
 struct MapEntryBytes {
     bytes key;
     bytes val;
@@ -17,7 +16,6 @@ struct MapEntryBool {
     bool val;
     int keyIndex;
 }
-
 
 struct ST {
     int a;
@@ -31,15 +29,13 @@ struct MapEntrySt {
     int keyIndex;
 }
 
-
 contract MapTest {
     static const int MAX = 10;
 
     // @state
     bytes _mpData;
 
-    public function unlock(int key, int val, int keyIndex)
-     {
+    public function unlock(int key, int val, int keyIndex) {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
         require(map.set(key, val, keyIndex));
@@ -84,15 +80,13 @@ contract MapTest {
     }
 
     // test compiler/issues/384
-    public function testIssue384(int x)
-    {
+    public function testIssue384(int x) {
         HashedMap<int, int> map = new HashedMap(this._mpData);
         require(map.set(9708714, 284112, 0));
         require(map.set(7989009, 9061514, 1));
     }
 
-    public function testInsert(MapEntry[MAX] entries, bytes data)
-     {
+    public function testInsert(MapEntry[MAX] entries, bytes data) {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
 
@@ -111,22 +105,19 @@ contract MapTest {
 
         require(!map.has(entries[5].key, entries[5].keyIndex));
 
-        require(map.size() == MAX -1);
-
+        require(map.size() == MAX - 1);
 
         require(map.delete(entries[0].key, entries[0].keyIndex));
 
         require(!map.has(entries[0].key, entries[0].keyIndex));
 
-        require(map.size() == MAX -2);
+        require(map.size() == MAX - 2);
     }
 
-
-    public function testInsertMiddle(int x)
-     {
+    public function testInsertMiddle(int x) {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
-        MapEntry[2] entries = [{118542, 2713441, 0}, {6816853, 870415, 1}];
+        MapEntry[2] entries = [{ 118542, 2713441, 0 }, { 6816853, 870415, 1 }];
         loop (2) : i {
             require(map.set(entries[i].key, entries[i].val, entries[i].keyIndex));
         }
@@ -134,11 +125,10 @@ contract MapTest {
         require(map.set(563862, 8317837, 1));
         require(map.has(563862, 1));
         require(map.size() == 3);
-  
+
     }
 
-    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes data)
-    {
+    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes data) {
 
         HashedMap<bytes, bytes> map = new HashedMap(this._mpData);
 
@@ -157,18 +147,16 @@ contract MapTest {
 
         require(!map.has(entries[5].key, entries[5].keyIndex));
 
-        require(map.size() == MAX -1);
-
+        require(map.size() == MAX - 1);
 
         require(map.delete(entries[0].key, entries[0].keyIndex));
 
         require(!map.has(entries[0].key, entries[0].keyIndex));
 
-        require(map.size() == MAX -2);
+        require(map.size() == MAX - 2);
     }
 
-    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes data)
-    {
+    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes data) {
 
         HashedMap<int, bool> map = new HashedMap(this._mpData);
 
@@ -187,18 +175,16 @@ contract MapTest {
 
         require(!map.has(entries[5].key, entries[5].keyIndex));
 
-        require(map.size() == MAX -1);
-
+        require(map.size() == MAX - 1);
 
         require(map.delete(entries[0].key, entries[0].keyIndex));
 
         require(!map.has(entries[0].key, entries[0].keyIndex));
 
-        require(map.size() == MAX -2);
+        require(map.size() == MAX - 2);
     }
 
-    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes data)
-    {
+    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes data) {
 
         HashedMap<ST, int[3]> map = new HashedMap(this._mpData);
 
@@ -208,12 +194,27 @@ contract MapTest {
             require(map.set(entry.key, entry.val, entries[i].keyIndex));
         }
 
-
         loop (MAX) : i {
             require(map.has(entries[i].key, entries[i].keyIndex));
         }
 
         require(map.size() == MAX);
         require(map.data() == data);
+    }
+
+    public function testInLoopIf(MapEntry[6] entries) {
+
+        HashedMap<int, int> map = new HashedMap(this._mpData);
+
+        loop (6) : i {
+            MapEntry entry = entries[i];
+            if (map.has(entry.key, entry.keyIndex)) {
+                require(map.delete(entry.key, entries[i].keyIndex));
+            }
+            else {
+                require(map.set(entry.key, entry.val, entries[i].keyIndex));
+            }
+        }
+        require(map.size() == 0);
     }
 }

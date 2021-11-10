@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass,  buildTypeClasses } from '../src/contract'
+import { buildContractClass, buildTypeClasses } from '../src/contract'
 import { Bytes, Struct } from '../src/scryptTypes'
-import { findKeyIndex, num2bin,  toData } from '../src/internal'
+import { findKeyIndex, num2bin, toData } from '../src/internal'
 
 function getRandomInt() {
     return Math.floor(Math.random() * 10000000);
@@ -62,9 +62,9 @@ describe('test.mapTest', () => {
 
 
             const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
-            .map(entry => new MapEntry(entry)).sort((a, b) => {
-                return a.keyIndex - b.keyIndex;
-            })
+                .map(entry => new MapEntry(entry)).sort((a, b) => {
+                    return a.keyIndex - b.keyIndex;
+                })
 
 
             const result = mapTest.testInsert(mapEntrys, toData(map)).verify()
@@ -85,9 +85,9 @@ describe('test.mapTest', () => {
 
 
             const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
-            .map(entry => new MapEntryBool(entry)).sort((a, b) => {
-                return a.keyIndex - b.keyIndex;
-            })
+                .map(entry => new MapEntryBool(entry)).sort((a, b) => {
+                    return a.keyIndex - b.keyIndex;
+                })
 
 
             const result = mapTest.testInsertMapEntryBool(mapEntrys, toData(map)).verify()
@@ -102,9 +102,9 @@ describe('test.mapTest', () => {
 
 
             const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
-            .map(entry => new MapEntryBytes(entry)).sort((a, b) => {
-                return a.keyIndex - b.keyIndex;
-            })
+                .map(entry => new MapEntryBytes(entry)).sort((a, b) => {
+                    return a.keyIndex - b.keyIndex;
+                })
 
 
             const result = mapTest.testInsertMapEntryBytes(mapEntrys, toData(map)).verify()
@@ -136,12 +136,54 @@ describe('test.mapTest', () => {
 
 
             const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
-            .map(entry => new _MapEntrySt(entry)).sort((a, b) => {
-                return a.keyIndex - b.keyIndex;
-            })
+                .map(entry => new _MapEntrySt(entry)).sort((a, b) => {
+                    return a.keyIndex - b.keyIndex;
+                })
 
 
             const result = mapTest.testInsertMapEntrySt(mapEntrys, toData(map)).verify()
+            expect(result.success, result.error).to.be.true;
+
+        })
+
+
+        it('test testInLoopIf', () => {
+            const { MapEntry } = buildTypeClasses(MapTest);
+
+            let map = new Map<number, number>();
+
+            map.set(5, 3);
+            map.set(9, 11);
+            map.set(19, 22);
+
+            //init
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+                .map(entry => new MapEntry(entry)).sort((a, b) => {
+                    return a.keyIndex - b.keyIndex;
+                })
+            // delete
+
+            mapEntrys.push(new MapEntry({
+                key: 5,
+                val: 3,
+                keyIndex: findKeyIndex(map, 5)
+            }))
+            map.delete(5)
+
+            mapEntrys.push(new MapEntry({
+                key: 9,
+                val: 11,
+                keyIndex: findKeyIndex(map, 9)
+            }))
+            map.delete(9)
+            mapEntrys.push(new MapEntry({
+                key: 19,
+                val: 22,
+                keyIndex: findKeyIndex(map, 19)
+            }))
+
+
+            const result = mapTest.testInLoopIf(mapEntrys).verify()
             expect(result.success, result.error).to.be.true;
 
         })
