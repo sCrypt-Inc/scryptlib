@@ -5,7 +5,7 @@ export {
   bsv, ECIES, signTx, toHex, getPreimage, num2bin, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
   findStructByType, findStructByName, isStructType, isArrayType, compileContract,
   arrayTypeAndSize, newCall, getStructNameByType, genLaunchConfigFile, subArrayType,
-  flattenSha256,isGenericType, parseGenericType, findLibraryByGeneric
+  flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {
