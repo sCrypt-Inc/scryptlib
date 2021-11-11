@@ -6,7 +6,6 @@ struct MapEntry {
 }
 
 contract StateMapTest {
-    static const int MAX = 10;
 
     @state
     bytes _mpData;
