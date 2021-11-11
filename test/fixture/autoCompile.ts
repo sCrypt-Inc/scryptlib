@@ -1,8 +1,9 @@
 import glob = require('glob');
 import { basename, join } from 'path';
-import { compileContract } from '../../src';
+import { compileContract, findCompiler } from '../../src';
 import { exit } from 'process';
 import { copyFileSync, existsSync, mkdirSync } from 'fs';
+import { compilerVersion } from '../../src/compilerWrapper';
 
 function compileAllContracts() {
 
@@ -10,6 +11,11 @@ function compileAllContracts() {
   if (!existsSync(out)) {
     mkdirSync(out);
   }
+
+  const scryptc = findCompiler();
+  console.log('compiler binary: ', scryptc)
+  console.log('compiler version: ', compilerVersion(scryptc))
+
   const contracts = glob.sync(join(__dirname, './*.scrypt'));
   contracts.forEach(filePath => {
 

@@ -1,3 +1,4 @@
+import { GenericEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
@@ -30,6 +31,7 @@ export interface ContractDescription {
   structs: Array<StructEntity>;
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
+  generics: Array<GenericEntity>;
   asm: string;
   hex: string;
   file: string;
@@ -642,7 +644,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
       const structName = getStructNameByType(type);
       return resolver(structName);
     } else {
-      throw new Error('typeResolver with unknown type ' + type);
+      return type;
     }
   };
 

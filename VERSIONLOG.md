@@ -20,3 +20,7 @@
 ## version = 5
 
 * add  `hex`
+
+## version = 6 
+
+* add `generics`

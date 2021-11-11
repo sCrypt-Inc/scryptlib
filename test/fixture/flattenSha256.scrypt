@@ -1,0 +1,21 @@
+struct ST {
+    int a;
+    bytes b;
+    bool c;
+}
+
+contract TestflattenSha256 {
+
+    public function unlock(int x) {
+        require(flattenSha256(8) == sha256(b'08'));
+        require(flattenSha256(b'0320') == sha256(b'0320'));
+        require(flattenSha256(true) == sha256(b'01'));
+        require(flattenSha256(false) == sha256(b''));
+        require(flattenSha256([1, 2]) == sha256(sha256(b'01') + sha256(b'02')));
+        ST st = {10, b'1102', true};
+        require(flattenSha256(st) == sha256(sha256(b'0a') + sha256(b'1102') + sha256(b'01')));
+
+        require(flattenSha256([st, st]) == sha256(sha256(b'0a') + sha256(b'1102') + sha256(b'01') + sha256(b'0a') + sha256(b'1102') + sha256(b'01')));
+        require(x == 1);
+    }
+}

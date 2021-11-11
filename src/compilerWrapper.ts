@@ -22,7 +22,7 @@ const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+
 const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 5;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 6;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
@@ -96,6 +96,7 @@ export interface CompileResult {
   md5?: string;
   structs?: Array<StructEntity>;
   alias?: Array<AliasEntity>;
+  generics?: Array<GenericEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
@@ -161,6 +162,11 @@ export interface AliasEntity {
   type: string;
 }
 
+export interface GenericEntity {
+  library: string;
+  genericTypes: Array<string>;
+}
+
 export function compile(
   source: {
     path: string,
@@ -223,6 +229,7 @@ export function compile(
 
       const alias = getAliasDeclaration(result.ast, allAst);
       const structs = getStructDeclaration(result.ast, allAst);
+      const generics = getGenericDeclaration(result.ast, allAst);
 
       result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
 
@@ -238,6 +245,7 @@ export function compile(
         params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
       }));
 
+      result.generics = generics;
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
@@ -337,6 +345,7 @@ export function compile(
         md5: md5(sourceContent),
         structs: result.structs || [],
         alias: result.alias || [],
+        generics: result.generics || [],
         abi: result.abi || [],
         buildType: settings.buildType || BuildType.Debug,
         file: '',
@@ -508,6 +517,12 @@ function shortType(finalType: string): string {
   return shortType;
 }
 
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param typeResolver a Type Resolver
+ * @returns All function ABIs defined by the main contract, including constructors
+ */
 export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
@@ -536,7 +551,12 @@ export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   };
 }
 
-
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined structures of the main contract and dependent contracts
+ */
 export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
 
 
@@ -554,7 +574,12 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   }).flat(1);
 }
 
-
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined type aliaes of the main contract and dependent contracts
+ */
 export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity> {
 
   const allAst = [astRoot];
@@ -571,6 +596,38 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   }).flat(1);
 }
 
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined generic type of the main contract and dependent contracts
+ */
+export function getGenericDeclaration(astRoot: any, dependencyAsts: any): Array<GenericEntity> {
+
+  const allAst = [astRoot];
+
+  Object.keys(dependencyAsts).forEach(key => {
+    allAst.push(dependencyAsts[key]);
+  });
+
+  return allAst.map(ast => {
+    return (ast.contracts || []).map(contract => {
+      if (Array.isArray(contract.genericTypes)) {
+        return {
+          genericTypes: contract.genericTypes,
+          library: contract.name,
+        };
+      }
+    });
+  }).flat(Infinity).filter(item => typeof item === 'object');
+}
+
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined static const int literal of the main contract and dependent contracts
+ */
 export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
 
   const allAst = [astRoot];
@@ -593,7 +650,11 @@ export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<st
   }).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
 }
 
-
+/**
+ * Convert the JSON object of the contract description file to CompileResult, and fill in the default values for the partially missing fields
+ * @param description Contract description JSON object
+ * @returns CompileResult
+ */
 export function desc2CompileResult(description: ContractDescription): CompileResult {
   const sources = description.sources;
   const asm = description.asm.split(' ');
@@ -611,8 +672,9 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     contract: description.contract,
     md5: description.md5,
     abi: description.abi,
-    structs: description.structs,
-    alias: description.alias,
+    structs: description.structs || [],
+    alias: description.alias || [],
+    generics: description.generics || [],
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
     errors: [],

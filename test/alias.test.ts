@@ -164,14 +164,6 @@ describe('Alias type check', () => {
 
       const finalTypeResolver = buildTypeResolver('', [], [], {})
 
-      expect(() => {
-        finalTypeResolver("Person")
-      }).to.throw("typeResolver with unknown type Person")
-
-      expect(() => {
-        finalTypeResolver("Person[3]")
-      }).to.throw("typeResolver with unknown elemTypeName Person")
-
       expect(finalTypeResolver("int")).to.equal('int')
       expect(finalTypeResolver("PubKey")).to.equal('PubKey')
       expect(finalTypeResolver("PrivKey")).to.equal('PrivKey')

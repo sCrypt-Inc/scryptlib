@@ -14,8 +14,9 @@ import {
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
   findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
   Arguments, Argument,
-  Script, ParamEntity
+  Script, ParamEntity, SingletonParamType
 } from './internal';
+import { GenericEntity } from './compilerWrapper';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -542,6 +543,18 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
   return s.find(s => {
     return s.name == name;
   });
+}
+
+export function findLibraryByGeneric(type: string): string {
+
+  if (isGenericType(type)) {
+    const group = type.split('<');
+    const library = group[0].trim();
+    return library;
+  }
+
+  throw new Error(type + ' is not a generic type');
+
 }
 
 
@@ -1406,3 +1419,136 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
 
   arg.value = value;
 }
+
+/**
+ * 
+ * @param data 
+ * @returns flat ScryptType array
+ */
+function flattenData(data: SingletonParamType): ScryptType[] {
+
+  if (Array.isArray(data)) {
+    const arg: SingletonParamType[] = data;
+    return arg.map((item) => {
+      return flattenData(item);
+    }).flat(Infinity) as ScryptType[];
+  } else if (Struct.isStruct(data)) {
+    const argS = data as Struct;
+    const keys = argS.getMembers();
+
+    return keys.map(key => {
+      const member = argS.memberByKey(key);
+      return flattenData(member);
+    }).flat(Infinity) as ScryptType[];
+
+  } else if (typeof data === 'boolean') {
+    return [new Bool(data as boolean)];
+  } else if (typeof data === 'number' || typeof data === 'bigint' || typeof data === 'string') {
+    return [new Int(data)];
+  } else if (data instanceof ScryptType) {
+    return [data];
+  }
+}
+
+// struct / array: sha256 every single element of the flattened struct / array, and concat the result to a joint byte, and sha256 again 
+// basic type: sha256 every single element
+export function flattenSha256(data: SingletonParamType): string {
+  const flattened = flattenData(data);
+  if (flattened.length === 1) {
+    let hex = flattened[0].toHex();
+    if ((flattened[0] instanceof Bool || flattened[0] instanceof Int) && hex === '00'
+    ) {
+      hex = '';
+    }
+    return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
+  } else {
+    const jointbytes = flattened.map(item => {
+      let hex = item.toHex();
+      if ((item instanceof Bool || item instanceof Int) && hex === '00'
+      ) {
+        hex = '';
+      }
+      return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
+    }).join('');
+
+    return bsv.crypto.Hash.sha256(Buffer.from(jointbytes, 'hex')).toString('hex');
+  }
+}
+
+// sort the map by the result of flattenSha256 of the key
+export function sortmap(map: Map<SingletonParamType, SingletonParamType>): Map<SingletonParamType, SingletonParamType> {
+  return new Map([...map.entries()].sort((a, b) => {
+    return BN.fromSM(Buffer.from(flattenSha256(a[0]), 'hex'), {
+      endian: 'little'
+    }).cmp(BN.fromSM(Buffer.from(flattenSha256(b[0]), 'hex'), {
+      endian: 'little'
+    }));
+  }));
+}
+
+
+// returns index of the map by the key
+export function findKeyIndex(map: Map<SingletonParamType, SingletonParamType>, key: SingletonParamType): number {
+
+  const sortedMap = sortmap(map);
+  const m = [];
+
+  for (const entry of sortedMap.entries()) {
+    m.push(entry);
+  }
+
+  return m.findIndex((entry) => {
+    if (entry[0] === key) {
+      return true;
+    }
+    return false;
+  });
+}
+
+
+// serialize the map, but only flattenSha256 of the key and value
+export function toData(map: Map<SingletonParamType, SingletonParamType>): Bytes {
+  const sortedMap = sortmap(map);
+
+  let storage = '';
+
+  for (const entry of sortedMap.entries()) {
+    storage += flattenSha256(entry[0]) + flattenSha256(entry[1]);
+  }
+
+  return new Bytes(storage);
+}
+
+/**
+ * check if a type is generic type
+ * @param type 
+ * @returns 
+ */
+export function isGenericType(type: string): boolean {
+
+  return /^[a-zA-Z][\w\s]*(<[\w,[\]\s]+>)+$/.test(type);
+}
+
+/**
+ * 
+ * @param type eg. HashedMap<int, int>
+ * @param eg. [{"library": "HashedMap", genericTypes: ["K", "V"]}] An array generic types returned by @getGenericDeclaration
+ * @returns {"K": "int", "V": "int"}
+ */
+export function parseGenericType(type: string, generics: Array<GenericEntity>): Record<string, string> {
+
+  if (isGenericType(type)) {
+    const group = type.split('<');
+
+    const library = group[0].trim();
+    const realTypes = group[1].split(',').map(t => t.trim().replace('>', '').trim());
+
+    const g = generics.find(g => g.library === library);
+
+    if (g) {
+      return g.genericTypes.reduce((a, v, index) => ({ ...a, [v]: realTypes[index] }), {});
+    }
+  }
+  return {};
+}
+
