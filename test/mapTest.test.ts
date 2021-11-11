@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { buildContractClass, buildTypeClasses } from '../src/contract'
 import { Bytes, Struct } from '../src/scryptTypes'
-import { findKeyIndex, num2bin, toData } from '../src/internal'
+import { findKeyIndex, num2bin, toData, sortmap } from '../src/internal'
 
 function getRandomInt() {
     return Math.floor(Math.random() * 10000000);
@@ -101,10 +101,11 @@ describe('test.mapTest', () => {
             let map = getRandomBytesMap(10);
 
 
-            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
-                .map(entry => new MapEntryBytes(entry)).sort((a, b) => {
-                    return a.keyIndex - b.keyIndex;
-                })
+            const mapEntrys = Array.from(sortmap(map), ([key, val]) => ({ key, val }))
+                .map((entry, index) => new MapEntryBytes({
+                    ...entry,
+                    keyIndex: index
+                }))
 
 
             const result = mapTest.testInsertMapEntryBytes(mapEntrys, toData(map)).verify()

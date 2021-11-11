@@ -21,7 +21,7 @@ describe('test.stateMapTest', () => {
             mapTest = new StateMapTest(new Bytes('')) // empty initial map
         })
 
-        function preHook(map: Map<number, number>) {
+        function buildTx(map: Map<number, number>) {
             let newLockingScript = mapTest.getNewStateScript({
                 _mpData: toData(map),
             });
@@ -32,15 +32,13 @@ describe('test.stateMapTest', () => {
                 satoshis: outputAmount
             }))
 
-            const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-
             mapTest.txContext = {
                 tx: tx,
                 inputIndex,
                 inputSatoshis
             }
 
-            return preimage;
+            return tx;
         }
 
 
@@ -50,8 +48,9 @@ describe('test.stateMapTest', () => {
             function testInsert(key: number, val: number) {
 
                 map.set(key, val);
-                
-                const preimage = preHook(map);
+
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
                 const result = mapTest.insert(new MapEntry({
                     key: key,
                     val: val,
@@ -80,7 +79,8 @@ describe('test.stateMapTest', () => {
 
                 map.set(key, val);
 
-                const preimage = preHook(map);
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
                 const result = mapTest.update(new MapEntry({
                     key: key,
@@ -109,7 +109,8 @@ describe('test.stateMapTest', () => {
                 const keyIndex = findKeyIndex(map, key);
                 map.delete(key);
 
-                const preimage = preHook(map);
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
                 const result = mapTest.delete(key, keyIndex, preimage).verify()
                 expect(result.success, result.error).to.be.true;
