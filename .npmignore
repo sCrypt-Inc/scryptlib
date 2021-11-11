@@ -13,3 +13,4 @@ publishcheck.sh
 .nycrc
 coverage
 .nyc_output
+docs
