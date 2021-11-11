@@ -2,7 +2,7 @@
 
 ## 0.9.0
 
-- support map
+- support [HashedMap](./docs/hashedmap_zh_CN.md)
 - contract description file adds `generic` field
 
 *Release Date: 2021/11/10*
