@@ -1206,14 +1206,14 @@ describe('utils', () => {
           "V": "int"
         });
 
-        expect(parseGenericType("HashedMap<int, bytes>", [{
-          library: "HashedMap",
-          genericTypes: ["K", "V"]
-        }]))
-          .to.deep.eq({
-            "K": "int",
-            "V": "bytes"
-          });
+      expect(parseGenericType("HashedMap<int, bytes>", [{
+        library: "HashedMap",
+        genericTypes: ["K", "V"]
+      }]))
+        .to.deep.eq({
+          "K": "int",
+          "V": "bytes"
+        });
 
       expect(parseGenericType("Mylib < int, bool >", [{
         library: "Mylib",
@@ -1224,5 +1224,25 @@ describe('utils', () => {
           "V": "bool"
         });
     })
+
+    it('isGenericType', () => {
+
+      expect(isGenericType("HashedMap<int, int>"))
+        .to.be.true
+
+      expect(isGenericType("HashedMap<ST, int[3][3]>"))
+        .to.be.true
+
+      expect(isGenericType("HashedMap<ST[3], int[3][3]>"))
+        .to.be.true
+
+      expect(isGenericType("HashedMap<ST[3], int[3][3]"))
+        .to.be.false
+
+      expect(isGenericType("HashedMap<ST[3], )int[3][3]>"))
+        .to.be.false
+    })
+
+
   })
 })

@@ -1519,8 +1519,14 @@ export function toData(map: Map<SingletonParamType, SingletonParamType>): Bytes 
   return new Bytes(storage);
 }
 
+/**
+ * check if a type is generic type
+ * @param type 
+ * @returns 
+ */
 export function isGenericType(type: string): boolean {
-  return /^[a-zA-Z][\w\s]*(<[\w,\s]+>)+$/.test(type);
+
+  return /^[a-zA-Z][\w\s]*(<[\w,[\]\s]+>)+$/.test(type);
 }
 
 /**
