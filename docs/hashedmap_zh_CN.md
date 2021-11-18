@@ -28,8 +28,9 @@ auto map = new HashedMap<int, int>(b'')
 contract StateMapTest {
 
     @state
-    bytes _mpData;
+    bytes _mpData;  //Save the serialized data of the map
 
+    // Add key-value pairs to the map
     public function insert(MapEntry entry, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
         HashedMap<int, int> map = new HashedMap(this._mpData);
@@ -37,6 +38,7 @@ contract StateMapTest {
         require(this.passMap(map.data(), preimage));
     }
 
+    // update key-value pairs in the map
     public function update(MapEntry entry, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
         HashedMap<int, int> map = new HashedMap(this._mpData);
@@ -44,14 +46,22 @@ contract StateMapTest {
         require(this.passMap(map.data(), preimage));
     }
 
+    // delete key-value pairs in the map
     public function delete(int key, int keyIndex, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
         HashedMap<int, int> map = new HashedMap(this._mpData);
         require(map.delete(key, keyIndex));
+        // Serialize map, update state
         require(this.passMap(map.data(), preimage));
     }
 
-    ...
+    // update state _mpData, and build a output contains new state
+    function passMap(bytes newData, SigHashPreimage preimage) : bool {
+        this._mpData = newData;
+        bytes outputScript = this.getStateScript();
+        bytes output = Util.buildOutput(outputScript, Util.value(preimage));
+        return (hash256(output) == Util.hashOutputs(preimage));
+    }
 }
 ```
 
