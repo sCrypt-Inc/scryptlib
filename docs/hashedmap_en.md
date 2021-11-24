@@ -1,30 +1,30 @@
 # HashedMap
 
-HashedMap [English Version](hashedmap_en.md)
+HashedMap [简体中文版](hashedmap_zh_CN.md)
 
-Map是一种非常常用的数据结构。sCrypt 的标准库提供了一个实现了 `Map` 数据结构的库合约 `HashedMap`。概念上与java中的map，python中的字典类型类似，但在使用上有一些区别。
+Map is a very commonly used data structure. sCrypt's standard library provides a library contract `HashedMap` that implements the `Map` data structure. The concept is similar to the map in java and the dictionary in python, but there are some differences in usage.
 
-## HashedMap定义
+## Definition of HashedMap
 
-在 `HashedMap` 中， `key` 和 `value` 的类型没有限制，可以是整型、字节、布尔等基本数据类型，也可以是数组、结构体等复杂数据结构。定义 `HashedMap` 的语法如下：
+In `HashedMap`, there are no restrictions on the types of `key` and `value`. They can be basic data types such as integers, bytes, and booleans, or they can be complex data structures such as arrays and structures. The syntax for defining `HashedMap` is as follows:
 
-1. 完整定义
+1. Full definition
 ```javascript
 HashedMap<int, int> map = new HashedMap<int, int>(b'')
 ```
-2. 右边简写定义
+2. Abbreviated definition on the right
 ```javascript
 HashedMap<int, int> map = new HashedMap(b'')
 ```
-3. 使用 `auto` 关键字定义
+3. Use the `auto` keyword definition
 ```javascript
 auto map = new HashedMap<int, int>(b'')
 ```
-## 序列化
+## Serialization
 
-`data()` 方法可以将 `HashedMap` 序列化成 `bytes` 字节。scryptlib 也提供了对应的 `toData(map)` 函数。用来在链外序列化 map。
+The `data()` method can serialize `HashedMap` into `bytes`. scryptlib also provides the corresponding `toData(map)` function. Used to serialize the HashedMap off-chain.
 
-下面是一个将 `HashedMap` 作为状态的有状态合约。
+Below is a stateful contract with HashedMap as the state.
 
 ```javascript
 contract StateMapTest {
@@ -68,9 +68,9 @@ contract StateMapTest {
 ```
 
 
-## 添加元素
+## Add Element
 
-`HashedMap` 合约提供了很多有用的方法，添加键值对(key-value)可以使用 `HashedMap` 合约的 `set(K key, V val, int keyIndex)` 方法。与其它语言的 `map` 不同的是添加键值需要传递 `keyIndex` 参数。该参数可以通过 `scryptlib` 提供的 `findKeyIndex` 函数在链下计算。首先我们需要在链外维护一个和链上保存同步的 `map`，并把要添加的元素先添加到该 `map` 中，然后使用 `findKeyIndex` 计算出 `keyIndex`。
+The `HashedMap` contract provides many useful methods. To add key-value pairs, you can use the `set(K key, V val, int keyIndex)` method of the `HashedMap` contract. Unlike `map` in other languages, adding key-value pairs requires passing the `keyIndex` parameter, which can be calculated off-chain by the `findKeyIndex` function provided by scryptlib. First, we need to maintain a map outside the chain that is synchronized with the chain, and add the elements to be added to the map first. Then use `findKeyIndex` to calculate `keyIndex`.
 
 **scrypt**: 
 ```typescript
@@ -86,22 +86,22 @@ public function insert(MapEntry entry, SigHashPreimage preimage) {
 
 ```javascript
 let map = new Map<number, number>();
-map.set(key, val);  //先把键值对添加到链外的 map
+map.set(key, val);  // First add the key-value pair to the map outside the chain
 
 const tx = buildTx(map);
 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 const result = mapTest.insert(new MapEntry({
     key: key,
     val: val,
-    keyIndex: findKeyIndex(map, key) // 获取 `keyIndex` 参数
+    keyIndex: findKeyIndex(map, key) // Get the `keyIndex` parameter
 }), preimage).verify()
 expect(result.success, result.error).to.be.true;
 
 mapTest._mpData = toData(map)
 ```
 
-如果把所有元素添加到添加到 `map` 之后，再开始计算 `keyIndex`，那需要先将 `map` 转换成有序的数组。
-使用以下代码可以直接转换：
+If you add all the elements to the `map` before starting to calculate the `keyIndex`, you need to convert the `map` into an ordered array first.
+Use the following code to convert directly:
 
 ```typescript
 const mapEntrys = Array.from(sortmap(map), ([key, val]) => ({ key, val }))
@@ -111,13 +111,13 @@ const mapEntrys = Array.from(sortmap(map), ([key, val]) => ({ key, val }))
     })
 ```
 
-## 更新元素
+## Update Element
 
-更新元素和添加元素一样，都使用 `HashedMap` 合约的 `set(K key, V val, int keyIndex)` 方法。
+Updating elements is the same as adding elements, using the `set(K key, V val, int keyIndex)` method of the `HashedMap` contract.
 
-## 删除元素
+## Delete Element
 
-使用 `HashedMap` 合约的 `delete(K key, int keyIndex)` 方法来删除元素。如果删除的元素不存在会返回失败。同样需要在链外使用 `findKeyIndex(map, key)` 函数来计算 `keyIndex`。
+Use the `delete(K key, int keyIndex)` method of the `HashedMap` contract to delete elements. If the deleted element does not exist, it will return failure. It is also necessary to use the `findKeyIndex(map, key)` function outside the chain to calculate the `keyIndex`.
 
 **scrypt**: 
 ```javascript
@@ -132,30 +132,29 @@ public function delete(int key, int keyIndex, SigHashPreimage preimage) {
 **typescript**:
 
 ```javascript
-const keyIndex = findKeyIndex(map, key);  //从链外map删除之前，先计算出keyIndex，并保存
+const keyIndex = findKeyIndex(map, key);  // Before deleting from the off-chain map, first calculate the keyIndex and save it
 map.delete(key);
 
 const tx = buildTx(map);
 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-const result = mapTest.delete(key, keyIndex, preimage).verify()  // 调用合约的删除方法需要提供key, keyIndex
+const result = mapTest.delete(key, keyIndex, preimage).verify()  // To call the delete method of the contract, you need to provide the key and keyIndex
 expect(result.success, result.error).to.be.true;
 
 mapTest._mpData = toData(map)
 ```
 
 
-## 存储模型
+## Storage Model
 
-`HashedMap` 只存储 `key` 和 `value` 的哈希。无法通过 `HashedMap` 的序列化 `data` 反序列出原始的键值对。这对于一些注重隐私性的应用场景很有帮助。
+`HashedMap` only stores the hash of `key` and `value`. It is not possible to deserialize the original key-value pairs through the serialization of `data` of `HashedMap`. This is very helpful for some privacy-focused application scenarios. You can pass in the original key-value pair from the outside and call the `canGet(key, val, keyIndex)` interface to check whether a key-value pair is included.
 
-可以通过从外部传入原始键值对，并调用 `canGet(key, val, keyIndex)` 接口来检查是否包含某个键值对。
 
 ```javascript
 require(map.canGet(key, val, keyIndex));
 ```
 
-或者通过 `has(key, keyIndex)` 接口检查是否包含某个键。
+Or check whether a key is included through the `has(key, keyIndex)` interface.
 
 ```javascript
 require(map.has(key, keyIndex));
