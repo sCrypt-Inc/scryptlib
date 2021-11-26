@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.9.1
+
+- add `codeHash` method for contract
+- add `hash160`, `sha256`, `hash256` util functions
+- add `prevouts` method for transaction
+
+*Release Date: 2021/11/26*
+
+
 ## 0.9.0
 
 - support [HashedMap](./docs/hashedmap_zh_CN.md)

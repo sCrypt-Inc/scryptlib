@@ -182,3 +182,4 @@ lockingTxid = await sendTx(unlockingTx)
 | `getChangeAmount` | 获取找零输出的余额 | - |
 | `getEstimateFee` | 根据交易大小和设置的费率评估出交易费用 | - |
 | `checkFeeRate` | 检查交易的费用是否满足设置的费率 | 1. `feePerKb` 费率， satoshis 每 KB |
+| `prevouts` | 返回所有输入点的序列化串 | - |

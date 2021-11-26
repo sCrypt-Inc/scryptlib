@@ -1322,4 +1322,23 @@ Transaction.prototype.checkFeeRate = function (feePerKb) {
   return fee >= expectedFee
 }
 
+
+/**
+ * 
+ * @returns the serialization of all input outpoints
+ */
+Transaction.prototype.prevouts = function () {
+
+  var writer = new BufferWriter()
+
+  _.each(this.inputs, function (input) {
+    writer.writeReverse(input.prevTxId)
+    writer.writeUInt32LE(input.outputIndex)
+  })
+
+  var buf = writer.toBuffer();
+  return buf.toString('hex');
+}
+
+
 module.exports = Transaction
