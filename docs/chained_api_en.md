@@ -184,3 +184,4 @@ lockingTxid = await sendTx(unlockingTx)
 | `getChangeAmount` | Get the balance of the change output | - |
 | `getEstimateFee` | Estimate transaction fee based on transaction size and fee rate | - |
 | `checkFeeRate` | Check whether the transaction fee meets the fee rate | 1. `feePerKb` fee rate, satoshis per KB |
+| `prevouts` | returns the serialization of all input outpoints | - |

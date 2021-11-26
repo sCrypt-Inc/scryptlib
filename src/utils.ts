@@ -1552,3 +1552,20 @@ export function parseGenericType(type: string, generics: Array<GenericEntity>): 
   return {};
 }
 
+
+// Equivalent to the built-in function `hash160` in scrypt
+export function hash160(hexstr: string): string {
+  return bsv.crypto.Hash.sha256ripemd160(Buffer.from(hexstr, 'hex')).toString('hex');
+}
+
+// Equivalent to the built-in function `sha256` in scrypt
+export function sha256(hexstr: string): string {
+  return bsv.crypto.Hash.sha256(Buffer.from(hexstr, 'hex')).toString('hex');
+}
+
+
+// Equivalent to the built-in function `hash256` in scrypt
+export function hash256(hexstr: string): string {
+  return sha256(sha256(hexstr));
+}
+

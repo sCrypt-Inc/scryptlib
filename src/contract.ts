@@ -2,7 +2,7 @@ import { GenericEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160
 } from './internal';
 
 
@@ -310,6 +310,14 @@ export class AbstractContract {
     return bsv.Script.fromASM(codeASM + ' OP_RETURN');
   }
 
+  get codeHash(): string {
+    if (this.dataPart) {
+      return hash160(this.codePart.toHex());
+    } else {
+      return hash160(this.lockingScript.toHex());
+    }
+  }
+
   static getAsmVars(contractAsm, instAsm): AsmVarValues | null {
     const regex = /(\$\S+)/g;
     const vars = contractAsm.match(regex);
@@ -363,7 +371,21 @@ export class AbstractContract {
 }
 
 
-const invalidMethodName = ['arguments', 'setDataPart', 'run_verify', 'replaceAsmVars', 'asmVars', 'asmArguments', 'dataPart', 'lockingScript', 'txContext'];
+const invalidMethodName = ['arguments',
+  'setDataPart',
+  'run_verify',
+  'replaceAsmVars',
+  'asmVars',
+  'asmArguments',
+  'dataPart',
+  'lockingScript',
+  'codeHash',
+  'codePart',
+  'typeResolver',
+  'getTypeClassByType',
+  'getNewStateScript',
+  'allTypes',
+  'txContext'];
 
 export function buildContractClass(desc: CompileResult | ContractDescription): typeof AbstractContract {
 

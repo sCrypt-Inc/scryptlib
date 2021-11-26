@@ -4,7 +4,7 @@ import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
 import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
-  flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int, isGenericType
+  flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int, isGenericType, sha256, hash256, hash160
 
 } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
@@ -1243,6 +1243,24 @@ describe('utils', () => {
         .to.be.false
     })
 
+
+    it('test hash256', () => {
+      // bytes s = hash256(b'01');
+      expect(hash256("01"))
+        .to.be.eq("9c12cfdc04c74584d787ac3d23772132c18524bc7ab28dec4219b8fc5b425f70")
+    })
+
+    it('test sha256', () => {
+      // bytes s = hash256(b'01');
+      expect(sha256("01"))
+        .to.be.eq("4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a")
+    })
+
+    it('test hash160', () => {
+      //bytes s = hash160(b'01');
+      expect(hash160("01"))
+        .to.be.eq("c51b66bced5e4491001bd702669770dccf440982")
+    })
 
   })
 })
