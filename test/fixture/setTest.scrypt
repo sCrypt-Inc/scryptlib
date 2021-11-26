@@ -1,0 +1,77 @@
+import "util.scrypt";
+
+struct Entry {
+    int key;
+    int keyIndex;
+}
+
+struct SetST {
+    int a;
+    bytes b;
+}
+
+contract SetTest {
+
+    public function testStructAsKey(SetST key, int keyIndex, bytes data) {
+
+        HashedSet<SetST> set = new HashedSet(b'');
+        int size = set.size();
+        SetST tmp = { 3, b'003300' };
+        require(set.add(tmp, 0));
+        require(set.size() == size + 1);
+        require(!set.has(key, keyIndex));
+        require(set.add(key, keyIndex));
+        require(set.size() == size + 2);
+        require(set.data() == data);
+    }
+
+    public function testArrayAsKey(int[3] key, int keyIndex, bytes data) {
+
+        HashedSet<int[3]> set = new HashedSet(b'');
+        int size = set.size();
+        int[3] tmp = [3, 5, 7];
+        require(set.add(tmp, 0));
+        require(set.size() == size + 1);
+        require(!set.has(key, keyIndex));
+        require(set.add(key, keyIndex));
+        require(set.size() == size + 2);
+        require(set.data() == data);
+    }
+
+    public function testArrayAsKey2(SetST[3] key, int keyIndex, bytes data) {
+
+        HashedSet<SetST[3]> set = new HashedSet(b'');
+        int size = set.size();
+        SetST[3] tmp = [{ 3, b'01' }, { 5, b'0001' }, { 7, b'010101' }];
+        require(set.add(tmp, 0));
+        require(set.size() == size + 1);
+        require(!set.has(key, keyIndex));
+        require(set.add(key, keyIndex));
+        require(set.size() == size + 2);
+        require(set.data() == data);
+    }
+
+    public function testDeleteInt(Entry[10] initData, int key, int keyIndex) {
+
+        HashedSet<int> set = new HashedSet(b'');
+
+        loop (10) : i {
+            require(set.add(initData[i].key, initData[i].keyIndex));
+        }
+        require(set.size() == 10);
+        require(set.delete(key, keyIndex));
+        require(!set.has(key, keyIndex));
+        require(set.size() == 9);
+    }
+
+    public function testHas(Entry[10] initData, int key, int keyIndex) {
+
+        HashedSet<int> set = new HashedSet(b'');
+
+        loop (10) : i {
+            require(set.add(initData[i].key, initData[i].keyIndex));
+        }
+        require(set.size() == 10);
+        require(set.has(key, keyIndex));
+    }
+}
