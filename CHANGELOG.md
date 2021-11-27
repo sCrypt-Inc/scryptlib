@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.10.0
+
+- support `HashedSet`
+
+*Release Date: 2021/11/27*
+
 ## 0.9.1
 
 - add `codeHash` method for contract

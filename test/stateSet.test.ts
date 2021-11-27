@@ -17,7 +17,7 @@ describe('test.stateSet', () => {
         before(() => {
             const jsonDescr = loadDescription('stateSet_desc.json')
             StateSet = buildContractClass(jsonDescr)
-            stateSet = new StateSet(new Bytes('')) // empty initial map
+            stateSet = new StateSet(new Bytes('')) // empty initial set
         })
 
         function buildTx(set: HashedSet<number>) {
