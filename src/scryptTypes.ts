@@ -647,6 +647,8 @@ export type StructObject = Record<string, SingletonParamType>;
 export type SupportedParamType = SingletonParamType | SupportedParamType[];
 
 
+export type HashedSet<K extends SupportedParamType> = Set<K>;
+export type HashedMap<K extends SupportedParamType, V extends SupportedParamType> = Map<K, V>;
 
 export enum VariableType {
   BOOL = 'bool',

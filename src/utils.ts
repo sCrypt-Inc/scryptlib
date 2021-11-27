@@ -17,6 +17,7 @@ import {
   Script, ParamEntity, SingletonParamType
 } from './internal';
 import { GenericEntity } from './compilerWrapper';
+import { HashedMap, HashedSet } from './scryptTypes';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -1476,7 +1477,7 @@ export function flattenSha256(data: SingletonParamType): string {
 }
 
 // sort the map by the result of flattenSha256 of the key
-export function sortmap(map: Map<SingletonParamType, SingletonParamType>): Map<SingletonParamType, SingletonParamType> {
+export function sortmap(map: HashedMap<SingletonParamType, SingletonParamType>): HashedMap<SingletonParamType, SingletonParamType> {
   return new Map([...map.entries()].sort((a, b) => {
     return BN.fromSM(Buffer.from(flattenSha256(a[0]), 'hex'), {
       endian: 'little'
@@ -1486,34 +1487,70 @@ export function sortmap(map: Map<SingletonParamType, SingletonParamType>): Map<S
   }));
 }
 
-
-// returns index of the map by the key
-export function findKeyIndex(map: Map<SingletonParamType, SingletonParamType>, key: SingletonParamType): number {
-
-  const sortedMap = sortmap(map);
-  const m = [];
-
-  for (const entry of sortedMap.entries()) {
-    m.push(entry);
-  }
-
-  return m.findIndex((entry) => {
-    if (entry[0] === key) {
-      return true;
-    }
-    return false;
-  });
+// sort the set by the result of flattenSha256 of the key
+export function sortset(set: HashedSet<SingletonParamType>): HashedSet<SingletonParamType> {
+  return new Set([...set.keys()].sort((a, b) => {
+    return BN.fromSM(Buffer.from(flattenSha256(a), 'hex'), {
+      endian: 'little'
+    }).cmp(BN.fromSM(Buffer.from(flattenSha256(b), 'hex'), {
+      endian: 'little'
+    }));
+  }));
 }
 
 
-// serialize the map, but only flattenSha256 of the key and value
-export function toData(map: Map<SingletonParamType, SingletonParamType>): Bytes {
-  const sortedMap = sortmap(map);
+// returns index of the HashedMap/HashedSet by the key
+export function findKeyIndex(collection: HashedMap<SingletonParamType, SingletonParamType> | HashedSet<SingletonParamType>, key: SingletonParamType): number {
+
+  if (collection instanceof Map) {
+    const sortedMap = sortmap(collection);
+    const m = [];
+
+    for (const entry of sortedMap.entries()) {
+      m.push(entry);
+    }
+
+    return m.findIndex((entry) => {
+      if (entry[0] === key) {
+        return true;
+      }
+      return false;
+    });
+  } else {
+
+    const sortedSet = sortset(collection);
+    const m = [];
+
+    for (const entry of sortedSet.keys()) {
+      m.push(entry);
+    }
+
+    return m.findIndex((entry) => {
+      if (entry === key) {
+        return true;
+      }
+      return false;
+    });
+  }
+
+}
+
+
+// serialize the HashedMap/HashedSet, but only flattenSha256 of the key and value
+export function toData(collection: HashedMap<SingletonParamType, SingletonParamType> | HashedSet<SingletonParamType>): Bytes {
 
   let storage = '';
+  if (collection instanceof Map) {
+    const sortedMap = sortmap(collection);
 
-  for (const entry of sortedMap.entries()) {
-    storage += flattenSha256(entry[0]) + flattenSha256(entry[1]);
+    for (const entry of sortedMap.entries()) {
+      storage += flattenSha256(entry[0]) + flattenSha256(entry[1]);
+    }
+  } else {
+    const sortedSet = sortset(collection);
+    for (const key of sortedSet.keys()) {
+      storage += flattenSha256(key);
+    }
   }
 
   return new Bytes(storage);

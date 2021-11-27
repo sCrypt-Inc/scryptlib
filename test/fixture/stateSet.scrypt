@@ -1,0 +1,33 @@
+import "util.scrypt";
+
+contract StateSet {
+
+    @state
+    bytes _setData;
+
+    public function insert(int key, int keyIndex, SigHashPreimage preimage) {
+        require(Tx.checkPreimage(preimage));
+        HashedSet<int> set = new HashedSet(this._setData);
+        int size = set.size();
+        require(!set.has(key, keyIndex));
+        require(set.add(key, keyIndex));
+        require(set.size() == size + 1);
+        require(this.passSet(set.data(), preimage));
+    }
+
+    public function delete(int key, int keyIndex, SigHashPreimage preimage) {
+        require(Tx.checkPreimage(preimage));
+        HashedSet<int> set = new HashedSet(this._setData);
+        require(set.has(key, keyIndex));
+        require(set.delete(key, keyIndex));
+        require(!set.has(key, keyIndex));
+        require(this.passSet(set.data(), preimage));
+    }
+
+    function passSet(bytes newData, SigHashPreimage preimage) : bool {
+        this._setData = newData;
+        bytes outputScript = this.getStateScript();
+        bytes output = Util.buildOutput(outputScript, Util.value(preimage));
+        return (hash256(output) == Util.hashOutputs(preimage));
+    }
+}
