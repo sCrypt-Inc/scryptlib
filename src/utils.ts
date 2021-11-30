@@ -18,6 +18,7 @@ import {
 } from './internal';
 import { GenericEntity } from './compilerWrapper';
 import { HashedMap, HashedSet } from './scryptTypes';
+import { VerifyError } from './contract';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -1604,5 +1605,18 @@ export function sha256(hexstr: string): string {
 // Equivalent to the built-in function `hash256` in scrypt
 export function hash256(hexstr: string): string {
   return sha256(sha256(hexstr));
+}
+
+
+const LINKPATTERN = /(\[((!\[[^\]]*?\]\(\s*)([^\s()]+?)\s*\)\]|(?:\\\]|[^\]])*\])\(\s*)(([^\s()]|\([^\s()]*?\))+)\s*(".*?")?\)/g;
+
+export function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
+  for (const match of error.matchAll(LINKPATTERN)) {
+    if (match[5] && match[5].startsWith('scryptlaunch')) {
+      const file = match[5].replace(/scryptlaunch/, 'file');
+      return JSON.parse(fs.readFileSync(uri2path(file)).toString());
+    }
+  }
+  return undefined;
 }
 

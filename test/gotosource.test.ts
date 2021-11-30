@@ -2,9 +2,8 @@ import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
-import { bsv, toHex, signTx, num2bin, getPreimage, uri2path } from '../src/utils';
+import { bsv, toHex, signTx, num2bin, getPreimage, readLaunchJson } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
-import { readFileSync } from 'fs';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -25,8 +24,6 @@ const outputAmount = 22222
 const DataLen = 1
 const dummyTxId = 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458'
 
-const LINKPATTERN = /(\[((!\[[^\]]*?\]\(\s*)([^\s\(\)]+?)\s*\)\]|(?:\\\]|[^\]])*\])\(\s*)(([^\s\(\)]|\([^\s\(\)]*?\))+)\s*(".*?")?\)/g;
-
 let man = new Person({
   isMale: false,
   age: 33,
@@ -41,15 +38,6 @@ const MDArray = buildContractClass(mdDescr);
 const { ST1, AliasST2, ST3 } = buildTypeClasses(mdDescr);
 
 
-function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
-  for (const match of error.matchAll(LINKPATTERN)) {
-    if (match[5] && match[5].startsWith("scryptlaunch")) {
-      const file = match[5].replace(/scryptlaunch/, "file");
-      return JSON.parse(readFileSync(uri2path(file)).toString());
-    }
-  }
-  return undefined;
-}
 
 
 describe('VerifyError', () => {

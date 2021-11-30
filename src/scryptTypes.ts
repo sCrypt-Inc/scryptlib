@@ -171,6 +171,10 @@ export class PrivKey extends Int {
     }
   }
 
+  toJSON(): string | unknown {
+    return this.toLiteral();
+  }
+
   public serialize(): string {
     return serializeInt(this.value as IntValueType);
   }
