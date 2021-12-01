@@ -1,10 +1,12 @@
 import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { Int, Bool, Bytes, PrivKey } from '../src/scryptTypes'
+import { Int, Bool, Bytes, PrivKey, Ripemd160 } from '../src/scryptTypes'
 import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
-  flatternParams, flatternStruct, isArrayType, isStructType, compileContract, toLiteral, asm2int, isGenericType, sha256, hash256, hash160
+  flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
+  toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
+  buildOpreturnScript, buildPublicKeyHashScript, toHex
 
 } from '../src/utils'
 import { getContractFilePath, loadDescription } from './helper';
@@ -1260,6 +1262,23 @@ describe('utils', () => {
       //bytes s = hash160(b'01');
       expect(hash160("01"))
         .to.be.eq("c51b66bced5e4491001bd702669770dccf440982")
+    })
+
+
+    it('test buildOpreturnScript', () => {
+
+      expect(buildOpreturnScript("0011").toHex())
+        .to.be.eq("006a020011")
+
+      expect(buildOpreturnScript("").toHex())
+        .to.be.eq("006a00")
+    })
+
+    it('test buildPublicKeyHashScript', () => {
+
+      expect(buildPublicKeyHashScript(new Ripemd160("e1c396944f470d717e6041b0bfb95378d22110ce")).toHex())
+        .to.be.eq("76a914e1c396944f470d717e6041b0bfb95378d22110ce88ac")
+
     })
 
   })

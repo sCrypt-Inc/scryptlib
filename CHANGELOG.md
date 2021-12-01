@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.10.1
+
+- support `Tx.checkPreimageOCS`
+- add Util function: `buildOpreturnScript`, `buildPublicKeyHashScript`, `getLowSPreimage`
+
+*Release Date: 2021/12/01*
+
 ## 0.10.0
 
 - support `HashedSet`

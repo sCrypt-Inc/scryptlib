@@ -443,6 +443,21 @@ export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmo
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
+const MSB_THRESHOLD = 0x7e;
+
+export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+
+  for (let i = 0; i < 100; i++) {
+    const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType, flags);
+    const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(toHex(preimage), 'hex'));
+    const msb = sighash.readUInt8();
+    if (msb < MSB_THRESHOLD) {
+      return preimage;
+    }
+    tx.inputs[inputIndex].sequenceNumber--;
+  }
+}
+
 
 // Converts a number into a sign-magnitude representation of certain size as a string
 // Throws if the number cannot be accommodated
@@ -1619,4 +1634,52 @@ export function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
   }
   return undefined;
 }
+
+
+
+// Equivalent to the built-in function `len` in scrypt
+export function len(hexstr: string): number {
+  return hexstr.length / 2;
+}
+
+// convert signed integer `n` to unsigned integer of `l` bytes, in little endian
+export function toLEUnsigned(n: number, l: number): string {
+  // one extra byte to accommodate possible negative sign byte
+  const m = num2bin(n, l + 1);
+  // remove sign byte
+  return m.slice(0, len(m) - 1);
+}
+
+// convert 'b' to a VarInt field, including the preceding length
+export function writeVarint(b: string): string {
+  const n = len(b);
+
+  let header = '';
+
+  if (n < 0xfd) {
+    header = toLEUnsigned(n, 1);
+  }
+  else if (n < 0x10000) {
+    header = 'fd' + toLEUnsigned(n, 2);
+  }
+  else if (n < 0x100000000) {
+    header = 'fe' + toLEUnsigned(n, 4);
+  }
+  else if (n < 0x10000000000000000) {
+    header = 'ff' + toLEUnsigned(n, 8);
+  }
+
+  return header + b;
+}
+
+
+export function buildOpreturnScript(data: string): Script {
+  return bsv.Script.fromASM(['OP_FALSE', 'OP_RETURN', data].join(' '));
+}
+
+
+export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
+  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash.toASM(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
+}
+
 

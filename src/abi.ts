@@ -7,6 +7,7 @@ import { buildContractCodeASM, flatternArgs, flatternStateArgs, readState } from
 export interface Script {
   toASM(): string;
   toHex(): string;
+  cropCodeseparators(index: number): Script;
 }
 
 export type FileUri = string;
@@ -118,7 +119,7 @@ export class FunctionCall {
 
 
 
-  genLaunchConfigFile(txContext?: TxContext): FileUri {
+  genLaunchConfig(txContext?: TxContext): FileUri {
 
     const constructorArgs: SupportedParamType[] = this.contract.ctorArgs().map(p => p.value);
     const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
@@ -139,7 +140,7 @@ export class FunctionCall {
       const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext, this.args);
 
       if (!result.success) {
-        const debugUrl = this.genLaunchConfigFile(txContext);
+        const debugUrl = this.genLaunchConfig(txContext);
         if (debugUrl) {
           result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
         }
