@@ -443,6 +443,21 @@ export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmo
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
+const MSB_THRESHOLD = 0x7e;
+
+export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+
+  for (let i = 0; i < 100; i++) {
+    const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType, flags);
+    const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(toHex(preimage), 'hex'));
+    const msb = sighash.readUInt8();
+    if (msb < MSB_THRESHOLD) {
+      return preimage;
+    }
+    tx.inputs[inputIndex].sequenceNumber--;
+  }
+}
+
 
 // Converts a number into a sign-magnitude representation of certain size as a string
 // Throws if the number cannot be accommodated
