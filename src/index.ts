@@ -16,7 +16,8 @@ export {
   RawTypes, SigHash
 } from './internal';
 
-export { hash160, sha256, hash256, num2bin } from './internal';
+//Equivalent to the built-in functions
+export { hash160, sha256, hash256, num2bin, buildOpreturnScript, len, buildPublicKeyHashScript } from './internal';
 
 export {
   getPlatformScryptc, findCompiler
