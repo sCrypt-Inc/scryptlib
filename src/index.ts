@@ -1,4 +1,7 @@
-export { buildContractClass, VerifyResult, buildTypeClasses, buildStructsClass, buildTypeResolver } from './internal';
+export {
+  buildContractClass, buildTypeClasses, buildStructsClass, buildTypeResolver,
+  ContractDescription, VerifyResult, VerifyError, AbstractContract
+} from './internal';
 export { compile, StructEntity, getStructDeclaration, getABIDeclaration, ABIEntity, ABIEntityType, ABI, ParamEntity, BuildType, RelatedInformation } from './internal';
 export { Arguments, Argument } from './internal';
 export {
@@ -6,7 +9,7 @@ export {
   findStructByType, findStructByName, isStructType, isArrayType, compileContract,
   arrayTypeAndSize, newCall, getStructNameByType, genLaunchConfigFile, subArrayType,
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
-  readLaunchJson
+  readLaunchJson, getLowSPreimage
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {
