@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass } from '../src/contract'
-import { bsv, toHex, getPreimage, } from '../src/utils'
+import { AbstractContract, buildContractClass } from '../src/contract'
+import { bsv, toHex, getPreimage, buildOpreturnScript, getLowSPreimage } from '../src/utils'
 import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')
@@ -13,13 +13,16 @@ const tx = newTx(inputSatoshis)
 const jsonDescr = loadDescription('p2pkh_desc.json')
 const DemoP2PKH = buildContractClass(jsonDescr)
 const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)))
+const inputIndex = 0;
+
+const outputAmount = 222222
 
 describe('Preimage', () => {
   describe('check preimage parts', () => {
     let preimage: SigHashPreimage
 
     before(() => {
-      preimage = getPreimage(tx, p2pkh.lockingScript, inputSatoshis, 0)
+      preimage = getPreimage(tx, p2pkh.lockingScript.cropCodeseparators(0), inputSatoshis, 0)
     })
 
     it('outpoint', () => {
@@ -35,4 +38,137 @@ describe('Preimage', () => {
       expect(scriptCode).is.eq(hex)
     })
   })
+
+
+  describe('check OCSPreimage', () => {
+    let ocsPreimage: AbstractContract;
+
+    before(() => {
+      const jsonDescr = loadDescription('OCSPreimage_desc.json')
+      const OCSPreimage = buildContractClass(jsonDescr)
+      ocsPreimage = new OCSPreimage(1)
+    })
+
+    it('should success when using cropped preimage', () => {
+
+
+      const tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: buildOpreturnScript("0001"),
+        satoshis: outputAmount
+      }))
+
+      tx.setLockTime(333)
+
+      ocsPreimage.txContext = {
+        tx,
+        inputIndex,
+        inputSatoshis
+      }
+      const preimage = getPreimage(tx, ocsPreimage.lockingScript.cropCodeseparators(0), inputSatoshis)
+
+      const result = ocsPreimage.unlock(new SigHashPreimage(toHex(preimage))).verify()
+      expect(result.success, result.error).to.be.true
+
+
+    })
+
+
+    it('should FAIL when not using cropped preimage', () => {
+
+      const tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: buildOpreturnScript("0001"),
+        satoshis: outputAmount
+      }))
+
+      ocsPreimage.txContext = {
+        tx,
+        inputIndex,
+        inputSatoshis
+      }
+      const preimage = getPreimage(tx, ocsPreimage.lockingScript, inputSatoshis)
+
+      const result = ocsPreimage.unlock(new SigHashPreimage(toHex(preimage))).verify()
+      expect(result.success, result.error).to.be.false
+
+    })
+
+
+
+    it('checkPreimageOptOCS should success when using right cropped preimage', () => {
+
+
+      const tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: buildOpreturnScript("0001"),
+        satoshis: outputAmount
+      }))
+
+      tx.setLockTime(11)
+
+      ocsPreimage.txContext = {
+        tx,
+        inputIndex,
+        inputSatoshis
+      }
+
+
+      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript.cropCodeseparators(1), inputSatoshis)
+
+      const result = ocsPreimage.unlock0(new SigHashPreimage(toHex(preimage))).verify()
+      expect(result.success, result.error).to.be.true
+    })
+
+
+
+    it('checkPreimageOptOCS should fail when using wrong cropped preimage', () => {
+
+
+      const tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: buildOpreturnScript("0001"),
+        satoshis: outputAmount
+      }))
+
+      tx.setLockTime(11)
+
+      ocsPreimage.txContext = {
+        tx,
+        inputIndex,
+        inputSatoshis
+      }
+
+
+      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript.cropCodeseparators(0), inputSatoshis)
+
+      const result = ocsPreimage.unlock0(new SigHashPreimage(toHex(preimage))).verify()
+      expect(result.success, result.error).to.be.false
+    })
+
+    it('checkPreimageOptOCS should fail when using uncropped preimage', () => {
+
+      const tx = newTx(inputSatoshis);
+      tx.addOutput(new bsv.Transaction.Output({
+        script: buildOpreturnScript("0001"),
+        satoshis: outputAmount
+      }))
+
+      tx.setLockTime(11)
+
+      ocsPreimage.txContext = {
+        tx,
+        inputIndex,
+        inputSatoshis
+      }
+
+
+      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript, inputSatoshis)
+
+      const result = ocsPreimage.unlock0(new SigHashPreimage(toHex(preimage))).verify()
+      expect(result.success, result.error).to.be.false
+    })
+
+  })
+
 })
