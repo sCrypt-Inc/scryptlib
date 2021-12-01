@@ -1,0 +1,15 @@
+contract OpIfDup {
+
+    function op_ifdup(int x) : int {
+        asm {
+            OP_IFDUP
+        }
+    }
+
+    public function unlock(int x) {
+
+        require(this.op_ifdup(x) == x);
+
+        require(this.op_ifdup(0) == 0);
+    }
+}

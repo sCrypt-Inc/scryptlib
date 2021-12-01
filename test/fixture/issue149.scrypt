@@ -1,0 +1,7 @@
+contract Issue149 {
+
+    public function unlock(PrivKey x) {
+
+        require(x == PrivKey(100));
+    }
+}
