@@ -739,34 +739,31 @@ Script.prototype.removeCodeseparators = function () {
 /**
  * If the script does not contain any OP_CODESEPARATOR, Return all scripts
  * If the script contains any OP_CODESEPARATOR, the scriptCode is the script but removing everything up to and including the last executed OP_CODESEPARATOR before the signature checking opcode being executed
- * @param {index} Cut to the index of OP_CODESEPARATOR in this script
+ * @param {n} The {n}th codeseparator in the script
  *
- * @returns {Script}
+ * @returns {Script} Subset of script starting at the {n}th codeseparator
  */
- Script.prototype.cropCodeseparators = function (index) {
-  var chunks = []
+ Script.prototype.subScript = function (n) {
+
   var idx = 0;
-  index = index || 0;
-  var crop = false;
+
   for (var i = 0; i < this.chunks.length; i++) {
-    if (!crop && this.chunks[i].opcodenum === Opcode.OP_CODESEPARATOR) {
-      if(idx === index) {
-        crop = true;
+    if (this.chunks[i].opcodenum === Opcode.OP_CODESEPARATOR) {
+      if (idx === n) {
+        return new Script().set({
+          chunks: this.chunks.slice(i + 1)
+        })
       } else {
         idx++;
       }
-    } else if(crop) {
-      chunks.push(this.chunks[i])
     }
   }
 
-  if(!crop) {
-    return this
-  }
-  
-  this.chunks = chunks
-  return this
+  return new Script().set({
+    chunks: this.chunks.slice(0)
+  })
 }
+
 
 // high level script builder methods
 

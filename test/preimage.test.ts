@@ -22,7 +22,7 @@ describe('Preimage', () => {
     let preimage: SigHashPreimage
 
     before(() => {
-      preimage = getPreimage(tx, p2pkh.lockingScript.cropCodeseparators(0), inputSatoshis, 0)
+      preimage = getPreimage(tx, p2pkh.lockingScript.subScript(0), inputSatoshis, 0)
     })
 
     it('outpoint', () => {
@@ -65,7 +65,7 @@ describe('Preimage', () => {
         inputIndex,
         inputSatoshis
       }
-      const preimage = getPreimage(tx, ocsPreimage.lockingScript.cropCodeseparators(0), inputSatoshis)
+      const preimage = getPreimage(tx, ocsPreimage.lockingScript.subScript(0), inputSatoshis)
 
       const result = ocsPreimage.unlock(new SigHashPreimage(toHex(preimage))).verify()
       expect(result.success, result.error).to.be.true
@@ -114,7 +114,7 @@ describe('Preimage', () => {
       }
 
 
-      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript.cropCodeseparators(1), inputSatoshis)
+      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript.subScript(1), inputSatoshis)
 
       const result = ocsPreimage.unlock0(new SigHashPreimage(toHex(preimage))).verify()
       expect(result.success, result.error).to.be.true
@@ -140,7 +140,7 @@ describe('Preimage', () => {
       }
 
 
-      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript.cropCodeseparators(0), inputSatoshis)
+      const preimage = getLowSPreimage(tx, ocsPreimage.lockingScript.subScript(0), inputSatoshis)
 
       const result = ocsPreimage.unlock0(new SigHashPreimage(toHex(preimage))).verify()
       expect(result.success, result.error).to.be.false

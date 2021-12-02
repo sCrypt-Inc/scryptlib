@@ -49,7 +49,7 @@ unlockingTx.addInput(createInputFromPrevTx(lockingTx))
     .setLockTime(1422674 + 1)
     .change(privateKey.toAddress())
     .setInputScript(0, (tx, output) => {
-        const preimage = getPreimage(tx, output.script.cropCodeseparators(0), output.satoshis)
+        const preimage = getPreimage(tx, output.script.subScript(0), output.satoshis)
         return cltv.spend(new SigHashPreimage(toHex(preimage))).toScript()
     })
     .seal()
@@ -62,4 +62,4 @@ console.log('Succeeded on testnet')
 
 ```
 
-在使用 `getPreimage` 计算原象时，不能传递整个锁定脚本了。需要使用 `cropCodeseparators(index: number)` 来裁剪锁定脚本。其参数 `index` 是本脚本中 `OP_CODESEPARATOR` 的索引，即第几个 `OP_CODESEPARATOR`。需要注意的是，该函数没有考虑动态执行的情况。
+在使用 `getPreimage` 计算原象时，不能传递整个锁定脚本了。需要使用 `subScript(opsIndex: number)` 来裁剪锁定脚本。其参数 `index` 是本脚本中 `OP_CODESEPARATOR` 的索引，即第几个 `OP_CODESEPARATOR`。需要注意的是，该函数没有考虑动态执行的情况。
