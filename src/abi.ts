@@ -7,7 +7,8 @@ import { buildContractCodeASM, flatternArgs, flatternStateArgs, readState } from
 export interface Script {
   toASM(): string;
   toHex(): string;
-  cropCodeseparators(index: number): Script;
+  // Subset of script starting at the {opsIndex}th codeseparator
+  subScript(opsIndex: number): Script;
 }
 
 export type FileUri = string;

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.10.2
+
+- rename `cropCodeseparators` to `subScript`
+
+*Release Date: 2021/12/02*
+
 ## 0.10.1
 
 - support `Tx.checkPreimageOCS`
