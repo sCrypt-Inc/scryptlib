@@ -4,12 +4,7 @@ import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, Variab
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
 import { buildContractCodeASM, flatternArgs, flatternStateArgs, readState } from './internal';
 
-export interface Script {
-  toASM(): string;
-  toHex(): string;
-  // Subset of script starting at the {opsIndex}th codeseparator
-  subScript(opsIndex: number): Script;
-}
+export type Script = bsv.Script;
 
 export type FileUri = string;
 
