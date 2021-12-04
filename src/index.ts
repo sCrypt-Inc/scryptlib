@@ -9,7 +9,7 @@ export {
   findStructByType, findStructByName, isStructType, isArrayType, compileContract,
   arrayTypeAndSize, newCall, getStructNameByType, genLaunchConfigFile, subArrayType,
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
-  readLaunchJson, getLowSPreimage, readBytes
+  readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockScript
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {

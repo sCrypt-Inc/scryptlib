@@ -2,7 +2,7 @@ import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, is
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { buildContractCodeASM, flatternArgs, flatternStateArgs, readBytes } from './internal';
+import { asm2int, buildContractCodeASM, flatternArgs, flatternParams, flatternStateArgs, readBytes } from './internal';
 
 export type Script = bsv.Script;
 
@@ -252,17 +252,35 @@ export class ABICoder {
     const asmTemplateOpcodes = asmTemplate.split(' ');
 
     let lsASM = script.toASM();
-    const asmOpcodes = lsASM.split(' ');
+    const asmOpcodes: string[] = lsASM.split(' ');
 
     if (asmTemplateOpcodes.length > asmOpcodes.length) {
       throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
     }
+
+    for (let index = 0; index < asmTemplateOpcodes.length; index++) {
+      const element = asmTemplateOpcodes[index];
+      if (!element.startsWith('$')) {
+        let tmp = asmOpcodes[index];
+        if (tmp === '0') tmp = 'OP_0';
+        if (element !== tmp) {
+          throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
+        }
+      }
+    }
+
+
+    let dataPart = undefined;
 
     if (asmTemplateOpcodes.length < asmOpcodes.length) {
       const opcode = asmOpcodes[asmTemplateOpcodes.length];
       if (opcode !== 'OP_RETURN') {
         throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
       }
+
+      // If it is a stateful contract with OP_RETURN, only the opcode before OP_RETURN is used to make lsASM consistent with the output of the compiler
+      lsASM = asmOpcodes.slice(0, asmTemplateOpcodes.length).join(' ');
+      dataPart = asmOpcodes.slice(asmTemplateOpcodes.length + 1).join(' ');
     }
 
     asmTemplateOpcodes.forEach((opcode, index) => {
@@ -279,11 +297,7 @@ export class ABICoder {
       name: p.name,
       value: undefined,
       state: p.state
-    })).map(arg => {
-
-      deserializeArgfromASM(contract, arg, contract.asmTemplateArgs);
-      return arg;
-    });
+    })).map(arg => deserializeArgfromASM(contract, arg, contract.asmTemplateArgs));
 
 
     if (AbstractContract.isStateful(contract)) {
@@ -330,6 +344,8 @@ export class ABICoder {
       });
 
       lsASM = buildContractCodeASM(contract.asmTemplateArgs, asmTemplate);
+    } else if (dataPart) {
+      contract.setDataPart(dataPart);
     }
 
     return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, args: args });
@@ -362,7 +378,57 @@ export class ABICoder {
       }
     }
 
-    throw new Error(`no function named '${name}' found in contract '${contractName}'`);
+    throw new Error(`no public function named '${name}' found in contract '${contractName}'`);
+  }
+
+  /**
+   * build a FunctionCall by function name and unlocking script hex.
+   * @param contract 
+   * @param name name of public function
+   * @param hex hex of unlocking script
+   * @returns a FunctionCall which contains the function parameters that have been deserialized
+   */
+  encodePubFunctionCallFromHex(contract: AbstractContract, name: string, hex: string): FunctionCall {
+    const script = bsv.Script.fromHex(hex);
+    const entity = this.abi.filter(entity => entity.type === 'function' && entity.name === name)[0];
+    const contractName = Object.getPrototypeOf(contract).constructor.contractName;
+    if (!entity) {
+      throw new Error(`no public function named '${name}' found in contract '${contractName}'`);
+    }
+    const cParams = entity?.params || [];
+
+
+    const flatternArgs = flatternParams(cParams, contract.typeResolver, contract.allTypes);
+
+    let fArgsLen = flatternArgs.length;
+    if (this.abi.length > 2 && entity.index !== undefined) {
+      fArgsLen += 1;
+    }
+
+    const usASM = script.toASM();
+    const asmOpcodes = usASM.split(' ');
+
+    if (fArgsLen != asmOpcodes.length) {
+      throw new Error(`the raw unlockingScript cannot match the arguments of public function ${name} of contract ${contractName}`);
+    }
+
+    const asmTemplateArgs: Map<string, string> = new Map();
+
+    flatternArgs.forEach((farg, index) => {
+
+      asmTemplateArgs.set(`$${farg.name}`, asmOpcodes[index]);
+
+    });
+
+    const args: Arguments = cParams.map(p => ({
+      type: this.finalTypeResolver(p.type),
+      name: p.name,
+      value: undefined,
+      state: p.state
+    })).map(arg => deserializeArgfromASM(contract, arg, asmTemplateArgs));
+
+    return new FunctionCall(name, { contract, unlockingScriptASM: usASM, args: args });
+
   }
 
   encodeParams(args: SupportedParamType[], paramsEntitys: ParamEntity[]): string {
