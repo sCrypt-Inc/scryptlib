@@ -37,7 +37,60 @@ describe('state_test', () => {
     });
 
 
-    it('should deserializer state success', () => {
+    it('should deserializer state success 1', () => {
+        const stateExample = new StateExample(0, new Bytes(''), false,
+            new PrivKey("3"),
+            new PubKey("01"),
+            new Ripemd160("02"),
+            new Sha256("03"),
+            new OpCodeType('76'),
+            new SigHashType(SigHash.ALL | SigHash.FORKID),
+            new Sig("05")
+        );
+
+
+        expect(stateExample.dataPart.toHex()).to.be.eq('0100000001030101010201030176014101051200000000');
+
+        let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
+
+        expect(newStateExample.dataPart.toHex()).to.be.eq('0100000001030101010201030176014101051200000000');
+
+        expect(newStateExample.counter.equals(new Int(0))).to.be.true;
+        expect(newStateExample.state_bytes.equals(new Bytes(''))).to.be.true;
+        expect(newStateExample.state_bool.equals(new Bool(false))).to.be.true;
+
+        expect(newStateExample.pubkey.equals(new PubKey("01"))).to.be.true;
+        expect(newStateExample.privKey.equals(new PrivKey("3"))).to.be.true;
+        expect(newStateExample.ripemd160.equals(new Ripemd160("02"))).to.be.true;
+        expect(newStateExample.sha256.equals(new Sha256("03"))).to.be.true;
+        expect(newStateExample.opCodeType.equals(new OpCodeType('76'))).to.be.true;
+        expect(newStateExample.sigHashType.equals(new SigHashType(SigHash.ALL | SigHash.FORKID))).to.be.true;
+        expect(newStateExample.sig.equals(new Sig("05"))).to.be.true;
+    });
+
+
+    it('should deserializer state success 2', () => {
+        const stateExample = new StateExample(3, new Bytes(''), false,
+            new PrivKey("3"),
+            new PubKey("01"),
+            new Ripemd160("02"),
+            new Sha256("03"),
+            new OpCodeType('76'),
+            new SigHashType(SigHash.ALL | SigHash.FORKID),
+            new Sig("05")
+        );
+
+
+        expect(stateExample.dataPart.toHex()).to.be.eq('0103000001030101010201030176014101051200000000');
+
+        let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
+
+        expect(newStateExample.counter.equals(new Int(3))).to.be.true;
+
+    });
+
+
+    it('should deserializer state success 2', () => {
         const stateExample = new StateExample(1000, new Bytes('0101'), true,
             new PrivKey("11"),
             new PubKey("03f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf"),
@@ -60,6 +113,7 @@ describe('state_test', () => {
         expect(newStateExample.sigHashType.equals(new SigHashType(SigHash.ALL | SigHash.FORKID))).to.be.true;
         expect(newStateExample.sig.equals(new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541"))).to.be.true;
     });
+
 
 
     it('should call success', () => {

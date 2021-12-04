@@ -1384,12 +1384,17 @@ export function buildContractState(args: Arguments, finalTypeResolver: TypeResol
 }
 
 
-export function readState(br: bsv.encoding.BufferReader): { data: string, opcodenum: number } {
+export function readBytes(br: bsv.encoding.BufferReader): {
+  data: string,
+  opcodenum: number
+} {
   try {
     const opcodenum = br.readUInt8();
 
     let len, data;
-    if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+    if (opcodenum == 0) {
+      data = '';
+    } else if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
       len = opcodenum;
       data = br.read(len).toString('hex');
     } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
@@ -1402,7 +1407,7 @@ export function readState(br: bsv.encoding.BufferReader): { data: string, opcode
       len = br.readUInt32LE();
       data = br.read(len).toString('hex');
     } else {
-      data = '';
+      data = num2bin(opcodenum - 80, 1);
     }
 
     return {
@@ -1410,9 +1415,10 @@ export function readState(br: bsv.encoding.BufferReader): { data: string, opcode
       opcodenum: opcodenum
     };
   } catch (e) {
-    throw new Error('read state hex error: ' + e);
+    throw new Error('readBytes: ' + e);
   }
 }
+
 
 
 

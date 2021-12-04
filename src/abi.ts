@@ -2,7 +2,7 @@ import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, is
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { buildContractCodeASM, flatternArgs, flatternStateArgs, readState } from './internal';
+import { buildContractCodeASM, flatternArgs, flatternStateArgs, readBytes } from './internal';
 
 export type Script = bsv.Script;
 
@@ -311,7 +311,7 @@ export class ABICoder {
                 const opcodenum = br.readUInt8();
                 stateAsmTemplateArgs.set(`$${arg.name}`, opcodenum === 1 ? '01' : '00');
               } else {
-                const { data } = readState(br);
+                const { data } = readBytes(br);
                 if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
                   stateAsmTemplateArgs.set(`$${arg.name}`, new Int(bin2num(data)).toASM());
                 } else {
