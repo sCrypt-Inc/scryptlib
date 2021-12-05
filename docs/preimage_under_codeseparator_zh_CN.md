@@ -1,5 +1,8 @@
 # 脚本操作码 `OP_CODESEPARATOR` 下的 preimage 原象
 
+The preimage under the script opcode `OP_CODESEPARATOR` [English Version](preimage_under_codeseparator_en.md)
+
+
 `OP_CHECKSIG` 检查的签名是对 preimage 原象的哈希的签名。原象包含整个交易的输出、输入和锁定脚本。通常锁定脚本是完整的。但是如果 `OP_CHECKSIG` 之前执行了 `OP_CODESEPARATOR`，那么原象只包含锁定脚本从最近执行的 `OP_CODESEPARATOR` 的位置直到脚本结束，即只包含部分锁定脚本。利用这个特性，可以用来减少原象的大小，从而减少整个交易的大小。
 
 sCrypt 标准库 `Tx` 提供了以下函数来检查这种只包含部分锁定脚本的原象：
