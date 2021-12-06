@@ -1,5 +1,16 @@
 # CHANGELOG
 
+
+## 0.10.3
+
+- remove type defined for Script,It caused a conflict with the type definition of the BSV library
+- add `parseAbiFromUnlockingScript`
+- add `encodePubFunctionCallFromHex`
+
+*Release Date: 2021/12/06*
+
+
+
 ## 0.10.2
 
 - rename `cropCodeseparators` to `subScript`
