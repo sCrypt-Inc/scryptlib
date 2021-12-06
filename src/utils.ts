@@ -19,6 +19,7 @@ import {
 import { GenericEntity } from './compilerWrapper';
 import { HashedMap, HashedSet } from './scryptTypes';
 import { VerifyError } from './contract';
+import { ABIEntity } from '.';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -1384,12 +1385,17 @@ export function buildContractState(args: Arguments, finalTypeResolver: TypeResol
 }
 
 
-export function readState(br: bsv.encoding.BufferReader): { data: string, opcodenum: number } {
+export function readBytes(br: bsv.encoding.BufferReader): {
+  data: string,
+  opcodenum: number
+} {
   try {
     const opcodenum = br.readUInt8();
 
     let len, data;
-    if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+    if (opcodenum == 0) {
+      data = '';
+    } else if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
       len = opcodenum;
       data = br.read(len).toString('hex');
     } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
@@ -1402,7 +1408,7 @@ export function readState(br: bsv.encoding.BufferReader): { data: string, opcode
       len = br.readUInt32LE();
       data = br.read(len).toString('hex');
     } else {
-      data = '';
+      data = num2bin(opcodenum - 80, 1);
     }
 
     return {
@@ -1410,14 +1416,15 @@ export function readState(br: bsv.encoding.BufferReader): { data: string, opcode
       opcodenum: opcodenum
     };
   } catch (e) {
-    throw new Error('read state hex error: ' + e);
+    throw new Error('readBytes: ' + e);
   }
 }
 
 
 
 
-export function deserializeArgfromASM(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>): void {
+
+export function deserializeArgfromASM(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>): Argument {
 
   let value;
 
@@ -1435,6 +1442,8 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
   }
 
   arg.value = value;
+
+  return arg;
 }
 
 /**
@@ -1682,4 +1691,40 @@ export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
   return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash.toASM(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
 }
 
+
+/**
+ * Parse out which public function is called through unlocking script
+ * @param contract 
+ * @param hex hex of unlocking script
+ * @returns return ABIEntity of the public function which is call by the unlocking script
+ */
+export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: string): ABIEntity {
+
+  const abis = Object.getPrototypeOf(contract).constructor.abi as ABIEntity[];
+
+  const pubFunAbis = abis.filter(entity => entity.type === 'function');
+  const pubFunCount = pubFunAbis.length;
+
+  if (pubFunCount === 1) {
+    return pubFunAbis[0];
+  }
+
+  const script = bsv.Script.fromHex(hex);
+
+  const usASM = script.toASM() as string;
+
+  const pubFuncIndexASM = usASM.substr(usASM.lastIndexOf(' ') + 1);
+
+  const pubFuncIndex = asm2int(pubFuncIndexASM);
+
+
+  const entity = abis.find(entity => entity.index === pubFuncIndex);
+
+  if (!entity) {
+    const contractName = Object.getPrototypeOf(contract).constructor.contractName;
+    throw new Error(`the raw unlocking script cannot match the contract ${contractName}`);
+  }
+
+  return entity;
+}
 

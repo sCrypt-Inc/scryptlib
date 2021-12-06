@@ -677,6 +677,88 @@ describe('string as bigInt', () => {
 
     })
 
+
+
+    describe('test encodePubFunctionCallFromHex', () => {
+
+
+
+      it('test encodePubFunctionCallFromHex: PersonContract.equal', () => {
+
+        let person1 = new Person({
+          isMale: false,
+          age: 33333333333333333333333333333333333n,
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        });
+
+        let person2 = new Person({
+          isMale: false,
+          age: "33333333333333333333333333333333333",
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        });
+
+        let main = new PersonContract(person1, 33333333333333333333333333333333333n);
+
+
+        let funCall = main.equal(person2) as FunctionCall;
+
+        let mainClone = PersonContract.fromHex(main.lockingScript.toHex());
+
+
+        const funCallClone = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCall.unlockingScript.toHex());
+
+
+        main = new PersonContract(person1, 33333333333333333333333333333333333n);
+
+        const result = funCallClone.verify()
+        expect(result.success).to.be.true;
+
+        assert.equal(funCallClone.unlockingScript.toHex(), funCall.unlockingScript.toHex())
+
+
+        let funCallWrongArgs = main.equal(new Person({
+          isMale: false,
+          age: "33333333333333333333333333333333334",
+          addr: new Bytes("68656c6c6f20776f726c6421")
+        })) as FunctionCall;
+
+
+        const funCallCloneWrong = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCallWrongArgs.unlockingScript.toHex());
+
+        const result1 = funCallCloneWrong.verify()
+        expect(result1.success).to.be.false;
+
+      })
+
+
+
+      it('test encodePubFunctionCallFromHex: DemoP2PKH.unlock', () => {
+
+        const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
+        const pubkey = new PubKey(toHex(publicKey));
+
+        let result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx })
+
+        expect(result.success).to.be.true;
+
+        let funCall = p2pkh.unlock(sig, pubkey) as FunctionCall;
+
+        let p2pkhClone = DemoP2PKH.fromHex(p2pkh.lockingScript.toHex());
+
+        const funCallClone = DemoP2PKH.abiCoder.encodePubFunctionCallFromHex(p2pkhClone, 'unlock', funCall.unlockingScript.toHex());
+
+        result = funCallClone.verify({ inputSatoshis, tx })
+
+        expect(result.success).to.be.true;
+
+        result = p2pkhClone.unlock(sig, pubkey).verify({ inputSatoshis, tx })
+
+        expect(result.success).to.be.true;
+
+      })
+
+    })
+
   })
 
 })

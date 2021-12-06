@@ -1,16 +1,17 @@
 import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { Int, Bool, Bytes, PrivKey, Ripemd160 } from '../src/scryptTypes'
+import { Int, Bool, Bytes, PrivKey, Ripemd160, PubKey } from '../src/scryptTypes'
 import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
   toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
-  buildOpreturnScript, buildPublicKeyHashScript, toHex
+  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript
 
 } from '../src/utils'
-import { getContractFilePath, loadDescription } from './helper';
+import { getContractFilePath, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
+import { FunctionCall } from '../src/abi';
 
 
 const mixedstructDescr = loadDescription('mixedstruct_desc.json');
@@ -1281,5 +1282,74 @@ describe('utils', () => {
 
     })
 
+  })
+
+
+
+  describe('parseAbiFromUnlockingScript() ', () => {
+
+    it('test parseAbiFromUnlockingScript when contract only have one public function', () => {
+
+      const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+      const publicKey = privateKey.publicKey;
+      const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
+      const inputSatoshis = 100000;
+      const jsonDescr = loadDescription('p2pkh_desc.json');
+      const DemoP2PKH = buildContractClass(jsonDescr);
+      const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+      const tx = newTx(inputSatoshis);
+      const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
+      let pubkey: PubKey = new PubKey(toHex(publicKey));
+
+      const fn = p2pkh.unlock(sig, pubkey) as FunctionCall;
+
+      expect(parseAbiFromUnlockingScript(p2pkh, fn.toHex()))
+        .to.deep.eq({
+          type: 'function',
+          name: 'unlock',
+          index: 0,
+          params: [{ name: 'sig', type: 'Sig' }, { name: 'pubKey', type: 'PubKey' }]
+        })
+
+    })
+
+
+    it('test parseAbiFromUnlockingScript when contract only have multiple public function', () => {
+
+      const jsonDescr = loadDescription('mdarray_desc.json');
+      const MDArray = buildContractClass(jsonDescr);
+
+      let mdArray = new MDArray([[
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [999999999999999999999999999999n, 10, 11, 12]
+      ],
+      [
+        [13, 14, 15, 16],
+        [17, 18, 19, 20],
+        [21, 22, 23, 11111111111111111111111111111111111n]
+      ]]);
+
+      const fn = mdArray.unlockX([[
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        ["999999999999999999999999999999", 10, 11, 12]
+      ],
+      [
+        [13, 14, 15, 16],
+        [17, 18, 19, 20],
+        [21, 22, 23, "11111111111111111111111111111111111"]
+      ]]) as FunctionCall;
+
+
+      expect(parseAbiFromUnlockingScript(mdArray, fn.toHex()))
+        .to.deep.eq({
+          type: 'function',
+          name: 'unlockX',
+          index: 4,
+          params: [{ name: 'x', type: 'int[2][3][4]' }]
+        })
+
+    })
   })
 })
