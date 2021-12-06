@@ -75,7 +75,7 @@ describe('create instance from UTXO Hex', () => {
   })
 
 
-  it('should throw when the raw script cannot match the asm template of contract Simple', () => {
+  it('should throw when the raw script cannot match the ASM template of contract Simple', () => {
     const simple = new Simple()
     const asmVars = {
       'Simple.equalImpl.x': 'OP_11'
@@ -84,12 +84,12 @@ describe('create instance from UTXO Hex', () => {
     expect(() => {
       const asm = [simple.lockingScript.toASM(), '11'].join(' ');
       Simple.fromHex(new bsv.Script.fromASM(asm).toHex())
-    }).to.be.throw(/the raw script cannot match the asm template of contract Simple/);
+    }).to.be.throw(/the raw script cannot match the ASM template of contract Simple/);
 
 
     expect(() => {
       Simple.fromHex(simple.lockingScript.toHex().substr(1))
-    }).to.be.throw(/the raw script cannot match the asm template of contract Simple/);
+    }).to.be.throw(/the raw script cannot match the ASM template of contract Simple/);
 
 
     simple.setDataPart("00 11");

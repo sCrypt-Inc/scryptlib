@@ -1693,12 +1693,12 @@ export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
 
 
 /**
- * Parse out which public function is called through unlockingScript
+ * Parse out which public function is called through unlocking script
  * @param contract 
- * @param hex hex of unlockingScript
- * @returns return ABIEntity of the public function which is call by the unlockingScript
+ * @param hex hex of unlocking script
+ * @returns return ABIEntity of the public function which is call by the unlocking script
  */
-export function parseAbiFromUnlockScript(contract: AbstractContract, hex: string): ABIEntity {
+export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: string): ABIEntity {
 
   const abis = Object.getPrototypeOf(contract).constructor.abi as ABIEntity[];
 
@@ -1722,7 +1722,7 @@ export function parseAbiFromUnlockScript(contract: AbstractContract, hex: string
 
   if (!entity) {
     const contractName = Object.getPrototypeOf(contract).constructor.contractName;
-    throw new Error(`the raw unlockingScript cannot match the contract ${contractName}`);
+    throw new Error(`the raw unlocking script cannot match the contract ${contractName}`);
   }
 
   return entity;

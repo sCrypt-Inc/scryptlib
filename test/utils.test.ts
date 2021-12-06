@@ -6,7 +6,7 @@ import {
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
   toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
-  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockScript
+  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript
 
 } from '../src/utils'
 import { getContractFilePath, loadDescription, newTx } from './helper';
@@ -1286,9 +1286,9 @@ describe('utils', () => {
 
 
 
-  describe('parseAbiFromUnlockScript() ', () => {
+  describe('parseAbiFromUnlockingScript() ', () => {
 
-    it('test parseAbiFromUnlockScript when contract only have one public function', () => {
+    it('test parseAbiFromUnlockingScript when contract only have one public function', () => {
 
       const privateKey = new bsv.PrivateKey.fromRandom('testnet');
       const publicKey = privateKey.publicKey;
@@ -1303,7 +1303,7 @@ describe('utils', () => {
 
       const fn = p2pkh.unlock(sig, pubkey) as FunctionCall;
 
-      expect(parseAbiFromUnlockScript(p2pkh, fn.toHex()))
+      expect(parseAbiFromUnlockingScript(p2pkh, fn.toHex()))
         .to.deep.eq({
           type: 'function',
           name: 'unlock',
@@ -1314,7 +1314,7 @@ describe('utils', () => {
     })
 
 
-    it('test parseAbiFromUnlockScript when contract only have multiple public function', () => {
+    it('test parseAbiFromUnlockingScript when contract only have multiple public function', () => {
 
       const jsonDescr = loadDescription('mdarray_desc.json');
       const MDArray = buildContractClass(jsonDescr);
@@ -1342,7 +1342,7 @@ describe('utils', () => {
       ]]) as FunctionCall;
 
 
-      expect(parseAbiFromUnlockScript(mdArray, fn.toHex()))
+      expect(parseAbiFromUnlockingScript(mdArray, fn.toHex()))
         .to.deep.eq({
           type: 'function',
           name: 'unlockX',

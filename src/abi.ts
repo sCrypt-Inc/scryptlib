@@ -255,7 +255,7 @@ export class ABICoder {
     const asmOpcodes: string[] = lsASM.split(' ');
 
     if (asmTemplateOpcodes.length > asmOpcodes.length) {
-      throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
+      throw new Error(`the raw script cannot match the ASM template of contract ${contractName}`);
     }
 
     for (let index = 0; index < asmTemplateOpcodes.length; index++) {
@@ -264,7 +264,7 @@ export class ABICoder {
         let tmp = asmOpcodes[index];
         if (tmp === '0') tmp = 'OP_0';
         if (element !== tmp) {
-          throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
+          throw new Error(`the raw script cannot match the ASM template of contract ${contractName}`);
         }
       }
     }
@@ -275,10 +275,10 @@ export class ABICoder {
     if (asmTemplateOpcodes.length < asmOpcodes.length) {
       const opcode = asmOpcodes[asmTemplateOpcodes.length];
       if (opcode !== 'OP_RETURN') {
-        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
+        throw new Error(`the raw script cannot match the ASM template of contract ${contractName}`);
       }
 
-      // If it is a stateful contract with OP_RETURN, only the opcode before OP_RETURN is used to make lsASM consistent with the output of the compiler
+      // If it is a stateful contract with OP_RETURN, only script before OP_RETURN is used to make lsASM consistent with the output of the compiler
       lsASM = asmOpcodes.slice(0, asmTemplateOpcodes.length).join(' ');
       dataPart = asmOpcodes.slice(asmTemplateOpcodes.length + 1).join(' ');
     }
@@ -288,7 +288,7 @@ export class ABICoder {
       if (opcode.startsWith('$')) {
         contract.asmTemplateArgs.set(opcode, asmOpcodes[index]);
       } else if (bsv.Script.fromASM(opcode).toHex() !== bsv.Script.fromASM(asmOpcodes[index]).toHex()) {
-        throw new Error(`the raw script cannot match the asm template of contract ${contractName}`);
+        throw new Error(`the raw script cannot match the ASM template of contract ${contractName}`);
       }
     });
 
@@ -382,7 +382,7 @@ export class ABICoder {
   }
 
   /**
-   * build a FunctionCall by function name and unlocking script hex.
+   * build a FunctionCall by function name and unlocking script in hex.
    * @param contract 
    * @param name name of public function
    * @param hex hex of unlocking script
