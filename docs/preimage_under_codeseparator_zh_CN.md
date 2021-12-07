@@ -29,7 +29,7 @@ contract CheckLockTimeVerifyOCS {
 }
 ```
 
-执行这个合约的 [交易](https://classic-test.whatsonchain.com/tx/955ab206fadd6be2ea5d748a83d52801b45d9dec504a10de1319e018269d1af3) 大小是 `340` 字节，而执行使用 `Tx.checkPreimage()` 版本的 [CheckLockTimeVerify](https://github.com/sCrypt-Inc/boilerplate/blob/master/contracts/cltv.scrypt) 合约的 [交易](https://classic-test.whatsonchain.com/tx/7b72fc1e8cc8229d9c54675bf1011ec96291257927e989e53d98a3130f2d9248) 大小是 `1005` 字节。这两个合约的功能是完全一样的，但是交易的大小却优化了 `195%` 。
+执行这个合约的 [交易](https://classic-test.whatsonchain.com/tx/430b65cde01692579be1159077c7c09b29f96aa654771301dbae5d6e602b2284) 大小是 `288` 字节，包含一个 `288` 字节的 preimage 原象。  而执行使用 `Tx.checkPreimage()` 版本的 [CheckLockTimeVerify](https://github.com/sCrypt-Inc/boilerplate/blob/master/contracts/cltv.scrypt) 合约的 [交易](https://classic-test.whatsonchain.com/tx/7b72fc1e8cc8229d9c54675bf1011ec96291257927e989e53d98a3130f2d9248) 大小是 `1005` 字节，包含一个 `915` 字节的 preimage 原象。 这两个合约的功能是完全一样的，但是交易的大小却优化了 `80%` 。
 
 下面是如何部署和调用使用 `CheckLockTimeVerifyOCS` 合约的例子：
 

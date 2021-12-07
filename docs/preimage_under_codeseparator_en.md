@@ -31,7 +31,7 @@ contract CheckLockTimeVerifyOCS {
 ```
 
 
-The [transaction](https://classic-test.whatsonchain.com/tx/955ab206fadd6be2ea5d748a83d52801b45d9dec504a10de1319e018269d1af3) size for executing this contract is `340` bytes, and the [transaction](https://classic-test.whatsonchain.com/tx/7b72fc1e8cc8229d9c54675bf1011ec96291257927e989e53d98a3130f2d9248)  size for executing the [CheckLockTimeVerify](https://github.com/sCrypt-Inc/boilerplate/blob/master/contracts/cltv.scrypt) contract using the `Tx.checkPreimage()` version is `1005` bytes. The functions of these two contracts are exactly the same, but the transaction size is optimized by `195%`.
+The [transaction](https://classic-test.whatsonchain.com/tx/430b65cde01692579be1159077c7c09b29f96aa654771301dbae5d6e602b2284) size for executing this contract is `288` bytes, which contains a preimage with `201` size, and the [transaction](https://classic-test.whatsonchain.com/tx/7b72fc1e8cc8229d9c54675bf1011ec96291257927e989e53d98a3130f2d9248) size for executing the [CheckLockTimeVerify](https://github.com/sCrypt-Inc/boilerplate/blob/master/contracts/cltv.scrypt) contract using the `Tx.checkPreimage()` version is `1005` bytes, which contains a preimage with `915` size.  The functions of these two contracts are exactly the same, but the transaction size is optimized by `80%`.
 
 
 The following is an example of how to deploy and call the `CheckLockTimeVerifyOCS` contract:
