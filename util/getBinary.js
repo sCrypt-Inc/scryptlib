@@ -41,8 +41,6 @@ const getBinary = async () => {
     VERSION = res[0]?.tag_name?.substring(1);
   }
 
-  console.log(`${chalk.yellow("Downloading compiler ...")}`);
-
   if (os.platform() === 'linux') {
     FILENAME = "Linux";
   } else if (os.platform() === 'darwin') {
@@ -57,6 +55,8 @@ const getBinary = async () => {
   if (!fs.existsSync(dirCompiler)) {
     fs.mkdirSync(dirCompiler, { recursive: true });
   }
+
+  console.log(`${chalk.yellow(`Downloading compiler ${urlCompiler} ...`)}`);
 
   const fromRelease = await fetch(urlCompiler);
 
