@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.10.4
+
+- Fix #156 sig become invalid after seal Transaction 
+
+*Release Date: 2021/12/22*
+
 
 ## 0.10.3
 

@@ -41,6 +41,8 @@ function Transaction (serialized) {
   this._outputAmount = undefined
   this.unlockScriptCallbackMap = new Map();
   this.outputCallbackMap = new Map();
+  this._privateKey = undefined;
+  this._sigType = undefined;
   this.isSeal = false;
   if (serialized) {
     if (serialized instanceof Transaction) {
@@ -1076,6 +1078,9 @@ Transaction.prototype.sign = function (privateKey, sigtype) {
   _.each(this.getSignatures(privateKey, sigtype), function (signature) {
     self.applySignature(signature)
   })
+
+  this._privateKey = privateKey
+  this._sigType = sigtype
   return this
 }
 
@@ -1275,6 +1280,10 @@ Transaction.prototype.seal = function () {
   this.unlockScriptCallbackMap.forEach(function(unlockScriptCallback, key) {
     self.inputs[key].setScript(unlockScriptCallback(self, self.inputs[key].output))
   })
+
+  if(this._privateKey) {
+    this.sign(this._privateKey, this._sigType)
+  }
 
   this.isSeal = true;
 
