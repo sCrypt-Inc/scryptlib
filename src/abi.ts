@@ -127,6 +127,11 @@ export class FunctionCall {
 
     const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
     const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state });
+    if (AbstractContract.isStateful(this.contract)) {
+      Object.assign(txCtx, { opReturnHex: this.contract.dataPart.toHex() });
+    } else if (this.contract.dataPart) {
+      Object.assign(txCtx, { opReturn: this.contract.dataPart.toASM() });
+    }
 
     return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
   }
@@ -244,6 +249,48 @@ export class ABICoder {
 
   }
 
+  parseStateHex(contract: AbstractContract, ctorArgs: Arguments, scriptHex: string): Arguments {
+
+    const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
+    const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
+    const stateLen = bin2num(metaScript.substr(0, 8)) as number;
+
+
+    const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
+
+    const br = new bsv.encoding.BufferReader(stateHex);
+
+    const opcodenum = br.readUInt8();
+
+    contract.firstCall = opcodenum == 1;
+
+    const stateAsmTemplateArgs: Map<string, string> = new Map();
+
+    const flatteredArgs = flatternStateArgs(ctorArgs, this.finalTypeResolver);
+
+    flatteredArgs.forEach((arg) => {
+      if (arg.type === VariableType.BOOL) {
+        const opcodenum = br.readUInt8();
+        stateAsmTemplateArgs.set(`$${arg.name}`, opcodenum === 1 ? '01' : '00');
+      } else {
+        const { data } = readBytes(br);
+        if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
+          stateAsmTemplateArgs.set(`$${arg.name}`, new Int(bin2num(data)).toASM());
+        } else {
+          stateAsmTemplateArgs.set(`$${arg.name}`, data);
+        }
+      }
+    });
+
+
+    const stateArgs = ctorArgs.filter(a => a.state).map(arg => {
+
+      return deserializeArgfromASM(contract, { ...arg }, stateAsmTemplateArgs);
+    });
+
+    return stateArgs;
+  }
+
   encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
     const script = bsv.Script.fromHex(raw);
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
@@ -293,7 +340,7 @@ export class ABICoder {
       }
     });
 
-    const args: Arguments = cParams.map(p => ({
+    const ctorArgs: Arguments = cParams.map(p => ({
       type: this.finalTypeResolver(p.type),
       name: p.name,
       value: undefined,
@@ -303,57 +350,29 @@ export class ABICoder {
 
     if (AbstractContract.isStateful(contract)) {
 
-      const flatteredArgs = flatternStateArgs(args, this.finalTypeResolver);
-
       const scriptHex = script.toHex();
       const metaScript = script.toHex().substr(scriptHex.length - 10, 10);
       const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
       const stateLen = bin2num(metaScript.substr(0, 8)) as number;
-      const stateAsmTemplateArgs: Map<string, string> = new Map();
+      const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
+      if (opReturnHex != '6a') {
+        throw new Error('parse state fail, no OP_RETURN before state hex');
+      }
+
       switch (version) {
         case 0:
           {
-            const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
-            const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
-            if (opReturnHex != '6a') {
-              throw new Error('parse state fail, no OP_RETURN before state hex');
-            }
-
-            const br = new bsv.encoding.BufferReader(stateHex);
-
-            const opcodenum = br.readUInt8();
-
-            contract.firstCall = opcodenum == 1;
-
-            flatteredArgs.forEach((arg) => {
-              if (arg.type === VariableType.BOOL) {
-                const opcodenum = br.readUInt8();
-                stateAsmTemplateArgs.set(`$${arg.name}`, opcodenum === 1 ? '01' : '00');
-              } else {
-                const { data } = readBytes(br);
-                if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
-                  stateAsmTemplateArgs.set(`$${arg.name}`, new Int(bin2num(data)).toASM());
-                } else {
-                  stateAsmTemplateArgs.set(`$${arg.name}`, data);
-                }
-              }
-            });
-
+            contract.stateArgs = this.parseStateHex(contract, ctorArgs, scriptHex);
           }
           break;
       }
-
-      args.filter(a => a.state).forEach(arg => {
-
-        deserializeArgfromASM(contract, arg, stateAsmTemplateArgs);
-      });
 
       lsASM = buildContractCodeASM(contract.asmTemplateArgs, asmTemplate);
     } else if (dataPart) {
       contract.setDataPart(dataPart);
     }
 
-    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, args: args });
+    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, args: ctorArgs });
 
   }
 

@@ -1091,6 +1091,8 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     }
     if (typeof txContext.opReturn === 'string') {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
+    } else if (typeof txContext.opReturnHex === 'string') {
+      Object.assign(debugTxContext, { opReturnHex: txContext.opReturnHex });
     }
   }
 

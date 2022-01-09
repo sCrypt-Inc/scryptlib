@@ -11,6 +11,7 @@ export interface TxContext {
   inputIndex?: number;
   inputSatoshis?: number;
   opReturn?: string;
+  opReturnHex?: string;
 }
 
 
@@ -67,7 +68,7 @@ export class AbstractContract {
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
   asmTemplateArgs: Map<string, string> = new Map();
-
+  stateArgs: Arguments = [];
   firstCall = true;
 
   get lockingScript(): Script {
@@ -136,7 +137,7 @@ export class AbstractContract {
    */
   getNewStateScript(states: Record<string, SupportedParamType>): Script {
 
-    const stateArgs = this.ctorArgs().filter(arg => arg.state);
+    const stateArgs = this.stateArgs;
     const contractName = Object.getPrototypeOf(this).constructor.contractName;
     if (stateArgs.length === 0) {
       throw new Error(`Contract ${contractName} does not have any stateful property`);
@@ -288,7 +289,7 @@ export class AbstractContract {
 
   get dataPart(): Script | undefined {
 
-    const state = buildContractState(this.ctorArgs(), this.firstCall, this.typeResolver);
+    const state = buildContractState(this.stateArgs, this.firstCall, this.typeResolver);
 
     if (state) {
       return bsv.Script.fromHex(state);
@@ -297,12 +298,17 @@ export class AbstractContract {
     return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
 
-  setDataPart(state: State | string): void {
-    if (typeof state === 'string') {
-      // TODO: validate hex string
-      this._dataPart = state.trim();
+  setDataPart(state: State | string, isStateHex: boolean = false): void {
+    if (isStateHex == false) {
+      if (typeof state === 'string') {
+        // TODO: validate hex string
+        this._dataPart = state.trim();
+      } else {
+        this._dataPart = serializeState(state);
+      }
     } else {
-      this._dataPart = serializeState(state);
+      const abiCoder = Object.getPrototypeOf(this).constructor.abiCoder as ABICoder;
+      this.stateArgs = abiCoder.parseStateHex(this, this.ctorArgs(), state as string);
     }
   }
 
@@ -416,6 +422,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       super();
       if (!Contract.asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
+        //clone and save state args
+        this.stateArgs = this.scriptedConstructor.args.filter(a => a.state).map(a => ({ ...a }));
       }
     }
 
@@ -494,7 +502,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       entity.params.forEach(p => {
         Object.defineProperty(ContractClass.prototype, p.name, {
           get() {
-            const arg = this.ctorArgs().find(arg => {
+            const arg = this.stateArgs.find(arg => {
               return arg.name === p.name;
             });
 
@@ -505,7 +513,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
             }
           },
           set(value: SupportedParamType) {
-            const arg = this.ctorArgs().find(arg => {
+            const arg = this.stateArgs.find(arg => {
               return arg.name === p.name;
             });
 
