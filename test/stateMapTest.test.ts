@@ -59,6 +59,7 @@ describe('test.stateMapTest', () => {
                 expect(result.success, result.error).to.be.true;
 
                 mapTest._mpData = toData(map)
+                mapTest.firstCall = false;
             }
 
             testInsert(3, 1);
@@ -90,6 +91,7 @@ describe('test.stateMapTest', () => {
                 expect(result.success, result.error).to.be.true;
 
                 mapTest._mpData = toData(map)
+                mapTest.firstCall = false;
             }
 
 
@@ -116,6 +118,7 @@ describe('test.stateMapTest', () => {
                 expect(result.success, result.error).to.be.true;
 
                 mapTest._mpData = toData(map)
+                mapTest.firstCall = false;
             }
 
 

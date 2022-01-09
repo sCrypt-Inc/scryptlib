@@ -52,6 +52,7 @@ describe('test.stateSet', () => {
                 const result = stateSet.insert(key, findKeyIndex(set, key), preimage).verify()
                 expect(result.success, result.error).to.be.true;
                 stateSet._setData = toData(set)
+                stateSet.firstCall = false
             }
 
             testInsert(3);
@@ -77,6 +78,7 @@ describe('test.stateSet', () => {
                 expect(result.success, result.error).to.be.eq(expectedResult);
 
                 stateSet._setData = toData(set)
+                stateSet.firstCall = false
             }
 
 

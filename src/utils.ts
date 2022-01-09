@@ -320,7 +320,7 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
     case VariableType.INT:
       return new Int(asm2int(asm));
     case VariableType.BYTES:
-      return new Bytes(asm);
+      return new Bytes((asm == "0" || asm == "OP_0" || asm == "OP_FALSE") ? "" : asm);
     case VariableType.PRIVKEY:
       return new PrivKey(asm2int(asm));
     case VariableType.PUBKEY:
@@ -1348,11 +1348,15 @@ export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTe
 }
 
 
-export function buildContractState(args: Arguments, finalTypeResolver: TypeResolver): string {
+export function buildContractState(args: Arguments, firstCall: boolean, finalTypeResolver: TypeResolver): string {
 
   let state_hex = '';
   let state_len = 0;
   const args_ = flatternStateArgs(args, finalTypeResolver);
+
+  if (args_.length > 0) {
+    state_hex += `${serializeSupportedParamType(firstCall)}`;
+  }
 
   for (const arg of args_) {
     if (arg.type == VariableType.BOOL) { //fixed length

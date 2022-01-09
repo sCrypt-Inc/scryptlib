@@ -68,6 +68,8 @@ export class AbstractContract {
   asmArgs: AsmVarValues | null = null;
   asmTemplateArgs: Map<string, string> = new Map();
 
+  firstCall = true;
+
   get lockingScript(): Script {
 
     if (this.dataPart) {
@@ -182,7 +184,7 @@ export class AbstractContract {
       }
     });
 
-    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState, this.typeResolver));
+    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState, false, this.typeResolver));
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
@@ -286,7 +288,7 @@ export class AbstractContract {
 
   get dataPart(): Script | undefined {
 
-    const state = buildContractState(this.ctorArgs(), this.typeResolver);
+    const state = buildContractState(this.ctorArgs(), this.firstCall, this.typeResolver);
 
     if (state) {
       return bsv.Script.fromHex(state);

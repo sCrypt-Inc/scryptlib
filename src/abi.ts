@@ -202,11 +202,12 @@ export class ABICoder {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
       }
       if (arg.state) {
+        const asm = this.encodeParam(arg.value, arg);
         //if param is state , we use default value to new contract.
         if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, 'OP_0');
+          contract.asmTemplateArgs.set(`$${arg.name}`, asm);
         } else if (arg.type === VariableType.BOOL) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, 'OP_TRUE');
+          contract.asmTemplateArgs.set(`$${arg.name}`, asm);
         } else if (arg.type === VariableType.BYTES
           || arg.type === VariableType.PUBKEY
           || arg.type === VariableType.SIG
@@ -216,7 +217,7 @@ export class ABICoder {
           || arg.type === VariableType.SIGHASHTYPE
           || arg.type === VariableType.SIGHASHPREIMAGE
           || arg.type === VariableType.OPCODETYPE) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, '00');
+          contract.asmTemplateArgs.set(`$${arg.name}`, asm);
         } else {
           throw new Error(`param ${arg.name} has unknown type ${arg.type}`);
         }
@@ -319,6 +320,10 @@ export class ABICoder {
             }
 
             const br = new bsv.encoding.BufferReader(stateHex);
+
+            const opcodenum = br.readUInt8();
+
+            contract.firstCall = opcodenum == 1;
 
             flatteredArgs.forEach((arg) => {
               if (arg.type === VariableType.BOOL) {
