@@ -31,7 +31,7 @@ describe('state_test', () => {
         stateExample.state_bytes = new Bytes('010101');
         stateExample.state_bool = false;
 
-        expect(stateExample.dataPart.toHex()).to.be.equal('0102e9030301010100010b2103f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf1440933785f6695815a7e1afb59aff20226bbb5bd420ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad0176014147304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541af00000000');
+        expect(stateExample.dataPart.toHex()).to.be.equal('0002e9030301010100010b2103f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf1440933785f6695815a7e1afb59aff20226bbb5bd420ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad0176014147304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541af00000000');
 
 
     });
@@ -154,7 +154,6 @@ describe('state_test', () => {
         stateExample.counter = 1001
         stateExample.state_bytes = new Bytes('010101');
         stateExample.state_bool = false;
-        stateExample.firstCall = false;
 
 
         newLockingScript = stateExample.getNewStateScript({

@@ -520,6 +520,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 
             if (arg) {
               arg.value = value;
+              this.firstCall = false
             } else {
               throw new Error(`property ${p.name} does not exists`);
             }
