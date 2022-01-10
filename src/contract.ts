@@ -299,7 +299,7 @@ export class AbstractContract {
     return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
   }
 
-  setDataPart(state: State | string, isStateHex: boolean = false): void {
+  setDataPart(state: State | string, isStateHex = false): void {
     if (isStateHex == false) {
       if (typeof state === 'string') {
         // TODO: validate hex string

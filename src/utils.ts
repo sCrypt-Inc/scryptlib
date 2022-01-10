@@ -320,7 +320,7 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
     case VariableType.INT:
       return new Int(asm2int(asm));
     case VariableType.BYTES:
-      return new Bytes((asm == "0" || asm == "OP_0" || asm == "OP_FALSE") ? "" : asm);
+      return new Bytes((asm == '0' || asm == 'OP_0' || asm == 'OP_FALSE') ? '' : asm);
     case VariableType.PRIVKEY:
       return new PrivKey(asm2int(asm));
     case VariableType.PUBKEY:
@@ -1363,7 +1363,7 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
   const args_ = flatternStateArgs(args, finalTypeResolver);
 
   if (args_.length <= 0) {
-    throw new Error('no state property found, buildContractState only used for state contract')
+    throw new Error('no state property found, buildContractState only used for state contract');
   }
 
   // append firstCall which is a hidden built-in state
