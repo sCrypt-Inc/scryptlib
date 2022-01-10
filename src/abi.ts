@@ -1,4 +1,4 @@
-import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, asm2ScryptType, bin2num } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, num2bin, bin2num } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
@@ -355,7 +355,8 @@ export class ABICoder {
       const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
       const stateLen = bin2num(metaScript.substr(0, 8)) as number;
       const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
-      if (opReturnHex != '6a') {
+
+      if (opReturnHex != num2bin(bsv.Opcode.OP_RETURN, 1)) {
         throw new Error('parse state fail, no OP_RETURN before state hex');
       }
 

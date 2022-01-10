@@ -1349,16 +1349,25 @@ export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTe
 
 }
 
-
+/**
+ * only used for state contract
+ * @param args 
+ * @param firstCall 
+ * @param finalTypeResolver 
+ * @returns 
+ */
 export function buildContractState(args: Arguments, firstCall: boolean, finalTypeResolver: TypeResolver): string {
 
   let state_hex = '';
   let state_len = 0;
   const args_ = flatternStateArgs(args, finalTypeResolver);
 
-  if (args_.length > 0) {
-    state_hex += `${serializeSupportedParamType(firstCall)}`;
+  if (args_.length <= 0) {
+    throw new Error('no state property found, buildContractState only used for state contract')
   }
+
+  // append firstCall which is a hidden built-in state
+  state_hex += `${serializeSupportedParamType(firstCall)}`;
 
   for (const arg of args_) {
     if (arg.type == VariableType.BOOL) { //fixed length

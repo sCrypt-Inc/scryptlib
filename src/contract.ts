@@ -69,6 +69,8 @@ export class AbstractContract {
   asmArgs: AsmVarValues | null = null;
   asmTemplateArgs: Map<string, string> = new Map();
   stateArgs: Arguments = [];
+  // If true, the contract will read the state from property, if false, the contract will read the state from preimage
+  // A newly constructed contract always has this set to true, and after invocation, always has it set to false
   firstCall = true;
 
   get lockingScript(): Script {
@@ -289,9 +291,8 @@ export class AbstractContract {
 
   get dataPart(): Script | undefined {
 
-    const state = buildContractState(this.stateArgs, this.firstCall, this.typeResolver);
-
-    if (state) {
+    if (AbstractContract.isStateful(this)) {
+      const state = buildContractState(this.stateArgs, this.firstCall, this.typeResolver);
       return bsv.Script.fromHex(state);
     }
 
