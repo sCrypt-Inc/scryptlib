@@ -320,6 +320,99 @@ describe('state_test', () => {
     });
 
 
+    it('should success when state contract with a constructor with a param', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter1_desc.json'));
+        let counter = new StateCounter(6);
+
+        let newLockingScript = counter.getNewStateScript({
+            counter: 8
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
+
+    });
+
+
+    it('should success when state contract with a constructor with two param', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter2_desc.json'));
+        let counter = new StateCounter(1, 2);
+
+        let newLockingScript = counter.getNewStateScript({
+            counter: 202
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
+
+    });
+
+    it('should success when state contract with a constructor with a struct param and an array param', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter3_desc.json'));
+
+        const { StructY } = buildTypeClasses(StateCounter);
+
+        let counter = new StateCounter(new StructY({
+            p1: 1,
+            p2: true,
+            p3: [1, 1, 1]
+        }), [1, 1, 12]);
+
+        let newLockingScript = counter.getNewStateScript({
+            counter: 19
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
+
+    });
+
+
     it('should success when state property is struct', () => {
 
         const Counter = buildContractClass(loadDescription('ststate_desc.json'));

@@ -1,0 +1,33 @@
+import "util.scrypt";
+
+type State = int;
+type Amount = int;
+
+struct StructY {
+    int p1;
+    bool p2;
+    int[3] p3;
+}
+
+contract Counter {
+
+    @state
+    int counter;
+
+    // array & struct & mixed
+    constructor(StructY y, int[3] ys) {
+        this.counter = y.p1 + y.p3[0] + y.p3[1] + y.p3[2] + ys[0] + ys[1] + ys[2];
+    }
+
+    public function increment(SigHashPreimage txPreimage, Amount amount) {
+        require(Tx.checkPreimage(txPreimage));
+
+        this.counter++;
+
+        bytes outputScript = this.getStateScript();
+        bytes output = Util.buildOutput(outputScript, amount);
+        // ensure output is expected: amount is same with specified
+        // also output script is the same with scriptCode except counter incremented
+        require(hash256(output) == Util.hashOutputs(txPreimage));
+    }
+}
