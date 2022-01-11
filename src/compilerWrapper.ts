@@ -89,6 +89,7 @@ export interface CompileResult {
   ast?: Record<string, unknown>;
   dependencyAsts?: Record<string, unknown>;
   abi?: Array<ABIEntity>;
+  stateProps?: Array<ParamEntity>;
   errors: CompileError[];
   warnings: Warning[];
   compilerVersion?: string;
@@ -249,6 +250,8 @@ export function compile(
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
+      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
+
       result.abi = abi;
       result.contract = name;
 
@@ -347,6 +350,7 @@ export function compile(
         alias: result.alias || [],
         generics: result.generics || [],
         abi: result.abi || [],
+        stateProps: result.stateProps || [],
         buildType: settings.buildType || BuildType.Debug,
         file: '',
         asm: result.asm.map(item => item['opcode'].trim()).join(' '),
@@ -477,6 +481,15 @@ function getConstructorDeclaration(mainContract): ABIEntity {
     }
   }
 }
+
+function getStateProps(astRoot): Array<ParamEntity> {
+  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  if (mainContract && mainContract['properties']) {
+    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], state: p['state'] || false }; })
+  }
+  return [];
+}
+
 
 function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
   let pubIndex = 0;
@@ -677,6 +690,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     generics: description.generics || [],
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
+    stateProps: description.stateProps || [],
     errors: [],
     warnings: [],
     staticConst: {},

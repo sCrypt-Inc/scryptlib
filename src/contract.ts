@@ -1,8 +1,9 @@
+import { ParamEntity } from '.';
 import { GenericEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160, buildDefaultStateProps
 } from './internal';
 
 
@@ -29,6 +30,7 @@ export interface ContractDescription {
   buildType: string;
   contract: string;
   md5: string;
+  stateProps: Array<ParamEntity>;
   structs: Array<StructEntity>;
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
@@ -52,6 +54,7 @@ export class AbstractContract {
   public static opcodes?: OpCode[];
   public static file: string;
   public static structs: StructEntity[];
+  public static stateProps: Array<ParamEntity>;
   public static types: Record<string, typeof ScryptType>;
   public static asmContract: boolean;
   public static staticConst: Record<string, number>;
@@ -68,7 +71,7 @@ export class AbstractContract {
   calls: Map<string, FunctionCall> = new Map();
   asmArgs: AsmVarValues | null = null;
   asmTemplateArgs: Map<string, string> = new Map();
-  stateArgs: Arguments = [];
+  statePropsArgs: Arguments = [];
   // If true, the contract will read the state from property, if false, the contract will read the state from preimage
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
   firstCall = true;
@@ -139,7 +142,7 @@ export class AbstractContract {
    */
   getNewStateScript(states: Record<string, SupportedParamType>): Script {
 
-    const stateArgs = this.stateArgs;
+    const stateArgs = this.statePropsArgs;
     const contractName = Object.getPrototypeOf(this).constructor.contractName;
     if (stateArgs.length === 0) {
       throw new Error(`Contract ${contractName} does not have any stateful property`);
@@ -292,7 +295,7 @@ export class AbstractContract {
   get dataPart(): Script | undefined {
 
     if (AbstractContract.isStateful(this)) {
-      const state = buildContractState(this.stateArgs, this.firstCall, this.typeResolver);
+      const state = buildContractState(this.statePropsArgs, this.firstCall, this.typeResolver);
       return bsv.Script.fromHex(state);
     }
 
@@ -309,7 +312,7 @@ export class AbstractContract {
       }
     } else {
       const abiCoder = Object.getPrototypeOf(this).constructor.abiCoder as ABICoder;
-      this.stateArgs = abiCoder.parseStateHex(this, this.ctorArgs(), state as string);
+      this.statePropsArgs = abiCoder.parseStateHex(this, state as string);
     }
   }
 
@@ -423,8 +426,6 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       super();
       if (!Contract.asmContract) {
         this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
-        //clone and save state args
-        this.stateArgs = this.scriptedConstructor.args.filter(a => a.state).map(a => ({ ...a }));
       }
     }
 
@@ -490,6 +491,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
   ContractClass.structs = desc.structs;
   ContractClass.staticConst = staticConst;
   ContractClass.types = buildTypeClasses(desc);
+  ContractClass.stateProps = desc.stateProps;
 
 
   ContractClass.abi.forEach(entity => {
@@ -503,7 +505,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       entity.params.forEach(p => {
         Object.defineProperty(ContractClass.prototype, p.name, {
           get() {
-            const arg = this.stateArgs.find(arg => {
+            const arg = this.statePropsArgs.find(arg => {
               return arg.name === p.name;
             });
 
@@ -514,13 +516,13 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
             }
           },
           set(value: SupportedParamType) {
-            const arg = this.stateArgs.find(arg => {
+            const arg = this.statePropsArgs.find(arg => {
               return arg.name === p.name;
             });
 
             if (arg) {
               arg.value = value;
-              this.firstCall = false
+              this.firstCall = false;
             } else {
               throw new Error(`property ${p.name} does not exists`);
             }

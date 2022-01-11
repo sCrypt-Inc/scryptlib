@@ -845,9 +845,6 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
 
 
 
-export function flatternStateArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
-  return flatternArgs(args.filter(a => a.state), finalTypeResolver);
-}
 
 function flatternStructParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isStructType(param.type)) {
@@ -1360,7 +1357,7 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
 
   let state_hex = '';
   let state_len = 0;
-  const args_ = flatternStateArgs(args, finalTypeResolver);
+  const args_ = flatternArgs(args, finalTypeResolver);
 
   if (args_.length <= 0) {
     throw new Error('no state property found, buildContractState only used for state contract');
@@ -1398,6 +1395,47 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
   return state_hex;
 
 }
+
+
+
+export function buildDefaultStateProps(contract: AbstractContract): Arguments {
+
+  const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
+
+  const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes);
+
+  const asmTemplate: Map<string, string> = new Map();
+
+  flatternparams.forEach(p => {
+
+    if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
+      asmTemplate.set(`$${p.name}`, 'OP_0');
+    } else if (p.type === VariableType.BOOL) {
+      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+    } else if (p.type === VariableType.BYTES
+      || p.type === VariableType.PUBKEY
+      || p.type === VariableType.SIG
+      || p.type === VariableType.RIPEMD160
+      || p.type === VariableType.SHA1
+      || p.type === VariableType.SHA256
+      || p.type === VariableType.SIGHASHTYPE
+      || p.type === VariableType.SIGHASHPREIMAGE
+      || p.type === VariableType.OPCODETYPE) {
+      asmTemplate.set(`$${p.name}`, '00');
+    } else {
+      throw new Error(`param ${p.name} has unknown type ${p.type}`);
+    }
+
+  })
+
+  return stateProps.map(p => ({
+    type: contract.typeResolver(p.type),
+    name: p.name,
+    value: undefined,
+    state: p.state
+  })).map(arg => deserializeArgfromASM(contract, arg, asmTemplate));
+}
+
 
 
 export function readBytes(br: bsv.encoding.BufferReader): {

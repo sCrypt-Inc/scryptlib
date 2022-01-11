@@ -2,7 +2,7 @@ import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, is
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { asm2int, buildContractCodeASM, flatternArgs, flatternParams, flatternStateArgs, readBytes } from './internal';
+import { asm2int, buildContractCodeASM, buildDefaultStateProps, flatternArgs, flatternParams, readBytes } from './internal';
 
 export type Script = bsv.Script;
 
@@ -206,35 +206,12 @@ export class ABICoder {
       if (!asmTemplate.includes(`$${arg.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
       }
-      if (arg.state) {
-        const asm = this.encodeParam(arg.value, arg);
-        //if param is state , we use default value to new contract.
-        if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, asm);
-        } else if (arg.type === VariableType.BOOL) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, asm);
-        } else if (arg.type === VariableType.BYTES
-          || arg.type === VariableType.PUBKEY
-          || arg.type === VariableType.SIG
-          || arg.type === VariableType.RIPEMD160
-          || arg.type === VariableType.SHA1
-          || arg.type === VariableType.SHA256
-          || arg.type === VariableType.SIGHASHTYPE
-          || arg.type === VariableType.SIGHASHPREIMAGE
-          || arg.type === VariableType.OPCODETYPE) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, asm);
-        } else {
-          throw new Error(`param ${arg.name} has unknown type ${arg.type}`);
-        }
-
-      } else {
-        contract.asmTemplateArgs.set(`$${arg.name}`, this.encodeParam(arg.value, arg));
-      }
-
+      contract.asmTemplateArgs.set(`$${arg.name}`, this.encodeParam(arg.value, arg));
     });
 
     contract.asmTemplateArgs.set('$__codePart__', 'OP_0');
 
+    contract.statePropsArgs = buildDefaultStateProps(contract);
 
     return new FunctionCall('constructor', {
       contract,
@@ -249,7 +226,7 @@ export class ABICoder {
 
   }
 
-  parseStateHex(contract: AbstractContract, ctorArgs: Arguments, scriptHex: string): Arguments {
+  parseStateHex(contract: AbstractContract, scriptHex: string): Arguments {
 
     const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
     const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
@@ -266,29 +243,31 @@ export class ABICoder {
 
     const stateAsmTemplateArgs: Map<string, string> = new Map();
 
-    const flatteredArgs = flatternStateArgs(ctorArgs, this.finalTypeResolver);
+    const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
+    const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes);
 
-    flatteredArgs.forEach((arg) => {
-      if (arg.type === VariableType.BOOL) {
+
+    flatternparams.forEach((param) => {
+      if (param.type === VariableType.BOOL) {
         const opcodenum = br.readUInt8();
-        stateAsmTemplateArgs.set(`$${arg.name}`, opcodenum === 1 ? '01' : '00');
+        stateAsmTemplateArgs.set(`$${param.name}`, opcodenum === 1 ? '01' : '00');
       } else {
         const { data } = readBytes(br);
-        if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
-          stateAsmTemplateArgs.set(`$${arg.name}`, new Int(bin2num(data)).toASM());
+        if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
+          stateAsmTemplateArgs.set(`$${param.name}`, new Int(bin2num(data)).toASM());
         } else {
-          stateAsmTemplateArgs.set(`$${arg.name}`, data);
+          stateAsmTemplateArgs.set(`$${param.name}`, data);
         }
       }
     });
 
 
-    const stateArgs = ctorArgs.filter(a => a.state).map(arg => {
-
-      return deserializeArgfromASM(contract, { ...arg }, stateAsmTemplateArgs);
-    });
-
-    return stateArgs;
+    return stateProps.map(p => ({
+      type: contract.typeResolver(p.type),
+      name: p.name,
+      value: undefined,
+      state: p.state
+    })).map(arg => deserializeArgfromASM(contract, arg, stateAsmTemplateArgs));
   }
 
   encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
@@ -363,7 +342,7 @@ export class ABICoder {
       switch (version) {
         case 0:
           {
-            contract.stateArgs = this.parseStateHex(contract, ctorArgs, scriptHex);
+            contract.statePropsArgs = this.parseStateHex(contract, scriptHex);
           }
           break;
       }
