@@ -1419,7 +1419,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
       throw new Error(`param ${p.name} has unknown type ${p.type}`);
     }
 
-  })
+  });
 
   return stateProps.map(p => ({
     type: contract.typeResolver(p.type),

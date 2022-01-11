@@ -484,7 +484,7 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 function getStateProps(astRoot): Array<ParamEntity> {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (mainContract && mainContract['properties']) {
-    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; })
+    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; });
   }
   return [];
 }
