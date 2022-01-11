@@ -33,7 +33,6 @@ export interface DebugLaunch {
 export interface Argument {
   name: string,
   type: string,
-  state: boolean,
   value: SupportedParamType
 }
 
@@ -196,7 +195,6 @@ export class ABICoder {
 
     // handle array type
     const flatteredArgs = flatternArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
-      state: p.state,
       value: args[index]
     }))), this.finalTypeResolver);
 
@@ -219,7 +217,6 @@ export class ABICoder {
       args: cParams.map((param, index) => ({
         name: param.name,
         type: param.type,
-        state: param.state,
         value: args[index]
       }))
     });
@@ -266,7 +263,6 @@ export class ABICoder {
       type: contract.typeResolver(p.type),
       name: p.name,
       value: undefined,
-      state: p.state
     })).map(arg => deserializeArgfromASM(contract, arg, stateAsmTemplateArgs));
   }
 
@@ -322,8 +318,7 @@ export class ABICoder {
     const ctorArgs: Arguments = cParams.map(p => ({
       type: this.finalTypeResolver(p.type),
       name: p.name,
-      value: undefined,
-      state: p.state
+      value: undefined
     })).map(arg => deserializeArgfromASM(contract, arg, contract.asmTemplateArgs));
 
 
@@ -363,8 +358,7 @@ export class ABICoder {
         this.checkArgs(contractName, name, entity.params, ...args);
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
-          type: this.finalTypeResolver(p.type),
-          state: p.state
+          type: this.finalTypeResolver(p.type)
         })));
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
@@ -375,7 +369,6 @@ export class ABICoder {
           contract, unlockingScriptASM: asm, args: entity.params.map((param, index) => ({
             name: param.name,
             type: param.type,
-            state: false,
             value: args[index]
           }))
         });
@@ -427,8 +420,7 @@ export class ABICoder {
     const args: Arguments = cParams.map(p => ({
       type: this.finalTypeResolver(p.type),
       name: p.name,
-      value: undefined,
-      state: p.state
+      value: undefined
     })).map(arg => deserializeArgfromASM(contract, arg, asmTemplateArgs));
 
     return new FunctionCall(name, { contract, unlockingScriptASM: usASM, args: args });
@@ -441,7 +433,7 @@ export class ABICoder {
 
   encodeParamArray(args: SupportedParamType[], arrayParam: ParamEntity): string {
     return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
-      return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
+      return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type) });
     }).join(' ');
   }
 

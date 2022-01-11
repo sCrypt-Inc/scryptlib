@@ -815,8 +815,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
         args_.push({
           name: e.name,
           type: finalTypeResolver(e.type),
-          value: e.value,
-          state: arg.state
+          value: e.value
         });
       });
     } else if (isArrayType(finalType)) {
@@ -825,8 +824,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
         args_.push({
           name: e.name,
           type: finalTypeResolver(e.type),
-          value: e.value,
-          state: arg.state
+          value: e.value
         });
       });
 
@@ -834,8 +832,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
       args_.push({
         name: arg.name,
         type: finalType,
-        value: arg.value,
-        state: arg.state
+        value: arg.value
       });
     }
   });
@@ -910,8 +907,7 @@ function flatternArrayParam(param: ParamEntity, typeResolver: TypeResolver, type
       args.push({
         value: undefined,
         name: `${param.name}${subscript(index, arraySizes)}`,
-        type: elemTypeName,
-        state: param.state
+        type: elemTypeName
       });
     }
   }
@@ -935,8 +931,7 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
         args_.push({
           name: e.name,
           type: e.type,
-          value: e.value,
-          state: param.state
+          value: e.value
         });
       });
     } else if (isArrayType(param.type)) {
@@ -944,8 +939,7 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
         args_.push({
           name: e.name,
           type: e.type,
-          value: e.value,
-          state: param.state
+          value: e.value
         });
       });
 
@@ -953,7 +947,6 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
       args_.push({
         name: param.name,
         type: param.type,
-        state: param.state,
         value: undefined
       });
     }
@@ -1431,8 +1424,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
   return stateProps.map(p => ({
     type: contract.typeResolver(p.type),
     name: p.name,
-    value: undefined,
-    state: p.state
+    value: undefined
   })).map(arg => deserializeArgfromASM(contract, arg, asmTemplate));
 }
 

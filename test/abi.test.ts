@@ -46,7 +46,6 @@ describe('FunctionCall', () => {
         contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM(), args: [{
           name: 'pubKeyHash',
           type: 'Ripemd160',
-          state: false,
           value: new Ripemd160(toHex(pubKeyHash))
         }
         ]
@@ -86,12 +85,10 @@ describe('FunctionCall', () => {
         contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' '), args: [{
           name: 'sig',
           type: 'Sig',
-          state: false,
           value: sig
         }, {
           name: 'pubkey',
           type: 'PubKey',
-          state: false,
           value: pubkey
         }]
       });
@@ -107,12 +104,10 @@ describe('FunctionCall', () => {
       it('abiParams should be correct', () => {
         expect(target.args).to.deep.include.members([{
           name: 'sig',
-          state: false,
           type: 'Sig',
           value: sig
         }, {
           name: 'pubkey',
-          state: false,
           type: 'PubKey',
           value: pubkey
         }])
@@ -168,7 +163,6 @@ describe('FunctionCall', () => {
         contract: person, lockingScriptASM: person.lockingScript.toASM(), args: [{
           name: 'some',
           type: 'Person',
-          state: false,
           value: new Person({
             isMale: false,
             age: 33,

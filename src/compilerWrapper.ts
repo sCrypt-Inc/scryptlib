@@ -144,7 +144,6 @@ export enum ABIEntityType {
 export type ParamEntity = {
   name: string;
   type: string;
-  state?: boolean;
 }
 export interface ABIEntity {
   type: ABIEntityType;
@@ -469,14 +468,14 @@ function getConstructorDeclaration(mainContract): ABIEntity {
   if (mainContract['constructor']) {
     return {
       type: ABIEntityType.CONSTRUCTOR,
-      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'], state: false }; }),
+      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
     };
   } else {
     // implicit constructor
     if (mainContract['properties']) {
       return {
         type: ABIEntityType.CONSTRUCTOR,
-        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], state: p['state'] || false }; }),
+        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
       };
     }
   }
@@ -485,7 +484,7 @@ function getConstructorDeclaration(mainContract): ABIEntity {
 function getStateProps(astRoot): Array<ParamEntity> {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (mainContract && mainContract['properties']) {
-    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], state: p['state'] || false }; })
+    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; })
   }
   return [];
 }

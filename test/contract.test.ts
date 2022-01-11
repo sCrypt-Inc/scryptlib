@@ -91,7 +91,6 @@ describe('buildContractClass()', () => {
     it("test arguments", () => {
       expect(instance.ctorArgs()).to.deep.include.members([{
         name: "pubKeyHash",
-        state: false,
         type: "Ripemd160",
         value: new Ripemd160(toHex(pubKeyHash))
       }]);
@@ -223,13 +222,11 @@ describe('buildContractClass()', () => {
         expect(instance.arguments('unlock')).to.deep.equal([
           {
             name: 'sig',
-            state: false,
             type: 'Sig',
             value: sig
           },
           {
             name: 'pubKey',
-            state: false,
             type: 'PubKey',
             value: new PubKey(validPubkey)
           }
@@ -247,13 +244,11 @@ describe('buildContractClass()', () => {
         expect(instance.arguments('unlock')).to.deep.equal([
           {
             name: 'sig',
-            state: false,
             type: 'Sig',
             value: new Sig(invalidSig)
           },
           {
             name: 'pubKey',
-            state: false,
             type: 'PubKey',
             value: new PubKey(validPubkey)
           }

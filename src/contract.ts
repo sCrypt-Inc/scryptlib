@@ -376,9 +376,8 @@ export class AbstractContract {
     return null;
   }
   static isStateful(contract: AbstractContract): boolean {
-    const abi: Array<ABIEntity> = Object.getPrototypeOf(contract).constructor.abi;
-    const constructorABI = abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
-    return constructorABI.params.findIndex(p => p['state'] === true) > -1;
+    const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
+    return stateProps.length > 0;
   }
 }
 
