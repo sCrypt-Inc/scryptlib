@@ -24,3 +24,8 @@
 ## version = 6 
 
 * add `generics`
+
+## version = 7
+
+* add `stateProps`
+* remove state field in `ParamEntity`

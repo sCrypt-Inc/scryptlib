@@ -1,8 +1,8 @@
-import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, asm2ScryptType, bin2num } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, num2bin, bin2num } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { asm2int, buildContractCodeASM, flatternArgs, flatternParams, flatternStateArgs, readBytes } from './internal';
+import { asm2int, buildContractCodeASM, buildDefaultStateProps, flatternArgs, flatternParams, readBytes } from './internal';
 
 export type Script = bsv.Script;
 
@@ -33,7 +33,6 @@ export interface DebugLaunch {
 export interface Argument {
   name: string,
   type: string,
-  state: boolean,
   value: SupportedParamType
 }
 
@@ -127,6 +126,11 @@ export class FunctionCall {
 
     const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
     const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state });
+    if (AbstractContract.isStateful(this.contract)) {
+      Object.assign(txCtx, { opReturnHex: this.contract.dataPart.toHex() });
+    } else if (this.contract.dataPart) {
+      Object.assign(txCtx, { opReturn: this.contract.dataPart.toASM() });
+    }
 
     return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
   }
@@ -191,7 +195,6 @@ export class ABICoder {
 
     // handle array type
     const flatteredArgs = flatternArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
-      state: p.state,
       value: args[index]
     }))), this.finalTypeResolver);
 
@@ -201,34 +204,12 @@ export class ABICoder {
       if (!asmTemplate.includes(`$${arg.name}`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
       }
-      if (arg.state) {
-        //if param is state , we use default value to new contract.
-        if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, 'OP_0');
-        } else if (arg.type === VariableType.BOOL) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, 'OP_TRUE');
-        } else if (arg.type === VariableType.BYTES
-          || arg.type === VariableType.PUBKEY
-          || arg.type === VariableType.SIG
-          || arg.type === VariableType.RIPEMD160
-          || arg.type === VariableType.SHA1
-          || arg.type === VariableType.SHA256
-          || arg.type === VariableType.SIGHASHTYPE
-          || arg.type === VariableType.SIGHASHPREIMAGE
-          || arg.type === VariableType.OPCODETYPE) {
-          contract.asmTemplateArgs.set(`$${arg.name}`, '00');
-        } else {
-          throw new Error(`param ${arg.name} has unknown type ${arg.type}`);
-        }
-
-      } else {
-        contract.asmTemplateArgs.set(`$${arg.name}`, this.encodeParam(arg.value, arg));
-      }
-
+      contract.asmTemplateArgs.set(`$${arg.name}`, this.encodeParam(arg.value, arg));
     });
 
     contract.asmTemplateArgs.set('$__codePart__', 'OP_0');
 
+    contract.statePropsArgs = buildDefaultStateProps(contract);
 
     return new FunctionCall('constructor', {
       contract,
@@ -236,11 +217,53 @@ export class ABICoder {
       args: cParams.map((param, index) => ({
         name: param.name,
         type: param.type,
-        state: param.state,
         value: args[index]
       }))
     });
 
+  }
+
+  parseStateHex(contract: AbstractContract, scriptHex: string): Arguments {
+
+    const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
+    const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
+    const stateLen = bin2num(metaScript.substr(0, 8)) as number;
+
+
+    const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
+
+    const br = new bsv.encoding.BufferReader(stateHex);
+
+    const opcodenum = br.readUInt8();
+
+    contract.firstCall = opcodenum == 1;
+
+    const stateAsmTemplateArgs: Map<string, string> = new Map();
+
+    const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
+    const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes);
+
+
+    flatternparams.forEach((param) => {
+      if (param.type === VariableType.BOOL) {
+        const opcodenum = br.readUInt8();
+        stateAsmTemplateArgs.set(`$${param.name}`, opcodenum === 1 ? '01' : '00');
+      } else {
+        const { data } = readBytes(br);
+        if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
+          stateAsmTemplateArgs.set(`$${param.name}`, new Int(bin2num(data)).toASM());
+        } else {
+          stateAsmTemplateArgs.set(`$${param.name}`, data);
+        }
+      }
+    });
+
+
+    return stateProps.map(p => ({
+      type: contract.typeResolver(p.type),
+      name: p.name,
+      value: undefined,
+    })).map(arg => deserializeArgfromASM(contract, arg, stateAsmTemplateArgs));
   }
 
   encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
@@ -292,63 +315,39 @@ export class ABICoder {
       }
     });
 
-    const args: Arguments = cParams.map(p => ({
+    const ctorArgs: Arguments = cParams.map(p => ({
       type: this.finalTypeResolver(p.type),
       name: p.name,
-      value: undefined,
-      state: p.state
+      value: undefined
     })).map(arg => deserializeArgfromASM(contract, arg, contract.asmTemplateArgs));
 
 
     if (AbstractContract.isStateful(contract)) {
 
-      const flatteredArgs = flatternStateArgs(args, this.finalTypeResolver);
-
       const scriptHex = script.toHex();
       const metaScript = script.toHex().substr(scriptHex.length - 10, 10);
       const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
       const stateLen = bin2num(metaScript.substr(0, 8)) as number;
-      const stateAsmTemplateArgs: Map<string, string> = new Map();
+      const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
+
+      if (opReturnHex != num2bin(bsv.Opcode.OP_RETURN, 1)) {
+        throw new Error('parse state fail, no OP_RETURN before state hex');
+      }
+
       switch (version) {
         case 0:
           {
-            const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
-            const opReturnHex = scriptHex.substr(scriptHex.length - 12 - stateLen * 2, 2);
-            if (opReturnHex != '6a') {
-              throw new Error('parse state fail, no OP_RETURN before state hex');
-            }
-
-            const br = new bsv.encoding.BufferReader(stateHex);
-
-            flatteredArgs.forEach((arg) => {
-              if (arg.type === VariableType.BOOL) {
-                const opcodenum = br.readUInt8();
-                stateAsmTemplateArgs.set(`$${arg.name}`, opcodenum === 1 ? '01' : '00');
-              } else {
-                const { data } = readBytes(br);
-                if (arg.type === VariableType.INT || arg.type === VariableType.PRIVKEY) {
-                  stateAsmTemplateArgs.set(`$${arg.name}`, new Int(bin2num(data)).toASM());
-                } else {
-                  stateAsmTemplateArgs.set(`$${arg.name}`, data);
-                }
-              }
-            });
-
+            contract.statePropsArgs = this.parseStateHex(contract, scriptHex);
           }
           break;
       }
-
-      args.filter(a => a.state).forEach(arg => {
-
-        deserializeArgfromASM(contract, arg, stateAsmTemplateArgs);
-      });
 
       lsASM = buildContractCodeASM(contract.asmTemplateArgs, asmTemplate);
     } else if (dataPart) {
       contract.setDataPart(dataPart);
     }
 
-    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, args: args });
+    return new FunctionCall('constructor', { contract, lockingScriptASM: lsASM, args: ctorArgs });
 
   }
 
@@ -359,8 +358,7 @@ export class ABICoder {
         this.checkArgs(contractName, name, entity.params, ...args);
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
-          type: this.finalTypeResolver(p.type),
-          state: p.state
+          type: this.finalTypeResolver(p.type)
         })));
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
@@ -371,7 +369,6 @@ export class ABICoder {
           contract, unlockingScriptASM: asm, args: entity.params.map((param, index) => ({
             name: param.name,
             type: param.type,
-            state: false,
             value: args[index]
           }))
         });
@@ -423,8 +420,7 @@ export class ABICoder {
     const args: Arguments = cParams.map(p => ({
       type: this.finalTypeResolver(p.type),
       name: p.name,
-      value: undefined,
-      state: p.state
+      value: undefined
     })).map(arg => deserializeArgfromASM(contract, arg, asmTemplateArgs));
 
     return new FunctionCall(name, { contract, unlockingScriptASM: usASM, args: args });
@@ -437,7 +433,7 @@ export class ABICoder {
 
   encodeParamArray(args: SupportedParamType[], arrayParam: ParamEntity): string {
     return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
-      return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type), state: arrayParam.state });
+      return this.encodeParam(arg.value, { name: arg.name, type: this.finalTypeResolver(arg.type) });
     }).join(' ');
   }
 

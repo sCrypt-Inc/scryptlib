@@ -22,7 +22,7 @@ const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+
 const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 6;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 7;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
@@ -89,6 +89,7 @@ export interface CompileResult {
   ast?: Record<string, unknown>;
   dependencyAsts?: Record<string, unknown>;
   abi?: Array<ABIEntity>;
+  stateProps?: Array<ParamEntity>;
   errors: CompileError[];
   warnings: Warning[];
   compilerVersion?: string;
@@ -143,7 +144,6 @@ export enum ABIEntityType {
 export type ParamEntity = {
   name: string;
   type: string;
-  state?: boolean;
 }
 export interface ABIEntity {
   type: ABIEntityType;
@@ -249,6 +249,8 @@ export function compile(
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
+      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
+
       result.abi = abi;
       result.contract = name;
 
@@ -347,6 +349,7 @@ export function compile(
         alias: result.alias || [],
         generics: result.generics || [],
         abi: result.abi || [],
+        stateProps: result.stateProps || [],
         buildType: settings.buildType || BuildType.Debug,
         file: '',
         asm: result.asm.map(item => item['opcode'].trim()).join(' '),
@@ -465,18 +468,27 @@ function getConstructorDeclaration(mainContract): ABIEntity {
   if (mainContract['constructor']) {
     return {
       type: ABIEntityType.CONSTRUCTOR,
-      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'], state: false }; }),
+      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
     };
   } else {
     // implicit constructor
     if (mainContract['properties']) {
       return {
         type: ABIEntityType.CONSTRUCTOR,
-        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'], state: p['state'] || false }; }),
+        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
       };
     }
   }
 }
+
+function getStateProps(astRoot): Array<ParamEntity> {
+  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  if (mainContract && mainContract['properties']) {
+    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; });
+  }
+  return [];
+}
+
 
 function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
   let pubIndex = 0;
@@ -677,6 +689,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     generics: description.generics || [],
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
+    stateProps: description.stateProps || [],
     errors: [],
     warnings: [],
     staticConst: {},

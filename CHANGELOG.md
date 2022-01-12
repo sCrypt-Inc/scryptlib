@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.11.0
+
+- Support `constructor` in contract with `@state` property
+- Upgrade Contract Description, see [VERSIONLOG.md](./VERSIONLOG.md)
+
+*Release Date: 2022/01/12*
+
+
 ## 0.10.4
 
 - Fix #156 sig become invalid after seal Transaction 

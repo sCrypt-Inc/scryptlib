@@ -26,12 +26,12 @@ describe('state_test', () => {
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541"),
         );
 
-        expect(stateExample.dataPart.toHex()).to.be.equal('02e80302010101010b2103f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf1440933785f6695815a7e1afb59aff20226bbb5bd420ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad0176014147304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541ad00000000');
+        expect(stateExample.dataPart.toHex()).to.be.equal('01010001000101000100010001000100010001001400000000');
         stateExample.counter++;
         stateExample.state_bytes = new Bytes('010101');
         stateExample.state_bool = false;
 
-        expect(stateExample.dataPart.toHex()).to.be.equal('02e9030301010100010b2103f4a8ec3e44903ea28c00113b351af3baeec5662e5e2453c19188fbcad00fb1cf1440933785f6695815a7e1afb59aff20226bbb5bd420ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad0176014147304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541ae00000000');
+        expect(stateExample.dataPart.toHex()).to.be.equal('000101030101010001000100010001000100010001001600000000');
 
 
     });
@@ -49,23 +49,23 @@ describe('state_test', () => {
         );
 
 
-        expect(stateExample.dataPart.toHex()).to.be.eq('0100000001030101010201030176014101051200000000');
+        expect(stateExample.dataPart.toHex()).to.be.eq('01010001000101000100010001000100010001001400000000');
 
         let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
 
-        expect(newStateExample.dataPart.toHex()).to.be.eq('0100000001030101010201030176014101051200000000');
+        expect(newStateExample.dataPart.toHex()).to.be.eq('01010001000101000100010001000100010001001400000000');
 
         expect(newStateExample.counter.equals(new Int(0))).to.be.true;
-        expect(newStateExample.state_bytes.equals(new Bytes(''))).to.be.true;
-        expect(newStateExample.state_bool.equals(new Bool(false))).to.be.true;
+        expect(newStateExample.state_bytes.equals(new Bytes('00'))).to.be.true;
+        expect(newStateExample.state_bool.equals(new Bool(true))).to.be.true;
 
-        expect(newStateExample.pubkey.equals(new PubKey("01"))).to.be.true;
-        expect(newStateExample.privKey.equals(new PrivKey("3"))).to.be.true;
-        expect(newStateExample.ripemd160.equals(new Ripemd160("02"))).to.be.true;
-        expect(newStateExample.sha256.equals(new Sha256("03"))).to.be.true;
-        expect(newStateExample.opCodeType.equals(new OpCodeType('76'))).to.be.true;
-        expect(newStateExample.sigHashType.equals(new SigHashType(SigHash.ALL | SigHash.FORKID))).to.be.true;
-        expect(newStateExample.sig.equals(new Sig("05"))).to.be.true;
+        expect(newStateExample.pubkey.equals(new PubKey("00"))).to.be.true;
+        expect(newStateExample.privKey.equals(new PrivKey(0))).to.be.true;
+        expect(newStateExample.ripemd160.equals(new Ripemd160("00"))).to.be.true;
+        expect(newStateExample.sha256.equals(new Sha256("00"))).to.be.true;
+        expect(newStateExample.opCodeType.equals(new OpCodeType('00'))).to.be.true;
+        expect(newStateExample.sigHashType.equals(new SigHashType(0))).to.be.true;
+        expect(newStateExample.sig.equals(new Sig("00"))).to.be.true;
     });
 
 
@@ -80,8 +80,8 @@ describe('state_test', () => {
             new Sig("05")
         );
 
-
-        expect(stateExample.dataPart.toHex()).to.be.eq('0103000001030101010201030176014101051200000000');
+        stateExample.counter = 3;
+        expect(stateExample.dataPart.toHex()).to.be.eq('00010301000101000100010001000100010001001400000000');
 
         let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
 
@@ -100,6 +100,16 @@ describe('state_test', () => {
             new SigHashType(SigHash.ALL | SigHash.FORKID),
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
+
+        stateExample.counter = 1000;
+        stateExample.state_bytes = new Bytes('0101');
+        stateExample.state_bool = true;
+        stateExample.privKey = new PrivKey("11");
+        stateExample.ripemd160 = new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4");
+        stateExample.sha256 = new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        stateExample.opCodeType = new OpCodeType('76');
+        stateExample.sigHashType = new SigHashType(SigHash.ALL | SigHash.FORKID);
+        stateExample.sig = new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541");
 
         let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
 
@@ -127,10 +137,27 @@ describe('state_test', () => {
             new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
 
+        stateExample.counter = 1000;
+        stateExample.state_bytes = new Bytes('0101');
+        stateExample.state_bool = true;
+        stateExample.privKey = new PrivKey("11");
+        stateExample.ripemd160 = new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4");
+        stateExample.sha256 = new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        stateExample.opCodeType = new OpCodeType('76');
+        stateExample.sigHashType = new SigHashType(SigHash.ALL | SigHash.FORKID);
+        stateExample.sig = new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541");
+
+
         let newLockingScript = stateExample.getNewStateScript({
             counter: 1001,
             state_bytes: new Bytes('010101'),
-            state_bool: false
+            state_bool: false,
+            privKey: new PrivKey("11"),
+            ripemd160: new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
+            sha256: new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+            opCodeType: new OpCodeType('76'),
+            sigHashType: new SigHashType(SigHash.ALL | SigHash.FORKID),
+            sig: new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         });
 
         const tx1 = newTx(inputSatoshis);
@@ -154,12 +181,25 @@ describe('state_test', () => {
         stateExample.counter = 1001
         stateExample.state_bytes = new Bytes('010101');
         stateExample.state_bool = false;
+        stateExample.privKey = new PrivKey("11");
+        stateExample.ripemd160 = new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4");
+        stateExample.sha256 = new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        stateExample.opCodeType = new OpCodeType('76');
+        stateExample.sigHashType = new SigHashType(SigHash.ALL | SigHash.FORKID);
+        stateExample.sig = new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541");
+
 
 
         newLockingScript = stateExample.getNewStateScript({
             counter: 1002,
             state_bytes: new Bytes('01010101'),
-            state_bool: true
+            state_bool: true,
+            privKey: new PrivKey("11"),
+            ripemd160: new Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
+            sha256: new Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+            opCodeType: new OpCodeType('76'),
+            sigHashType: new SigHashType(SigHash.ALL | SigHash.FORKID),
+            sig: new Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         })
 
         const tx2 = newTx(inputSatoshis);
@@ -276,6 +316,99 @@ describe('state_test', () => {
 
         const result2 = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
         expect(result2.success, result2.error).to.be.false
+
+    });
+
+
+    it('should success when state contract with a constructor with a param', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter1_desc.json'));
+        let counter = new StateCounter(6);
+
+        let newLockingScript = counter.getNewStateScript({
+            counter: 8
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
+
+    });
+
+
+    it('should success when state contract with a constructor with two param', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter2_desc.json'));
+        let counter = new StateCounter(1, 2);
+
+        let newLockingScript = counter.getNewStateScript({
+            counter: 202
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
+
+    });
+
+    it('should success when state contract with a constructor with a struct param and an array param', () => {
+
+        const StateCounter = buildContractClass(loadDescription('statecounter3_desc.json'));
+
+        const { StructY } = buildTypeClasses(StateCounter);
+
+        let counter = new StateCounter(new StructY({
+            p1: 1,
+            p2: true,
+            p3: [1, 1, 1]
+        }), [1, 1, 12]);
+
+        let newLockingScript = counter.getNewStateScript({
+            counter: 19
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+
+        const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
+
+        counter.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+
+        const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+        expect(result.success, result.error).to.be.true
 
     });
 

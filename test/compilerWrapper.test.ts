@@ -38,18 +38,15 @@ describe('compile()', () => {
         "params": [
           {
             "name": "_x",
-            "type": "int",
-            "state": false
+            "type": "int"
           },
           {
             "name": "y",
-            "type": "int",
-            "state": false
+            "type": "int"
           },
           {
             "name": "z",
-            "type": "int",
-            "state": false
+            "type": "int"
           }
         ]
       }
@@ -374,13 +371,11 @@ describe('compile()', () => {
           "params": [
             {
               "name": "memberx",
-              "type": "int[1]",
-              "state": false
+              "type": "int[1]"
             },
             {
               "name": "membery",
-              "type": "int[5]",
-              "state": false
+              "type": "int[5]"
             }
           ]
         }
@@ -444,8 +439,7 @@ describe('compile()', () => {
           "params": [
             {
               "name": "X",
-              "type": "int[2][3][4]",
-              "state": false
+              "type": "int[2][3][4]"
             }
           ]
         }
@@ -834,28 +828,23 @@ describe('compile()', () => {
         "params": [
           {
             "name": "st1",
-            "type": "St1",
-            "state": false
+            "type": "St1"
           },
           {
             "name": "st2",
-            "type": "St2",
-            "state": false
+            "type": "St2"
           },
           {
             "name": "a",
-            "type": "St1[2]",
-            "state": false
+            "type": "St1[2]"
           },
           {
             "name": "b",
-            "type": "St1[3][2]",
-            "state": false
+            "type": "St1[3][2]"
           },
           {
             "name": "c",
-            "type": "int[3]",
-            "state": false
+            "type": "int[3]"
           }
         ]
       }

@@ -320,7 +320,7 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
     case VariableType.INT:
       return new Int(asm2int(asm));
     case VariableType.BYTES:
-      return new Bytes(asm);
+      return new Bytes((asm == '0' || asm == 'OP_0' || asm == 'OP_FALSE') ? '' : asm);
     case VariableType.PRIVKEY:
       return new PrivKey(asm2int(asm));
     case VariableType.PUBKEY:
@@ -815,8 +815,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
         args_.push({
           name: e.name,
           type: finalTypeResolver(e.type),
-          value: e.value,
-          state: arg.state
+          value: e.value
         });
       });
     } else if (isArrayType(finalType)) {
@@ -825,8 +824,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
         args_.push({
           name: e.name,
           type: finalTypeResolver(e.type),
-          value: e.value,
-          state: arg.state
+          value: e.value
         });
       });
 
@@ -834,8 +832,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
       args_.push({
         name: arg.name,
         type: finalType,
-        value: arg.value,
-        state: arg.state
+        value: arg.value
       });
     }
   });
@@ -845,9 +842,6 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
 
 
 
-export function flatternStateArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
-  return flatternArgs(args.filter(a => a.state), finalTypeResolver);
-}
 
 function flatternStructParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isStructType(param.type)) {
@@ -913,8 +907,7 @@ function flatternArrayParam(param: ParamEntity, typeResolver: TypeResolver, type
       args.push({
         value: undefined,
         name: `${param.name}${subscript(index, arraySizes)}`,
-        type: elemTypeName,
-        state: param.state
+        type: elemTypeName
       });
     }
   }
@@ -938,8 +931,7 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
         args_.push({
           name: e.name,
           type: e.type,
-          value: e.value,
-          state: param.state
+          value: e.value
         });
       });
     } else if (isArrayType(param.type)) {
@@ -947,8 +939,7 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
         args_.push({
           name: e.name,
           type: e.type,
-          value: e.value,
-          state: param.state
+          value: e.value
         });
       });
 
@@ -956,7 +947,6 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
       args_.push({
         name: param.name,
         type: param.type,
-        state: param.state,
         value: undefined
       });
     }
@@ -1091,6 +1081,8 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     }
     if (typeof txContext.opReturn === 'string') {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
+    } else if (typeof txContext.opReturnHex === 'string') {
+      Object.assign(debugTxContext, { opReturnHex: txContext.opReturnHex });
     }
   }
 
@@ -1347,12 +1339,25 @@ export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTe
 
 }
 
-
-export function buildContractState(args: Arguments, finalTypeResolver: TypeResolver): string {
+/**
+ * only used for state contract
+ * @param args 
+ * @param firstCall 
+ * @param finalTypeResolver 
+ * @returns 
+ */
+export function buildContractState(args: Arguments, firstCall: boolean, finalTypeResolver: TypeResolver): string {
 
   let state_hex = '';
   let state_len = 0;
-  const args_ = flatternStateArgs(args, finalTypeResolver);
+  const args_ = flatternArgs(args, finalTypeResolver);
+
+  if (args_.length <= 0) {
+    throw new Error('no state property found, buildContractState only used for state contract');
+  }
+
+  // append firstCall which is a hidden built-in state
+  state_hex += `${serializeSupportedParamType(firstCall)}`;
 
   for (const arg of args_) {
     if (arg.type == VariableType.BOOL) { //fixed length
@@ -1383,6 +1388,46 @@ export function buildContractState(args: Arguments, finalTypeResolver: TypeResol
   return state_hex;
 
 }
+
+
+
+export function buildDefaultStateProps(contract: AbstractContract): Arguments {
+
+  const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
+
+  const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes);
+
+  const asmTemplate: Map<string, string> = new Map();
+
+  flatternparams.forEach(p => {
+
+    if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
+      asmTemplate.set(`$${p.name}`, 'OP_0');
+    } else if (p.type === VariableType.BOOL) {
+      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+    } else if (p.type === VariableType.BYTES
+      || p.type === VariableType.PUBKEY
+      || p.type === VariableType.SIG
+      || p.type === VariableType.RIPEMD160
+      || p.type === VariableType.SHA1
+      || p.type === VariableType.SHA256
+      || p.type === VariableType.SIGHASHTYPE
+      || p.type === VariableType.SIGHASHPREIMAGE
+      || p.type === VariableType.OPCODETYPE) {
+      asmTemplate.set(`$${p.name}`, '00');
+    } else {
+      throw new Error(`param ${p.name} has unknown type ${p.type}`);
+    }
+
+  });
+
+  return stateProps.map(p => ({
+    type: contract.typeResolver(p.type),
+    name: p.name,
+    value: undefined
+  })).map(arg => deserializeArgfromASM(contract, arg, asmTemplate));
+}
+
 
 
 export function readBytes(br: bsv.encoding.BufferReader): {

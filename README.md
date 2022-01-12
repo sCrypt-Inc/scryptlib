@@ -238,7 +238,7 @@ let state = instance.counter;
 instance.counter++;
 ```
 
-Then use `instance.getNewStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
+Then use `instance.getNewStateScript()` to get a locking script that includes the new state. It accepts an object as a parameter. Each key of the object is the name of a state property, and each value is the value of the state property. You should provide all state properties in the object.
 
 ```typescript
 const tx = newTx(inputSatoshis);
