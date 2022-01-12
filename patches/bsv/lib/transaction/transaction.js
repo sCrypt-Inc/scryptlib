@@ -1300,7 +1300,7 @@ Transaction.prototype.setLockTime = function (nLockTime) {
  * @returns satoshis of change output
  */
 Transaction.prototype.getChangeAmount = function () {
-  if (!this._changeScript) {
+  if (_.isUndefined(this._changeIndex)) {
     return 0
   }
 
