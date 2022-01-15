@@ -5,8 +5,7 @@ import { serialize, serializeInt } from './serializer';
 // A type resolver that can resolve type aliases to final types
 export type TypeResolver = (type: string) => string;
 
-export type IntValueType = number | bigint | string;
-export type ValueType = IntValueType | boolean | StructObject;
+export type ValueType = RawTypes | StructObject;
 
 
 export function toScryptType(a: ValueType): ScryptType {
@@ -107,7 +106,7 @@ export class Int extends ScryptType {
   toLiteral(): string {
     return this._value.toString();
   }
-  checkValue(value: IntValueType): IntValueType {
+  checkValue(value: ValueType): ValueType {
     super.checkValue(value);
     if (!isInteger(value)) {
       throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string: ' + value);
@@ -127,7 +126,7 @@ export class Int extends ScryptType {
     return this.value;
   }
   public serialize(): string {
-    return serializeInt(this.value as IntValueType);
+    return serializeInt(this.value as string);
   }
 
 }
@@ -176,7 +175,7 @@ export class PrivKey extends Int {
   }
 
   public serialize(): string {
-    return serializeInt(this.value as IntValueType);
+    return serializeInt(this.value as string);
   }
 }
 
@@ -487,19 +486,7 @@ export class Struct extends ScryptType {
       throw 'unbinded Struct can\'t call toArray';
     }
 
-    const v: StructObject = this.value as StructObject;
-
-    return Object.keys(v).map((key) => {
-      if (v[key] instanceof ScryptType) {
-        return v[key] as ScryptType;
-      } else if (typeof v[key] === 'boolean') {
-        return new Bool(v[key] as boolean);
-      } else if (typeof v[key] === 'number') {
-        return new Int(v[key] as number);
-      } else if (typeof v[key] === 'bigint') {
-        return new Int(v[key] as bigint);
-      }
-    });
+    return Object.values(this.value).map(v => toScryptType(v));
   }
 
 
@@ -518,20 +505,7 @@ export class Struct extends ScryptType {
   */
   getMemberType(key: string): string {
     const v: StructObject = this.value as StructObject;
-
-    if (v[key] instanceof ScryptType) {
-      return (v[key] as ScryptType).type;
-    } else if (typeof v[key] === 'boolean') {
-      return new Bool(v[key] as boolean).type;
-    } else if (typeof v[key] === 'number') {
-      return new Int(v[key] as number).type;
-    } else if (typeof v[key] === 'bigint') {
-      return new Int(v[key] as bigint).type;
-    } else if (typeof v[key] === 'string') {
-      return new Int(v[key] as string).type;
-    } else {
-      return typeof v[key];
-    }
+    return toScryptType(v).type;
   }
 
   /**
@@ -564,22 +538,17 @@ export class Struct extends ScryptType {
     return Object.keys(v);
   }
 
-  memberByKey(key: string): SingletonParamType | undefined {
+  memberByKey(key: string): SupportedParamType | undefined {
     const v: StructObject = this.value as StructObject;
-
-    if (v[key] instanceof ScryptType) {
-      return v[key] as ScryptType;
-    } else if (typeof v[key] === 'boolean') {
-      return new Bool(v[key] as boolean);
-    } else if (typeof v[key] === 'number') {
-      return new Int(v[key] as number);
-    } else if (typeof v[key] === 'bigint') {
-      return new Int(v[key] as bigint);
-    } else if (typeof v[key] === 'string') {
-      return new Int(v[key] as string);
+    const member = v[key];
+    if(Array.isArray(member)) {
+      return member;
     }
 
-    return v[key];
+    if(typeof member !== "undefined") {
+      return toScryptType(member);
+    }
+    return undefined;
   }
 
 
@@ -638,17 +607,19 @@ export class Struct extends ScryptType {
 }
 
 
-export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct | PrimitiveTypes[];
+export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct ;
 
-export type RawTypes = boolean | number | bigint | string | RawTypes[];
+export type RawTypes = boolean | number | bigint | string ;
 
 
 export type SingletonParamType = PrimitiveTypes | RawTypes;
 
 
-export type StructObject = Record<string, SingletonParamType>;
-
 export type SupportedParamType = SingletonParamType | SupportedParamType[];
+
+export type StructObject = Record<string, SupportedParamType>;
+
+
 
 
 export type HashedSet<K extends SupportedParamType> = Set<K>;
