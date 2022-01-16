@@ -5,6 +5,7 @@ import {
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
   StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160, buildDefaultStateProps
 } from './internal';
+import { Library } from './scryptTypes';
 
 
 export interface TxContext {
@@ -32,6 +33,7 @@ export interface ContractDescription {
   md5: string;
   stateProps: Array<ParamEntity>;
   structs: Array<StructEntity>;
+  library: Array<StructEntity>;
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
   generics: Array<GenericEntity>;
@@ -479,7 +481,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 
 
   const staticConst = desc.staticConst || {};
-  ContractClass.typeResolver = buildTypeResolver(desc.contract, desc.alias || [], desc.structs || [], staticConst);
+  ContractClass.typeResolver = buildTypeResolverFromDesc(desc);
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
@@ -550,10 +552,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 export function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
 
   const structTypes: Record<string, typeof Struct> = {};
-
   const structs: StructEntity[] = desc.structs || [];
-  const alias: AliasEntity[] = desc.alias || [];
-  const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
+  const finalTypeResolver = buildTypeResolverFromDesc(desc);
   structs.forEach(element => {
     const name = element.name;
 
@@ -562,7 +562,7 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
         constructor(o: StructObject) {
           super(o);
           this._typeResolver = finalTypeResolver; //we should assign this before bind
-          this.bind();
+          this.bind(element);
         }
       }
     });
@@ -574,6 +574,32 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 }
 
 
+export function buildLibraryClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
+
+  const libraryTypes: Record<string, typeof Struct> = {};
+
+  // map LibraryEntity to StructEntity, as we treat lib as struct
+  const library: StructEntity[] = desc.library || [];
+
+  const finalTypeResolver = buildTypeResolverFromDesc(desc);
+  library.forEach(element => {
+    const name = element.name;
+
+    Object.assign(libraryTypes, {
+      [name]: class extends Library {
+        constructor(...args: SupportedParamType[]) {
+          super(...args);
+          this._typeResolver = finalTypeResolver; //we should assign this before bind
+          this.bind(element);
+        }
+      }
+    });
+
+    libraryTypes[name].structAst = element;
+  });
+
+  return libraryTypes;
+}
 
 export function buildTypeClasses(descOrClas: CompileResult | ContractDescription | typeof AbstractContract): Record<string, typeof ScryptType> {
 
@@ -585,10 +611,12 @@ export function buildTypeClasses(descOrClas: CompileResult | ContractDescription
   const desc = descOrClas as CompileResult | ContractDescription;
 
   const structClasses = buildStructsClass(desc);
+  const libraryClasses = buildLibraryClass(desc);
+  Object.assign(structClasses, libraryClasses);
   const allTypeClasses: Record<string, typeof ScryptType> = {};
   const alias: AliasEntity[] = desc.alias || [];
-  const structs: StructEntity[] = desc.structs || [];
-  const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
+
+  const finalTypeResolver = buildTypeResolverFromDesc(desc);
   alias.forEach(element => {
     const finalType = finalTypeResolver(element.name);
     if (isStructType(finalType)) {
@@ -631,8 +659,18 @@ export function buildTypeClasses(descOrClas: CompileResult | ContractDescription
 }
 
 
+export function buildTypeResolverFromDesc(desc: CompileResult | ContractDescription): TypeResolver {
+  const alias: AliasEntity[] = desc.alias || [];
+  const library: StructEntity[] = desc.library || [];
+  const structs: StructEntity[] = desc.structs || [];
+  const staticConst = desc['staticConst'] || {};
+  const contract = desc.contract;
+  return buildTypeResolver(contract, alias, structs, library, staticConst);
 
-export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], staticConst: Record<string, number>): TypeResolver {
+}
+
+export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], library: StructEntity[], staticConst: Record<string, number>): TypeResolver {
+
   const resolvedTypes: Record<string, string> = {};
   alias.forEach(element => {
     const type = resolveType(alias, element.name);
@@ -640,6 +678,10 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
     resolvedTypes[element.name] = finalType;
   });
   structs.forEach(element => {
+    resolvedTypes[element.name] = `struct ${element.name} {}`;
+  });
+
+  library.forEach(element => {
     resolvedTypes[element.name] = `struct ${element.name} {}`;
   });
 

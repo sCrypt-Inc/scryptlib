@@ -5,7 +5,7 @@ import { serialize, serializeInt } from './serializer';
 // A type resolver that can resolve type aliases to final types
 export type TypeResolver = (type: string) => string;
 
-export type ValueType = RawTypes | StructObject;
+export type ValueType = RawTypes | StructObject | ValueType[];
 
 
 export function toScryptType(a: ValueType): ScryptType {
@@ -30,9 +30,9 @@ export class ScryptType {
 
   [key: string]: any;
 
-  constructor(value: ValueType) {
+  constructor(...value: ValueType[]) {
     try {
-      this._value = this.checkValue(value);
+      this._value = this.checkValue(value[0]);
       this._literal = this.toLiteral();
       const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
@@ -433,9 +433,11 @@ export class Struct extends ScryptType {
     super(o);
   }
 
+  static setStructAst(structAst: StructEntity) {
+    this.structAst = structAst;
+  }
 
-  protected bind(): void {
-    const structAst: StructEntity = Object.getPrototypeOf(this).constructor.structAst;
+  protected bind(structAst: StructEntity): void {
     checkStruct(structAst, this, this._typeResolver);
     const ordered = {};
     const unordered = this.value;
@@ -603,6 +605,32 @@ export class Struct extends ScryptType {
   }
   public serialize(): string {
     return serialize(this.value as string);
+  }
+}
+
+
+
+function toStructObject(structAst: StructEntity, args: SupportedParamType[]): StructObject {
+  return args.reduce((previousValue, currentValue, index)=> {
+    previousValue[structAst.params[index].name] = currentValue;
+    return previousValue;
+  }, {})
+}
+
+export class Library extends Struct {
+  private args: SupportedParamType[] = [];
+  constructor(...args: SupportedParamType[]) {
+    super({});
+    this.args = args;
+  }
+
+  attach(structAst: StructEntity) {
+    this._value = toStructObject(structAst, this.args);
+  }
+
+  protected bind(structAst: StructEntity): void {
+    this.attach(structAst);
+    super.bind(structAst);
   }
 }
 

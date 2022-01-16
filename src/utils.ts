@@ -263,7 +263,7 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // Struct
-  m = /^\{([\w(){}[\],\s'-]+)\}$/.exec(l);
+  m = /^\{([\w(){}[\],\s'-]*)\}$/.exec(l);
   if (m) {
     // we use object to constructor a struct, no use literal, so here we return empty
     return ['', '', VariableType.STRUCT];

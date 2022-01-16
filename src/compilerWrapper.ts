@@ -96,6 +96,7 @@ export interface CompileResult {
   contract?: string;
   md5?: string;
   structs?: Array<StructEntity>;
+  library?: Array<StructEntity>;
   alias?: Array<AliasEntity>;
   generics?: Array<GenericEntity>;
   file?: string;
@@ -230,10 +231,11 @@ export function compile(
       const alias = getAliasDeclaration(result.ast, allAst);
       const structs = getStructDeclaration(result.ast, allAst);
       const generics = getGenericDeclaration(result.ast, allAst);
+      const library = getLibraryDeclaration(result.ast, allAst);
 
       result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
 
-      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, result.staticConst);
+      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, result.staticConst);
 
       result.alias = alias.map(a => ({
         name: a.name,
@@ -241,6 +243,11 @@ export function compile(
       }));
 
       result.structs = structs.map(a => ({
+        name: a.name,
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+      }));
+
+      result.library = library.map(a => ({
         name: a.name,
         params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
       }));
@@ -346,6 +353,7 @@ export function compile(
         contract: result.contract,
         md5: md5(sourceContent),
         structs: result.structs || [],
+        library: result.library || [],
         alias: result.alias || [],
         generics: result.generics || [],
         abi: result.abi || [],
@@ -586,6 +594,43 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   }).flat(1);
 }
 
+
+
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined Library of the main contract and dependent contracts
+ */
+export function getLibraryDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
+
+  const allAst = [astRoot];
+
+  Object.keys(dependencyAsts).forEach(key => {
+    allAst.push(dependencyAsts[key]);
+  });
+
+  return allAst.map(ast => {
+    return (ast.contracts || []).filter(c => c.nodeType == "Library").map(c => {
+      if (c['constructor']) {
+        return {
+          name: c.name,
+          params: c['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+        };
+      } else {
+        // implicit constructor
+        if (c['properties']) {
+          return {
+            name: c.name,
+            params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+          };
+        }
+      }
+    });
+  }).flat(1);
+}
+
+
 /**
  * 
  * @param astRoot AST root node after main contract compilation
@@ -690,6 +735,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
     stateProps: description.stateProps || [],
+    library: description.library || [],
     errors: [],
     warnings: [],
     staticConst: {},

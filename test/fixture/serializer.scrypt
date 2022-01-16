@@ -1,0 +1,120 @@
+
+// a de/serializer for basic types
+
+library Reader {
+    // fixed number of bytes to denote length serialized state, including varint prefix (1 byte) + length (2 bytes)
+    // change this length to 4 when you need PushData4
+    static const int StateLen = 3;
+
+    bytes buf;
+    int pos;
+
+    constructor(bytes buf) {
+        this.buf = buf;
+        this.pos = 0;
+    }
+
+    function eof() : bool {
+        return this.pos >= len(this.buf);
+    }
+
+    function readBytes() : bytes {
+        int len = 0;
+        bytes b = this.buf;
+        bytes ret = b'';
+        int header = unpack(b[this.pos : this.pos + 1]);
+        this.pos++;
+
+        if (header < 0x4c) {
+            len = header;
+            ret = b[this.pos : this.pos + len];
+        }
+        else if (header == 0x4c) {
+            len = Utils.fromLEUnsigned(b[this.pos : this.pos + 1]);
+            this.pos += 1;
+            ret = b[this.pos : this.pos + len];
+        }
+        else if (header == 0x4d) {
+            len = Utils.fromLEUnsigned(b[this.pos : this.pos + 2]);
+            this.pos += 2;
+            ret = b[this.pos : this.pos + len];
+        }
+        else if (header == 0x4e) {
+            len = Utils.fromLEUnsigned(b[this.pos : this.pos + 4]);
+            this.pos += 4;
+            ret = b[this.pos : this.pos + len];
+        }
+        else {
+            // shall not reach here
+            require(false);
+        }
+
+        this.pos += len;
+        return ret;
+    }
+
+    function readBool() : bool {
+        bytes b = this.buf[this.pos : this.pos + 1];
+        this.pos++;
+        return b'00' != b;
+    }
+
+    function readInt() : int {
+        return unpack(this.readBytes());
+    }
+
+    static function getStateStart(bytes scriptCode) : int {
+        // locking script: code + opreturn + data(state + state_len)
+        int scriptLen = len(scriptCode);
+        // read state length: +1 to skip varint prefix
+        bytes lb = scriptCode[scriptLen - Reader.StateLen + 1 :];
+        int stateLen = unpack(lb);
+        return scriptLen - stateLen - Reader.StateLen;
+    }
+}
+
+library Writer {
+    bytes buf;
+
+    function toBuffer() : bytes {
+        return this.buf;
+    }
+
+    // return VarInt encoding
+    function writeBytes(bytes b) : Writer {
+        int n = len(b);
+
+        bytes header = b'';
+
+        if (n < 0x4c) {
+            header = Utils.toLEUnsigned(n, 1);
+        }
+        else if (n < 0x100) {
+            header = b'4c' + Utils.toLEUnsigned(n, 1);
+        }
+        else if (n < 0x10000) {
+            header = b'4d' + Utils.toLEUnsigned(n, 2);
+        }
+        else if (n < 0x100000000) {
+            header = b'4e' + Utils.toLEUnsigned(n, 4);
+        }
+        else {
+            // shall not reach here
+            require(false);
+        }
+
+        this.buf += header + b;
+        return new Writer(this.buf);
+    }
+
+    // uses fixed 1 byte to represent a boolean, plus length
+    function writeBool(bool x) : Writer {
+        this.buf += (x ? b'01' : b'00');
+        return new Writer(this.buf);
+    }
+
+    // int is little endian
+    function writeInt(int x) : Writer {
+        return this.writeBytes(x == 0 ? b'00' : pack(x));
+    }
+}

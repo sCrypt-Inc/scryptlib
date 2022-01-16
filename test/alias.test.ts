@@ -126,7 +126,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias_desc.json');
-      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, {})
+      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, {})
       expect(finalTypeResolver("Age")).to.equal('int')
       expect(finalTypeResolver("Time")).to.equal('int')
       expect(finalTypeResolver("Name")).to.equal('bytes')
@@ -162,7 +162,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver('', [], [], {})
+      const finalTypeResolver = buildTypeResolver('', [], [], [], {})
 
       expect(finalTypeResolver("int")).to.equal('int')
       expect(finalTypeResolver("PubKey")).to.equal('PubKey')
@@ -189,7 +189,7 @@ describe('Alias type check', () => {
 
     it('should success when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias1_desc.json');
-      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, {})
+      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, {})
       expect(finalTypeResolver("Tokens")).to.equal('int[3]')
       expect(finalTypeResolver("TokenArray")).to.equal('int[1][3]')
       expect(finalTypeResolver("TokenAA")).to.equal('int[4][5][1][3]')
@@ -213,7 +213,7 @@ describe('Alias type check', () => {
     const result = compileContract(getContractFilePath('varassub.scrypt'));
     it('should success when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver(result.contract, result.alias, result.structs, result.staticConst)
+      const finalTypeResolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.staticConst)
       expect(finalTypeResolver("int[1][SUB]")).to.equal('int[1][3]')
       expect(finalTypeResolver("int[1][VarAsSub.SUB]")).to.equal('int[1][3]')
 
