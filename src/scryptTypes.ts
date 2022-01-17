@@ -669,6 +669,7 @@ export enum VariableType {
   SIGHASHTYPE = 'SigHashType',
   SIGHASHPREIMAGE = 'SigHashPreimage',
   OPCODETYPE = 'OpCodeType',
+  PUBKEYHASH = 'PubKeyHash',
   STRUCT = 'struct'
 }
 
