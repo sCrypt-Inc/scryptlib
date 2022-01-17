@@ -911,12 +911,12 @@ describe('compile()', () => {
       const result1 = compileContract(getContractFilePath('const.scrypt'));
 
       expect(result1.statics).to.deep.equal([
-        { const: true, name: 'Util.DATALEN', type: 'int', value: 5 },
+        { const: true, name: 'Util.DATALEN', type: 'int', value: "5" },
         {
           const: true,
           name: 'Util.BIGINT',
           type: 'int',
-          value: '2.988348162058574136915891421498819466320163312926952423791023078876139e+69'
+          value: '2988348162058574136915891421498819466320163312926952423791023078876139'
         },
         {
           const: true,
@@ -928,28 +928,28 @@ describe('compile()', () => {
           const: true,
           name: 'ConstTest.bb',
           type: 'bytes',
-          value: undefined
+          value: "b'aaaa'"
         },
-        { const: true, name: 'ConstTest.N', type: 'int', value: 3 },
-        { const: true, name: 'ConstTest.UU', type: 'int', value: 5 },
+        { const: true, name: 'ConstTest.N', type: 'int', value: "3" },
+        { const: true, name: 'ConstTest.UU', type: 'int', value: "5" },
         { const: true, name: 'ConstTest.C', type: 'int', value: undefined },
         {
           const: true,
           name: 'ConstTest.amount',
           type: 'int',
-          value: 1
+          value: "1"
         },
         {
           const: true,
           name: 'ConstTest.p',
           type: 'PubKey',
-          value: undefined
+          value: "b'aaaa'"
         },
         {
           const: true,
           name: 'ConstTest.BIGINT',
           type: 'int',
-          value: '2.988348162058574136915891421498819466320163312926952423791023078876139e+69'
+          value: "2988348162058574136915891421498819466320163312926952423791023078876139"
         }
       ])
 

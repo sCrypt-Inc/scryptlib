@@ -1123,25 +1123,81 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 
 }
 
+
+
+export function resolveConstValue(node: any): string | undefined {
+
+	let value: string | undefined = undefined;
+	if (node.expr.nodeType === "IntLiteral") {
+		value = node.expr.value.toString(10);
+	} else if (node.expr.nodeType === "BoolLiteral") {
+		value = node.expr.value;
+	} if (node.expr.nodeType === "BytesLiteral") {
+		value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
+	} if (node.expr.nodeType === "FunctionCall") {
+		if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
+       VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE, 
+       VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+			value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
+		} else if (node.expr.name === VariableType.PRIVKEY) {
+			value = node.expr.params[0].value.toString(10);
+		}
+	}
+	return value;
+}
+
+export function resolveType(type: string, contract: string, statics: StaticEntity[], alias: AliasEntity[]): string {
+  const _type = resolveAliasType(alias, type);
+  const finalType = resolveArrayType(contract, _type, statics);
+  return finalType;
+}
+
+
+export function resolveArrayType(contract: string, type: string, statics: StaticEntity[]): string {
+
+  if (isArrayType(type)) {
+    const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
+
+    const sizes = arraySizes.map(size => {
+      if (/^(\d)+$/.test(size)) {
+        return parseInt(size);
+      } else {
+        // size as a static const
+        const size_ = (size.indexOf('.') > 0) ? size : `${contract}.${size}`;
+        const value = findConstStatic(statics, size_);
+        if (!value) {
+          console.warn(`resolve array sub ${size} fail`);
+          return size;
+        }
+        return value.value;
+      }
+    });
+
+    return toLiteralArrayType(elemTypeName, sizes);
+  }
+  return type;
+}
+
+
 /***
  * resolve type
  */
-export function resolveType(alias: AliasEntity[], type: string): string {
+export function resolveAliasType(alias: AliasEntity[], type: string): string {
 
 
   if (isArrayType(type)) {
     const [elemTypeName, sizes] = arrayTypeAndSizeStr(type);
-    const elemType = resolveType(alias, elemTypeName);
+    const elemType = resolveAliasType(alias, elemTypeName);
 
     if (isArrayType(elemType)) {
       const [elemTypeName_, sizes_] = arrayTypeAndSizeStr(elemType);
       return toLiteralArrayType(elemTypeName_, sizes.concat(sizes_));
     }
-    return toLiteralArrayType(resolveType(alias, elemTypeName), sizes);
+    return toLiteralArrayType(resolveAliasType(alias, elemTypeName), sizes);
   }
 
   if (isStructType(type)) {
-    return resolveType(alias, getStructNameByType(type));
+    return resolveAliasType(alias, getStructNameByType(type));
   }
 
   const a = alias.find(a => {
@@ -1149,7 +1205,7 @@ export function resolveType(alias: AliasEntity[], type: string): string {
   });
 
   if (a) {
-    return resolveType(alias, a.type);
+    return resolveAliasType(alias, a.type);
   } else {
     if (BasicType.indexOf(type) > -1) {
       return type;
@@ -1296,38 +1352,13 @@ export function isInteger(x: unknown): boolean {
 
 export function findConstStatic(statics: StaticEntity[], name: string): StaticEntity {
   return statics.find(s => {
-    return s.const === true && s.name === name
-  })
+    return s.const === true && s.name === name;
+  });
 }
 export function findStatic(statics: StaticEntity[], name: string): StaticEntity {
   return statics.find(s => {
-    return s.name === name
-  })
-}
-
-export function resolveStaticConst(contract: string, type: string, statics: StaticEntity[]): string {
-
-  if (isArrayType(type)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
-
-    const sizes = arraySizes.map(size => {
-      if (/^(\d)+$/.test(size)) {
-        return parseInt(size);
-      } else {
-        // size as a static const
-        let size_ = (size.indexOf('.') > 0) ? size : `${contract}.${size}`;
-        const value = findConstStatic(statics, size_);
-        if (!value) {
-          console.warn(`resolve array sub ${size} fail`);
-          return size;
-        }
-        return value.value;
-      }
-    });
-
-    return toLiteralArrayType(elemTypeName, sizes);
-  }
-  return type;
+    return s.name === name;
+  });
 }
 
 function escapeRegExp(stringToGoIntoTheRegex) {

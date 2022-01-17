@@ -2,7 +2,7 @@ import { LibraryEntity, ParamEntity } from '.';
 import { GenericEntity, StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
-  Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
+  Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveArrayType, toLiteralArrayType,
   StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160, buildDefaultStateProps
 } from './internal';
 import { Library } from './scryptTypes';
@@ -673,9 +673,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
   const resolvedTypes: Record<string, string> = {};
   alias.forEach(element => {
-    const type = resolveType(alias, element.name);
-    const finalType = resolveStaticConst(contract, type, statics);
-    resolvedTypes[element.name] = finalType;
+    resolvedTypes[element.name] = resolveType(element.name, contract, statics, alias);
   });
   structs.forEach(element => {
     resolvedTypes[element.name] = `struct ${element.name} {}`;
@@ -695,34 +693,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
       return `${resolvedTypes[type]}`;
     }
 
-
-    if (isArrayType(type)) {
-      const finalType = resolveStaticConst(contract, type, statics);
-
-      const [elemTypeName, sizes] = arrayTypeAndSize(finalType);
-
-      if (BasicScryptType[elemTypeName]) {
-        return toLiteralArrayType(elemTypeName, sizes);
-      } else if (resolvedTypes[elemTypeName]) {
-
-        if (isArrayType(resolvedTypes[elemTypeName])) {
-          const [elemTypeName_, sizes_] = arrayTypeAndSize(resolvedTypes[elemTypeName]);
-          return toLiteralArrayType(elemTypeName_, sizes.concat(sizes_));
-        }
-        return toLiteralArrayType(resolvedTypes[elemTypeName], sizes);
-      } else if (isStructType(elemTypeName)) {
-        const structName = getStructNameByType(elemTypeName);
-        return resolver(toLiteralArrayType(structName, sizes));
-      } else {
-        throw new Error('typeResolver with unknown elemTypeName ' + elemTypeName);
-      }
-
-    } else if (isStructType(type)) {
-      const structName = getStructNameByType(type);
-      return resolver(structName);
-    } else {
-      return type;
-    }
+    return resolveType(type, contract, statics, alias)
   };
 
   return resolver;

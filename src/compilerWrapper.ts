@@ -5,7 +5,7 @@ import md5 = require('md5');
 import JSONbig = require('json-bigint');
 import {
   path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
-  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr
+  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr, resolveConstValue
 } from './internal';
 
 
@@ -706,18 +706,12 @@ export function getStaticDeclaration(astRoot, dependencyAsts): Array<StaticEntit
 
   return allAst.map((ast) => {
     return (ast.contracts || []).map(contract => {
-      return (contract.statics || []).map(s => {
-        let value = undefined;
-        if(s.expr.nodeType === 'IntLiteral') {
-          value =  s.expr.value.toNumber() <= Number.MAX_SAFE_INTEGER? s.expr.value.toNumber() : s.expr.value.toString();
-        } else if(s.expr.nodeType === 'BoolLiteral') {
-          value =  s.expr.value;
-        }
+      return (contract.statics || []).map(node => {
         return {
-          const: s.const,
-          name: `${contract.name}.${s.name}`,
-          type: s.type,
-          value: value
+          const: node.const,
+          name: `${contract.name}.${node.name}`,
+          type: node.type,
+          value: resolveConstValue(node)
         };
       });
     });
