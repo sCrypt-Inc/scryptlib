@@ -903,4 +903,58 @@ describe('compile()', () => {
     })
   })
 
+  describe('test statics', () => {
+    it('compile successfully', () => {
+      const result = compileContract(getContractFilePath('p2pkh.scrypt'));
+
+      expect(result.statics).to.deep.equal([])
+      const result1 = compileContract(getContractFilePath('const.scrypt'));
+
+      expect(result1.statics).to.deep.equal([
+        { const: true, name: 'Util.DATALEN', type: 'int', value: 5 },
+        {
+          const: true,
+          name: 'Util.BIGINT',
+          type: 'int',
+          value: '2.988348162058574136915891421498819466320163312926952423791023078876139e+69'
+        },
+        {
+          const: true,
+          name: 'ConstTest.aaa',
+          type: 'bool',
+          value: undefined
+        },
+        {
+          const: true,
+          name: 'ConstTest.bb',
+          type: 'bytes',
+          value: undefined
+        },
+        { const: true, name: 'ConstTest.N', type: 'int', value: 3 },
+        { const: true, name: 'ConstTest.UU', type: 'int', value: 5 },
+        { const: true, name: 'ConstTest.C', type: 'int', value: undefined },
+        {
+          const: true,
+          name: 'ConstTest.amount',
+          type: 'int',
+          value: 1
+        },
+        {
+          const: true,
+          name: 'ConstTest.p',
+          type: 'PubKey',
+          value: undefined
+        },
+        {
+          const: true,
+          name: 'ConstTest.BIGINT',
+          type: 'int',
+          value: '2.988348162058574136915891421498819466320163312926952423791023078876139e+69'
+        }
+      ])
+
+      
+    })
+  })
+
 })

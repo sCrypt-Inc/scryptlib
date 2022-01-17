@@ -16,7 +16,7 @@ import {
   Arguments, Argument,
   Script, ParamEntity, SingletonParamType
 } from './internal';
-import { GenericEntity } from './compilerWrapper';
+import { GenericEntity, StaticEntity } from './compilerWrapper';
 import { HashedMap, HashedSet } from './scryptTypes';
 import { VerifyError } from './contract';
 import { ABIEntity } from '.';
@@ -1293,7 +1293,19 @@ export function isInteger(x: unknown): boolean {
 }
 
 
-export function resolveStaticConst(contract: string, type: string, staticConstInt: Record<string, number>): string {
+
+export function findConstStatic(statics: StaticEntity[], name: string): StaticEntity {
+  return statics.find(s => {
+    return s.const === true && s.name === name
+  })
+}
+export function findStatic(statics: StaticEntity[], name: string): StaticEntity {
+  return statics.find(s => {
+    return s.name === name
+  })
+}
+
+export function resolveStaticConst(contract: string, type: string, statics: StaticEntity[]): string {
 
   if (isArrayType(type)) {
     const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
@@ -1302,13 +1314,14 @@ export function resolveStaticConst(contract: string, type: string, staticConstIn
       if (/^(\d)+$/.test(size)) {
         return parseInt(size);
       } else {
-        const value = (size.indexOf('.') > 0) ? staticConstInt[size] : staticConstInt[`${contract}.${size}`];
-
+        // size as a static const
+        let size_ = (size.indexOf('.') > 0) ? size : `${contract}.${size}`;
+        const value = findConstStatic(statics, size_);
         if (!value) {
           console.warn(`resolve array sub ${size} fail`);
           return size;
         }
-        return value;
+        return value.value;
       }
     });
 

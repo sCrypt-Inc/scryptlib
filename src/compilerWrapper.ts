@@ -7,7 +7,6 @@ import {
   path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
   buildTypeResolver, TypeResolver, arrayTypeAndSizeStr
 } from './internal';
-import { type } from 'os';
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -103,7 +102,7 @@ export interface CompileResult {
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
-  staticConst?: Record<string, number>
+  statics?: Array<StaticEntity>;
 }
 
 export enum DebugModeTag {
@@ -162,6 +161,13 @@ export type LibraryEntity = StructEntity
 export interface AliasEntity {
   name: string;
   type: string;
+}
+
+export interface StaticEntity {
+  name: string;
+  type: string;
+  const: boolean;
+  value?: any;
 }
 
 export interface GenericEntity {
@@ -234,9 +240,9 @@ export function compile(
       const generics = getGenericDeclaration(result.ast, allAst);
       const library = getLibraryDeclaration(result.ast, allAst);
 
-      result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
+      const statics = getStaticDeclaration(result.ast, allAst);
 
-      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, result.staticConst);
+      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, statics);
 
       result.alias = alias.map(a => ({
         name: a.name,
@@ -252,6 +258,11 @@ export function compile(
         name: a.name,
         params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
       }));
+
+      result.statics = statics.map(s => (Object.assign({...s},{
+        type: shortType(typeResolver(s.type))
+      })));
+
 
       result.generics = generics;
 
@@ -686,26 +697,31 @@ export function getGenericDeclaration(astRoot: any, dependencyAsts: any): Array<
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined static const int literal of the main contract and dependent contracts
  */
-export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
+export function getStaticDeclaration(astRoot, dependencyAsts): Array<StaticEntity> {
 
   const allAst = [astRoot];
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
 
-  return allAst.map((ast, index) => {
+  return allAst.map((ast) => {
     return (ast.contracts || []).map(contract => {
-      return (contract.statics || []).filter(s => (
-        s.const === true && s.expr.nodeType === 'IntLiteral'
-      )).map(s => {
-
+      return (contract.statics || []).map(s => {
+        let value = undefined;
+        if(s.expr.nodeType === 'IntLiteral') {
+          value =  s.expr.value.toNumber() <= Number.MAX_SAFE_INTEGER? s.expr.value.toNumber() : s.expr.value.toString();
+        } else if(s.expr.nodeType === 'BoolLiteral') {
+          value =  s.expr.value;
+        }
         return {
+          const: s.const,
           name: `${contract.name}.${s.name}`,
-          value: s.expr.value
+          type: s.type,
+          value: value
         };
       });
     });
-  }).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
+  }).flat(Infinity).flat(1);
 }
 
 /**
@@ -739,7 +755,7 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     library: description.library || [],
     errors: [],
     warnings: [],
-    staticConst: {},
+    statics: [],
     hex: description.hex || '',
     asm: asm.map((opcode, index) => {
       const item = description.sourceMap && description.sourceMap[index];
