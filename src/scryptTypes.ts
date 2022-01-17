@@ -553,7 +553,7 @@ export class Struct extends ScryptType {
       return member;
     }
 
-    return typeof member !== "undefined" ? toScryptType(member) : undefined;
+    return typeof member !== 'undefined' ? toScryptType(member) : undefined;
   }
 
 
@@ -617,7 +617,7 @@ function toStructObject(structAst: StructEntity, args: SupportedParamType[]): St
   return args.reduce((previousValue, currentValue, index)=> {
     previousValue[structAst.params[index].name] = currentValue;
     return previousValue;
-  }, {})
+  }, {});
 }
 
 export class Library extends Struct {

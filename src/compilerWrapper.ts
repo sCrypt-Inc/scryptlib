@@ -612,7 +612,7 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
   });
 
   return allAst.map(ast => {
-    return (ast.contracts || []).filter(c => c.nodeType == "Library").map(c => {
+    return (ast.contracts || []).filter(c => c.nodeType == 'Library').map(c => {
       if (c['constructor']) {
         return {
           name: c.name,
