@@ -1,4 +1,4 @@
-import { ParamEntity } from '.';
+import { LibraryEntity, ParamEntity } from '.';
 import { GenericEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
@@ -33,7 +33,7 @@ export interface ContractDescription {
   md5: string;
   stateProps: Array<ParamEntity>;
   structs: Array<StructEntity>;
-  library: Array<StructEntity>;
+  library: Array<LibraryEntity>;
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
   generics: Array<GenericEntity>;
@@ -574,11 +574,11 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 }
 
 
-export function buildLibraryClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
+export function buildLibraryClass(desc: CompileResult | ContractDescription): Record<string, typeof Library> {
 
-  const libraryTypes: Record<string, typeof Struct> = {};
+  const libraryTypes: Record<string, typeof Library> = {};
 
-  // map LibraryEntity to StructEntity, as we treat lib as struct
+  // map LibraryEntity to StructEntity, as we treat library as struct
   const library: StructEntity[] = desc.library || [];
 
   const finalTypeResolver = buildTypeResolverFromDesc(desc);
@@ -669,7 +669,7 @@ export function buildTypeResolverFromDesc(desc: CompileResult | ContractDescript
 
 }
 
-export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], library: StructEntity[], staticConst: Record<string, number>): TypeResolver {
+export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], library: LibraryEntity[], staticConst: Record<string, number>): TypeResolver {
 
   const resolvedTypes: Record<string, string> = {};
   alias.forEach(element => {

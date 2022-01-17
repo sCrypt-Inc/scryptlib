@@ -3,7 +3,7 @@ import { newTx, loadDescription } from './helper';
 import { DebugLaunch } from '../src/abi';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
 import { bsv, toHex, signTx, num2bin, getPreimage, readLaunchJson } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, SigHashPreimage } from '../src/scryptTypes';
+import { Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage } from '../src/scryptTypes';
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -15,7 +15,7 @@ const tx = newTx(inputSatoshis);
 
 const jsonDescr = loadDescription('p2pkh_desc.json');
 const DemoP2PKH = buildContractClass(jsonDescr);
-const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+const p2pkh = new DemoP2PKH(new PubKeyHash(toHex(pubKeyHash)));
 
 const personDescr = loadDescription('person_desc.json');
 const PersonContract = buildContractClass(personDescr);

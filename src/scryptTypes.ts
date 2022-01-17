@@ -218,6 +218,12 @@ export class Ripemd160 extends ScryptType {
   }
 }
 
+
+export class PubKeyHash extends Ripemd160 {
+ 
+}
+
+
 export class Sha1 extends ScryptType {
   constructor(bytesVal: string) {
     super(bytesVal);
@@ -547,10 +553,7 @@ export class Struct extends ScryptType {
       return member;
     }
 
-    if(typeof member !== "undefined") {
-      return toScryptType(member);
-    }
-    return undefined;
+    return typeof member !== "undefined" ? toScryptType(member) : undefined;
   }
 
 

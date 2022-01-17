@@ -35,8 +35,8 @@ contract Test {
     L l = new L(1, 2);
     Reader reader = l.f(this.x + x);
     require(reader.readBool() == true);
-    int a = reader.readInt();
     require(reader.readInt() == 111);
+    // int a = reader.readInt();
     require(reader.readInt() == 3);
     require(reader.readInt() == 0);
     require(reader.readInt() == 0xff);

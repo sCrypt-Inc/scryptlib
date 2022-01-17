@@ -7,6 +7,7 @@ import {
   path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
   buildTypeResolver, TypeResolver, arrayTypeAndSizeStr
 } from './internal';
+import { type } from 'os';
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -96,7 +97,7 @@ export interface CompileResult {
   contract?: string;
   md5?: string;
   structs?: Array<StructEntity>;
-  library?: Array<StructEntity>;
+  library?: Array<LibraryEntity>;
   alias?: Array<AliasEntity>;
   generics?: Array<GenericEntity>;
   file?: string;
@@ -157,7 +158,7 @@ export interface StructEntity {
   name: string;
   params: Array<ParamEntity>;
 }
-
+export type LibraryEntity = StructEntity
 export interface AliasEntity {
   name: string;
   type: string;
@@ -602,7 +603,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined Library of the main contract and dependent contracts
  */
-export function getLibraryDeclaration(astRoot, dependencyAsts): Array<StructEntity> {
+export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEntity> {
 
   const allAst = [astRoot];
 

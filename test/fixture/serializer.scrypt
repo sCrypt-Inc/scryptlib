@@ -1,5 +1,5 @@
 
-// a de/serializer for basic types
+// a de/serializer for basic types https://github.com/sCrypt-Inc/boilerplate/blob/master/contracts/serializer.scrypt
 
 library Reader {
     // fixed number of bytes to denote length serialized state, including varint prefix (1 byte) + length (2 bytes)
