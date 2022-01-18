@@ -1,4 +1,4 @@
-import { int2Asm, bsv, genLaunchConfigFile, getNameByType, isArrayType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, num2bin, bin2num } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, isArrayType, checkSupportedParamType, flatternArray, typeOfArg, deserializeArgfromASM, num2bin, bin2num } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
@@ -166,23 +166,10 @@ export class ABICoder {
       throw new Error(`wrong number of arguments for '${contractname}.${funname}', expected ${params.length} but got ${args.length}`);
     }
 
-    params.map(p => ({
-      name: p.name,
-      type: this.finalTypeResolver(p.type)
-    })).forEach((param, index) => {
+    params.forEach((param, index) => {
       const arg = args[index];
-      if (isArrayType(param.type)) {
-        if (!checkArray(arg as SupportedParamType[], param.type)) {
-          throw new Error(`The type of parameter ${param.name} is wrong, should be ${param.type}`);
-        }
-      } else {
-        const scryptType = typeOfArg(arg);
-        if (scryptType != param.type) {
-          const expected = isStructOrLibraryType(param.type) ? getNameByType(param.type) : param.type;
-          const got = isStructOrLibraryType(scryptType) ? getNameByType(scryptType) : scryptType;
-          throw new Error(`The type of parameter ${param.name} is wrong, expected ${expected} but got ${got}`);
-        }
-      }
+      let error = checkSupportedParamType(arg, param, this.finalTypeResolver);
+      if(error) throw error;
     });
   }
 

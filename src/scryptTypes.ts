@@ -1,4 +1,4 @@
-import { parseLiteral, getValidatedHexString, intValue2hex, checkStruct, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField } from './internal';
+import { parseLiteral, getValidatedHexString, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField, checkStruct } from './internal';
 import { serialize, serializeInt } from './serializer';
 
 
@@ -631,10 +631,27 @@ export class Library extends Struct {
     this._value = toStructObject(structAst, this.args);
   }
 
+  static isLibrary(arg: SupportedParamType): boolean {
+    return arg instanceof Library;
+  }
+
   protected bind(structAst: StructEntity): void {
     this.attach(structAst);
     super.bind(structAst);
   }
+
+//   toLiteral(): string {
+//     const v = this.value;
+//     const l = Object.keys(this.value).map(key => {
+//       if (Array.isArray(v[key])) {
+//         return Struct.arrayToLiteral(v[key]);
+//       } else {
+//         return toScryptType(v[key]).toLiteral();
+//       }
+//     }).join(',');
+
+//     return `[${l}]`;
+//   }
 }
 
 

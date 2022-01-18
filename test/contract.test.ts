@@ -32,7 +32,7 @@ describe('check explicit  constructor()', () => {
 
     expect(() => {
       new DemoP2PKH(1);
-    }).to.throws(/The type of parameter pubKeyHash is wrong, expected Ripemd160 but got int/);
+    }).to.throws(/The type of pubKeyHash is wrong, expected Ripemd160 but got int/);
   })
 
   it('should throw when wrong number of arguments: public function', () => {
@@ -61,7 +61,7 @@ describe('check implicit   constructor()', () => {
 
     expect(() => {
       new Cointoss(1, 1, 1, 1, 1);
-    }).to.throws(/The type of parameter alice is wrong, expected PubKey but got int/);
+    }).to.throws(/The type of alice is wrong, expected PubKey but got int/);
   })
 })
 

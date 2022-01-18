@@ -3,7 +3,7 @@ import { GenericEntity, StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveArrayType, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160, buildDefaultStateProps, isStructOrLibraryType
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkSupportedParamType, hash160, buildDefaultStateProps, isStructOrLibraryType
 } from './internal';
 import { Library } from './scryptTypes';
 
@@ -152,24 +152,13 @@ export class AbstractContract {
 
     const resolveKeys: string[] = [];
     const newState: Arguments = stateArgs.map(arg => {
-      const finalType = this.typeResolver(arg.type);
       if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
         resolveKeys.push(arg.name);
-        if (isArrayType(finalType)) {
-          const array = states[arg.name] as SupportedParamType[];
-          if (!checkArray(array, finalType)) {
-            throw new Error(`stateful property ${arg.name} should be ${arg.type}`);
-          }
-        } else if (isStructOrLibraryType(finalType)) {
-
-          if (states[arg.name] instanceof Struct) {
-            const st = states[arg.name] as Struct;
-            if (finalType != st.finalType) {
-              throw new Error(`stateful property ${arg.name} expect struct ${getNameByType(finalType)} but got ${st.type}`);
-            }
-          } else {
-            throw new Error(`stateful property ${arg.name} expect struct ${getNameByType(finalType)} but got ${states[arg.name]}`);
-          }
+        const state = states[arg.name];
+        let error = checkSupportedParamType(state, arg, this.typeResolver);
+        
+        if(error) {
+          throw error;
         }
 
         return Object.assign(

@@ -17,7 +17,7 @@ import {
   Script, ParamEntity, SingletonParamType
 } from './internal';
 import { GenericEntity, StaticEntity } from './compilerWrapper';
-import { HashedMap, HashedSet } from './scryptTypes';
+import { HashedMap, HashedSet, Library } from './scryptTypes';
 import { VerifyError } from './contract';
 import { ABIEntity } from '.';
 
@@ -625,8 +625,7 @@ export function checkStructField(s: StructEntity, param: ParamEntity, arg: Suppo
   const expectedType = typeResolver(param.type);
 
   if (isArrayType(expectedType)) {
-    if (!checkArray(arg as SupportedParamType[], expectedType)) {
-
+    if (checkArray(arg as SupportedParamType[], param, expectedType, typeResolver)) {
       throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${param.type}`);
     }
   } else {
@@ -658,6 +657,20 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
     }
   });
 }
+
+
+
+export function checkSupportedParamType(arg: SupportedParamType, param: ParamEntity, resolver: TypeResolver): Error | undefined {
+  const finalType = resolver(param.type);
+  if (isArrayType(finalType)) {
+    return checkArray(arg as SupportedParamType[], param, finalType, resolver)
+  }
+  
+  const t = typeOfArg(arg);
+
+  return t == finalType ? undefined : new Error(`The type of ${param.name} is wrong, expected ${getNameByType(finalType) ? getNameByType(finalType) : finalType} but got ${typeNameOfArg(arg)}`);;
+}
+
 
 
 /**
@@ -709,43 +722,42 @@ export function subArrayType(arrayTypeName: string): string {
 }
 
 
-export function checkArray(args: SupportedParamType[], finalType: string): boolean {
+function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType: string, resolver: TypeResolver): Error | undefined {
+  const finalType = resolver(param.type);
   const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
 
   if (!Array.isArray(args)) {
-    return false;
+    return new Error(`The type of ${param.name} is wrong, expected ${expectedType} but got ${typeNameOfArg(args)}`);
   }
 
   const t = typeOfArg(args[0]);
 
   if (!args.every(arg => typeOfArg(arg) === t)) {
-    return false;
+    return new Error(`The type of ${param.name} is wrong, expected ${expectedType} but not all element types are the same`);
   }
 
-  const len = arraySizes[0];
 
-  if (!len) {
-    return false;
+  if (args.length !== arraySizes[0]) {
+    return new Error(`The type of ${param.name} is wrong, should be ${expectedType}`);
   }
 
-  if (args.length !== len) {
-    return false;
+  if (arraySizes.length == 1) {
+    const arg0 = args[0];
+    const scryptType = typeOfArg(arg0);
+    return scryptType === elemTypeName ?
+      undefined :
+      new Error(`The type of ${param.name} is wrong, should be ${expectedType}`);;
+
+  } else {
+    return args.map(a => {
+      return checkArray(a as SupportedParamType[], {
+        name: param.name,
+        type: subArrayType(finalType)
+      },
+        expectedType,
+        resolver);
+    }).filter(e => e)[0];
   }
-
-  if (!args.every(arg => {
-    if (Array.isArray(arg)) {
-      return checkArray(arg, subArrayType(finalType));
-    } else {
-
-      const scryptType = typeOfArg(arg);
-
-      return scryptType === elemTypeName && arraySizes.length == 1;
-    }
-  })) {
-    return false;
-  }
-
-  return true;
 }
 
 export function subscript(index: number, arraySizes: Array<number>): string {
@@ -1001,6 +1013,12 @@ export function typeOfArg(arg: SupportedParamType): string {
 
 }
 
+export function typeNameOfArg(arg: SupportedParamType): string {
+
+  const scryptType = typeOfArg(arg);
+  return isStructOrLibraryType(scryptType) ? getNameByType(scryptType) : scryptType;
+}
+
 
 export function readFileByLine(path: string, index: number): string {
 
@@ -1162,7 +1180,7 @@ export function resolveConstValue(node: any): string | undefined {
 
 export function resolveType(type: string, originTypes: Record<string, string>, contract: string, statics: StaticEntity[], alias: AliasEntity[]): string {
   const _type = resolveAliasType(alias, type);
-  if(isArrayType(_type)) {
+  if (isArrayType(_type)) {
     const arrayType = resolveArrayType(contract, _type, statics);
     const [elemTypeName, sizes] = arrayTypeAndSizeStr(arrayType);
     return toLiteralArrayType(originTypes[elemTypeName] || elemTypeName, sizes);

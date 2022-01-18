@@ -7,9 +7,10 @@ export { Arguments, Argument } from './internal';
 export {
   bsv, ECIES, signTx, toHex, getPreimage, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
   findStructByType, findStructByName, isStructType, isStructOrLibraryType, isArrayType, compileContract,
-  arrayTypeAndSize, newCall, getNameByType as getStructNameByType, genLaunchConfigFile, subArrayType,
+  arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
-  readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue
+  readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
+  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {

@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey, Ripemd160, PubKey } from '../src/scryptTypes'
 import {
-  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
+  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkSupportedParamType,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
   toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
@@ -354,59 +354,95 @@ describe('utils', () => {
   describe('checkArray()', () => {
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, 3], 'int[3]')).to.true;
+      expect(checkSupportedParamType([3, 3, 3], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3], 'int[3]')).to.false;
+      expect(checkSupportedParamType([3, 3], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, 1, 3], 'int[3]')).to.false;
+      expect(checkSupportedParamType([3, 3, 1, 3], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, new Int(2)], 'int[3]')).to.true;
+      expect(checkSupportedParamType([3, 3, new Int(2)], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, new Bool(true)], 'int[3]')).to.false;
+      expect(checkSupportedParamType([3, 3, new Bool(true)], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3]], 'int[2][3]')).to.true;
+      expect(checkSupportedParamType([[3, 3, 3], [3, 12, 3]], {
+        name: "a",
+        type: 'int[2][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3], [1, 1, 1]], 'int[2][3]')).to.false;
+      expect(checkSupportedParamType([[3, 3, 3], [3, 12, 3], [1, 1, 1]], {
+        name: "a",
+        type: 'int[2][3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12]], 'int[2][3]')).to.false;
+      expect(checkSupportedParamType([[3, 3, 3], [3, 12]], {
+        name: "a",
+        type: 'int[2][3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[2][1][3]', () => {
-      expect(checkArray([[[3, 3, 3]], [[3, 12, 3]]], 'int[2][1][3]')).to.true;
+      expect(checkSupportedParamType([[[3, 3, 3]], [[3, 12, 3]]], {
+        name: "a",
+        type: 'int[2][1][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[2][1][3]', () => {
-      expect(checkArray([[[3, 3, 3], 1], [[3, 12, 3]]], 'int[2][1][3]')).to.false;
+      expect(checkSupportedParamType([[[3, 3, 3], 1], [[3, 12, 3]]], {
+        name: "a",
+        type: 'int[2][1][3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], 'int[2][2][3]')).to.true;
+      expect(checkSupportedParamType([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], {
+        name: "a",
+        type: 'int[2][2][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], 'int[2][2][3]')).to.true;
+      expect(checkSupportedParamType([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]],  {
+        name: "a",
+        type: 'int[2][2][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
 
     it('checkArray int[2][3][4]', () => {
-      expect(checkArray([[
+      expect(checkSupportedParamType([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10, 11, 12]
@@ -415,11 +451,17 @@ describe('utils', () => {
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-      ]], 'int[2][3][4]')).to.true;
+      ]],  {
+        name: "a",
+        type: 'int[2][3][4]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[2][3][4]', () => {
-      expect(checkArray([[1, 3, 5], [2, 4, 6]], 'int[2][3][4]')).to.false;
+      expect(checkSupportedParamType([[1, 3, 5], [2, 4, 6]], {
+        name: "a",
+        type: 'int[2][3][4]'
+      }, (type: string) => type)).to.not.undefined
     })
 
   })
