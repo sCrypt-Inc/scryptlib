@@ -4,8 +4,8 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 
 import md5 = require('md5');
 import JSONbig = require('json-bigint');
 import {
-  path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
-  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr, resolveConstValue
+  path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, getNameByType,
+  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr, resolveConstValue, isStructOrLibraryType
 } from './internal';
 
 
@@ -538,12 +538,12 @@ function getContractName(astRoot): string {
 
 function shortType(finalType: string): string {
   let shortType = finalType;
-  if (isStructType(finalType)) {
-    shortType = getStructNameByType(finalType);
+  if (isStructOrLibraryType(finalType)) {
+    shortType = getNameByType(finalType);
   } else if (isArrayType(finalType)) {
     const [elemType, sizes] = arrayTypeAndSizeStr(finalType);
-    if (isStructType(elemType)) {
-      shortType = toLiteralArrayType(getStructNameByType(elemType), sizes);
+    if (isStructOrLibraryType(elemType)) {
+      shortType = toLiteralArrayType(getNameByType(elemType), sizes);
     }
   }
   return shortType;

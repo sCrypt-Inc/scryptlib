@@ -1,8 +1,8 @@
-import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, num2bin, bin2num } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, getNameByType, isArrayType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, num2bin, bin2num } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { asm2int, buildContractCodeASM, buildDefaultStateProps, flatternArgs, flatternParams, readBytes } from './internal';
+import { asm2int, buildContractCodeASM, buildDefaultStateProps, flatternArgs, flatternParams, isStructOrLibraryType, readBytes } from './internal';
 
 export type Script = bsv.Script;
 
@@ -178,8 +178,8 @@ export class ABICoder {
       } else {
         const scryptType = typeOfArg(arg);
         if (scryptType != param.type) {
-          const expected = isStructType(param.type) ? getStructNameByType(param.type) : param.type;
-          const got = isStructType(scryptType) ? getStructNameByType(scryptType) : scryptType;
+          const expected = isStructOrLibraryType(param.type) ? getNameByType(param.type) : param.type;
+          const got = isStructOrLibraryType(scryptType) ? getNameByType(scryptType) : scryptType;
           throw new Error(`The type of parameter ${param.name} is wrong, expected ${expected} but got ${got}`);
         }
       }
