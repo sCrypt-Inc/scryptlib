@@ -4,7 +4,7 @@ import { loadDescription, getContractFilePath, getInvalidContractFilePath, exclu
 import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
 import { compileContract } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
 
@@ -104,9 +104,7 @@ describe('compile()', () => {
     });
 
     it('source should be sort as expected', () => {
-      expect(desc.sources[0]).to.contains("std");
-      expect(desc.sources[2]).to.contains("util.scrypt");
-      expect(desc.sources[1]).to.contains("tokenUtxo.scrypt");
+      expect(desc.sources.map(path=> basename(path))).to.members(["std", "util.scrypt", "tokenUtxo.scrypt"])
     })
 
 
@@ -334,6 +332,9 @@ describe('compile()', () => {
 
       expect(result.autoTypedVars[6]).to.deep.property("name", "ss1");
       expect(result.autoTypedVars[6]).to.deep.property("type", "struct ST1 {}[2]");
+
+      //expect(result.autoTypedVars[7]).to.deep.property("name", "l");
+      //expect(result.autoTypedVars[7]).to.deep.property("type", "library L {}");
 
     })
 
