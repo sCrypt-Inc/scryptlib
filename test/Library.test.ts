@@ -329,8 +329,12 @@ describe('library as property or return or param', () => {
     describe('LibAsState1 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
-      const { L } = buildTypeClasses(Test);
-      let l = new L(1);
+      const { L, ST } = buildTypeClasses(Test);
+      let l = new L(1, new ST({
+        x: 1,
+        c: true,
+        aa: [1,1,1]
+      }));
       before(() => {
         instance = new Test(l);
       });
@@ -339,7 +343,12 @@ describe('library as property or return or param', () => {
 
         let newLockingScript = instance.getNewStateScript({
           l: l.getNewState({
-            x: 2
+            x: 6,
+            st: new ST({
+              x: 1,
+              c: false,
+              aa: [1,1,1]
+            })
           })
         })
 
@@ -366,7 +375,74 @@ describe('library as property or return or param', () => {
 
         let newLockingScript = instance.getNewStateScript({
           l: l.getNewState({
-            x: 3
+            x: 6,
+            st: new ST({
+              x: 1,
+              c: false,
+              aa: [2,1,1]
+            })
+          })
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+  
+        const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
+  
+        instance.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+  
+        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        expect(result.success, result.error).to.be.false
+      });
+
+      it('should fail when call unlock with error state', () => {
+
+        let newLockingScript = instance.getNewStateScript({
+          l: l.getNewState({
+            x: 6,
+            st: new ST({
+              x: 1,
+              c: true,
+              aa: [1,1,1]
+            })
+          })
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+  
+        const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
+  
+        instance.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+  
+        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        expect(result.success, result.error).to.be.false
+      });
+
+      it('should fail when call unlock with error state', () => {
+
+        let newLockingScript = instance.getNewStateScript({
+          l: l.getNewState({
+            x: 5,
+            st: new ST({
+              x: 1,
+              c: false,
+              aa: [1,1,1]
+            })
           })
         })
 
