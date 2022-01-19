@@ -1,0 +1,25 @@
+library L {
+  int x;
+
+  function inc(int x) : int {
+    this.x += x;
+    return this.x;
+  }
+}
+
+
+contract Test {
+  @state
+  L l;
+
+  public function unlock(int x, SigHashPreimage preimage) {
+    require(Tx.checkPreimage(preimage));
+    int _x = this.l.inc(x);
+    require(_x == 2);
+    require(this.l.x == 2);
+
+    bytes stateScript = this.getStateScript();
+    bytes output = Utils.buildOutput(stateScript, SigHash.value(preimage));
+    require(hash256(output) == SigHash.hashOutputs(preimage));
+  }
+}

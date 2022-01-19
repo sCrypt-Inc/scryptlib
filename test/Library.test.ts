@@ -2,9 +2,12 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
+import { bsv, toHex, getPreimage } from '../src/utils';
+import { SigHashPreimage } from '../src';
 
-
-
+const inputIndex = 0;
+const inputSatoshis = 100000;
+const outputAmount = inputSatoshis
 
 
 describe('library as property or return or param', () => {
@@ -319,6 +322,71 @@ describe('library as property or return or param', () => {
         expect(result.success, result.error).to.be.false
       });
 
+    });
+  })
+
+  describe('Library as state property', () => {
+    describe('LibAsState1 test', () => {
+      let instance, result;
+      const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
+      const { L } = buildTypeClasses(Test);
+      let l = new L(1);
+      before(() => {
+        instance = new Test(l);
+      });
+
+      it('should success when call unlock', () => {
+
+        let newLockingScript = instance.getNewStateScript({
+          l: l.getNewState({
+            x: 2
+          })
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+  
+        const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
+  
+        instance.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+  
+        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        expect(result.success, result.error).to.be.true
+  
+      });
+
+      it('should fail when call unlock with error state', () => {
+
+        let newLockingScript = instance.getNewStateScript({
+          l: l.getNewState({
+            x: 3
+          })
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+  
+        const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
+  
+        instance.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+  
+        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        expect(result.success, result.error).to.be.false
+      });
     });
   })
 })

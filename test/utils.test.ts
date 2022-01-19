@@ -1113,23 +1113,23 @@ describe('utils', () => {
 
 
     it('flattern struct', () => {
-      expect(flatternParams([{ name: 'a', type: 'StatesA' }], Counter.typeResolver, types).map(a => a.name).join(' ')).to.be.equal("a.states[0].counter a.states[0].done a.states[1].counter a.states[1].done a.hex");
+      expect(flatternParams([{ name: 'a', type: 'StatesA' }], Counter.typeResolver, types, false).map(a => a.name).join(' ')).to.be.equal("a.states[0].counter a.states[0].done a.states[1].counter a.states[1].done a.hex");
 
-      expect(flatternParams([{ name: 'a', type: 'States' }], Counter.typeResolver, types).map(a => a.name).join(' ')).to.be.equal("a.counter a.done");
+      expect(flatternParams([{ name: 'a', type: 'States' }], Counter.typeResolver, types, false).map(a => a.name).join(' ')).to.be.equal("a.counter a.done");
     })
 
 
     it('flattern basic', () => {
-      expect(flatternParams([{ name: 'a', type: 'int' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'int' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types, false).map(a => a.name).join(' '))
         .to.be.equal("a b c");
 
     })
 
     it('flattern array', () => {
-      expect(flatternParams([{ name: 'a', type: 'int[1][3]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'int[1][3]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types, false).map(a => a.name).join(' '))
         .to.be.equal("a[0][0] a[0][1] a[0][2] b c");
 
-      expect(flatternParams([{ name: 'a', type: 'StatesA[2]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'StatesA[2]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types, false).map(a => a.name).join(' '))
         .to.be.equal("a[0].states[0].counter a[0].states[0].done a[0].states[1].counter a[0].states[1].done a[0].hex a[1].states[0].counter a[1].states[0].done a[1].states[1].counter a[1].states[1].done a[1].hex b c");
     })
 
@@ -1138,10 +1138,10 @@ describe('utils', () => {
     it('flattern alias', () => {
 
 
-      expect(flatternParams([{ name: 'a', type: 'Female' }, { name: 'b', type: 'MaleB' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'Female' }, { name: 'b', type: 'MaleB' }], Alias.typeResolver, Alias.types, false).map(a => a.name).join(' '))
         .to.be.equal("a.age a.name a.token b[0].age b[0].name b[0].token b[1].age b[1].name b[1].token b[2].age b[2].name b[2].token");
 
-      expect(flatternParams([{ name: 'a', type: 'Tokens[2]' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'Tokens[2]' }], Alias.typeResolver, Alias.types, false).map(a => a.name).join(' '))
         .to.be.equal("a[0][0] a[0][1] a[0][2] a[1][0] a[1][1] a[1][2]");
     })
 

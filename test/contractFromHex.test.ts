@@ -2,6 +2,7 @@ import { assert, expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import {
   buildContractClass,
+  buildTypeClasses,
   AbstractContract,
   VerifyResult
 } from '../src/contract'
@@ -473,4 +474,25 @@ describe('buildContractClass and create instance from script', () => {
       })
     })
   })
+
+
+
+  describe('when build a contract which have library param in constructor from asm', () => {
+
+    const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
+    const { L } = buildTypeClasses(Test);
+
+
+    it('should get right constructor args', () => {
+
+      let l = new L(12);
+      let instance = new Test(l);
+
+      let newContract = Test.fromHex(instance.lockingScript.toHex());
+
+      assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)), `[{12}]`) //TODO: change to `[[12]]`
+
+    })
+  })
+
 })
