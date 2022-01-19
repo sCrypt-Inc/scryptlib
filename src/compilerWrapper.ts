@@ -111,6 +111,11 @@ export enum DebugModeTag {
   LoopStart = 'L0'
 }
 
+export interface DebugInfo {
+  tag: DebugModeTag;
+  contract: string;
+  func: string;
+}
 
 export interface Pos {
   file: string;
@@ -125,7 +130,7 @@ export interface OpCode {
   stack?: string[];
   topVars?: string[];
   pos?: Pos;
-  debugTag?: DebugModeTag;
+  debugInfo?: DebugInfo;
 }
 
 export interface AutoTypedVar {
@@ -299,17 +304,24 @@ export function compile(
         if (match && match.groups) {
           const fileIndex = parseInt(match.groups.fileIndex);
 
-          let debugTag: DebugModeTag | undefined;
+          let debugInfo: DebugInfo | undefined;
 
           const tagStr = match.groups.tagStr;
-          if (/\w+\.\w+:0/.test(tagStr)) {
-            debugTag = DebugModeTag.FuncStart;
-          }
-          if (/\w+\.\w+:1/.test(tagStr)) {
-            debugTag = DebugModeTag.FuncEnd;
-          }
-          if (/loop:0/.test(tagStr)) {
-            debugTag = DebugModeTag.LoopStart;
+          
+          let m = /^(\w+)\.(\w+):(\d)$/.exec(tagStr);
+
+          if (m) {
+            debugInfo = {
+              contract: m[1],
+              func: m[2],
+              tag: m[3] == "0" ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd
+            }
+          } else if (/loop:0/.test(tagStr)) {
+            debugInfo = {
+              contract: "",
+              func: "",
+              tag: DebugModeTag.LoopStart 
+            }
           }
 
           const pos: Pos | undefined = sources[fileIndex] ? {
@@ -325,8 +337,8 @@ export function compile(
             stack: item.stack,
             topVars: item.topVars || [],
             pos: pos,
-            debugTag
-          };
+            debugInfo
+          } as OpCode;
         }
         throw new Error('Compile Failed: Asm output parsing Error!');
       });
