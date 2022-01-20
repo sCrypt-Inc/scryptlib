@@ -642,7 +642,7 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
       if (c['constructor']) {
         return {
           name: c.name,
-          params: c['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+          params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
           properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; })
         };
       } else {
