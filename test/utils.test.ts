@@ -1243,7 +1243,9 @@ describe('utils', () => {
     it('parseGenericType', () => {
 
       expect(parseGenericType("HashedMap<int, int>", [{
-        library: "HashedMap",
+        name: "HashedMap",
+        params: [],
+        properties: [],
         genericTypes: ["K", "V"]
       }]))
         .to.deep.eq({
@@ -1252,7 +1254,9 @@ describe('utils', () => {
         });
 
       expect(parseGenericType("HashedMap<int, bytes>", [{
-        library: "HashedMap",
+        name: "HashedMap",
+        params: [],
+        properties: [],
         genericTypes: ["K", "V"]
       }]))
         .to.deep.eq({
@@ -1261,7 +1265,9 @@ describe('utils', () => {
         });
 
       expect(parseGenericType("Mylib < int, bool >", [{
-        library: "Mylib",
+        name: "Mylib",
+        params: [],
+        properties: [],
         genericTypes: ["D", "V"]
       }]))
         .to.deep.eq({

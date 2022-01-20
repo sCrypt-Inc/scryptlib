@@ -16,10 +16,10 @@ import {
   Arguments, Argument,
   Script, ParamEntity, SingletonParamType
 } from './internal';
-import { GenericEntity, StaticEntity } from './compilerWrapper';
+import { StaticEntity } from './compilerWrapper';
 import { HashedMap, HashedSet, Library } from './scryptTypes';
 import { VerifyError } from './contract';
-import { ABIEntity } from '.';
+import { ABIEntity, LibraryEntity } from '.';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -1840,7 +1840,7 @@ export function isGenericType(type: string): boolean {
  * @param eg. [{"library": "HashedMap", genericTypes: ["K", "V"]}] An array generic types returned by @getGenericDeclaration
  * @returns {"K": "int", "V": "int"}
  */
-export function parseGenericType(type: string, generics: Array<GenericEntity>): Record<string, string> {
+export function parseGenericType(type: string, librarys: Array<LibraryEntity>): Record<string, string> {
 
   if (isGenericType(type)) {
     const group = type.split('<');
@@ -1848,7 +1848,7 @@ export function parseGenericType(type: string, generics: Array<GenericEntity>): 
     const library = group[0].trim();
     const realTypes = group[1].split(',').map(t => t.trim().replace('>', '').trim());
 
-    const g = generics.find(g => g.library === library);
+    const g = librarys.find(l => l.name === library);
 
     if (g) {
       return g.genericTypes.reduce((a, v, index) => ({ ...a, [v]: realTypes[index] }), {});

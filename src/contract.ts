@@ -1,5 +1,5 @@
 import { isStructType, LibraryEntity, ParamEntity } from '.';
-import { GenericEntity, StaticEntity } from './compilerWrapper';
+import { StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveArrayType, toLiteralArrayType,
@@ -36,7 +36,6 @@ export interface ContractDescription {
   library: Array<LibraryEntity>;
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
-  generics: Array<GenericEntity>;
   asm: string;
   hex: string;
   file: string;

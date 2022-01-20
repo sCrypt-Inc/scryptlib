@@ -21,5 +21,50 @@ describe('test.generic', () => {
         })
 
 
+        it('test generic output', () => {
+
+            const jsonDescr = loadDescription('generic_desc.json')
+
+            expect(jsonDescr.library).to.deep.include.members([
+                {
+                    "name": "GenericLibray",
+                    "params": [
+                        {
+                            "name": "a",
+                            "type": "T"
+                        }
+                    ],
+                    "properties": [
+                        {
+                            "name": "a",
+                            "type": "T"
+                        }
+                    ],
+                    "genericTypes": [
+                        "T",
+                        "K",
+                        "C",
+                        "D"
+                    ]
+                }
+            ])
+        })
+
+
+        it('test generic output', () => {
+
+            const jsonDescr = loadDescription('generic_assignment_desc.json')
+
+            expect(jsonDescr.library).to.deep.include.members([
+                {
+                    "name": "GenericLibray",
+                    "params": [],
+                    "properties": [],
+                    "genericTypes": [
+                        "T"
+                    ]
+                }
+            ])
+        })
     })
 })

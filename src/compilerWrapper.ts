@@ -98,7 +98,6 @@ export interface CompileResult {
   structs?: Array<StructEntity>;
   library?: Array<LibraryEntity>;
   alias?: Array<AliasEntity>;
-  generics?: Array<GenericEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
@@ -164,6 +163,7 @@ export interface StructEntity {
 }
 export interface LibraryEntity extends StructEntity {
   properties: Array<ParamEntity>;
+  genericTypes: Array<string>;
 }
 export interface AliasEntity {
   name: string;
@@ -175,11 +175,6 @@ export interface StaticEntity {
   type: string;
   const: boolean;
   value?: any;
-}
-
-export interface GenericEntity {
-  library: string;
-  genericTypes: Array<string>;
 }
 
 export function compile(
@@ -244,7 +239,6 @@ export function compile(
 
       const alias = getAliasDeclaration(result.ast, allAst);
       const structs = getStructDeclaration(result.ast, allAst);
-      const generics = getGenericDeclaration(result.ast, allAst);
       const library = getLibraryDeclaration(result.ast, allAst);
 
       const statics = getStaticDeclaration(result.ast, allAst);
@@ -265,6 +259,7 @@ export function compile(
         name: a.name,
         params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
         properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        genericTypes: a.genericTypes.map(t => shortGenericType(t))
       }));
 
       result.statics = statics.map(s => (Object.assign({...s},{
@@ -272,7 +267,6 @@ export function compile(
       })));
 
 
-      result.generics = generics;
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
@@ -382,7 +376,6 @@ export function compile(
         structs: result.structs || [],
         library: result.library || [],
         alias: result.alias || [],
-        generics: result.generics || [],
         abi: result.abi || [],
         stateProps: result.stateProps || [],
         buildType: settings.buildType || BuildType.Debug,
@@ -564,6 +557,14 @@ function shortType(finalType: string): string {
   return shortType;
 }
 
+function shortGenericType(genericType: string): string {
+  let m = genericType.match(/__SCRYPT_(\w+)__/);
+  if(m) {
+    return m[1];
+  }
+  return genericType;
+}
+
 /**
  * 
  * @param astRoot AST root node after main contract compilation
@@ -643,7 +644,8 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
         return {
           name: c.name,
           params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
-          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; })
+          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+          genericTypes: c.genericTypes || [],
         };
       } else {
         // implicit constructor
@@ -651,7 +653,8 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
           return {
             name: c.name,
             params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
-            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; })
+            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            genericTypes: c.genericTypes || [],
           };
         }
       }
@@ -682,31 +685,7 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   }).flat(1);
 }
 
-/**
- * 
- * @param astRoot AST root node after main contract compilation
- * @param dependencyAsts AST root node after all dependency contract compilation
- * @returns all defined generic type of the main contract and dependent contracts
- */
-export function getGenericDeclaration(astRoot: any, dependencyAsts: any): Array<GenericEntity> {
 
-  const allAst = [astRoot];
-
-  Object.keys(dependencyAsts).forEach(key => {
-    allAst.push(dependencyAsts[key]);
-  });
-
-  return allAst.map(ast => {
-    return (ast.contracts || []).map(contract => {
-      if (Array.isArray(contract.genericTypes)) {
-        return {
-          genericTypes: contract.genericTypes,
-          library: contract.name,
-        };
-      }
-    });
-  }).flat(Infinity).filter(item => typeof item === 'object');
-}
 
 /**
  * 
@@ -759,7 +738,6 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     abi: description.abi,
     structs: description.structs || [],
     alias: description.alias || [],
-    generics: description.generics || [],
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
     stateProps: description.stateProps || [],
