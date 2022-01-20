@@ -13,6 +13,39 @@ const outputAmount = inputSatoshis
 describe('library as property or return or param', () => {
 
   describe('library as property', () => {
+
+    describe('LibCompare test', () => {
+      let instance, result;
+
+      const Test = buildContractClass(loadDescription('LibCompare_desc.json'));
+      const { L } = buildTypeClasses(Test);
+      before(() => {
+        instance = new Test(new L(1, 1, [1,1,1], true, 2, 2));
+      });
+
+      it('should success when call unlock', () => {
+        result = instance.unlock(1, 1, [1,1,1], true, 2, 2).verify()
+        expect(result.success, result.error).to.be.true
+      });
+
+      it('should fail when call unlock', () => {
+        result = instance.unlock(1, 2, [1,1,1], true, 2, 2).verify()
+        expect(result.success, result.error).to.be.false
+      });
+
+      it('should fail when call unlock', () => {
+        result = instance.unlock(1, 1, [1,1,1], false, 2, 2).verify()
+        expect(result.success, result.error).to.be.false
+      });
+
+      it('should fail when call unlock', () => {
+        result = instance.unlock(1, 1, [1,1,2], true, 2, 2).verify()
+        expect(result.success, result.error).to.be.false
+      });
+
+    });
+
+
     describe('LibAsProperty1 test', () => {
       let instance, result;
 
