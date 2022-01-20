@@ -832,11 +832,23 @@ export function flatternStruct(arg: SupportedParamType, name: string): Arguments
 }
 
 
-export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
+export function flatternLibrary(arg: SupportedParamType, name: string, fromState: boolean): Arguments {
+  if(fromState) {
+    if (Library.isLibrary(arg)) {
+      const argL = arg as Library;
+      return flatternStruct(argL.getProperties(), name);
+    }
+    return flatternStruct(arg, name);
+  }
+  return flatternStruct(arg, name);
+}
+
+
+export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, fromState: boolean): Arguments {
   const args_: Arguments = [];
   args.forEach((arg) => {
     const finalType = finalTypeResolver(arg.type);
-    if (isStructOrLibraryType(finalType)) {
+    if (isStructType(finalType)) {
       flatternStruct(arg.value, arg.name).forEach(e => {
         args_.push({
           name: e.name,
@@ -844,9 +856,17 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
           value: e.value
         });
       });
-    } else if (isArrayType(finalType)) {
+    } else if(isLibraryType(finalType)) {
+      flatternLibrary(arg.value, arg.name, fromState).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value
+        });
+      });
+    }
+    else if (isArrayType(finalType)) {
       flatternArray(arg.value as SupportedParamType[], arg.name, finalType).forEach(e => {
-
         args_.push({
           name: e.name,
           type: finalTypeResolver(e.type),
@@ -868,10 +888,10 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver): 
 
 
 
-function flatternLibraryState(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
+function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isLibraryType(param.type)) {
     const libraryName = getNameByType(param.type);
-    const StructClass = types["__stateOf" + libraryName] as typeof Struct;
+    const StructClass = types["__propertiesOf" + libraryName] as typeof Struct;
     return StructClass.structAst.params.map(p => {
       p.type = typeResolver(p.type);
       if (isStructType(p.type)) {
@@ -880,7 +900,7 @@ function flatternLibraryState(param: ParamEntity, typeResolver: TypeResolver, ty
           type: p.type
         }, typeResolver, types);
       } else if (isLibraryType(p.type)) {
-        return flatternLibraryState({
+        return flatternLibraryProperties({
           name: `${param.name}.${p.name}`,
           type: p.type
         }, typeResolver, types);
@@ -1003,7 +1023,7 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
       });
     }  else if (isLibraryType(param.type)) {
       if(fromState) {
-        flatternLibraryState(param, typeResolver, types).forEach(e => {
+        flatternLibraryProperties(param, typeResolver, types).forEach(e => {
           args_.push({
             name: e.name,
             type: e.type,
@@ -1521,7 +1541,7 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
 
   let state_hex = '';
   let state_len = 0;
-  const args_ = flatternArgs(args, finalTypeResolver);
+  const args_ = flatternArgs(args, finalTypeResolver, true);
 
   if (args_.length <= 0) {
     throw new Error('no state property found, buildContractState only used for state contract');
@@ -1650,7 +1670,7 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
   } else if (isLibraryType(arg.type)) {
 
     if(fromState) {
-      const stclass = contract.getTypeClassByType(`__stateOf${getNameByType(arg.type)}`);
+      const stclass = contract.getTypeClassByType(`__propertiesOf${getNameByType(arg.type)}`);
       value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
     } else {
       const libraryClass = contract.getTypeClassByType(getNameByType(arg.type));

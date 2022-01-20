@@ -448,8 +448,7 @@ export class Struct extends ScryptType {
     return Object.getPrototypeOf(self).constructor.structAst;
   }
 
-
-  protected bind(): void {
+  protected init(): void {
     const structAst = Struct.getStructAst(this);
     checkStruct(structAst, this, this._typeResolver);
     const ordered = {};
@@ -467,7 +466,11 @@ export class Struct extends ScryptType {
     this.sorted = true;
     this._type = structAst.name;
     this._value = ordered;
+  }
 
+  protected bind(): void {
+    this.init();
+    const structAst = Struct.getStructAst(this);
     structAst.params.forEach(p => {
       Object.defineProperty(this, p.name, {
         get() {
@@ -631,20 +634,43 @@ export class Library extends Struct {
   private args: SupportedParamType[] = [];
 
   // a struct class which for creating a struct with all library properties
-  public static stateClass: typeof Struct;
+  public static propertiesClass: typeof Struct;
+  private properties: Record<string, SupportedParamType> = {};
   constructor(...args: SupportedParamType[]) {
     super({});
     this.args = args;
   }
 
 
-  static getStateClass(self: Library): typeof Struct {
-    return Object.getPrototypeOf(self).constructor.stateClass;
+  static getPropertiesClass(self: Library): typeof Struct {
+    return Object.getPrototypeOf(self).constructor.propertiesClass;
   }
 
 
   attach() {
     this._value = toStructObject(Struct.getStructAst(this), this.args);
+
+    const libraryAst = Struct.getStructAst(this) as LibraryEntity;
+
+    const self = this;
+    libraryAst.properties.forEach(p => {
+      Object.defineProperty(self, p.name, {
+        get() {
+          if (libraryAst.properties.findIndex(arg => arg.name === p.name) > -1) {
+            return this.properties[p.name];
+          } else {
+            throw new Error(`property ${p.name} does not exists`);
+          }
+        },
+        set(value: SupportedParamType) {
+          if (libraryAst.properties.findIndex(arg => arg.name === p.name) > -1) {
+            this.properties[p.name] = value;
+          } else {
+            throw new Error(`property ${p.name} does not exists`);
+          }
+        }
+      });
+    })
   }
 
   static isLibrary(arg: SupportedParamType): boolean {
@@ -653,14 +679,19 @@ export class Library extends Struct {
 
   protected bind(): void {
     this.attach();
-    super.bind();
+    this.init();
+    // dont't call super.bind();
   }
 
-  public getNewState(states: Record<string, SupportedParamType>): Struct {
-    let libClass = Library.getStateClass(this);
-    return new libClass(states);
+  public setProperties(properties: Record<string, SupportedParamType>) {
+    this.properties = Object.assign(this.properties, properties);
+    return this;
   }
 
+  public getProperties(): Struct {
+    let propertiesClass = Library.getPropertiesClass(this);
+    return new propertiesClass(this.properties);
+  }
 
 }
 

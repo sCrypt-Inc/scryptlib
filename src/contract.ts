@@ -574,14 +574,14 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
   library.forEach(element => {
     const name = element.name;
 
-    let stateClass = class extends Struct {
+    let propertiesClass = class extends Struct {
       constructor(o: StructObject) {
         super(o);
         this._typeResolver = finalTypeResolver; //we should assign this before bind
         this.bind();
       }
     };
-    stateClass.structAst = {
+    propertiesClass.structAst = {
       name: element.name,
       params: element.properties
     }
@@ -594,7 +594,7 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
       }
     };
 
-    libraryClass.stateClass = stateClass;
+    libraryClass.propertiesClass = propertiesClass;
     libraryClass.structAst = element;
 
     Object.assign(libraryTypes, {
@@ -603,7 +603,7 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
 
 
     Object.assign(libraryTypes, {
-      ["__stateOf" + name]: stateClass
+      ["__propertiesOf" + name]: propertiesClass
     });
 
   });

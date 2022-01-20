@@ -368,21 +368,23 @@ describe('library as property or return or param', () => {
         c: true,
         aa: [1,1,1]
       }));
+
       before(() => {
         instance = new Test(l);
       });
 
       it('should success when call unlock', () => {
+        l.setProperties({
+          x: 6,
+          st: new ST({
+            x: 1,
+            c: false,
+            aa: [1,1,1]
+          })
+        });
 
         let newLockingScript = instance.getNewStateScript({
-          l: l.getNewState({
-            x: 6,
-            st: new ST({
-              x: 1,
-              c: false,
-              aa: [1,1,1]
-            })
-          })
+          l: l
         })
 
         const tx = newTx(inputSatoshis);
@@ -405,16 +407,9 @@ describe('library as property or return or param', () => {
       });
 
       it('should fail when call unlock with error state', () => {
-
+        l.x = 5;
         let newLockingScript = instance.getNewStateScript({
-          l: l.getNewState({
-            x: 6,
-            st: new ST({
-              x: 1,
-              c: false,
-              aa: [2,1,1]
-            })
-          })
+          l: l
         })
 
         const tx = newTx(inputSatoshis);
@@ -438,7 +433,7 @@ describe('library as property or return or param', () => {
       it('should fail when call unlock with error state', () => {
 
         let newLockingScript = instance.getNewStateScript({
-          l: l.getNewState({
+          l: l.setProperties({
             x: 6,
             st: new ST({
               x: 1,
@@ -466,10 +461,34 @@ describe('library as property or return or param', () => {
         expect(result.success, result.error).to.be.false
       });
 
+      it('should success when only update one field', () => {
+        l.st.c = false;
+        let newLockingScript = instance.getNewStateScript({
+          l: l
+        })
+
+        const tx = newTx(inputSatoshis);
+        tx.addOutput(new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: outputAmount
+        }))
+  
+        const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
+  
+        instance.txContext = {
+            tx: tx,
+            inputIndex,
+            inputSatoshis
+        }
+  
+        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        expect(result.success, result.error).to.be.true
+      });
+
       it('should fail when call unlock with error state', () => {
 
         let newLockingScript = instance.getNewStateScript({
-          l: l.getNewState({
+          l: l.setProperties({
             x: 5,
             st: new ST({
               x: 1,

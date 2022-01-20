@@ -183,7 +183,7 @@ export class ABICoder {
     // handle array type
     const flatteredArgs = flatternArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
       value: args[index]
-    }))), this.finalTypeResolver);
+    }))), this.finalTypeResolver, false);
 
 
 
