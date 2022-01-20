@@ -551,7 +551,7 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
         constructor(o: StructObject) {
           super(o);
           this._typeResolver = finalTypeResolver; //we should assign this before bind
-          this.bind(element);
+          this.bind();
         }
       }
     });
@@ -568,23 +568,44 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
   const libraryTypes: Record<string, typeof Library> = {};
 
   // map LibraryEntity to StructEntity, as we treat library as struct
-  const library: StructEntity[] = desc.library || [];
+  const library: LibraryEntity[] = desc.library || [];
 
   const finalTypeResolver = buildTypeResolverFromDesc(desc);
   library.forEach(element => {
     const name = element.name;
 
-    Object.assign(libraryTypes, {
-      [name]: class extends Library {
-        constructor(...args: SupportedParamType[]) {
-          super(...args);
-          this._typeResolver = finalTypeResolver; //we should assign this before bind
-          this.bind(element);
-        }
+    let stateClass = class extends Struct {
+      constructor(o: StructObject) {
+        super(o);
+        this._typeResolver = finalTypeResolver; //we should assign this before bind
+        this.bind();
       }
+    };
+    stateClass.structAst = {
+      name: element.name,
+      params: element.properties
+    }
+
+    let libraryClass = class extends Library {
+      constructor(...args: SupportedParamType[]) {
+        super(...args);
+        this._typeResolver = finalTypeResolver; //we should assign this before bind
+        this.bind();
+      }
+    };
+
+    libraryClass.stateClass = stateClass;
+    libraryClass.structAst = element;
+
+    Object.assign(libraryTypes, {
+      [name]: libraryClass
     });
 
-    libraryTypes[name].structAst = element;
+
+    Object.assign(libraryTypes, {
+      ["__stateOf" + name]: stateClass
+    });
+
   });
 
   return libraryTypes;
@@ -651,7 +672,7 @@ export function buildTypeClasses(descOrClas: CompileResult | ContractDescription
 
 export function buildTypeResolverFromDesc(desc: CompileResult | ContractDescription): TypeResolver {
   const alias: AliasEntity[] = desc.alias || [];
-  const library: StructEntity[] = desc.library || [];
+  const library: LibraryEntity[] = desc.library || [];
   const structs: StructEntity[] = desc.structs || [];
   const statics = desc['statics'] || [];
   const contract = desc.contract;

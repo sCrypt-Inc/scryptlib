@@ -1,3 +1,4 @@
+import { LibraryEntity } from '.';
 import { parseLiteral, getValidatedHexString, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField, checkStruct } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -440,10 +441,16 @@ export class Struct extends ScryptType {
   }
 
   static setStructAst(structAst: StructEntity) {
-    this.structAst = structAst;
+    Object.getPrototypeOf(this).constructor.structAst = structAst;
   }
 
-  protected bind(structAst: StructEntity): void {
+  static getStructAst(self: Struct): StructEntity {
+    return Object.getPrototypeOf(self).constructor.structAst;
+  }
+
+
+  protected bind(): void {
+    const structAst = Struct.getStructAst(this);
     checkStruct(structAst, this, this._typeResolver);
     const ordered = {};
     const unordered = this.value;
@@ -528,7 +535,7 @@ export class Struct extends ScryptType {
    * Get the member type declared by the structure by structAst
    */
   getMemberAstFinalType(key: string): string {
-    const structAst: StructEntity = Object.getPrototypeOf(this).constructor.structAst;
+    const structAst = Struct.getStructAst(this);
     const paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
@@ -622,36 +629,39 @@ function toStructObject(structAst: StructEntity, args: SupportedParamType[]): St
 
 export class Library extends Struct {
   private args: SupportedParamType[] = [];
+
+  // a struct class which for creating a struct with all library properties
+  public static stateClass: typeof Struct;
   constructor(...args: SupportedParamType[]) {
     super({});
     this.args = args;
   }
 
-  attach(structAst: StructEntity) {
-    this._value = toStructObject(structAst, this.args);
+
+  static getStateClass(self: Library): typeof Struct {
+    return Object.getPrototypeOf(self).constructor.stateClass;
+  }
+
+
+  attach() {
+    this._value = toStructObject(Struct.getStructAst(this), this.args);
   }
 
   static isLibrary(arg: SupportedParamType): boolean {
     return arg instanceof Library;
   }
 
-  protected bind(structAst: StructEntity): void {
-    this.attach(structAst);
-    super.bind(structAst);
+  protected bind(): void {
+    this.attach();
+    super.bind();
   }
 
-//   toLiteral(): string {
-//     const v = this.value;
-//     const l = Object.keys(this.value).map(key => {
-//       if (Array.isArray(v[key])) {
-//         return Struct.arrayToLiteral(v[key]);
-//       } else {
-//         return toScryptType(v[key]).toLiteral();
-//       }
-//     }).join(',');
+  public getNewState(states: Record<string, SupportedParamType>): Struct {
+    let libClass = Library.getStateClass(this);
+    return new libClass(states);
+  }
 
-//     return `[${l}]`;
-//   }
+
 }
 
 

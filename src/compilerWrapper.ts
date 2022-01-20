@@ -162,7 +162,9 @@ export interface StructEntity {
   name: string;
   params: Array<ParamEntity>;
 }
-export type LibraryEntity = StructEntity
+export interface LibraryEntity extends StructEntity {
+  properties: Array<ParamEntity>;
+}
 export interface AliasEntity {
   name: string;
   type: string;
@@ -261,7 +263,8 @@ export function compile(
 
       result.library = library.map(a => ({
         name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
       }));
 
       result.statics = statics.map(s => (Object.assign({...s},{
@@ -640,6 +643,7 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
         return {
           name: c.name,
           params: c['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; })
         };
       } else {
         // implicit constructor
@@ -647,6 +651,7 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
           return {
             name: c.name,
             params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; })
           };
         }
       }
