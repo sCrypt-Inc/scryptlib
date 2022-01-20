@@ -480,17 +480,21 @@ describe('buildContractClass and create instance from script', () => {
   describe('when build a contract which have library param in constructor from asm', () => {
 
     const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
-    const { L } = buildTypeClasses(Test);
+    const { L, ST} = buildTypeClasses(Test);
 
 
     it('should get right constructor args', () => {
 
-      let l = new L(12);
+      let l = new L(1, new ST({
+        x: 1,
+        c: true,
+        aa: [1,1,1]
+      }));
       let instance = new Test(l);
 
       let newContract = Test.fromHex(instance.lockingScript.toHex());
 
-      assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)), `[{12}]`) //TODO: change to `[[12]]`
+      assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)), `[{1,{1,true,[1,1,1]}}]`) //TODO: change to `[[12]]`
 
     })
   })
