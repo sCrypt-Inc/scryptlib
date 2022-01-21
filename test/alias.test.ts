@@ -160,6 +160,16 @@ describe('Alias type check', () => {
 
     })
 
+    it('should success when resolver generic type', () => {
+      const jsondesc = loadDescription('autoTyped_desc.json');
+
+      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
+
+      expect(finalTypeResolver("LL<int, struct ST1 {}>")).to.equal('LL<int,struct ST1 {}>')
+      expect(finalTypeResolver("LL<bool[2], ST1>")).to.equal('LL<bool[2],struct ST1 {}>')
+
+    })
+
     it('should success when call buildTypeResolver', () => {
 
       const finalTypeResolver = buildTypeResolver('', [], [], [], [])

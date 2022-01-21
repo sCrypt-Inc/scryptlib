@@ -343,6 +343,10 @@ describe('compile()', () => {
         {
           name: 'ss1',
           type: 'struct ST1 {}[2]'
+        },
+        {
+          name: 'll',
+          type: 'LL<int, struct ST1 {}>'
         }
       ])
     })

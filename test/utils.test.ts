@@ -5,9 +5,9 @@ import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkSupportedParamType,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
-  toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
-  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript
-
+  toLiteral, asm2int, isGenericType, sha256, hash256, hash160,isLibraryType,
+  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript,
+  inferrType
 } from '../src/utils'
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
@@ -1034,6 +1034,26 @@ describe('utils', () => {
   })
 
 
+  describe('isLibraryType()', () => {
+
+    it('isLibraryType should success when test library L {}', () => {
+      expect(isLibraryType('library L {}')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<int>', () => {
+      expect(isLibraryType('L<int>')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<K>', () => {
+      expect(isLibraryType('L<K>')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<K,T>', () => {
+      expect(isLibraryType('L<K,T>')).to.be.true
+    })
+  })
+
+
 
   describe('test compileContract', () => {
 
@@ -1242,38 +1262,20 @@ describe('utils', () => {
 
     it('parseGenericType', () => {
 
-      expect(parseGenericType("HashedMap<int, int>", [{
-        name: "HashedMap",
-        params: [],
-        properties: [],
-        genericTypes: ["K", "V"]
-      }]))
-        .to.deep.eq({
-          "K": "int",
-          "V": "int"
-        });
+      expect(parseGenericType("HashedMap<int, int>"))
+        .to.deep.eq(["HashedMap", ["int", "int"]]);
 
-      expect(parseGenericType("HashedMap<int, bytes>", [{
-        name: "HashedMap",
-        params: [],
-        properties: [],
-        genericTypes: ["K", "V"]
-      }]))
-        .to.deep.eq({
-          "K": "int",
-          "V": "bytes"
-        });
 
-      expect(parseGenericType("Mylib < int, bool >", [{
-        name: "Mylib",
-        params: [],
-        properties: [],
-        genericTypes: ["D", "V"]
-      }]))
-        .to.deep.eq({
-          "D": "int",
-          "V": "bool"
-        });
+      expect(parseGenericType("HashedMap<int, bytes>"))
+        .to.deep.eq(["HashedMap", ["int", "bytes"]]);
+
+
+      expect(parseGenericType("Mylib< int, bool >"))
+        .to.deep.eq(["Mylib", ["int", "bool"]]);
+
+      //dont allow space
+      expect(() =>parseGenericType("Mylib <int, bool>"))
+        .to.throw('"Mylib <int, bool>" is not generic type')
     })
 
     it('isGenericType', () => {
@@ -1331,6 +1333,53 @@ describe('utils', () => {
     })
 
   })
+
+  describe('inferrTypes() ', () => {
+    it('test inferrTypes', () => {
+      
+
+      expect(inferrType(1))
+      .to.eq("int");
+
+      expect(inferrType(true))
+      .to.eq("bool");
+
+      expect(inferrType("11"))
+      .to.eq("int");
+
+      expect(inferrType(new Bytes("")))
+      .to.eq("bytes");
+
+      expect(inferrType(new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      })))
+      .to.eq("struct Block {}");
+
+      expect(inferrType([new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      })]))
+      .to.eq("struct Block {}[1]");
+
+      expect(inferrType([[1,2,3], [1,3,3]]))
+      .to.eq("int[2][3]");
+
+
+      expect(inferrType([[[1,2,3], [1,3,3]], [[1,2,3], [1,3,3]]]))
+      .to.eq("int[2][2][3]");
+
+      expect(inferrType([[[1,2,3], [1,3,3]], [[1,2,3], [1,3,3]]]))
+      .to.eq("int[2][2][3]");
+
+      expect(() => inferrType([1, true])).to.throw('cannot inferr type from [1,true] , not all element types are the same')
+
+      expect(() => inferrType([[1,3], [1]])).to.throw('cannot inferr type from [1,3,1] , not all length of element are the same')
+
+    })
+  });
 
 
 

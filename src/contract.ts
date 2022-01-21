@@ -691,7 +691,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
   });
 
   alias.forEach(element => {
-    resolvedTypes[element.name] = resolveType(element.name, resolvedTypes, contract, statics, alias);
+    resolvedTypes[element.name] = resolveType(element.name, resolvedTypes, contract, statics, alias, library);
   });
 
 
@@ -705,7 +705,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
       return `${resolvedTypes[type]}`;
     }
 
-    return resolveType(type, resolvedTypes, contract, statics, alias)
+    return resolveType(type, resolvedTypes, contract, statics, alias, library)
   };
 
   return resolver;

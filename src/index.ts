@@ -10,13 +10,13 @@ export {
   arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
-  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType
+  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType, serializeSupportedParamType, shortType
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage,
   OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType, PubKeyHash,
-  Struct, StructObject, VariableType, TypeResolver, serializeSupportedParamType, PrimitiveTypes,
+  Struct, StructObject, VariableType, TypeResolver, PrimitiveTypes,
   RawTypes, SigHash
 } from './internal';
 

@@ -3,7 +3,7 @@ import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { bsv, toHex, getPreimage } from '../src/utils';
-import { SigHashPreimage } from '../src';
+import { Bytes, SigHashPreimage } from '../src';
 
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -160,19 +160,19 @@ describe('library as property or return or param', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsProperty6_desc.json'));
       const { L } = buildTypeClasses(Test);
-      // before(() => {
-      //   instance = new Test(1, [new L(1, 1), new L(2, 2), new L(3, 3)]);
-      // });
+      before(() => {
+        instance = new Test(1, [new L(1, 1), new L(2, 2), new L(3, 3)]);
+      });
 
-      // it('should success when call unlock', () => {
-      //   result = instance.unlock(12).verify()
-      //   expect(result.success, result.error).to.be.true
-      // });
+      it('should success when call unlock', () => {
+        result = instance.unlock(11).verify()
+        expect(result.success, result.error).to.be.true
+      });
 
-      // it('should success when call unlock', () => {
-      //   result = instance.unlock(11).verify()
-      //   expect(result.success, result.error).to.be.false
-      // });
+      it('should success when call unlock', () => {
+        result = instance.unlock(12).verify()
+        expect(result.success, result.error).to.be.false
+      });
 
     });
 
@@ -231,6 +231,37 @@ describe('library as property or return or param', () => {
 
     });
 
+    describe('Library with generic', () => {
+      describe('LibGenericAsProperty1 test', () => {
+        let instance, result;
+        const Test = buildContractClass(loadDescription('LibGenericAsProperty1_desc.json'));
+        const { L } = buildTypeClasses(Test);
+  
+        it('should success when using int to new L', () => {
+          instance = new Test(2, new L(1, 1));
+          result = instance.unlock(2).verify()
+          expect(result.success, result.error).to.be.true
+        });
+  
+        it('should fail when using int to new L', () => {
+          instance = new Test(2, new L(1, 2));
+          result = instance.unlock(2).verify()
+          expect(result.success, result.error).to.be.false
+        });
+
+        it('should throw when using int and bool to new L', () => {
+          expect(() => new L(1, true)).to.throw('Inferred type failed, The type of y is wrong, expected int but got bool');
+        });
+
+        it('should throw when using bool to new L', () => {
+          expect(() => new Test(2, new L(true, true))).to.throw('The type of l is wrong, expected L<int> but got L<bool>');
+        });
+
+        it('should throw when using Bytes to new L', () => {
+          expect(() => new Test(2, new L(new Bytes(""), new Bytes("")))).to.throw('The type of l is wrong, expected L<int> but got L<bytes>');
+        });
+      });
+    })
   })
 
 

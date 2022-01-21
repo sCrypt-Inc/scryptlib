@@ -1,5 +1,6 @@
-import { LibraryEntity } from '.';
-import { parseLiteral, getValidatedHexString, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField, checkStruct } from './internal';
+import { parseLiteral, getValidatedHexString, LibraryEntity, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField,
+
+  checkStruct,toScryptType, inferrType, checkSupportedParamType, toGenericType } from './internal';
 import { serialize, serializeInt } from './serializer';
 
 
@@ -8,18 +9,6 @@ export type TypeResolver = (type: string) => string;
 
 export type ValueType = RawTypes | StructObject | ValueType[];
 
-
-export function toScryptType(a: ValueType): ScryptType {
-  if (typeof a === 'number' || typeof a === 'bigint' || typeof a === 'string') {
-    return new Int(a);
-  } else if (typeof a === 'boolean') {
-    return new Bool(a);
-  } else if (a instanceof ScryptType) {
-    return a;
-  } else {
-    throw `${a} cannot be convert to ScryptType`;
-  }
-}
 
 export class ScryptType {
 
@@ -440,16 +429,15 @@ export class Struct extends ScryptType {
     super(o);
   }
 
-  static setStructAst(structAst: StructEntity) {
-    Object.getPrototypeOf(this).constructor.structAst = structAst;
+  static setStructAst(self: Struct, structAst: StructEntity) {
+    Object.getPrototypeOf(self).constructor.structAst = structAst;
   }
 
   static getStructAst(self: Struct): StructEntity {
     return Object.getPrototypeOf(self).constructor.structAst;
   }
 
-  protected init(): void {
-    const structAst = Struct.getStructAst(this);
+  protected init(structAst: StructEntity): void {
     checkStruct(structAst, this, this._typeResolver);
     const ordered = {};
     const unordered = this.value;
@@ -469,7 +457,7 @@ export class Struct extends ScryptType {
   }
 
   protected bind(): void {
-    this.init();
+    this.init(Struct.getStructAst(this));
     const structAst = Struct.getStructAst(this);
     structAst.params.forEach(p => {
       Object.defineProperty(this, p.name, {
@@ -523,7 +511,7 @@ export class Struct extends ScryptType {
   */
   getMemberType(key: string): string {
     const v: StructObject = this.value as StructObject;
-    return toScryptType(v).type;
+    return toScryptType(v[key]).type;
   }
 
   /**
@@ -567,7 +555,7 @@ export class Struct extends ScryptType {
   }
 
 
-  static arrayToLiteral(a: Array<ValueType>): string {
+  static arrayToLiteral(a: SupportedParamType[]): string {
 
     const al = a.map(i => {
       if (Array.isArray(i)) {
@@ -581,10 +569,10 @@ export class Struct extends ScryptType {
 
 
   toLiteral(): string {
-    const v = this.value;
+    const v = this.value as StructObject;
     const l = Object.keys(this.value).map(key => {
       if (Array.isArray(v[key])) {
-        return Struct.arrayToLiteral(v[key]);
+        return Struct.arrayToLiteral(v[key] as SupportedParamType[]);
       } else {
         return toScryptType(v[key]).toLiteral();
       }
@@ -636,9 +624,65 @@ export class Library extends Struct {
   // a struct class which for creating a struct with all library properties
   public static propertiesClass: typeof Struct;
   private properties: Record<string, SupportedParamType> = {};
+  private inferredTypes: Record<string, string> = {};
+  private structAst: LibraryEntity | undefined = undefined;
   constructor(...args: SupportedParamType[]) {
     super({});
     this.args = args;
+  }
+
+
+  getStructAst(): StructEntity {
+    return this.structAst || Struct.getStructAst(this);
+  }
+
+  get finalType(): string {
+    if(Library.hasGeneric(this)) {
+      const libraryAst = this.getStructAst() as LibraryEntity;
+      const type = toGenericType(this.type, libraryAst.genericTypes.map(t => (this.inferredTypes[t] || t)))
+      return type;
+    } 
+    if (this._typeResolver)
+      return this._typeResolver(this.type);
+    return this.type;
+  }
+
+  
+
+  private inferrTypes(): void {
+    const libraryAst = this.getStructAst() as LibraryEntity;
+    libraryAst.params.forEach((p, index) => {
+      if(libraryAst.genericTypes.includes(p.type)) {
+        const t = inferrType(this.args[index]);
+        if(this.inferredTypes[p.type]) {
+          if(this.inferredTypes[p.type] != t) {
+            throw new Error(`Inferred type failed, The type of ${p.name} is wrong, expected ${this.inferredTypes[p.type]} but got ${t}`)
+          }
+        } else {
+          Object.assign(this.inferredTypes, {
+            [p.type]: t
+          });
+        }
+      }
+    })
+
+    this.structAst = {
+      name: libraryAst.name,
+      params: libraryAst.params.map(p => ({
+        name: p.name,
+        type: this.inferredTypes[p.type] || p.type
+      })),
+      properties: libraryAst.properties.map(p => ({
+        name: p.name,
+        type: this.inferredTypes[p.type] || p.type
+      })),
+      genericTypes: libraryAst.genericTypes.map(t => t)
+    }
+  }
+
+  static hasGeneric(self: Library): boolean {
+    let ast: LibraryEntity =  Struct.getStructAst(self) as LibraryEntity;
+    return (ast.genericTypes || []).length > 0;
   }
 
 
@@ -646,24 +690,23 @@ export class Library extends Struct {
     return Object.getPrototypeOf(self).constructor.propertiesClass;
   }
 
-
   attach() {
-    this._value = toStructObject(Struct.getStructAst(this), this.args);
+    this._value = toStructObject(this.getStructAst(), this.args);
 
-    const libraryAst = Struct.getStructAst(this) as LibraryEntity;
+    const libraryAst = this.getStructAst() as LibraryEntity;
 
     const self = this;
     libraryAst.properties.forEach(p => {
       Object.defineProperty(self, p.name, {
         get() {
-          if (libraryAst.properties.findIndex(arg => arg.name === p.name) > -1) {
+          if (typeof this.properties[p.name] !== 'undefined') {
             return this.properties[p.name];
           } else {
             throw new Error(`property ${p.name} does not exists`);
           }
         },
         set(value: SupportedParamType) {
-          if (libraryAst.properties.findIndex(arg => arg.name === p.name) > -1) {
+          if (typeof this.properties[p.name] !== 'undefined') {
             this.properties[p.name] = value;
           } else {
             throw new Error(`property ${p.name} does not exists`);
@@ -678,8 +721,9 @@ export class Library extends Struct {
   }
 
   protected bind(): void {
+    this.inferrTypes();
     this.attach();
-    this.init();
+    super.init(this.getStructAst());
     // dont't call super.bind();
   }
 
