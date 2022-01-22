@@ -232,7 +232,7 @@ describe('library as property or return or param', () => {
     });
 
     describe('Library with generic', () => {
-      describe('LibGenericAsProperty1 test', () => {
+      describe('LibGenericAsProperty1 test: can inferr all generic types from constructor', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty1_desc.json'));
         const { L } = buildTypeClasses(Test);
@@ -260,6 +260,43 @@ describe('library as property or return or param', () => {
         it('should throw when using Bytes to new L', () => {
           expect(() => new Test(2, new L(new Bytes(""), new Bytes("")))).to.throw('The type of l is wrong, expected L<int> but got L<bytes>');
         });
+      });
+
+
+      describe('LibGenericAsProperty2 test: can not inferr all generic types from constructor', () => {
+        let instance, result;
+        const Test = buildContractClass(loadDescription('LibGenericAsProperty2_desc.json'));
+        const { L } = buildTypeClasses(Test);
+  
+        it('should success when using int to new L', () => {
+          instance = new Test(2, new L(1, 1));
+          result = instance.unlock(2).verify()
+          expect(result.success, result.error).to.be.true
+        });
+
+        it('should fail when using int to new L', () => {
+          instance = new Test(2, new L(1, 1));
+          result = instance.unlock(1).verify()
+          expect(result.success, result.error).to.be.false
+        });
+  
+      });
+
+      describe('LibGenericAsProperty3 test: can not inferr all generic types from constructor', () => {
+        let instance, result;
+        const Test = buildContractClass(loadDescription('LibGenericAsProperty3_desc.json'));
+        const { L } = buildTypeClasses(Test);
+  
+        it('should success when using int to new L', () => {
+          instance = new Test(2, new L(1, 1), new L(new Bytes("0101"), 1));
+          result = instance.unlock(2).verify()
+          expect(result.success, result.error).to.be.true
+        });
+
+        it('should throw when using int and bool to new L', () => {
+          expect(() => new L(1, true)).to.throw('The type of 1-th constructor argument: ctor.b is wrong, expected int but got bool');
+        });
+  
       });
     })
   })

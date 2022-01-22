@@ -665,10 +665,22 @@ export function checkSupportedParamType(arg: SupportedParamType, param: ParamEnt
   if (isArrayType(finalType)) {
     return checkArray(arg as SupportedParamType[], param, finalType, resolver)
   }
+
+  let error = new Error(`The type of ${param.name} is wrong, expected ${shortType(finalType)} but got ${typeNameOfArg(arg)}`);
+  if(isGenericType(finalType)) {
+    if(Library.isLibrary(arg)) {
+      const argL = arg as Library;
+      if(!argL.inferrTypesByAssign(finalType)) {
+        return error;
+      }
+    } else {
+      return error;
+    }
+  }
   
   const t = typeOfArg(arg);
 
-  return t == finalType ? undefined : new Error(`The type of ${param.name} is wrong, expected ${shortType(finalType)} but got ${typeNameOfArg(arg)}`);;
+  return t == finalType ? undefined : error;
 }
 
 

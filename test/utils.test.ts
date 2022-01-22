@@ -1273,6 +1273,10 @@ describe('utils', () => {
       expect(parseGenericType("Mylib< int, bool >"))
         .to.deep.eq(["Mylib", ["int", "bool"]]);
 
+      expect(parseGenericType("LL<int, struct ST1 {}>"))
+        .to.deep.eq(["LL", ["int", "struct ST1 {}"]]);
+        
+
       //dont allow space
       expect(() =>parseGenericType("Mylib <int, bool>"))
         .to.throw('"Mylib <int, bool>" is not generic type')
