@@ -794,6 +794,16 @@ export class Library extends Struct {
     return new propertiesClass(this.properties);
   }
 
+
+  toJSON(): unknown {
+    return Array.from(Object.values(this.value)).map(v => {
+      if (Array.isArray(v)) {
+        return JSON.stringify(v);
+      } else {
+        return toScryptType(v).toJSON();
+      }
+    });
+  }
 }
 
 
