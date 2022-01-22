@@ -609,6 +609,14 @@ export function getNameByType(type: string): string {
   return '';
 }
 
+export function getLibraryNameByType(type: string): string {
+  if (isGenericType(type)) {
+    return parseGenericType(type)[0]
+  }
+
+  return getNameByType(type) ? getNameByType(type) : type;
+}
+
 
 export function findStructByType(type: string, s: StructEntity[]): StructEntity | undefined {
   const name = getNameByType(type);
@@ -667,17 +675,17 @@ export function checkSupportedParamType(arg: SupportedParamType, param: ParamEnt
   }
 
   let error = new Error(`The type of ${param.name} is wrong, expected ${shortType(finalType)} but got ${typeNameOfArg(arg)}`);
-  if(isGenericType(finalType)) {
-    if(Library.isLibrary(arg)) {
+  if (isGenericType(finalType)) {
+    if (Library.isLibrary(arg)) {
       const argL = arg as Library;
-      if(!argL.inferrTypesByAssign(finalType)) {
+      if (!argL.inferrTypesByAssign(finalType)) {
         return error;
       }
     } else {
       return error;
     }
   }
-  
+
   const t = typeOfArg(arg);
 
   return t == finalType ? undefined : error;
@@ -849,7 +857,7 @@ export function flatternStruct(arg: SupportedParamType, name: string): Arguments
 
 
 export function flatternLibrary(arg: SupportedParamType, name: string, fromState: boolean): Arguments {
-  if(fromState) {
+  if (fromState) {
     if (Library.isLibrary(arg)) {
       const argL = arg as Library;
       return flatternStruct(argL.getProperties(), name);
@@ -872,7 +880,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
           value: e.value
         });
       });
-    } else if(isLibraryType(finalType)) {
+    } else if (isLibraryType(finalType)) {
       flatternLibrary(arg.value, arg.name, fromState).forEach(e => {
         args_.push({
           name: e.name,
@@ -907,7 +915,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
 function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isLibraryType(param.type)) {
     let libraryName = getNameByType(param.type);
-    if(isGenericType(param.type)) {
+    if (isGenericType(param.type)) {
       libraryName = parseGenericType(param.type)[0];
     }
     const StructClass = types["__propertiesOf" + libraryName] as typeof Struct;
@@ -923,7 +931,7 @@ function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolve
           name: `${param.name}.${p.name}`,
           type: p.type
         }, typeResolver, types);
-      } 
+      }
       else if (isArrayType(p.type)) {
         return flatternArrayParam({
           name: `${param.name}.${p.name}`,
@@ -1040,8 +1048,8 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
           value: e.value
         });
       });
-    }  else if (isLibraryType(param.type)) {
-      if(fromState) {
+    } else if (isLibraryType(param.type)) {
+      if (fromState) {
         flatternLibraryProperties(param, typeResolver, types).forEach(e => {
           args_.push({
             name: e.name,
@@ -1292,7 +1300,7 @@ export function resolveType(type: string, originTypes: Record<string, string>, c
     const arrayType = resolveArrayType(contract, _type, statics);
     const [elemTypeName, sizes] = arrayTypeAndSizeStr(arrayType);
     return toLiteralArrayType(originTypes[elemTypeName] || elemTypeName, sizes);
-  } else if(isGenericType(_type)) {
+  } else if (isGenericType(_type)) {
     const [library, genericTypes] = parseGenericType(_type);
     return toGenericType(library, genericTypes.map(t => resolveType(t, originTypes, contract, statics, alias, librarys)))
   } else {
@@ -1429,7 +1437,7 @@ export function createLibrary(contract: AbstractContract, libraryClass: typeof L
 
       return createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap)
 
-    } else  if (isLibraryType(finalType)) {
+    } else if (isLibraryType(finalType)) {
 
       const libraryClass = contract.getTypeClassByType(param.type);
 
@@ -1701,11 +1709,11 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
   } else if (isLibraryType(arg.type)) {
 
     let libraryName = getNameByType(arg.type);
-    if(isGenericType(arg.type)) {
+    if (isGenericType(arg.type)) {
       libraryName = parseGenericType(arg.type)[0];
     }
 
-    if(fromState) {
+    if (fromState) {
       const stclass = contract.getTypeClassByType(`__propertiesOf${libraryName}`);
       value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
     } else {
@@ -1860,14 +1868,24 @@ export function toData(collection: Map<SupportedParamType, SupportedParamType> |
   return new Bytes(storage);
 }
 
-export function toHashedMap(collection: Map<SupportedParamType, SupportedParamType> ): HashedMap {
+export function toHashedMap(collection: Map<SupportedParamType, SupportedParamType>): HashedMap {
   let data = toData(collection);
-  return new HashedMap(data);
+  let hashedMap = new HashedMap(data);
+
+  hashedMap.setProperties({
+    _data: toData(collection)
+  })
+  return hashedMap;
 }
 
-export function toHashedSet(collection: Map<SupportedParamType, SupportedParamType> ): HashedSet {
+export function toHashedSet(collection: Map<SupportedParamType, SupportedParamType>): HashedSet {
   let data = toData(collection);
-  return new HashedSet(data);
+  let hashedSet = new HashedSet(data);
+
+  hashedSet.setProperties({
+    _data: toData(collection)
+  })
+  return hashedSet;
 }
 
 /**
@@ -1889,7 +1907,7 @@ export function parseGenericType(type: string): [string, Array<string>] {
 
   if (isGenericType(type)) {
     let m = type.match(/([\w]+)<([\w,[\]{}\s]+)>$/);
-    if(m) {
+    if (m) {
       const library = m[1]
       const realTypes = m[2].split(',').map(t => t.trim());
       return [library, realTypes];
@@ -2026,14 +2044,14 @@ export function toScryptType(a: SupportedParamType): ScryptType {
 }
 
 export function inferrType(a: SupportedParamType): string {
-  if(Array.isArray(a)) {
-    if(a.length === 0) {
+  if (Array.isArray(a)) {
+    if (a.length === 0) {
       throw new Error(`cannot inferr type from empty array`);
     }
 
     const arg0 = a[0];
 
-    if(Array.isArray(arg0)) {
+    if (Array.isArray(arg0)) {
 
       if (!a.every(arg => Array.isArray(arg) && arg.length === arg0.length)) {
         throw new Error(`cannot inferr type from [${a}] , not all length of element are the same`);
