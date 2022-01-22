@@ -49,8 +49,6 @@ describe('test.stateMapTest', () => {
 
                 map.set(key, val);
                 const keyIndex = findKeyIndex(map, key);
-                console.log('keyIndex', keyIndex)
-                console.log('toData(map)', toData(map).toHex())
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
                 const result = mapTest.insert(new MapEntry({
@@ -135,7 +133,7 @@ describe('test.stateMapTest', () => {
 
 
     describe('stateMapTest: library as state', () => {
-        let mapTest, hashedMap;
+        let mapTest;
 
         const jsonDescr = loadDescription('LibAsState2_desc.json')
         const Test = buildContractClass(jsonDescr)
@@ -143,16 +141,13 @@ describe('test.stateMapTest', () => {
         let map = new Map<number, number>();
 
         before(() => {
-            hashedMap = toHashedMap(map);
-            mapTest = new Test(hashedMap) // empty initial map
+            mapTest = new Test(toHashedMap(map)) // empty initial map
         })
 
         function buildTx(map: Map<number, number>) {
-            hashedMap.setProperties({
-                _data: toData(map)
-            })
+
             let newLockingScript = mapTest.getNewStateScript({
-                map: hashedMap,
+                map: toHashedMap(map),
             });
 
             const tx = newTx(inputSatoshis);
@@ -179,9 +174,6 @@ describe('test.stateMapTest', () => {
                 map.set(key, val);
                 const keyIndex = findKeyIndex(map, key);
 
-                console.log('keyIndex', keyIndex)
-                console.log('toData(map)', toData(map).toHex())
-
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
                 const result = mapTest.insert(new MapEntry({
@@ -191,11 +183,7 @@ describe('test.stateMapTest', () => {
                 }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                // update hashedMap
-                hashedMap.setProperties({
-                    _data: toData(map)
-                })
-                mapTest.map = hashedMap
+                mapTest.map = toHashedMap(map)
             }
 
             testInsert(3, 1);
@@ -204,7 +192,7 @@ describe('test.stateMapTest', () => {
 
             //testInsert(0, 11);
 
-            // testInsert(1, 5);
+            //testInsert(1, 5);
 
         })
 
