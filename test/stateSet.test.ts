@@ -12,7 +12,7 @@ describe('test.stateSet', () => {
     describe('stateSet', () => {
         let stateSet, StateSet;
 
-        let set: HashedSet<number> = new Set<number>();
+        let set = new Set<number>();
 
         before(() => {
             const jsonDescr = loadDescription('stateSet_desc.json')
@@ -20,7 +20,7 @@ describe('test.stateSet', () => {
             stateSet = new StateSet(new Bytes('')) // empty initial set
         })
 
-        function buildTx(set: HashedSet<number>) {
+        function buildTx(set: Set<number>) {
             let newLockingScript = stateSet.getNewStateScript({
                 _setData: toData(set),
             });

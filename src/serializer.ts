@@ -1,4 +1,4 @@
-import { bin2num, bsv, num2bin } from './internal';
+import { bin2num, bsv, num2bin } from './utils';
 
 const Script = bsv.Script;
 const Opcode = bsv.Opcode;

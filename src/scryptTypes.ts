@@ -639,6 +639,10 @@ export class Library extends Struct {
     this.args = args;
   }
 
+  static setPropertiesClass(cls: typeof Struct): void {
+    Library.propertiesClass = cls;
+  }
+
 
   getStructAst(): StructEntity {
     return this.structAst || Struct.getStructAst(this);
@@ -793,6 +797,102 @@ export class Library extends Struct {
 }
 
 
+export class HashedMap extends Library {
+  constructor(data: Bytes) {
+    super(data)
+    this._typeResolver = (t: string) => t; //we should assign this before bind
+    this.bind();
+  }
+}
+
+let propertiesOfHashedMapClass = class extends Struct {
+  constructor(o: StructObject) {
+    super(o);
+    this._typeResolver = (t: string) => t; //Just need a empty type resolver
+    this.bind();
+  }
+};
+
+propertiesOfHashedMapClass.structAst = {
+  name: "HashedMap",
+  params: [
+    {
+      name: '_data',
+      type: 'bytes'
+    }
+  ]
+}
+
+HashedMap.propertiesClass = propertiesOfHashedMapClass;
+
+HashedMap.structAst  = {
+  name: "HashedMap",
+  params: [
+    {
+      name: '_data',
+      type: 'bytes'
+    }
+  ],
+  properties: [
+    {
+      name: '_data',
+      type: 'bytes'
+    }
+  ],
+  genericTypes: ['K','V']
+} as StructEntity;
+
+
+
+
+
+export class HashedSet extends Library {
+  constructor(data: Bytes) {
+    super(data)
+    this._typeResolver = (t: string) => t; //we should assign this before bind
+    this.bind();
+  }
+}
+
+
+let propertiesOfHashedSetClass = class extends Struct {
+  constructor(o: StructObject) {
+    super(o);
+    this._typeResolver = (t: string) => t; //Just need a empty type resolver
+    this.bind();
+  }
+};
+
+propertiesOfHashedSetClass.structAst = {
+  name: "HashedSet",
+  params: [
+    {
+      name: '_data',
+      type: 'bytes'
+    }
+  ]
+}
+
+HashedSet.propertiesClass = propertiesOfHashedSetClass;
+
+HashedSet.structAst  = {
+  name: "HashedSet",
+  params: [
+    {
+      name: '_data',
+      type: 'bytes'
+    }
+  ],
+  properties: [
+    {
+      name: '_data',
+      type: 'bytes'
+    }
+  ],
+  genericTypes: ['E']
+} as StructEntity;
+
+
 export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct;
 
 export type RawTypes = boolean | number | bigint | string;
@@ -805,11 +905,6 @@ export type SupportedParamType = SingletonParamType | SupportedParamType[];
 
 export type StructObject = Record<string, SupportedParamType>;
 
-
-
-
-export type HashedSet<K extends SupportedParamType> = Set<K>;
-export type HashedMap<K extends SupportedParamType, V extends SupportedParamType> = Map<K, V>;
 
 export enum VariableType {
   BOOL = 'bool',

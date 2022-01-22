@@ -906,7 +906,10 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
 
 function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isLibraryType(param.type)) {
-    const libraryName = getNameByType(param.type);
+    let libraryName = getNameByType(param.type);
+    if(isGenericType(param.type)) {
+      libraryName = parseGenericType(param.type)[0];
+    }
     const StructClass = types["__propertiesOf" + libraryName] as typeof Struct;
     return StructClass.structAst.params.map(p => {
       p.type = typeResolver(p.type);
@@ -1697,11 +1700,16 @@ export function deserializeArgfromASM(contract: AbstractContract, arg: Argument,
     value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
   } else if (isLibraryType(arg.type)) {
 
+    let libraryName = getNameByType(arg.type);
+    if(isGenericType(arg.type)) {
+      libraryName = parseGenericType(arg.type)[0];
+    }
+
     if(fromState) {
-      const stclass = contract.getTypeClassByType(`__propertiesOf${getNameByType(arg.type)}`);
+      const stclass = contract.getTypeClassByType(`__propertiesOf${libraryName}`);
       value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
     } else {
-      const libraryClass = contract.getTypeClassByType(getNameByType(arg.type));
+      const libraryClass = contract.getTypeClassByType(libraryName);
       value = createLibrary(contract, libraryClass as typeof Library, arg.name, opcodesMap);
     }
 
@@ -1773,7 +1781,7 @@ export function flattenSha256(data: SupportedParamType): string {
 }
 
 // sort the map by the result of flattenSha256 of the key
-export function sortmap(map: HashedMap<SupportedParamType, SupportedParamType>): HashedMap<SupportedParamType, SupportedParamType> {
+export function sortmap(map: Map<SupportedParamType, SupportedParamType>): Map<SupportedParamType, SupportedParamType> {
   return new Map([...map.entries()].sort((a, b) => {
     return BN.fromSM(Buffer.from(flattenSha256(a[0]), 'hex'), {
       endian: 'little'
@@ -1784,7 +1792,7 @@ export function sortmap(map: HashedMap<SupportedParamType, SupportedParamType>):
 }
 
 // sort the set by the result of flattenSha256 of the key
-export function sortset(set: HashedSet<SupportedParamType>): HashedSet<SupportedParamType> {
+export function sortset(set: Set<SupportedParamType>): Set<SupportedParamType> {
   return new Set([...set.keys()].sort((a, b) => {
     return BN.fromSM(Buffer.from(flattenSha256(a), 'hex'), {
       endian: 'little'
@@ -1796,7 +1804,7 @@ export function sortset(set: HashedSet<SupportedParamType>): HashedSet<Supported
 
 
 // returns index of the HashedMap/HashedSet by the key
-export function findKeyIndex(collection: HashedMap<SupportedParamType, SupportedParamType> | HashedSet<SupportedParamType>, key: SupportedParamType): number {
+export function findKeyIndex(collection: Map<SupportedParamType, SupportedParamType> | Set<SupportedParamType>, key: SupportedParamType): number {
 
   if (collection instanceof Map) {
     const sortedMap = sortmap(collection);
@@ -1833,7 +1841,7 @@ export function findKeyIndex(collection: HashedMap<SupportedParamType, Supported
 
 
 // serialize the HashedMap/HashedSet, but only flattenSha256 of the key and value
-export function toData(collection: HashedMap<SupportedParamType, SupportedParamType> | HashedSet<SupportedParamType>): Bytes {
+export function toData(collection: Map<SupportedParamType, SupportedParamType> | Set<SupportedParamType>): Bytes {
 
   let storage = '';
   if (collection instanceof Map) {
@@ -1850,6 +1858,16 @@ export function toData(collection: HashedMap<SupportedParamType, SupportedParamT
   }
 
   return new Bytes(storage);
+}
+
+export function toHashedMap(collection: Map<SupportedParamType, SupportedParamType> ): HashedMap {
+  let data = toData(collection);
+  return new HashedMap(data);
+}
+
+export function toHashedSet(collection: Map<SupportedParamType, SupportedParamType> ): HashedSet {
+  let data = toData(collection);
+  return new HashedSet(data);
 }
 
 /**

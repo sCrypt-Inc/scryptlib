@@ -5,7 +5,7 @@ import {
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveArrayType, toLiteralArrayType,
   StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkSupportedParamType, hash160, buildDefaultStateProps, isStructOrLibraryType
 } from './internal';
-import { Library } from './scryptTypes';
+import { HashedMap, HashedSet, Library } from './scryptTypes';
 
 
 export interface TxContext {
@@ -562,6 +562,23 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 }
 
 
+function buildStdLibraryClass(): Record<string, typeof Library> {
+
+  const libraryTypes: Record<string, typeof Library> = {};
+
+  Object.assign(libraryTypes, {
+    ["HashedMap"]: HashedMap,
+    ["__propertiesOfHashedMap"]: HashedMap.propertiesClass
+  });
+
+  Object.assign(libraryTypes, {
+    ["HashedSet"]: HashedSet,
+    ["__propertiesOfHashedSet"]: HashedSet.propertiesClass
+  });
+
+  return libraryTypes;
+}
+
 export function buildLibraryClass(desc: CompileResult | ContractDescription): Record<string, typeof Library> {
 
   const libraryTypes: Record<string, typeof Library> = {};
@@ -570,6 +587,9 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
   const library: LibraryEntity[] = desc.library || [];
 
   const finalTypeResolver = buildTypeResolverFromDesc(desc);
+
+  Object.assign(libraryTypes, buildStdLibraryClass());
+  
   library.forEach(element => {
     const name = element.name;
 
@@ -597,11 +617,7 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
     libraryClass.structAst = element;
 
     Object.assign(libraryTypes, {
-      [name]: libraryClass
-    });
-
-
-    Object.assign(libraryTypes, {
+      [name]: libraryClass,
       ["__propertiesOf" + name]: propertiesClass
     });
 
@@ -693,6 +709,11 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
   alias.forEach(element => {
     resolvedTypes[element.name] = resolveType(element.name, resolvedTypes, contract, statics, alias, library);
   });
+
+  // add std type
+
+  resolvedTypes['HashedMap'] = `library HashedMap {}`;
+  resolvedTypes['HashedSet'] = `library HashedSet {}`;
 
 
   const resolver = (type: string) => {
