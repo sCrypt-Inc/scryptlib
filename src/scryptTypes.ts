@@ -219,6 +219,15 @@ export class Ripemd160 extends ScryptType {
   }
 }
 
+export class PubKeyHash extends Ripemd160 {
+  constructor(bytesVal: string) {
+    super(bytesVal);
+  }
+  toLiteral(): string {
+    return `PubKeyHash(b'${getValidatedHexString(this._value.toString())}')`;
+  }
+}
+
 export class Sha1 extends ScryptType {
   constructor(bytesVal: string) {
     super(bytesVal);
@@ -638,7 +647,7 @@ export class Struct extends ScryptType {
 }
 
 
-export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct | PrimitiveTypes[];
+export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | PubKeyHash | OpCodeType | Struct | PrimitiveTypes[];
 
 export type RawTypes = boolean | number | bigint | string | RawTypes[];
 
@@ -662,6 +671,7 @@ export enum VariableType {
   PRIVKEY = 'PrivKey',
   SIG = 'Sig',
   RIPEMD160 = 'Ripemd160',
+  PUBKEYHASH = 'PubKeyHash',
   SHA1 = 'Sha1',
   SHA256 = 'Sha256',
   SIGHASHTYPE = 'SigHashType',
@@ -682,6 +692,7 @@ export const BasicScryptType: Record<string, typeof ScryptType> = {
   [VariableType.PRIVKEY]: PrivKey,
   [VariableType.SIG]: Sig,
   [VariableType.RIPEMD160]: Ripemd160,
+  [VariableType.PUBKEYHASH]: PubKeyHash,
   [VariableType.SHA1]: Sha1,
   [VariableType.SHA256]: Sha256,
   [VariableType.SIGHASHTYPE]: SigHashType,

@@ -10,7 +10,7 @@ export { ECIES };
 
 
 import {
-  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
+  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, PubKeyHash, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
   ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
   findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
   Arguments, Argument,
@@ -227,6 +227,13 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
     return [value, value, VariableType.RIPEMD160];
   }
 
+  // PubKeyHash
+  m = /^PubKeyHash\(b'([\da-fA-F]+)'\)$/.exec(l);
+  if (m) {
+    const value = getValidatedHexString(m[1]);
+    return [value, value, VariableType.PUBKEYHASH];
+  }
+
   // Sha1
   m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
@@ -296,6 +303,8 @@ export function literal2ScryptType(l: string): ScryptType {
       return new Sig(value as string);
     case VariableType.RIPEMD160:
       return new Ripemd160(value as string);
+    case VariableType.PUBKEYHASH:
+      return new PubKeyHash(value as string);
     case VariableType.SHA1:
       return new Sha1(value as string);
     case VariableType.SHA256:
@@ -329,6 +338,8 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
       return new Sig(asm);
     case VariableType.RIPEMD160:
       return new Ripemd160(asm);
+    case VariableType.PUBKEYHASH:
+      return new PubKeyHash(asm);
     case VariableType.SHA1:
       return new Sha1(asm);
     case VariableType.SHA256:
@@ -1369,6 +1380,7 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
       || arg.type === VariableType.PUBKEY
       || arg.type === VariableType.SIG
       || arg.type === VariableType.RIPEMD160
+      || arg.type === VariableType.PUBKEYHASH
       || arg.type === VariableType.SHA1
       || arg.type === VariableType.SHA256
       || arg.type === VariableType.SIGHASHTYPE
@@ -1409,6 +1421,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
       || p.type === VariableType.PUBKEY
       || p.type === VariableType.SIG
       || p.type === VariableType.RIPEMD160
+      || p.type === VariableType.PUBKEYHASH
       || p.type === VariableType.SHA1
       || p.type === VariableType.SHA256
       || p.type === VariableType.SIGHASHTYPE
@@ -1732,7 +1745,7 @@ export function buildOpreturnScript(data: string): Script {
 }
 
 
-export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
+export function buildPublicKeyHashScript(pubKeyHash: Ripemd160 | PubKeyHash): Script {
   return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash.toASM(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
 }
 
