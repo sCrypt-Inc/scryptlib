@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass } from '../src/contract'
+import { buildContractClass, buildTypeClasses } from '../src/contract'
+import { Bytes } from '../src'
 
 describe('test.generic', () => {
     describe('check generic', () => {
@@ -66,5 +67,28 @@ describe('test.generic', () => {
                 }
             ])
         })
+    })
+
+    describe('check generic_nested_property', () => {
+        let testGenericLibray;
+
+        before(() => {
+            const jsonDescr = loadDescription('generic_nested_property_desc.json')
+            const TestGenericLibray = buildContractClass(jsonDescr)
+            const { GenericLibray, GenericA, ST } = buildTypeClasses(TestGenericLibray);
+            testGenericLibray = new TestGenericLibray(new GenericLibray(new GenericA(new ST({
+                a: 101,
+                b: new Bytes("01010f")
+            })), 11))
+        })
+
+        it('test unlock', () => {
+
+            const result = testGenericLibray.unlock(11).verify()
+
+            expect(result.success, result.error).to.be.true;
+
+        })
+
     })
 })
