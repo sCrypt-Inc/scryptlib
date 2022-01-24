@@ -606,15 +606,23 @@ export function getNameByType(type: string): string {
     return m[1];
   }
 
+  if (isGenericType(type)) {
+    return parseGenericType(type)[0]
+  } else if (isArrayType(type)) {
+    const [elemType, _] = arrayTypeAndSizeStr(type);
+    return getNameByType(elemType);
+  }
+
   return '';
 }
 
 export function getLibraryNameByType(type: string): string {
-  if (isGenericType(type)) {
-    return parseGenericType(type)[0]
+  let m = /^library\s(\w+)\s\{\}$/.exec(type.trim());
+  if (m) {
+    return m[1];
   }
 
-  return getNameByType(type) ? getNameByType(type) : type;
+  return '';
 }
 
 
@@ -915,9 +923,6 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
 function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isLibraryType(param.type)) {
     let libraryName = getNameByType(param.type);
-    if (isGenericType(param.type)) {
-      libraryName = parseGenericType(param.type)[0];
-    }
     const StructClass = types["__propertiesOf" + libraryName] as typeof Struct;
     return StructClass.structAst.params.map(p => {
       p.type = typeResolver(p.type);
@@ -1125,6 +1130,12 @@ export function shortType(finalType: string): string {
     const [elemType, sizes] = arrayTypeAndSizeStr(finalType);
     return toLiteralArrayType(shortType(elemType), sizes);
   }
+
+  if (isGenericType(finalType)) {
+    const [library, types] = parseGenericType(finalType);
+    return toGenericType(library, types.map(t => shortType(t)));
+  }
+
   return getNameByType(finalType) ? getNameByType(finalType) : finalType;
 }
 

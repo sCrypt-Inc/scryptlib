@@ -636,7 +636,7 @@ export class Library extends Struct {
   private structAst: LibraryEntity | undefined = undefined;
   constructor(...args: SupportedParamType[]) {
     super({});
-    this.args = args;
+    this.args = this.checkArgs(args);
   }
 
   static setPropertiesClass(cls: typeof Struct): void {
@@ -677,6 +677,13 @@ export class Library extends Struct {
   }
 
 
+  private checkArgs(args: SupportedParamType[]): SupportedParamType[] {
+    const libraryAst = this.getStructAst() as LibraryEntity;
+    if(libraryAst.params.length !== args.length) {
+      throw new Error(`wrong number of arguments for '${libraryAst.name}.constructor', expected ${libraryAst.params.length} but got ${args.length}`);
+    }
+    return args;
+  }
 
   private inferrTypesByCtorArgs(): void {
     const libraryAst = this.getStructAst() as LibraryEntity;
