@@ -298,6 +298,30 @@ describe('library as property or return or param', () => {
         });
   
       });
+
+      describe('LibGenericAsProperty4 test: can inferr all generic types in nested library', () => {
+        let instance, result;
+        const TestGenericLibray = buildContractClass(loadDescription('LibGenericAsProperty4_desc.json'));
+        const { GenericLibray, GenericA, ST } = buildTypeClasses(TestGenericLibray);
+  
+        it('should success', () => {
+          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({a : 101, b: new Bytes("0f010f")})), 11));
+          result = instance.unlock(11).verify()
+          expect(result.success, result.error).to.be.true
+        });
+
+        it('should fail ', () => {
+          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({a : 101, b: new Bytes("0f010f")})), 11));
+          result = instance.unlock(10).verify()
+          expect(result.success, result.error).to.be.false
+        });
+
+        it('should throw when wrong constructor args ', () => {
+          expect(() => new GenericLibray([new GenericA(new ST({a : 101, b: new Bytes("0f010f")})), 11]))
+          .to.throw('wrong number of arguments for \'GenericLibray.constructor\', expected 2 but got 1');
+        });
+
+      });
     })
   })
 
