@@ -536,7 +536,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 }
 
 
-function getContractName(astRoot): string {
+export function getContractName(astRoot): string {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
     return '';
