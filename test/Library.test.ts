@@ -20,26 +20,26 @@ describe('library as property or return or param', () => {
       const Test = buildContractClass(loadDescription('LibCompare_desc.json'));
       const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(new L(1, 1, [1,1,1], true, 2, 2));
+        instance = new Test(new L(1, 1, [1, 1, 1], true, 2, 2));
       });
 
       it('should success when call unlock', () => {
-        result = instance.unlock(1, 1, [1,1,1], true, 2, 2).verify()
+        result = instance.unlock(1, 1, [1, 1, 1], true, 2, 2).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1, 2, [1,1,1], true, 2, 2).verify()
+        result = instance.unlock(1, 2, [1, 1, 1], true, 2, 2).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1, 1, [1,1,1], false, 2, 2).verify()
+        result = instance.unlock(1, 1, [1, 1, 1], false, 2, 2).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1, 1, [1,1,2], true, 2, 2).verify()
+        result = instance.unlock(1, 1, [1, 1, 2], true, 2, 2).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -236,13 +236,13 @@ describe('library as property or return or param', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty1_desc.json'));
         const { L } = buildTypeClasses(Test);
-  
+
         it('should success when using int to new L', () => {
           instance = new Test(2, new L(1, 1));
           result = instance.unlock(2).verify()
           expect(result.success, result.error).to.be.true
         });
-  
+
         it('should fail when using int to new L', () => {
           instance = new Test(2, new L(1, 2));
           result = instance.unlock(2).verify()
@@ -267,7 +267,7 @@ describe('library as property or return or param', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty2_desc.json'));
         const { L } = buildTypeClasses(Test);
-  
+
         it('should success when using int to new L', () => {
           instance = new Test(2, new L(1, 1));
           result = instance.unlock(2).verify()
@@ -279,14 +279,14 @@ describe('library as property or return or param', () => {
           result = instance.unlock(1).verify()
           expect(result.success, result.error).to.be.false
         });
-  
+
       });
 
       describe('LibGenericAsProperty3 test: can not inferr all generic types from constructor', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty3_desc.json'));
         const { L } = buildTypeClasses(Test);
-  
+
         it('should success when using int to new L', () => {
           instance = new Test(2, new L(1, 1), new L(new Bytes("0101"), 1));
           result = instance.unlock(2).verify()
@@ -294,31 +294,31 @@ describe('library as property or return or param', () => {
         });
 
         it('should throw when using int and bool to new L', () => {
-          expect(() => new L(1, true)).to.throw('The type of 1-th constructor argument: ctor.b is wrong, expected int but got bool');
+          expect(() => new L(1, true)).to.throw('The type of 1-th argument of the L library constructor is wrong, expected int but got bool');
         });
-  
+
       });
 
       describe('LibGenericAsProperty4 test: can inferr all generic types in nested library', () => {
         let instance, result;
         const TestGenericLibray = buildContractClass(loadDescription('LibGenericAsProperty4_desc.json'));
         const { GenericLibray, GenericA, ST } = buildTypeClasses(TestGenericLibray);
-  
+
         it('should success', () => {
-          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({a : 101, b: new Bytes("0f010f")})), 11));
+          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11));
           result = instance.unlock(11).verify()
           expect(result.success, result.error).to.be.true
         });
 
         it('should fail ', () => {
-          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({a : 101, b: new Bytes("0f010f")})), 11));
+          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11));
           result = instance.unlock(10).verify()
           expect(result.success, result.error).to.be.false
         });
 
         it('should throw when wrong constructor args ', () => {
-          expect(() => new GenericLibray([new GenericA(new ST({a : 101, b: new Bytes("0f010f")})), 11]))
-          .to.throw('wrong number of arguments for \'GenericLibray.constructor\', expected 2 but got 1');
+          expect(() => new GenericLibray([new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11]))
+            .to.throw('wrong number of arguments for \'GenericLibray.constructor\', expected 2 but got 1');
         });
 
       });
@@ -458,7 +458,7 @@ describe('library as property or return or param', () => {
       let l = new L(1, new ST({
         x: 1,
         c: true,
-        aa: [1,1,1]
+        aa: [1, 1, 1]
       }));
 
       before(() => {
@@ -471,7 +471,7 @@ describe('library as property or return or param', () => {
           st: new ST({
             x: 1,
             c: false,
-            aa: [1,1,1]
+            aa: [1, 1, 1]
           })
         });
 
@@ -481,21 +481,21 @@ describe('library as property or return or param', () => {
 
         const tx = newTx(inputSatoshis);
         tx.addOutput(new bsv.Transaction.Output({
-            script: newLockingScript,
-            satoshis: outputAmount
+          script: newLockingScript,
+          satoshis: outputAmount
         }))
-  
+
         const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
-  
+
         instance.txContext = {
-            tx: tx,
-            inputIndex,
-            inputSatoshis
+          tx: tx,
+          inputIndex,
+          inputSatoshis
         }
-  
+
         result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
         expect(result.success, result.error).to.be.true
-  
+
       });
 
       it('should fail when call unlock with error state', () => {
@@ -506,18 +506,18 @@ describe('library as property or return or param', () => {
 
         const tx = newTx(inputSatoshis);
         tx.addOutput(new bsv.Transaction.Output({
-            script: newLockingScript,
-            satoshis: outputAmount
+          script: newLockingScript,
+          satoshis: outputAmount
         }))
-  
+
         const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
-  
+
         instance.txContext = {
-            tx: tx,
-            inputIndex,
-            inputSatoshis
+          tx: tx,
+          inputIndex,
+          inputSatoshis
         }
-  
+
         result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
         expect(result.success, result.error).to.be.false
       });
@@ -530,25 +530,25 @@ describe('library as property or return or param', () => {
             st: new ST({
               x: 1,
               c: true,
-              aa: [1,1,1]
+              aa: [1, 1, 1]
             })
           })
         })
 
         const tx = newTx(inputSatoshis);
         tx.addOutput(new bsv.Transaction.Output({
-            script: newLockingScript,
-            satoshis: outputAmount
+          script: newLockingScript,
+          satoshis: outputAmount
         }))
-  
+
         const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
-  
+
         instance.txContext = {
-            tx: tx,
-            inputIndex,
-            inputSatoshis
+          tx: tx,
+          inputIndex,
+          inputSatoshis
         }
-  
+
         result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
         expect(result.success, result.error).to.be.false
       });
@@ -561,18 +561,18 @@ describe('library as property or return or param', () => {
 
         const tx = newTx(inputSatoshis);
         tx.addOutput(new bsv.Transaction.Output({
-            script: newLockingScript,
-            satoshis: outputAmount
+          script: newLockingScript,
+          satoshis: outputAmount
         }))
-  
+
         const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
-  
+
         instance.txContext = {
-            tx: tx,
-            inputIndex,
-            inputSatoshis
+          tx: tx,
+          inputIndex,
+          inputSatoshis
         }
-  
+
         result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -585,25 +585,25 @@ describe('library as property or return or param', () => {
             st: new ST({
               x: 1,
               c: false,
-              aa: [1,1,1]
+              aa: [1, 1, 1]
             })
           })
         })
 
         const tx = newTx(inputSatoshis);
         tx.addOutput(new bsv.Transaction.Output({
-            script: newLockingScript,
-            satoshis: outputAmount
+          script: newLockingScript,
+          satoshis: outputAmount
         }))
-  
+
         const preimage = getPreimage(tx, instance.lockingScript, inputSatoshis)
-  
+
         instance.txContext = {
-            tx: tx,
-            inputIndex,
-            inputSatoshis
+          tx: tx,
+          inputIndex,
+          inputSatoshis
         }
-  
+
         result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
         expect(result.success, result.error).to.be.false
       });

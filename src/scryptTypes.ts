@@ -618,7 +618,7 @@ function toStructObject(structAst: StructEntity, args: SupportedParamType[], res
     const param = structAst.params[index];
     const error = checkSupportedParamType(args[index], param, resolver);
     if (error) {
-      throw new Error(`The type of ${index}-th constructor argument: ${param.name} is wrong, expected ${param.type} but got ${typeNameOfArg(args[index])}`);
+      throw new Error(`The type of ${index}-th argument of the ${structAst.name} library constructor is wrong, expected ${param.type} but got ${typeNameOfArg(args[index])}`);
     }
     previousValue[param.name] = currentValue;
     return previousValue;
