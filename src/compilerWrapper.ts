@@ -305,20 +305,20 @@ export function compile(
 
           const tagStr = match.groups.tagStr;
           
-          let m = /^(\w+)\.(\w+):(\d)$/.exec(tagStr);
+          const m = /^(\w+)\.(\w+):(\d)$/.exec(tagStr);
 
           if (m) {
             debugInfo = {
               contract: m[1],
               func: m[2],
-              tag: m[3] == "0" ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd
-            }
+              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd
+            };
           } else if (/loop:0/.test(tagStr)) {
             debugInfo = {
-              contract: "",
-              func: "",
+              contract: '',
+              func: '',
               tag: DebugModeTag.LoopStart 
-            }
+            };
           }
 
           const pos: Pos | undefined = sources[fileIndex] ? {
@@ -547,7 +547,7 @@ export function getContractName(astRoot): string {
 
 
 function shortGenericType(genericType: string): string {
-  let m = genericType.match(/__SCRYPT_(\w+)__/);
+  const m = genericType.match(/__SCRYPT_(\w+)__/);
   if(m) {
     return m[1];
   }

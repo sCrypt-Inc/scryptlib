@@ -607,7 +607,7 @@ export function getNameByType(type: string): string {
   }
 
   if (isGenericType(type)) {
-    return parseGenericType(type)[0]
+    return parseGenericType(type)[0];
   } else if (isArrayType(type)) {
     const [elemType, _] = arrayTypeAndSizeStr(type);
     return getNameByType(elemType);
@@ -617,7 +617,7 @@ export function getNameByType(type: string): string {
 }
 
 export function getLibraryNameByType(type: string): string {
-  let m = /^library\s(\w+)\s\{\}$/.exec(type.trim());
+  const m = /^library\s(\w+)\s\{\}$/.exec(type.trim());
   if (m) {
     return m[1];
   }
@@ -679,10 +679,10 @@ export function checkStruct(s: StructEntity, arg: Struct, typeResolver: TypeReso
 export function checkSupportedParamType(arg: SupportedParamType, param: ParamEntity, resolver: TypeResolver): Error | undefined {
   const finalType = resolver(param.type);
   if (isArrayType(finalType)) {
-    return checkArray(arg as SupportedParamType[], param, finalType, resolver)
+    return checkArray(arg as SupportedParamType[], param, finalType, resolver);
   }
 
-  let error = new Error(`The type of ${param.name} is wrong, expected ${shortType(finalType)} but got ${typeNameOfArg(arg)}`);
+  const error = new Error(`The type of ${param.name} is wrong, expected ${shortType(finalType)} but got ${typeNameOfArg(arg)}`);
   if (isGenericType(finalType)) {
     if (Library.isLibrary(arg)) {
       const argL = arg as Library;
@@ -740,7 +740,7 @@ export function toLiteralArrayType(elemTypeName: string, sizes: Array<number | s
 }
 
 export function toGenericType(library: string, genericTypes: Array<number | string>): string {
-  return `${library}<${genericTypes.join(',')}>`
+  return `${library}<${genericTypes.join(',')}>`;
 }
 
 
@@ -778,7 +778,7 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
     const scryptType = typeOfArg(arg0);
     return scryptType === elemTypeName ?
       undefined :
-      new Error(`The type of ${param.name} is wrong, should be ${expectedType}`);;
+      new Error(`The type of ${param.name} is wrong, should be ${expectedType}`);
 
   } else {
     return args.map(a => {
@@ -786,8 +786,8 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-        expectedType,
-        resolver);
+      expectedType,
+      resolver);
     }).filter(e => e)[0];
   }
 }
@@ -922,8 +922,8 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
 
 function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isLibraryType(param.type)) {
-    let libraryName = getNameByType(param.type);
-    const StructClass = types["__propertiesOf" + libraryName] as typeof Struct;
+    const libraryName = getNameByType(param.type);
+    const StructClass = types['__propertiesOf' + libraryName] as typeof Struct;
     return StructClass.structAst.params.map(p => {
       p.type = typeResolver(p.type);
       if (isStructType(p.type)) {
@@ -1287,16 +1287,16 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 export function resolveConstValue(node: any): string | undefined {
 
   let value: string | undefined = undefined;
-  if (node.expr.nodeType === "IntLiteral") {
+  if (node.expr.nodeType === 'IntLiteral') {
     value = node.expr.value.toString(10);
-  } else if (node.expr.nodeType === "BoolLiteral") {
+  } else if (node.expr.nodeType === 'BoolLiteral') {
     value = node.expr.value;
-  } if (node.expr.nodeType === "BytesLiteral") {
+  } if (node.expr.nodeType === 'BytesLiteral') {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
-  } if (node.expr.nodeType === "FunctionCall") {
+  } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -1313,7 +1313,7 @@ export function resolveType(type: string, originTypes: Record<string, string>, c
     return toLiteralArrayType(originTypes[elemTypeName] || elemTypeName, sizes);
   } else if (isGenericType(_type)) {
     const [library, genericTypes] = parseGenericType(_type);
-    return toGenericType(library, genericTypes.map(t => resolveType(t, originTypes, contract, statics, alias, librarys)))
+    return toGenericType(library, genericTypes.map(t => resolveType(t, originTypes, contract, statics, alias, librarys)));
   } else {
     return originTypes[_type] || _type;
   }
@@ -1438,7 +1438,7 @@ export function createStruct(contract: AbstractContract, structClass: typeof Str
 export function createLibrary(contract: AbstractContract, libraryClass: typeof Library, name: string, opcodesMap: Map<string, string>): Library {
 
 
-  let args = libraryClass.structAst.params.map(param => {
+  const args = libraryClass.structAst.params.map(param => {
 
     const finalType = contract.typeResolver(param.type);
 
@@ -1446,20 +1446,20 @@ export function createLibrary(contract: AbstractContract, libraryClass: typeof L
 
       const stclass = contract.getTypeClassByType(param.type);
 
-      return createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap)
+      return createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap);
 
     } else if (isLibraryType(finalType)) {
 
       const libraryClass = contract.getTypeClassByType(param.type);
 
-      return createLibrary(contract, libraryClass as typeof Library, `${name}.${param.name}`, opcodesMap)
+      return createLibrary(contract, libraryClass as typeof Library, `${name}.${param.name}`, opcodesMap);
 
     } else if (isArrayType(finalType)) {
 
-      return createArray(contract, finalType, `${name}.${param.name}`, opcodesMap)
+      return createArray(contract, finalType, `${name}.${param.name}`, opcodesMap);
 
     } else {
-      return asm2ScryptType(finalType, opcodesMap.get(`$${name}.${param.name}`))
+      return asm2ScryptType(finalType, opcodesMap.get(`$${name}.${param.name}`));
     }
   });
 
@@ -1880,22 +1880,22 @@ export function toData(collection: Map<SupportedParamType, SupportedParamType> |
 }
 
 export function toHashedMap(collection: Map<SupportedParamType, SupportedParamType>): HashedMap {
-  let data = toData(collection);
-  let hashedMap = new HashedMap(data);
+  const data = toData(collection);
+  const hashedMap = new HashedMap(data);
 
   hashedMap.setProperties({
     _data: toData(collection)
-  })
+  });
   return hashedMap;
 }
 
 export function toHashedSet(collection: Map<SupportedParamType, SupportedParamType>): HashedSet {
-  let data = toData(collection);
-  let hashedSet = new HashedSet(data);
+  const data = toData(collection);
+  const hashedSet = new HashedSet(data);
 
   hashedSet.setProperties({
     _data: toData(collection)
-  })
+  });
   return hashedSet;
 }
 
@@ -1917,14 +1917,14 @@ export function isGenericType(type: string): boolean {
 export function parseGenericType(type: string): [string, Array<string>] {
 
   if (isGenericType(type)) {
-    let m = type.match(/([\w]+)<([\w,[\]{}\s]+)>$/);
+    const m = type.match(/([\w]+)<([\w,[\]{}\s]+)>$/);
     if (m) {
-      const library = m[1]
+      const library = m[1];
       const realTypes = m[2].split(',').map(t => t.trim());
       return [library, realTypes];
     }
   }
-  throw new Error(`"${type}" is not generic type`);;
+  throw new Error(`"${type}" is not generic type`);
 }
 
 
@@ -2057,7 +2057,7 @@ export function toScryptType(a: SupportedParamType): ScryptType {
 export function inferrType(a: SupportedParamType): string {
   if (Array.isArray(a)) {
     if (a.length === 0) {
-      throw new Error(`cannot inferr type from empty array`);
+      throw new Error('cannot inferr type from empty array');
     }
 
     const arg0 = a[0];

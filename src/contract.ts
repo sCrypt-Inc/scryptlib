@@ -154,7 +154,7 @@ export class AbstractContract {
       if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
         resolveKeys.push(arg.name);
         const state = states[arg.name];
-        let error = checkSupportedParamType(state, arg, this.typeResolver);
+        const error = checkSupportedParamType(state, arg, this.typeResolver);
         
         if(error) {
           throw error;
@@ -567,13 +567,13 @@ function buildStdLibraryClass(): Record<string, typeof Library> {
   const libraryTypes: Record<string, typeof Library> = {};
 
   Object.assign(libraryTypes, {
-    ["HashedMap"]: HashedMap,
-    ["__propertiesOfHashedMap"]: HashedMap.propertiesClass
+    ['HashedMap']: HashedMap,
+    ['__propertiesOfHashedMap']: HashedMap.propertiesClass
   });
 
   Object.assign(libraryTypes, {
-    ["HashedSet"]: HashedSet,
-    ["__propertiesOfHashedSet"]: HashedSet.propertiesClass
+    ['HashedSet']: HashedSet,
+    ['__propertiesOfHashedSet']: HashedSet.propertiesClass
   });
 
   return libraryTypes;
@@ -593,7 +593,7 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
   library.forEach(element => {
     const name = element.name;
 
-    let propertiesClass = class extends Struct {
+    const propertiesClass = class extends Struct {
       constructor(o: StructObject) {
         super(o);
         this._typeResolver = finalTypeResolver; //we should assign this before bind
@@ -603,9 +603,9 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
     propertiesClass.structAst = {
       name: element.name,
       params: element.properties
-    }
+    };
 
-    let libraryClass = class extends Library {
+    const libraryClass = class extends Library {
       constructor(...args: SupportedParamType[]) {
         super(...args);
         this._typeResolver = finalTypeResolver; //we should assign this before bind
@@ -618,7 +618,7 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
 
     Object.assign(libraryTypes, {
       [name]: libraryClass,
-      ["__propertiesOf" + name]: propertiesClass
+      ['__propertiesOf' + name]: propertiesClass
     });
 
   });
@@ -712,8 +712,8 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
   // add std type
 
-  resolvedTypes['HashedMap'] = `library HashedMap {}`;
-  resolvedTypes['HashedSet'] = `library HashedSet {}`;
+  resolvedTypes['HashedMap'] = 'library HashedMap {}';
+  resolvedTypes['HashedSet'] = 'library HashedSet {}';
 
 
   const resolver = (type: string) => {
@@ -726,7 +726,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
       return `${resolvedTypes[type]}`;
     }
 
-    return resolveType(type, resolvedTypes, contract, statics, alias, library)
+    return resolveType(type, resolvedTypes, contract, statics, alias, library);
   };
 
   return resolver;

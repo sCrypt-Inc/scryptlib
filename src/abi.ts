@@ -168,7 +168,7 @@ export class ABICoder {
 
     params.forEach((param, index) => {
       const arg = args[index];
-      let error = checkSupportedParamType(arg, param, this.finalTypeResolver);
+      const error = checkSupportedParamType(arg, param, this.finalTypeResolver);
       if(error) throw error;
     });
   }

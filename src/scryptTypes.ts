@@ -617,9 +617,9 @@ export class Struct extends ScryptType {
 function toStructObject(structAst: StructEntity, args: SupportedParamType[], resolver: TypeResolver): StructObject {
   return args.reduce((previousValue, currentValue, index) => {
     const param = structAst.params[index];
-    let error = checkSupportedParamType(args[index], param, resolver);
+    const error = checkSupportedParamType(args[index], param, resolver);
     if(error) {
-      throw new Error(`The type of ${index}-th constructor argument: ${param.name} is wrong, expected ${param.type} but got ${typeNameOfArg(args[index])}`);;
+      throw new Error(`The type of ${index}-th constructor argument: ${param.name} is wrong, expected ${param.type} but got ${typeNameOfArg(args[index])}`);
     }
     previousValue[param.name] = currentValue;
     return previousValue;
@@ -661,14 +661,14 @@ export class Library extends Struct {
         type: this.inferredTypes[p.type] || p.type
       })),
       genericTypes: libraryAst.genericTypes.map(t => t)
-    }
+    };
 
   }
 
   get finalType(): string {
     if (Library.hasGeneric(this)) {
       const libraryAst = this.getStructAst() as LibraryEntity;
-      const type = toGenericType(this.type, libraryAst.genericTypes.map(t => (this.inferredTypes[t] || t)))
+      const type = toGenericType(this.type, libraryAst.genericTypes.map(t => (this.inferredTypes[t] || t)));
       return type;
     }
     if (this._typeResolver)
@@ -692,7 +692,7 @@ export class Library extends Struct {
         const t = inferrType(this.args[index]);
         if (this.inferredTypes[p.type]) {
           if (this.inferredTypes[p.type] != t) {
-            throw new Error(`Inferred type failed, The type of ${p.name} is wrong, expected ${this.inferredTypes[p.type]} but got ${t}`)
+            throw new Error(`Inferred type failed, The type of ${p.name} is wrong, expected ${this.inferredTypes[p.type]} but got ${t}`);
           }
         } else {
           Object.assign(this.inferredTypes, {
@@ -700,7 +700,7 @@ export class Library extends Struct {
           });
         }
       }
-    })
+    });
 
     this.updateStructAst();
     
@@ -735,7 +735,7 @@ export class Library extends Struct {
           [t]: realT
         });
       }
-    })
+    });
 
     if(succces) {
       this.updateStructAst();
@@ -745,7 +745,7 @@ export class Library extends Struct {
   }
 
   static hasGeneric(self: Library): boolean {
-    let ast: LibraryEntity = Struct.getStructAst(self) as LibraryEntity;
+    const ast: LibraryEntity = Struct.getStructAst(self) as LibraryEntity;
     return (ast.genericTypes || []).length > 0;
   }
 
@@ -777,7 +777,7 @@ export class Library extends Struct {
           }
         }
       });
-    })
+    });
   }
 
   static isLibrary(arg: SupportedParamType): boolean {
@@ -797,7 +797,7 @@ export class Library extends Struct {
   }
 
   public getProperties(): Struct {
-    let propertiesClass = Library.getPropertiesClass(this);
+    const propertiesClass = Library.getPropertiesClass(this);
     return new propertiesClass(this.properties);
   }
 
@@ -816,13 +816,13 @@ export class Library extends Struct {
 
 export class HashedMap extends Library {
   constructor(data: Bytes) {
-    super(data)
+    super(data);
     this._typeResolver = (t: string) => t; //we should assign this before bind
     this.bind();
   }
 }
 
-let propertiesOfHashedMapClass = class extends Struct {
+const propertiesOfHashedMapClass = class extends Struct {
   constructor(o: StructObject) {
     super(o);
     this._typeResolver = (t: string) => t; //Just need a empty type resolver
@@ -831,19 +831,19 @@ let propertiesOfHashedMapClass = class extends Struct {
 };
 
 propertiesOfHashedMapClass.structAst = {
-  name: "HashedMap",
+  name: 'HashedMap',
   params: [
     {
       name: '_data',
       type: 'bytes'
     }
   ]
-}
+};
 
 HashedMap.propertiesClass = propertiesOfHashedMapClass;
 
 HashedMap.structAst  = {
-  name: "HashedMap",
+  name: 'HashedMap',
   params: [
     {
       name: '_data',
@@ -865,14 +865,14 @@ HashedMap.structAst  = {
 
 export class HashedSet extends Library {
   constructor(data: Bytes) {
-    super(data)
+    super(data);
     this._typeResolver = (t: string) => t; //we should assign this before bind
     this.bind();
   }
 }
 
 
-let propertiesOfHashedSetClass = class extends Struct {
+const propertiesOfHashedSetClass = class extends Struct {
   constructor(o: StructObject) {
     super(o);
     this._typeResolver = (t: string) => t; //Just need a empty type resolver
@@ -881,19 +881,19 @@ let propertiesOfHashedSetClass = class extends Struct {
 };
 
 propertiesOfHashedSetClass.structAst = {
-  name: "HashedSet",
+  name: 'HashedSet',
   params: [
     {
       name: '_data',
       type: 'bytes'
     }
   ]
-}
+};
 
 HashedSet.propertiesClass = propertiesOfHashedSetClass;
 
 HashedSet.structAst  = {
-  name: "HashedSet",
+  name: 'HashedSet',
   params: [
     {
       name: '_data',
