@@ -155,8 +155,8 @@ export class AbstractContract {
         resolveKeys.push(arg.name);
         const state = states[arg.name];
         const error = checkSupportedParamType(state, arg, this.typeResolver);
-        
-        if(error) {
+
+        if (error) {
           throw error;
         }
 
@@ -589,7 +589,7 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
   const finalTypeResolver = buildTypeResolverFromDesc(desc);
 
   Object.assign(libraryTypes, buildStdLibraryClass());
-  
+
   library.forEach(element => {
     const name = element.name;
 
