@@ -1,8 +1,7 @@
-import { isGenericType, parseGenericType } from '.';
 import {
   parseLiteral, getValidatedHexString, LibraryEntity, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField,
 
-  checkStruct, toScryptType, inferrType, checkSupportedParamType, toGenericType, typeNameOfArg
+  checkStruct, toScryptType, inferrType, checkSupportedParamType, toGenericType, typeNameOfArg, parseGenericType
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -618,7 +617,7 @@ function toStructObject(structAst: StructEntity, args: SupportedParamType[], res
   return args.reduce((previousValue, currentValue, index) => {
     const param = structAst.params[index];
     const error = checkSupportedParamType(args[index], param, resolver);
-    if(error) {
+    if (error) {
       throw new Error(`The type of ${index}-th constructor argument: ${param.name} is wrong, expected ${param.type} but got ${typeNameOfArg(args[index])}`);
     }
     previousValue[param.name] = currentValue;
@@ -679,7 +678,7 @@ export class Library extends Struct {
 
   private checkArgs(args: SupportedParamType[]): SupportedParamType[] {
     const libraryAst = this.getStructAst() as LibraryEntity;
-    if(libraryAst.params.length !== args.length) {
+    if (libraryAst.params.length !== args.length) {
       throw new Error(`wrong number of arguments for '${libraryAst.name}.constructor', expected ${libraryAst.params.length} but got ${args.length}`);
     }
     return args;
@@ -703,7 +702,7 @@ export class Library extends Struct {
     });
 
     this.updateStructAst();
-    
+
   }
 
 
@@ -737,7 +736,7 @@ export class Library extends Struct {
       }
     });
 
-    if(succces) {
+    if (succces) {
       this.updateStructAst();
     }
 
@@ -759,9 +758,8 @@ export class Library extends Struct {
 
     const libraryAst = this.getStructAst() as LibraryEntity;
 
-    const self = this;
     libraryAst.properties.forEach(p => {
-      Object.defineProperty(self, p.name, {
+      Object.defineProperty(this, p.name, {
         get() {
           if (typeof this.properties[p.name] !== 'undefined') {
             return this.properties[p.name];
@@ -842,7 +840,7 @@ propertiesOfHashedMapClass.structAst = {
 
 HashedMap.propertiesClass = propertiesOfHashedMapClass;
 
-HashedMap.structAst  = {
+HashedMap.structAst = {
   name: 'HashedMap',
   params: [
     {
@@ -856,7 +854,7 @@ HashedMap.structAst  = {
       type: 'bytes'
     }
   ],
-  genericTypes: ['K','V']
+  genericTypes: ['K', 'V']
 } as StructEntity;
 
 
@@ -892,7 +890,7 @@ propertiesOfHashedSetClass.structAst = {
 
 HashedSet.propertiesClass = propertiesOfHashedSetClass;
 
-HashedSet.structAst  = {
+HashedSet.structAst = {
   name: 'HashedSet',
   params: [
     {
