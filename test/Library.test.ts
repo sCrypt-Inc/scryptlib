@@ -250,7 +250,7 @@ describe('library as property or return or param', () => {
         });
 
         it('should throw when using int and bool to new L', () => {
-          expect(() => new L(1, true)).to.throw('Inferred type failed, The type of y is wrong, expected int but got bool');
+          expect(() => new L(1, true)).to.throw('The type of L is wrong, expected [T,T] but got [1,true]');
         });
 
         it('should throw when using bool to new L', () => {
@@ -294,7 +294,7 @@ describe('library as property or return or param', () => {
         });
 
         it('should throw when using int and bool to new L', () => {
-          expect(() => new L(1, true)).to.throw('The type of 1-th argument of the L library constructor is wrong, expected int but got bool');
+          expect(() => new L(1, true)).to.throw('The type of L is wrong, expected [int,int] but got [1,true]');
         });
 
       });
@@ -318,7 +318,7 @@ describe('library as property or return or param', () => {
 
         it('should throw when wrong constructor args ', () => {
           expect(() => new GenericLibray([new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11]))
-            .to.throw('wrong number of arguments for \'GenericLibray.constructor\', expected 2 but got 1');
+            .to.throw('The type of GenericLibray is wrong, expected \[GenericA<ST>,T\] but got \[\]');
         });
 
       });

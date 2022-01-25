@@ -40,9 +40,25 @@ contract TestGenericLibray {
 
         GenericA<bytes> a = this.l.get();
 
+        GenericA<ST> aaa = this.l.getA();
+
         auto aa = this.l.getA();
 
-        require(aa.get() == {101, b'0f010f'});
+        require(aaa == aa); 
+
+        require(aa.get() == {101, b'01010f'}); 
+
+        bytes r  = (new GenericA<bytes>(b'')).get();
+
+        require(r == b'');
+
+        ST st = (new GenericA<ST>({1, b'0905'})).get();
+
+        require(st == {1, b'0905'});
+
+        int X = (new GenericLibray<int>(new GenericA<ST>({1, b'0905'}), 1001)).getX();
+
+        require(X == 1001);
 
         require(x == this.l.getX());
 

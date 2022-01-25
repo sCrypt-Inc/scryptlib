@@ -1,7 +1,7 @@
 import {
   parseLiteral, getValidatedHexString, LibraryEntity, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField,
-
-  checkStruct, toScryptType, inferrType, checkSupportedParamType, toGenericType, typeNameOfArg, parseGenericType
+  checkStruct, toScryptType, inferrType, checkSupportedParamType, toGenericType, typeNameOfArg, parseGenericType, resolveGenericType, librarySign,
+  isGenericType
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -613,12 +613,12 @@ export class Struct extends ScryptType {
 
 
 
-function toStructObject(structAst: StructEntity, args: SupportedParamType[], resolver: TypeResolver): StructObject {
+function toStructObject(structAst: LibraryEntity, args: SupportedParamType[], resolver: TypeResolver): StructObject {
   return args.reduce((previousValue, currentValue, index) => {
     const param = structAst.params[index];
     const error = checkSupportedParamType(args[index], param, resolver);
     if (error) {
-      throw new Error(`The type of ${index}-th argument of the ${structAst.name} library constructor is wrong, expected ${param.type} but got ${typeNameOfArg(args[index])}`);
+      throw new Error(`The type of ${structAst.name} is wrong, expected ${librarySign(structAst)} but got ${JSON.stringify(args)}`);
     }
     previousValue[param.name] = currentValue;
     return previousValue;
@@ -653,11 +653,11 @@ export class Library extends Struct {
       name: libraryAst.name,
       params: libraryAst.params.map(p => ({
         name: p.name,
-        type: this.inferredTypes[p.type] || p.type
+        type: resolveGenericType(this.inferredTypes, p.type)
       })),
       properties: libraryAst.properties.map(p => ({
         name: p.name,
-        type: this.inferredTypes[p.type] || p.type
+        type: resolveGenericType(this.inferredTypes, p.type)
       })),
       genericTypes: libraryAst.genericTypes.map(t => t)
     };
@@ -679,7 +679,7 @@ export class Library extends Struct {
   private checkArgs(args: SupportedParamType[]): SupportedParamType[] {
     const libraryAst = this.getStructAst() as LibraryEntity;
     if (libraryAst.params.length !== args.length) {
-      throw new Error(`wrong number of arguments for '${libraryAst.name}.constructor', expected ${libraryAst.params.length} but got ${args.length}`);
+      throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
     }
     return args;
   }
@@ -687,17 +687,37 @@ export class Library extends Struct {
   private inferrTypesByCtorArgs(): void {
     const libraryAst = this.getStructAst() as LibraryEntity;
     libraryAst.params.forEach((p, index) => {
+      const argType = inferrType(this.args[index]);
       if (libraryAst.genericTypes.includes(p.type)) {
-        const t = inferrType(this.args[index]);
+
         if (this.inferredTypes[p.type]) {
-          if (this.inferredTypes[p.type] != t) {
-            throw new Error(`Inferred type failed, The type of ${p.name} is wrong, expected ${this.inferredTypes[p.type]} but got ${t}`);
+          if (this.inferredTypes[p.type] != argType) {
+            throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
           }
         } else {
           Object.assign(this.inferredTypes, {
-            [p.type]: t
+            [p.type]: argType
           });
         }
+      } else if (isGenericType(p.type)) {
+        if (!isGenericType(argType)) {
+          throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
+        }
+
+        const [_, argGenericTypes] = parseGenericType(argType);
+        const [__, paramGenericTypes] = parseGenericType(p.type);
+
+        paramGenericTypes.forEach((t, index) => {
+          if (this.inferredTypes[t]) {
+            if (this.inferredTypes[t] != argGenericTypes[index]) {
+              throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
+            }
+          } else {
+            Object.assign(this.inferredTypes, {
+              [t]: argGenericTypes[index]
+            });
+          }
+        });
       }
     });
 
@@ -754,9 +774,8 @@ export class Library extends Struct {
   }
 
   attach() {
-    this._value = toStructObject(this.getStructAst(), this.args, this._typeResolver);
-
     const libraryAst = this.getStructAst() as LibraryEntity;
+    this._value = toStructObject(libraryAst, this.args, this._typeResolver);
 
     libraryAst.properties.forEach(p => {
       Object.defineProperty(this, p.name, {

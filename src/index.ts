@@ -10,7 +10,8 @@ export {
   arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
-  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType, serializeSupportedParamType, shortType, getLibraryNameByType
+  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType, serializeSupportedParamType, shortType, getLibraryNameByType,
+  librarySign, structSign, resolveGenericType
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {

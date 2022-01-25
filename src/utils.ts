@@ -810,8 +810,8 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-        expectedType,
-        resolver);
+      expectedType,
+      resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1319,8 +1319,8 @@ export function resolveConstValue(node: any): string | undefined {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -2107,4 +2107,35 @@ export function inferrType(a: SupportedParamType): string {
   } else {
     return toScryptType(a).finalType;
   }
+}
+
+
+
+export function resolveGenericType(genericTypeMap: Record<string, string>, type: string): string {
+  if (Object.keys(genericTypeMap).length > 0) {
+    if (isGenericType(type)) {
+      const [name, types] = parseGenericType(type);
+      return toGenericType(name, types.map(t => genericTypeMap[t] || t));
+    }
+
+    if (isArrayType(type)) {
+      const [elem, sizes] = arrayTypeAndSizeStr(type);
+      return toLiteralArrayType(elem, sizes.map(t => genericTypeMap[t] || t));
+    }
+
+    return genericTypeMap[type] || type;
+  }
+
+  return type;
+}
+
+
+export function librarySign(genericEntity: LibraryEntity) {
+  return `[${genericEntity.params.map(p => p.type).join(',')}]`;
+}
+
+export function structSign(structEntity: StructEntity) {
+  return `${JSON.stringify(structEntity.params.reduce((p, v) => Object.assign(p, {
+    [v.name]: v.type
+  }), {}), null, 4)}`;
 }

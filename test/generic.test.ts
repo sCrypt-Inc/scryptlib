@@ -91,4 +91,26 @@ describe('test.generic', () => {
         })
 
     })
+
+
+    describe('check generic_nested_property1', () => {
+        let testGenericLibray;
+
+        before(() => {
+            const jsonDescr = loadDescription('generic_nested_property1_desc.json')
+            const TestGenericLibray = buildContractClass(jsonDescr)
+            const { GenericLibray, GenericA } = buildTypeClasses(TestGenericLibray);
+            testGenericLibray = new TestGenericLibray(new GenericLibray(new GenericA(111)))
+        })
+
+        it('test unlock', () => {
+            const result = testGenericLibray.unlock(111).verify()
+            expect(result.success, result.error).to.be.true;
+        })
+
+        it('should unlock fail', () => {
+            const result = testGenericLibray.unlock(1111).verify()
+            expect(result.success, result.error).to.be.false;
+        })
+    })
 })
