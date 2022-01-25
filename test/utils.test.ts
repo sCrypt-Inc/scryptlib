@@ -5,9 +5,9 @@ import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkSupportedParamType,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
-  toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
-  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript
-
+  toLiteral, asm2int, isGenericType, sha256, hash256, hash160, isLibraryType,
+  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript,
+  inferrType
 } from '../src/utils'
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
@@ -331,6 +331,27 @@ describe('utils', () => {
       expect(arraySize).to.includes.members([2, 3, 8, 1])
     })
 
+
+    it('arrayTypeAndSize bool[2][3][8][1]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("bool[2][3][8][1]");
+      expect(elemTypeName).to.equal('bool')
+      expect(arraySize).to.includes.members([2, 3, 8, 1])
+    })
+
+    it('arrayTypeAndSize L<St, int>[3]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("L<St,int>[3]");
+      expect(elemTypeName).to.equal('L<St,int>')
+      expect(arraySize).to.includes.members([3])
+    })
+
+    it('arrayTypeAndSize L<struct ST {}, int[3]>[3][2]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("L<struct ST {},int[3]>[3][2]");
+      expect(elemTypeName).to.equal('L<struct ST {},int[3]>')
+      expect(arraySize).to.includes.members([3, 2])
+    })
   })
 
 
@@ -434,7 +455,7 @@ describe('utils', () => {
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkSupportedParamType([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]],  {
+      expect(checkSupportedParamType([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], {
         name: "a",
         type: 'int[2][2][3]'
       }, (type: string) => type)).to.undefined;
@@ -451,7 +472,7 @@ describe('utils', () => {
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-      ]],  {
+      ]], {
         name: "a",
         type: 'int[2][3][4]'
       }, (type: string) => type)).to.undefined;
@@ -984,6 +1005,14 @@ describe('utils', () => {
       expect(isArrayType('struct Token {}[3]')).to.be.true
     })
 
+    it('isArrayType should success when test L<int, bool>[3]', () => {
+      expect(isArrayType('L<int, bool>[3]')).to.be.true
+    })
+
+    it('isArrayType should success when test L<struct ST {}, int[3]>[3]', () => {
+      expect(isArrayType('L<struct ST {}, int[3]>[3]')).to.be.true
+    })
+
 
     it('isArrayType should fail when test bytes[1][2][1', () => {
       expect(isArrayType('int[1][2][1')).to.be.false
@@ -1031,6 +1060,26 @@ describe('utils', () => {
       expect(isStructType('int[3]')).to.be.false
     })
 
+  })
+
+
+  describe('isLibraryType()', () => {
+
+    it('isLibraryType should success when test library L {}', () => {
+      expect(isLibraryType('library L {}')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<int>', () => {
+      expect(isLibraryType('L<int>')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<K>', () => {
+      expect(isLibraryType('L<K>')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<K,T>', () => {
+      expect(isLibraryType('L<K,T>')).to.be.true
+    })
   })
 
 
@@ -1242,32 +1291,24 @@ describe('utils', () => {
 
     it('parseGenericType', () => {
 
-      expect(parseGenericType("HashedMap<int, int>", [{
-        library: "HashedMap",
-        genericTypes: ["K", "V"]
-      }]))
-        .to.deep.eq({
-          "K": "int",
-          "V": "int"
-        });
+      expect(parseGenericType("HashedMap<int, int>"))
+        .to.deep.eq(["HashedMap", ["int", "int"]]);
 
-      expect(parseGenericType("HashedMap<int, bytes>", [{
-        library: "HashedMap",
-        genericTypes: ["K", "V"]
-      }]))
-        .to.deep.eq({
-          "K": "int",
-          "V": "bytes"
-        });
 
-      expect(parseGenericType("Mylib < int, bool >", [{
-        library: "Mylib",
-        genericTypes: ["D", "V"]
-      }]))
-        .to.deep.eq({
-          "D": "int",
-          "V": "bool"
-        });
+      expect(parseGenericType("HashedMap<int, bytes>"))
+        .to.deep.eq(["HashedMap", ["int", "bytes"]]);
+
+
+      expect(parseGenericType("Mylib< int, bool >"))
+        .to.deep.eq(["Mylib", ["int", "bool"]]);
+
+      expect(parseGenericType("LL<int, struct ST1 {}>"))
+        .to.deep.eq(["LL", ["int", "struct ST1 {}"]]);
+
+
+      //dont allow space
+      expect(() => parseGenericType("Mylib <int, bool>"))
+        .to.throw('"Mylib <int, bool>" is not generic type')
     })
 
     it('isGenericType', () => {
@@ -1325,6 +1366,53 @@ describe('utils', () => {
     })
 
   })
+
+  describe('inferrTypes() ', () => {
+    it('test inferrTypes', () => {
+
+
+      expect(inferrType(1))
+        .to.eq("int");
+
+      expect(inferrType(true))
+        .to.eq("bool");
+
+      expect(inferrType("11"))
+        .to.eq("int");
+
+      expect(inferrType(new Bytes("")))
+        .to.eq("bytes");
+
+      expect(inferrType(new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      })))
+        .to.eq("struct Block {}");
+
+      expect(inferrType([new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      })]))
+        .to.eq("struct Block {}[1]");
+
+      expect(inferrType([[1, 2, 3], [1, 3, 3]]))
+        .to.eq("int[2][3]");
+
+
+      expect(inferrType([[[1, 2, 3], [1, 3, 3]], [[1, 2, 3], [1, 3, 3]]]))
+        .to.eq("int[2][2][3]");
+
+      expect(inferrType([[[1, 2, 3], [1, 3, 3]], [[1, 2, 3], [1, 3, 3]]]))
+        .to.eq("int[2][2][3]");
+
+      expect(() => inferrType([1, true])).to.throw('cannot inferr type from [1,true] , not all element types are the same')
+
+      expect(() => inferrType([[1, 3], [1]])).to.throw('cannot inferr type from [1,3,1] , not all length of element are the same')
+
+    })
+  });
 
 
 
