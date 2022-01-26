@@ -131,8 +131,8 @@ describe('buildContractClass()', () => {
         assert.equal(instance.codePart.toASM() + ' aa', lsAfterAddDataLoad.toASM());
         assert.equal(instance.codePart.toHex() + '01aa', lsAfterAddDataLoad.toHex());
 
-        assert.equal(instance.codePart.toASM(), `OP_NOP 0 ${toHex(pubKeyHash)} 0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_RETURN`);
-        assert.equal(instance.codePart.toHex(), `610014${toHex(pubKeyHash)}0079527a75517a75615179a95179876952795279ac7777776a`);
+        assert.equal(instance.codePart.toASM(), `0 ${toHex(pubKeyHash)} OP_NOP 0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_RETURN`);
+        assert.equal(instance.codePart.toHex(), `0014${toHex(pubKeyHash)}610079527a75517a75615179a95179876952795279ac7777776a`);
       })
     })
 

@@ -193,15 +193,15 @@ describe('buildContractClass and create instance from script', () => {
 
         assert.equal(
           instance.codePart.toASM(),
-          `OP_NOP 0 ${toHex(
+          `0 ${toHex(
             pubKeyHash
-          )} 0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_RETURN`
+          )} OP_NOP 0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP OP_RETURN`
         )
         assert.equal(
           instance.codePart.toHex(),
-          `610014${toHex(
+          `0014${toHex(
             pubKeyHash
-          )}0079527a75517a75615179a95179876952795279ac7777776a`
+          )}610079527a75517a75615179a95179876952795279ac7777776a`
         )
       })
     })
@@ -480,7 +480,7 @@ describe('buildContractClass and create instance from script', () => {
   describe('when build a contract which have library param in constructor from asm', () => {
 
     const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
-    const { L, ST} = buildTypeClasses(Test);
+    const { L, ST } = buildTypeClasses(Test);
 
 
     it('should get right constructor args', () => {
@@ -488,7 +488,7 @@ describe('buildContractClass and create instance from script', () => {
       let l = new L(1, new ST({
         x: 1,
         c: true,
-        aa: [1,1,1]
+        aa: [1, 1, 1]
       }));
       let instance = new Test(l);
 
