@@ -3,11 +3,11 @@
 
 ## version = 1
 
-* Add `sourceMap`, `structs`, `file`, `version`
+* Add `sourceMap`, `structs`, `file`, `version` field
 
 ## version = 2 
 
-* Add `alias`
+* Add `alias` field
 
 ## version = 3
 
@@ -15,17 +15,23 @@
 
 ## version = 4
 
-* add  `buildType`
+* add  `buildType` field
 
 ## version = 5
 
-* add  `hex`
+* add  `hex` field
 
 ## version = 6 
 
-* add `generics`
+* add `generics` field
 
 ## version = 7
 
-* add `stateProps`
+* add `stateProps` field
 * remove state field in `ParamEntity`
+
+## version = 8
+
+* add `library` field
+* add `statics` field
+* remove `generics` field
