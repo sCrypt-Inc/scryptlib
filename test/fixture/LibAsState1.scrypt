@@ -1,0 +1,41 @@
+
+struct ST {
+  int x;
+  bool c;
+  int[3] aa;
+}
+
+library L {
+  int x;
+  ST st;
+  function inc(int x) : int {
+    this.x += x;
+    this.x += this.st.x;
+    this.x += this.st.aa[0] + this.st.aa[1] + this.st.aa[2];
+    return this.x;
+  }
+
+  function updateSt() : bool {
+    this.st.c = !this.st.c;
+    return this.st.c;
+  }
+}
+
+
+contract Test {
+  @state
+  L l;
+
+  public function unlock(int x, SigHashPreimage preimage) {
+    require(Tx.checkPreimage(preimage));
+    int _x = this.l.inc(x);
+    require(_x == 6);
+    require(this.l.x == 6);
+    bool c = this.l.updateSt();
+    require(c == false);
+
+    bytes stateScript = this.getStateScript();
+    bytes output = Utils.buildOutput(stateScript, SigHash.value(preimage));
+    require(hash256(output) == SigHash.hashOutputs(preimage));
+  }
+}

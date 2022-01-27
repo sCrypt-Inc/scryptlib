@@ -1,0 +1,31 @@
+type Amount = int;
+//L with generic type
+library L<T, K> {
+
+  int x;
+ 
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+
+  function getX(T t) : T {
+    return t;
+  }
+
+  function getY(K k) : K {
+    return k;
+  }
+}
+
+
+contract Test {
+  private int x;
+  L<Amount, bool> l;
+
+  public function unlock(int x) {
+    require(this.l.getX(1) == 1);
+    require(this.l.getY(true) == true);
+    require(this.x == x);
+    require(true);
+  }
+}

@@ -1,4 +1,4 @@
-import { int2Asm, bsv, genLaunchConfigFile, getStructNameByType, isArrayType, isStructType, checkArray, flatternArray, typeOfArg, deserializeArgfromASM, createStruct, createArray, num2bin, bin2num } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, isArrayType, checkSupportedParamType, flatternArray, typeOfArg, deserializeArgfromASM, num2bin, bin2num } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
@@ -166,23 +166,10 @@ export class ABICoder {
       throw new Error(`wrong number of arguments for '${contractname}.${funname}', expected ${params.length} but got ${args.length}`);
     }
 
-    params.map(p => ({
-      name: p.name,
-      type: this.finalTypeResolver(p.type)
-    })).forEach((param, index) => {
+    params.forEach((param, index) => {
       const arg = args[index];
-      if (isArrayType(param.type)) {
-        if (!checkArray(arg as SupportedParamType[], param.type)) {
-          throw new Error(`The type of parameter ${param.name} is wrong, should be ${param.type}`);
-        }
-      } else {
-        const scryptType = typeOfArg(arg);
-        if (scryptType != param.type) {
-          const expected = isStructType(param.type) ? getStructNameByType(param.type) : param.type;
-          const got = isStructType(scryptType) ? getStructNameByType(scryptType) : scryptType;
-          throw new Error(`The type of parameter ${param.name} is wrong, expected ${expected} but got ${got}`);
-        }
-      }
+      const error = checkSupportedParamType(arg, param, this.finalTypeResolver);
+      if(error) throw error;
     });
   }
 
@@ -196,7 +183,7 @@ export class ABICoder {
     // handle array type
     const flatteredArgs = flatternArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
       value: args[index]
-    }))), this.finalTypeResolver);
+    }))), this.finalTypeResolver, false);
 
 
 
@@ -241,7 +228,7 @@ export class ABICoder {
     const stateAsmTemplateArgs: Map<string, string> = new Map();
 
     const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
-    const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes);
+    const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes, true);
 
 
     flatternparams.forEach((param) => {
@@ -263,7 +250,7 @@ export class ABICoder {
       type: contract.typeResolver(p.type),
       name: p.name,
       value: undefined,
-    })).map(arg => deserializeArgfromASM(contract, arg, stateAsmTemplateArgs));
+    })).map(arg => deserializeArgfromASM(contract, arg, stateAsmTemplateArgs, true));
   }
 
   encodeConstructorCallFromRawHex(contract: AbstractContract, asmTemplate: string, raw: string): FunctionCall {
@@ -319,7 +306,7 @@ export class ABICoder {
       type: this.finalTypeResolver(p.type),
       name: p.name,
       value: undefined
-    })).map(arg => deserializeArgfromASM(contract, arg, contract.asmTemplateArgs));
+    })).map(arg => deserializeArgfromASM(contract, arg, contract.asmTemplateArgs, false));
 
 
     if (AbstractContract.isStateful(contract)) {
@@ -395,7 +382,7 @@ export class ABICoder {
     const cParams = entity?.params || [];
 
 
-    const flatternArgs = flatternParams(cParams, contract.typeResolver, contract.allTypes);
+    const flatternArgs = flatternParams(cParams, contract.typeResolver, contract.allTypes, false);
 
     let fArgsLen = flatternArgs.length;
     if (this.abi.length > 2 && entity.index !== undefined) {
@@ -421,7 +408,7 @@ export class ABICoder {
       type: this.finalTypeResolver(p.type),
       name: p.name,
       value: undefined
-    })).map(arg => deserializeArgfromASM(contract, arg, asmTemplateArgs));
+    })).map(arg => deserializeArgfromASM(contract, arg, asmTemplateArgs, false));
 
     return new FunctionCall(name, { contract, unlockingScriptASM: usASM, args: args });
 

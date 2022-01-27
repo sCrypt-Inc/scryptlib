@@ -1,0 +1,27 @@
+
+struct ST {
+  int x;
+  bool c;
+  int[3] aa;
+}
+
+library L {
+  int x;
+  ST st;
+
+    constructor(int a, int b, int[3] aa, bool c, int d, int f) {
+        this.x = a + b;
+        this.st = {d+f, !c, aa};
+    }
+}
+
+
+contract Test {
+
+  L l;
+
+  public function unlock(int a, int b, int[3] aa, bool c, int d, int f) {
+      L ll = new L(a, b, aa, c, d, f);
+      require(ll == this.l);
+  }
+}

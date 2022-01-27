@@ -1,10 +1,11 @@
-import { ParamEntity } from '.';
-import { GenericEntity } from './compilerWrapper';
+import { isStructType, LibraryEntity, ParamEntity } from '.';
+import { StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, isStructType, getStructNameByType, isArrayType,
-  Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveStaticConst, toLiteralArrayType,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkArray, hash160, buildDefaultStateProps
+  ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
+  Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveArrayType, toLiteralArrayType,
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkSupportedParamType, hash160, buildDefaultStateProps, isStructOrLibraryType
 } from './internal';
+import { HashedMap, HashedSet, Library } from './scryptTypes';
 
 
 export interface TxContext {
@@ -32,9 +33,9 @@ export interface ContractDescription {
   md5: string;
   stateProps: Array<ParamEntity>;
   structs: Array<StructEntity>;
+  library: Array<LibraryEntity>;
   alias: Array<AliasEntity>
   abi: Array<ABIEntity>;
-  generics: Array<GenericEntity>;
   asm: string;
   hex: string;
   file: string;
@@ -57,7 +58,7 @@ export class AbstractContract {
   public static stateProps: Array<ParamEntity>;
   public static types: Record<string, typeof ScryptType>;
   public static asmContract: boolean;
-  public static staticConst: Record<string, number>;
+  public static statics: Array<StaticEntity>;
 
   public static typeResolver: TypeResolver;
 
@@ -125,8 +126,8 @@ export class AbstractContract {
   getTypeClassByType(type: string): typeof ScryptType {
     const types: typeof ScryptType[] = Object.getPrototypeOf(this).constructor.types;
 
-    if (isStructType(type)) {
-      const structName = getStructNameByType(type);
+    if (isStructOrLibraryType(type)) {
+      const structName = getNameByType(type);
       if (Object.prototype.hasOwnProperty.call(types, structName)) {
         return types[structName];
       }
@@ -150,24 +151,13 @@ export class AbstractContract {
 
     const resolveKeys: string[] = [];
     const newState: Arguments = stateArgs.map(arg => {
-      const finalType = this.typeResolver(arg.type);
       if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
         resolveKeys.push(arg.name);
-        if (isArrayType(finalType)) {
-          const array = states[arg.name] as SupportedParamType[];
-          if (!checkArray(array, finalType)) {
-            throw new Error(`stateful property ${arg.name} should be ${arg.type}`);
-          }
-        } else if (isStructType(finalType)) {
+        const state = states[arg.name];
+        const error = checkSupportedParamType(state, arg, this.typeResolver);
 
-          if (states[arg.name] instanceof Struct) {
-            const st = states[arg.name] as Struct;
-            if (finalType != st.finalType) {
-              throw new Error(`stateful property ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${st.type}`);
-            }
-          } else {
-            throw new Error(`stateful property ${arg.name} expect struct ${getStructNameByType(finalType)} but got ${states[arg.name]}`);
-          }
+        if (error) {
+          throw error;
         }
 
         return Object.assign(
@@ -478,8 +468,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
   };
 
 
-  const staticConst = desc.staticConst || {};
-  ContractClass.typeResolver = buildTypeResolver(desc.contract, desc.alias || [], desc.structs || [], staticConst);
+  const statics = desc.statics || [];
+  ContractClass.typeResolver = buildTypeResolverFromDesc(desc);
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
@@ -488,7 +478,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
   ContractClass.structs = desc.structs;
-  ContractClass.staticConst = staticConst;
+  ContractClass.statics = statics;
   ContractClass.types = buildTypeClasses(desc);
   ContractClass.stateProps = desc.stateProps;
 
@@ -550,10 +540,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 export function buildStructsClass(desc: CompileResult | ContractDescription): Record<string, typeof Struct> {
 
   const structTypes: Record<string, typeof Struct> = {};
-
   const structs: StructEntity[] = desc.structs || [];
-  const alias: AliasEntity[] = desc.alias || [];
-  const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
+  const finalTypeResolver = buildTypeResolverFromDesc(desc);
   structs.forEach(element => {
     const name = element.name;
 
@@ -574,6 +562,69 @@ export function buildStructsClass(desc: CompileResult | ContractDescription): Re
 }
 
 
+function buildStdLibraryClass(): Record<string, typeof Library> {
+
+  const libraryTypes: Record<string, typeof Library> = {};
+
+  Object.assign(libraryTypes, {
+    ['HashedMap']: HashedMap,
+    ['__propertiesOfHashedMap']: HashedMap.propertiesClass
+  });
+
+  Object.assign(libraryTypes, {
+    ['HashedSet']: HashedSet,
+    ['__propertiesOfHashedSet']: HashedSet.propertiesClass
+  });
+
+  return libraryTypes;
+}
+
+export function buildLibraryClass(desc: CompileResult | ContractDescription): Record<string, typeof Library> {
+
+  const libraryTypes: Record<string, typeof Library> = {};
+
+  // map LibraryEntity to StructEntity, as we treat library as struct
+  const library: LibraryEntity[] = desc.library || [];
+
+  const finalTypeResolver = buildTypeResolverFromDesc(desc);
+
+  Object.assign(libraryTypes, buildStdLibraryClass());
+
+  library.forEach(element => {
+    const name = element.name;
+
+    const propertiesClass = class extends Struct {
+      constructor(o: StructObject) {
+        super(o);
+        this._typeResolver = finalTypeResolver; //we should assign this before bind
+        this.bind();
+      }
+    };
+    propertiesClass.structAst = {
+      name: element.name,
+      params: element.properties
+    };
+
+    const libraryClass = class extends Library {
+      constructor(...args: SupportedParamType[]) {
+        super(...args);
+        this._typeResolver = finalTypeResolver; //we should assign this before bind
+        this.bind();
+      }
+    };
+
+    libraryClass.propertiesClass = propertiesClass;
+    libraryClass.structAst = element;
+
+    Object.assign(libraryTypes, {
+      [name]: libraryClass,
+      ['__propertiesOf' + name]: propertiesClass
+    });
+
+  });
+
+  return libraryTypes;
+}
 
 export function buildTypeClasses(descOrClas: CompileResult | ContractDescription | typeof AbstractContract): Record<string, typeof ScryptType> {
 
@@ -585,14 +636,16 @@ export function buildTypeClasses(descOrClas: CompileResult | ContractDescription
   const desc = descOrClas as CompileResult | ContractDescription;
 
   const structClasses = buildStructsClass(desc);
+  const libraryClasses = buildLibraryClass(desc);
+
   const allTypeClasses: Record<string, typeof ScryptType> = {};
   const alias: AliasEntity[] = desc.alias || [];
-  const structs: StructEntity[] = desc.structs || [];
-  const finalTypeResolver = buildTypeResolver(desc.contract, alias, structs, desc['staticConst'] || {});
+
+  const finalTypeResolver = buildTypeResolverFromDesc(desc);
   alias.forEach(element => {
     const finalType = finalTypeResolver(element.name);
     if (isStructType(finalType)) {
-      const type = getStructNameByType(finalType);
+      const type = getNameByType(finalType);
       Object.assign(allTypeClasses, {
         [element.name]: class extends structClasses[type] {
           constructor(o: StructObject) {
@@ -625,23 +678,43 @@ export function buildTypeClasses(descOrClas: CompileResult | ContractDescription
   });
 
   Object.assign(allTypeClasses, structClasses);
+  Object.assign(allTypeClasses, libraryClasses);
   Object.assign(allTypeClasses, BasicScryptType);
 
   return allTypeClasses;
 }
 
 
+export function buildTypeResolverFromDesc(desc: CompileResult | ContractDescription): TypeResolver {
+  const alias: AliasEntity[] = desc.alias || [];
+  const library: LibraryEntity[] = desc.library || [];
+  const structs: StructEntity[] = desc.structs || [];
+  const statics = desc['statics'] || [];
+  const contract = desc.contract;
+  return buildTypeResolver(contract, alias, structs, library, statics);
 
-export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], staticConst: Record<string, number>): TypeResolver {
+}
+
+export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], library: LibraryEntity[], statics: StaticEntity[]): TypeResolver {
+
   const resolvedTypes: Record<string, string> = {};
-  alias.forEach(element => {
-    const type = resolveType(alias, element.name);
-    const finalType = resolveStaticConst(contract, type, staticConst);
-    resolvedTypes[element.name] = finalType;
-  });
   structs.forEach(element => {
     resolvedTypes[element.name] = `struct ${element.name} {}`;
   });
+
+  library.forEach(element => {
+    resolvedTypes[element.name] = `library ${element.name} {}`;
+  });
+
+  alias.forEach(element => {
+    resolvedTypes[element.name] = resolveType(element.name, resolvedTypes, contract, statics, alias, library);
+  });
+
+  // add std type
+
+  resolvedTypes['HashedMap'] = 'library HashedMap {}';
+  resolvedTypes['HashedSet'] = 'library HashedSet {}';
+
 
   const resolver = (type: string) => {
 
@@ -653,34 +726,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
       return `${resolvedTypes[type]}`;
     }
 
-
-    if (isArrayType(type)) {
-      const finalType = resolveStaticConst(contract, type, staticConst);
-
-      const [elemTypeName, sizes] = arrayTypeAndSize(finalType);
-
-      if (BasicScryptType[elemTypeName]) {
-        return toLiteralArrayType(elemTypeName, sizes);
-      } else if (resolvedTypes[elemTypeName]) {
-
-        if (isArrayType(resolvedTypes[elemTypeName])) {
-          const [elemTypeName_, sizes_] = arrayTypeAndSize(resolvedTypes[elemTypeName]);
-          return toLiteralArrayType(elemTypeName_, sizes.concat(sizes_));
-        }
-        return toLiteralArrayType(resolvedTypes[elemTypeName], sizes);
-      } else if (isStructType(elemTypeName)) {
-        const structName = getStructNameByType(elemTypeName);
-        return resolver(toLiteralArrayType(structName, sizes));
-      } else {
-        throw new Error('typeResolver with unknown elemTypeName ' + elemTypeName);
-      }
-
-    } else if (isStructType(type)) {
-      const structName = getStructNameByType(type);
-      return resolver(structName);
-    } else {
-      return type;
-    }
+    return resolveType(type, resolvedTypes, contract, statics, alias, library);
   };
 
   return resolver;

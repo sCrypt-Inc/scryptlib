@@ -2,12 +2,12 @@ import { expect } from 'chai'
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { Int, Bool, Bytes, PrivKey, Ripemd160, PubKey } from '../src/scryptTypes'
 import {
-  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkArray,
+  num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkSupportedParamType,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
-  toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
-  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript
-
+  toLiteral, asm2int, isGenericType, sha256, hash256, hash160, isLibraryType,
+  buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript,
+  inferrType
 } from '../src/utils'
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
@@ -331,6 +331,27 @@ describe('utils', () => {
       expect(arraySize).to.includes.members([2, 3, 8, 1])
     })
 
+
+    it('arrayTypeAndSize bool[2][3][8][1]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("bool[2][3][8][1]");
+      expect(elemTypeName).to.equal('bool')
+      expect(arraySize).to.includes.members([2, 3, 8, 1])
+    })
+
+    it('arrayTypeAndSize L<St, int>[3]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("L<St,int>[3]");
+      expect(elemTypeName).to.equal('L<St,int>')
+      expect(arraySize).to.includes.members([3])
+    })
+
+    it('arrayTypeAndSize L<struct ST {}, int[3]>[3][2]', () => {
+
+      const [elemTypeName, arraySize] = arrayTypeAndSize("L<struct ST {},int[3]>[3][2]");
+      expect(elemTypeName).to.equal('L<struct ST {},int[3]>')
+      expect(arraySize).to.includes.members([3, 2])
+    })
   })
 
 
@@ -354,59 +375,95 @@ describe('utils', () => {
   describe('checkArray()', () => {
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, 3], 'int[3]')).to.true;
+      expect(checkSupportedParamType([3, 3, 3], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3], 'int[3]')).to.false;
+      expect(checkSupportedParamType([3, 3], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, 1, 3], 'int[3]')).to.false;
+      expect(checkSupportedParamType([3, 3, 1, 3], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, new Int(2)], 'int[3]')).to.true;
+      expect(checkSupportedParamType([3, 3, new Int(2)], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[3]', () => {
-      expect(checkArray([3, 3, new Bool(true)], 'int[3]')).to.false;
+      expect(checkSupportedParamType([3, 3, new Bool(true)], {
+        name: "a",
+        type: 'int[3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3]], 'int[2][3]')).to.true;
+      expect(checkSupportedParamType([[3, 3, 3], [3, 12, 3]], {
+        name: "a",
+        type: 'int[2][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12, 3], [1, 1, 1]], 'int[2][3]')).to.false;
+      expect(checkSupportedParamType([[3, 3, 3], [3, 12, 3], [1, 1, 1]], {
+        name: "a",
+        type: 'int[2][3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[2][3]', () => {
-      expect(checkArray([[3, 3, 3], [3, 12]], 'int[2][3]')).to.false;
+      expect(checkSupportedParamType([[3, 3, 3], [3, 12]], {
+        name: "a",
+        type: 'int[2][3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
     it('checkArray int[2][1][3]', () => {
-      expect(checkArray([[[3, 3, 3]], [[3, 12, 3]]], 'int[2][1][3]')).to.true;
+      expect(checkSupportedParamType([[[3, 3, 3]], [[3, 12, 3]]], {
+        name: "a",
+        type: 'int[2][1][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[2][1][3]', () => {
-      expect(checkArray([[[3, 3, 3], 1], [[3, 12, 3]]], 'int[2][1][3]')).to.false;
+      expect(checkSupportedParamType([[[3, 3, 3], 1], [[3, 12, 3]]], {
+        name: "a",
+        type: 'int[2][1][3]'
+      }, (type: string) => type)).to.not.undefined
     })
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], 'int[2][2][3]')).to.true;
+      expect(checkSupportedParamType([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], {
+        name: "a",
+        type: 'int[2][2][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
 
     it('checkArray int[2][2][3]', () => {
-      expect(checkArray([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], 'int[2][2][3]')).to.true;
+      expect(checkSupportedParamType([[[3, 3, 3], [3, 3, 3]], [[3, 12, 3], [3, 3, 3]]], {
+        name: "a",
+        type: 'int[2][2][3]'
+      }, (type: string) => type)).to.undefined;
     })
 
 
     it('checkArray int[2][3][4]', () => {
-      expect(checkArray([[
+      expect(checkSupportedParamType([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10, 11, 12]
@@ -415,11 +472,17 @@ describe('utils', () => {
         [13, 14, 15, 16],
         [17, 18, 19, 20],
         [21, 22, 23, 24]
-      ]], 'int[2][3][4]')).to.true;
+      ]], {
+        name: "a",
+        type: 'int[2][3][4]'
+      }, (type: string) => type)).to.undefined;
     })
 
     it('checkArray int[2][3][4]', () => {
-      expect(checkArray([[1, 3, 5], [2, 4, 6]], 'int[2][3][4]')).to.false;
+      expect(checkSupportedParamType([[1, 3, 5], [2, 4, 6]], {
+        name: "a",
+        type: 'int[2][3][4]'
+      }, (type: string) => type)).to.not.undefined
     })
 
   })
@@ -942,6 +1005,14 @@ describe('utils', () => {
       expect(isArrayType('struct Token {}[3]')).to.be.true
     })
 
+    it('isArrayType should success when test L<int, bool>[3]', () => {
+      expect(isArrayType('L<int, bool>[3]')).to.be.true
+    })
+
+    it('isArrayType should success when test L<struct ST {}, int[3]>[3]', () => {
+      expect(isArrayType('L<struct ST {}, int[3]>[3]')).to.be.true
+    })
+
 
     it('isArrayType should fail when test bytes[1][2][1', () => {
       expect(isArrayType('int[1][2][1')).to.be.false
@@ -989,6 +1060,26 @@ describe('utils', () => {
       expect(isStructType('int[3]')).to.be.false
     })
 
+  })
+
+
+  describe('isLibraryType()', () => {
+
+    it('isLibraryType should success when test library L {}', () => {
+      expect(isLibraryType('library L {}')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<int>', () => {
+      expect(isLibraryType('L<int>')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<K>', () => {
+      expect(isLibraryType('L<K>')).to.be.true
+    })
+
+    it('isLibraryType should success when test L<K,T>', () => {
+      expect(isLibraryType('L<K,T>')).to.be.true
+    })
   })
 
 
@@ -1071,23 +1162,23 @@ describe('utils', () => {
 
 
     it('flattern struct', () => {
-      expect(flatternParams([{ name: 'a', type: 'StatesA' }], Counter.typeResolver, types).map(a => a.name).join(' ')).to.be.equal("a.states[0].counter a.states[0].done a.states[1].counter a.states[1].done a.hex");
+      expect(flatternParams([{ name: 'a', type: 'StatesA' }], Counter.typeResolver, types, false).map(a => a.name).join(' ')).to.be.equal("a.states[0].counter a.states[0].done a.states[1].counter a.states[1].done a.hex");
 
-      expect(flatternParams([{ name: 'a', type: 'States' }], Counter.typeResolver, types).map(a => a.name).join(' ')).to.be.equal("a.counter a.done");
+      expect(flatternParams([{ name: 'a', type: 'States' }], Counter.typeResolver, types, false).map(a => a.name).join(' ')).to.be.equal("a.counter a.done");
     })
 
 
     it('flattern basic', () => {
-      expect(flatternParams([{ name: 'a', type: 'int' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'int' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types, false).map(a => a.name).join(' '))
         .to.be.equal("a b c");
 
     })
 
     it('flattern array', () => {
-      expect(flatternParams([{ name: 'a', type: 'int[1][3]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'int[1][3]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types, false).map(a => a.name).join(' '))
         .to.be.equal("a[0][0] a[0][1] a[0][2] b c");
 
-      expect(flatternParams([{ name: 'a', type: 'StatesA[2]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'StatesA[2]' }, { name: 'b', type: 'bool' }, { name: 'c', type: 'bytes' }], Counter.typeResolver, types, false).map(a => a.name).join(' '))
         .to.be.equal("a[0].states[0].counter a[0].states[0].done a[0].states[1].counter a[0].states[1].done a[0].hex a[1].states[0].counter a[1].states[0].done a[1].states[1].counter a[1].states[1].done a[1].hex b c");
     })
 
@@ -1096,10 +1187,10 @@ describe('utils', () => {
     it('flattern alias', () => {
 
 
-      expect(flatternParams([{ name: 'a', type: 'Female' }, { name: 'b', type: 'MaleB' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'Female' }, { name: 'b', type: 'MaleB' }], Alias.typeResolver, Alias.types, false).map(a => a.name).join(' '))
         .to.be.equal("a.age a.name a.token b[0].age b[0].name b[0].token b[1].age b[1].name b[1].token b[2].age b[2].name b[2].token");
 
-      expect(flatternParams([{ name: 'a', type: 'Tokens[2]' }], Alias.typeResolver, Alias.types).map(a => a.name).join(' '))
+      expect(flatternParams([{ name: 'a', type: 'Tokens[2]' }], Alias.typeResolver, Alias.types, false).map(a => a.name).join(' '))
         .to.be.equal("a[0][0] a[0][1] a[0][2] a[1][0] a[1][1] a[1][2]");
     })
 
@@ -1200,32 +1291,24 @@ describe('utils', () => {
 
     it('parseGenericType', () => {
 
-      expect(parseGenericType("HashedMap<int, int>", [{
-        library: "HashedMap",
-        genericTypes: ["K", "V"]
-      }]))
-        .to.deep.eq({
-          "K": "int",
-          "V": "int"
-        });
+      expect(parseGenericType("HashedMap<int, int>"))
+        .to.deep.eq(["HashedMap", ["int", "int"]]);
 
-      expect(parseGenericType("HashedMap<int, bytes>", [{
-        library: "HashedMap",
-        genericTypes: ["K", "V"]
-      }]))
-        .to.deep.eq({
-          "K": "int",
-          "V": "bytes"
-        });
 
-      expect(parseGenericType("Mylib < int, bool >", [{
-        library: "Mylib",
-        genericTypes: ["D", "V"]
-      }]))
-        .to.deep.eq({
-          "D": "int",
-          "V": "bool"
-        });
+      expect(parseGenericType("HashedMap<int, bytes>"))
+        .to.deep.eq(["HashedMap", ["int", "bytes"]]);
+
+
+      expect(parseGenericType("Mylib< int, bool >"))
+        .to.deep.eq(["Mylib", ["int", "bool"]]);
+
+      expect(parseGenericType("LL<int, struct ST1 {}>"))
+        .to.deep.eq(["LL", ["int", "struct ST1 {}"]]);
+
+
+      //dont allow space
+      expect(() => parseGenericType("Mylib <int, bool>"))
+        .to.throw('"Mylib <int, bool>" is not generic type')
     })
 
     it('isGenericType', () => {
@@ -1283,6 +1366,53 @@ describe('utils', () => {
     })
 
   })
+
+  describe('inferrTypes() ', () => {
+    it('test inferrTypes', () => {
+
+
+      expect(inferrType(1))
+        .to.eq("int");
+
+      expect(inferrType(true))
+        .to.eq("bool");
+
+      expect(inferrType("11"))
+        .to.eq("int");
+
+      expect(inferrType(new Bytes("")))
+        .to.eq("bytes");
+
+      expect(inferrType(new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      })))
+        .to.eq("struct Block {}");
+
+      expect(inferrType([new Block({
+        time: 10000,
+        hash: new Bytes('68656c6c6f20776f726c6421'),
+        header: new Bytes('1156'),
+      })]))
+        .to.eq("struct Block {}[1]");
+
+      expect(inferrType([[1, 2, 3], [1, 3, 3]]))
+        .to.eq("int[2][3]");
+
+
+      expect(inferrType([[[1, 2, 3], [1, 3, 3]], [[1, 2, 3], [1, 3, 3]]]))
+        .to.eq("int[2][2][3]");
+
+      expect(inferrType([[[1, 2, 3], [1, 3, 3]], [[1, 2, 3], [1, 3, 3]]]))
+        .to.eq("int[2][2][3]");
+
+      expect(() => inferrType([1, true])).to.throw('cannot inferr type from [1,true] , not all element types are the same')
+
+      expect(() => inferrType([[1, 3], [1]])).to.throw('cannot inferr type from [1,3,1] , not all length of element are the same')
+
+    })
+  });
 
 
 

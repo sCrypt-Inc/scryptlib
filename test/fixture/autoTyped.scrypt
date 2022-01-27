@@ -3,6 +3,17 @@ struct  ST1 {
   int m1;
   bytes m2;
 }
+
+library L {
+  int x;
+  ST1 st1;
+}
+
+library LL<T,K> {
+  T x;
+  K y;
+}
+
 contract Main {
   int x;
   static auto y = 2;
@@ -17,10 +28,14 @@ contract Main {
     ST1[2][2] s = [[{1, b'11'},{2, b'22'}],[{3, b'33'},{4, b'44'}]];
     auto ss = s[0];
 
+    auto l = new L(1, s[0][0]);
+
     loop(3) {
       auto evel = x + y;
       auto ss1 = s[0];
     }
+
+    auto ll = new LL<int, ST1>(1, s[0][0]);
     require(y == z);
   }
 }

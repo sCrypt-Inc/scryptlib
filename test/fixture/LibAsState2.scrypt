@@ -1,0 +1,44 @@
+struct MapEntry {
+    int key;
+    int val;
+    int keyIndex;
+}
+
+
+contract Test {
+    @state
+    HashedMap<int, int> map;
+
+    public function insert(MapEntry entry, SigHashPreimage preimage) {
+        require(Tx.checkPreimage(preimage));
+        int size = this.map.size();
+        require(!this.map.has(entry.key, entry.keyIndex));
+        require(this.map.set(entry.key, entry.val, entry.keyIndex));
+        require(this.map.canGet(entry.key, entry.val, entry.keyIndex));
+        require(this.map.size() == size + 1);
+        require(this.passMap(preimage));
+    }
+
+    public function update(MapEntry entry, SigHashPreimage preimage) {
+        require(Tx.checkPreimage(preimage));
+        require(this.map.has(entry.key, entry.keyIndex));
+        require(this.map.set(entry.key, entry.val, entry.keyIndex));
+        require(this.map.canGet(entry.key, entry.val, entry.keyIndex));
+        require(this.passMap(preimage));
+    }
+
+    public function delete(int key, int keyIndex, SigHashPreimage preimage) {
+        require(Tx.checkPreimage(preimage));
+        require(this.map.has(key, keyIndex));
+        require(this.map.delete(key, keyIndex));
+        require(!this.map.has(key, keyIndex));
+        require(this.passMap(preimage));
+    }
+
+    function passMap(SigHashPreimage preimage) : bool {
+        bytes outputScript = this.getStateScript();
+        bytes output = Utils.buildOutput(outputScript, SigHash.value(preimage));
+        return (hash256(output) == SigHash.hashOutputs(preimage));
+    }
+}
+

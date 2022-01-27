@@ -1,0 +1,40 @@
+//L with Param
+library L {
+  private int x;
+
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+  function f() : int {
+    return this.x;
+  }
+
+  function f1(int x) : int {
+    return this.x + x;
+  }
+}
+
+
+contract Test {
+  private int x;
+
+  function _unlock(L l, int x): bool {
+    require(l.f() == this.x + x);
+    return true;
+  }
+
+  function _unlock1(L l, int x): bool {
+    require(l.f1(x) == this.x + 2 * x);
+    return true;
+  }
+
+  /**
+  * unlock
+  */
+  public function unlock(int x) {
+    L l = new L(1, 2);
+    require(this._unlock(l, x));
+    require(this._unlock1(l, x));
+  }
+
+}

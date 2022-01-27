@@ -1,0 +1,23 @@
+// arrary library  as property
+library L {
+  int x;
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+  function f() : int {
+    return this.x;
+  }
+}
+
+contract Test {
+  int x;
+  L[3] b;
+
+  public function unlock(int x) {
+    L l0 = this.b[0];
+    L l1 = this.b[1];
+    L l2 = this.b[2];
+    require(l0.f() + l1.f() + l2.f()  == this.x + x);
+    require(true);
+  }
+}

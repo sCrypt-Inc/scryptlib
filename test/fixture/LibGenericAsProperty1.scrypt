@@ -1,0 +1,26 @@
+type Amount = int;
+//L with generic type
+library L<T> {
+  T x;
+  T y;
+
+  function getX() : T {
+    return this.x;
+  }
+
+  function getY() : T {
+    return this.y;
+  }
+}
+
+
+contract Test {
+  private int x;
+  L<Amount> l;
+
+  public function unlock(int x) {
+    require(this.l.getX() == this.l.getY());
+    require(this.x == x);
+    require(true);
+  }
+}

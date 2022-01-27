@@ -41,7 +41,7 @@ describe('MDArray test', () => {
     it('should throw', () => {
       expect(() => {
         mdArray.unlock([[3, 2, 2], [4, 5, 6, 1]], [1, 32]).verify()
-      }).to.throw('The type of parameter P1 is wrong, should be int[2][3]');
+      }).to.throw('The type of P1 is wrong, should be int[2][3]');
     });
 
     it('should success when call unlockST1', () => {

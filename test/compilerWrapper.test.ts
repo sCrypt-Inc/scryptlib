@@ -4,7 +4,7 @@ import { loadDescription, getContractFilePath, getInvalidContractFilePath, exclu
 import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
 import { compileContract } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
 
@@ -104,9 +104,7 @@ describe('compile()', () => {
     });
 
     it('source should be sort as expected', () => {
-      expect(desc.sources[0]).to.contains("std");
-      expect(desc.sources[2]).to.contains("util.scrypt");
-      expect(desc.sources[1]).to.contains("tokenUtxo.scrypt");
+      expect(desc.sources.map(path => basename(path))).to.members(["std", "util.scrypt", "tokenUtxo.scrypt"])
     })
 
 
@@ -310,33 +308,48 @@ describe('compile()', () => {
 
     it('autoTypedVars', () => {
 
-      expect(result.autoTypedVars[0]).to.deep.property("name", "Main.y");
-      expect(result.autoTypedVars[0]).to.deep.property("type", "int");
+      let autoVars = result.autoTypedVars.map(v => Object.assign({}, { name: v.name, type: v.type }));
 
+      expect(autoVars).to.deep.include.members([
 
-      expect(result.autoTypedVars[1]).to.deep.property("name", "y");
-      expect(result.autoTypedVars[1]).to.deep.property("type", "int");
-
-
-      expect(result.autoTypedVars[2]).to.deep.property("name", "z");
-      expect(result.autoTypedVars[2]).to.deep.property("type", "int");
-
-
-      expect(result.autoTypedVars[3]).to.deep.property("name", "aa");
-      expect(result.autoTypedVars[3]).to.deep.property("type", "int[2]");
-
-
-      expect(result.autoTypedVars[4]).to.deep.property("name", "ss");
-      expect(result.autoTypedVars[4]).to.deep.property("type", "struct ST1 {}[2]");
-
-      expect(result.autoTypedVars[5]).to.deep.property("name", "evel");
-      expect(result.autoTypedVars[5]).to.deep.property("type", "int");
-
-      expect(result.autoTypedVars[6]).to.deep.property("name", "ss1");
-      expect(result.autoTypedVars[6]).to.deep.property("type", "struct ST1 {}[2]");
-
+        {
+          name: 'Main.y',
+          type: 'int'
+        },
+        {
+          name: 'y',
+          type: 'int'
+        },
+        {
+          name: 'z',
+          type: 'int'
+        },
+        {
+          name: 'aa',
+          type: 'int[2]'
+        },
+        {
+          name: 'ss',
+          type: 'struct ST1 {}[2]'
+        },
+        {
+          name: 'l',
+          type: 'L'
+        },
+        {
+          name: 'evel',
+          type: 'int'
+        },
+        {
+          name: 'ss1',
+          type: 'struct ST1 {}[2]'
+        },
+        {
+          name: 'll',
+          type: 'LL<int, struct ST1 {}>'
+        }
+      ])
     })
-
   })
 
 
@@ -899,7 +912,61 @@ describe('compile()', () => {
     it('compile successfully', () => {
       const result = compileContract(getContractFilePath('p2pkh.scrypt'));
 
-      expect(result.hex).to.be.equal('6100<pubKeyHash>0079527a75517a75615179a95179876952795279ac777777')
+      expect(result.hex).to.be.equal('00<pubKeyHash>610079527a75517a75615179a95179876952795279ac777777')
+    })
+  })
+
+  describe('test statics', () => {
+    it('compile successfully', () => {
+      const result = compileContract(getContractFilePath('p2pkh.scrypt'));
+
+      expect(result.statics).to.deep.equal([])
+      const result1 = compileContract(getContractFilePath('const.scrypt'));
+
+      expect(result1.statics).to.deep.equal([
+        { const: true, name: 'Util.DATALEN', type: 'int', value: "5" },
+        {
+          const: true,
+          name: 'Util.BIGINT',
+          type: 'int',
+          value: '2988348162058574136915891421498819466320163312926952423791023078876139'
+        },
+        {
+          const: true,
+          name: 'ConstTest.aaa',
+          type: 'bool',
+          value: undefined
+        },
+        {
+          const: true,
+          name: 'ConstTest.bb',
+          type: 'bytes',
+          value: "b'aaaa'"
+        },
+        { const: true, name: 'ConstTest.N', type: 'int', value: "3" },
+        { const: true, name: 'ConstTest.UU', type: 'int', value: "5" },
+        { const: true, name: 'ConstTest.C', type: 'int', value: undefined },
+        {
+          const: true,
+          name: 'ConstTest.amount',
+          type: 'int',
+          value: "1"
+        },
+        {
+          const: true,
+          name: 'ConstTest.p',
+          type: 'PubKey',
+          value: "b'aaaa'"
+        },
+        {
+          const: true,
+          name: 'ConstTest.BIGINT',
+          type: 'int',
+          value: "2988348162058574136915891421498819466320163312926952423791023078876139"
+        }
+      ])
+
+
     })
   })
 

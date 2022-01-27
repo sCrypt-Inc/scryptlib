@@ -1,0 +1,27 @@
+//L with array as property
+/**
+* struct St
+*/
+struct ST {
+  int x;
+  int y;
+}
+
+library L {
+  private ST[3] a;
+
+  function f() : int {
+    return this.a[0].x + this.a[0].y + this.a[1].x + this.a[1].y + this.a[2].x + this.a[2].y ;
+  }
+}
+
+
+contract Test {
+  private int x;
+  L l;
+
+  public function unlock(int x) {
+    require(this.l.f() == this.x + x);
+    require(true);
+  }
+}

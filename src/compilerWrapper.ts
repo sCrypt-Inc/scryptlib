@@ -4,8 +4,8 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 
 import md5 = require('md5');
 import JSONbig = require('json-bigint');
 import {
-  path2uri, isArrayType, ContractDescription, toLiteralArrayType, findCompiler, isStructType, getStructNameByType,
-  buildTypeResolver, TypeResolver, arrayTypeAndSizeStr
+  path2uri, ContractDescription, findCompiler,
+  buildTypeResolver, TypeResolver, resolveConstValue, shortType
 } from './internal';
 
 
@@ -22,7 +22,7 @@ const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+
 const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
-const CURRENT_CONTRACT_DESCRIPTION_VERSION = 7;
+const CURRENT_CONTRACT_DESCRIPTION_VERSION = 8;
 export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
@@ -96,12 +96,12 @@ export interface CompileResult {
   contract?: string;
   md5?: string;
   structs?: Array<StructEntity>;
+  library?: Array<LibraryEntity>;
   alias?: Array<AliasEntity>;
-  generics?: Array<GenericEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
-  staticConst?: Record<string, number>
+  statics?: Array<StaticEntity>;
 }
 
 export enum DebugModeTag {
@@ -110,6 +110,12 @@ export enum DebugModeTag {
   LoopStart = 'L0'
 }
 
+export interface DebugInfo {
+  tag: DebugModeTag;
+  contract: string;
+  func: string;
+  context: string;
+}
 
 export interface Pos {
   file: string;
@@ -124,7 +130,7 @@ export interface OpCode {
   stack?: string[];
   topVars?: string[];
   pos?: Pos;
-  debugTag?: DebugModeTag;
+  debugInfo?: DebugInfo;
 }
 
 export interface AutoTypedVar {
@@ -156,15 +162,20 @@ export interface StructEntity {
   name: string;
   params: Array<ParamEntity>;
 }
-
+export interface LibraryEntity extends StructEntity {
+  properties: Array<ParamEntity>;
+  genericTypes: Array<string>;
+}
 export interface AliasEntity {
   name: string;
   type: string;
 }
 
-export interface GenericEntity {
-  library: string;
-  genericTypes: Array<string>;
+export interface StaticEntity {
+  name: string;
+  type: string;
+  const: boolean;
+  value?: any;
 }
 
 export function compile(
@@ -229,11 +240,11 @@ export function compile(
 
       const alias = getAliasDeclaration(result.ast, allAst);
       const structs = getStructDeclaration(result.ast, allAst);
-      const generics = getGenericDeclaration(result.ast, allAst);
+      const library = getLibraryDeclaration(result.ast, allAst);
 
-      result.staticConst = getStaticConstIntDeclaration(result.ast, allAst);
+      const statics = getStaticDeclaration(result.ast, allAst);
 
-      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, result.staticConst);
+      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, statics);
 
       result.alias = alias.map(a => ({
         name: a.name,
@@ -245,7 +256,18 @@ export function compile(
         params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
       }));
 
-      result.generics = generics;
+      result.library = library.map(a => ({
+        name: a.name,
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        genericTypes: a.genericTypes.map(t => shortGenericType(t))
+      }));
+
+      result.statics = statics.map(s => (Object.assign({ ...s }, {
+        type: shortType(typeResolver(s.type))
+      })));
+
+
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
@@ -280,17 +302,26 @@ export function compile(
         if (match && match.groups) {
           const fileIndex = parseInt(match.groups.fileIndex);
 
-          let debugTag: DebugModeTag | undefined;
+          let debugInfo: DebugInfo | undefined;
 
           const tagStr = match.groups.tagStr;
-          if (/\w+\.\w+:0/.test(tagStr)) {
-            debugTag = DebugModeTag.FuncStart;
-          }
-          if (/\w+\.\w+:1/.test(tagStr)) {
-            debugTag = DebugModeTag.FuncEnd;
-          }
-          if (/loop:0/.test(tagStr)) {
-            debugTag = DebugModeTag.LoopStart;
+
+          const m = /^(\w+)\.(\w+):(\d)(#(?<context>.+))?$/.exec(tagStr);
+
+          if (m) {
+            debugInfo = {
+              contract: m[1],
+              func: m[2],
+              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
+              context: m.groups.context
+            };
+          } else if (/loop:0/.test(tagStr)) {
+            debugInfo = {
+              contract: '',
+              func: '',
+              tag: DebugModeTag.LoopStart,
+              context: ''
+            };
           }
 
           const pos: Pos | undefined = sources[fileIndex] ? {
@@ -306,8 +337,8 @@ export function compile(
             stack: item.stack,
             topVars: item.topVars || [],
             pos: pos,
-            debugTag
-          };
+            debugInfo
+          } as OpCode;
         }
         throw new Error('Compile Failed: Asm output parsing Error!');
       });
@@ -346,8 +377,8 @@ export function compile(
         contract: result.contract,
         md5: md5(sourceContent),
         structs: result.structs || [],
+        library: result.library || [],
         alias: result.alias || [],
-        generics: result.generics || [],
         abi: result.abi || [],
         stateProps: result.stateProps || [],
         buildType: settings.buildType || BuildType.Debug,
@@ -508,7 +539,7 @@ function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
 }
 
 
-function getContractName(astRoot): string {
+export function getContractName(astRoot): string {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
     return '';
@@ -516,17 +547,14 @@ function getContractName(astRoot): string {
   return mainContract['name'] || '';
 }
 
-function shortType(finalType: string): string {
-  let shortType = finalType;
-  if (isStructType(finalType)) {
-    shortType = getStructNameByType(finalType);
-  } else if (isArrayType(finalType)) {
-    const [elemType, sizes] = arrayTypeAndSizeStr(finalType);
-    if (isStructType(elemType)) {
-      shortType = toLiteralArrayType(getStructNameByType(elemType), sizes);
-    }
+
+
+function shortGenericType(genericType: string): string {
+  const m = genericType.match(/__SCRYPT_(\w+)__/);
+  if (m) {
+    return m[1];
   }
-  return shortType;
+  return genericType;
 }
 
 /**
@@ -586,6 +614,47 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
   }).flat(1);
 }
 
+
+
+/**
+ * 
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined Library of the main contract and dependent contracts
+ */
+export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEntity> {
+
+  const allAst = [astRoot];
+
+  Object.keys(dependencyAsts).forEach(key => {
+    allAst.push(dependencyAsts[key]);
+  });
+
+  return allAst.map(ast => {
+    return (ast.contracts || []).filter(c => c.nodeType == 'Library').map(c => {
+      if (c['constructor']) {
+        return {
+          name: c.name,
+          params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
+          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+          genericTypes: c.genericTypes || [],
+        };
+      } else {
+        // implicit constructor
+        if (c['properties']) {
+          return {
+            name: c.name,
+            params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            genericTypes: c.genericTypes || [],
+          };
+        }
+      }
+    });
+  }).flat(1);
+}
+
+
 /**
  * 
  * @param astRoot AST root node after main contract compilation
@@ -608,31 +677,7 @@ export function getAliasDeclaration(astRoot, dependencyAsts): Array<AliasEntity>
   }).flat(1);
 }
 
-/**
- * 
- * @param astRoot AST root node after main contract compilation
- * @param dependencyAsts AST root node after all dependency contract compilation
- * @returns all defined generic type of the main contract and dependent contracts
- */
-export function getGenericDeclaration(astRoot: any, dependencyAsts: any): Array<GenericEntity> {
 
-  const allAst = [astRoot];
-
-  Object.keys(dependencyAsts).forEach(key => {
-    allAst.push(dependencyAsts[key]);
-  });
-
-  return allAst.map(ast => {
-    return (ast.contracts || []).map(contract => {
-      if (Array.isArray(contract.genericTypes)) {
-        return {
-          genericTypes: contract.genericTypes,
-          library: contract.name,
-        };
-      }
-    });
-  }).flat(Infinity).filter(item => typeof item === 'object');
-}
 
 /**
  * 
@@ -640,26 +685,25 @@ export function getGenericDeclaration(astRoot: any, dependencyAsts: any): Array<
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined static const int literal of the main contract and dependent contracts
  */
-export function getStaticConstIntDeclaration(astRoot, dependencyAsts): Record<string, number> {
+export function getStaticDeclaration(astRoot, dependencyAsts): Array<StaticEntity> {
 
   const allAst = [astRoot];
   Object.keys(dependencyAsts).forEach(key => {
     allAst.push(dependencyAsts[key]);
   });
 
-  return allAst.map((ast, index) => {
+  return allAst.map((ast) => {
     return (ast.contracts || []).map(contract => {
-      return (contract.statics || []).filter(s => (
-        s.const === true && s.expr.nodeType === 'IntLiteral'
-      )).map(s => {
-
+      return (contract.statics || []).map(node => {
         return {
-          name: `${contract.name}.${s.name}`,
-          value: s.expr.value
+          const: node.const,
+          name: `${contract.name}.${node.name}`,
+          type: node.type,
+          value: resolveConstValue(node)
         };
       });
     });
-  }).flat(Infinity).reduce((acc, item) => (acc[item.name] = item.value, acc), {} as Record<string, number>);
+  }).flat(Infinity).flat(1);
 }
 
 /**
@@ -686,13 +730,13 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     abi: description.abi,
     structs: description.structs || [],
     alias: description.alias || [],
-    generics: description.generics || [],
     file: description.file,
     buildType: description.buildType || BuildType.Debug,
     stateProps: description.stateProps || [],
+    library: description.library || [],
     errors: [],
     warnings: [],
-    staticConst: {},
+    statics: [],
     hex: description.hex || '',
     asm: asm.map((opcode, index) => {
       const item = description.sourceMap && description.sourceMap[index];

@@ -1,0 +1,41 @@
+//as static function return
+library L {
+  private int x;
+
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+  function f() : int {
+    return this.x;
+  }
+}
+
+
+library L1 {
+  L l;
+  static function getL(int a, int b) : L {
+    return new L(a, b);
+  }
+}
+
+
+contract Test {
+  private int x;
+
+  static function getL1() : L1 {
+    L1 l1 = new L1(new L(1, 1));
+    return l1;
+  }
+
+  public function unlock(int x) {
+    L1 l1 = Test.getL1();
+    require(l1.l.f() == this.x + x);
+    require(true);
+  }
+
+  public function unlock2(int x) {
+    L l = L1.getL(2, 3);
+    require(l.f() == this.x + x);
+    require(true);
+  }
+}

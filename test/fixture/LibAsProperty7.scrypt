@@ -1,0 +1,27 @@
+//L with struct as property
+/**
+* struct St
+*/
+struct ST {
+  int x;
+  int y;
+}
+
+library L {
+  private ST st;
+
+  function f() : int {
+    return this.st.x + this.st.y;
+  }
+}
+
+
+contract Test {
+  private int x;
+  L l;
+
+  public function unlock(int x) {
+    require(this.l.f() == this.x + x);
+    require(true);
+  }
+}
