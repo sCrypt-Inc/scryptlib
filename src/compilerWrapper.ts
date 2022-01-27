@@ -4,8 +4,8 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 
 import md5 = require('md5');
 import JSONbig = require('json-bigint');
 import {
-  path2uri,  ContractDescription,  findCompiler, 
-  buildTypeResolver, TypeResolver,  resolveConstValue,  shortType
+  path2uri, ContractDescription, findCompiler,
+  buildTypeResolver, TypeResolver, resolveConstValue, shortType
 } from './internal';
 
 
@@ -114,6 +114,7 @@ export interface DebugInfo {
   tag: DebugModeTag;
   contract: string;
   func: string;
+  context: string;
 }
 
 export interface Pos {
@@ -262,7 +263,7 @@ export function compile(
         genericTypes: a.genericTypes.map(t => shortGenericType(t))
       }));
 
-      result.statics = statics.map(s => (Object.assign({...s},{
+      result.statics = statics.map(s => (Object.assign({ ...s }, {
         type: shortType(typeResolver(s.type))
       })));
 
@@ -304,20 +305,22 @@ export function compile(
           let debugInfo: DebugInfo | undefined;
 
           const tagStr = match.groups.tagStr;
-          
-          const m = /^(\w+)\.(\w+):(\d)$/.exec(tagStr);
+
+          const m = /^(\w+)\.(\w+):(\d)(#(?<context>.+))?$/.exec(tagStr);
 
           if (m) {
             debugInfo = {
               contract: m[1],
               func: m[2],
-              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd
+              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
+              context: m.groups.context
             };
           } else if (/loop:0/.test(tagStr)) {
             debugInfo = {
               contract: '',
               func: '',
-              tag: DebugModeTag.LoopStart 
+              tag: DebugModeTag.LoopStart,
+              context: ''
             };
           }
 
@@ -548,7 +551,7 @@ export function getContractName(astRoot): string {
 
 function shortGenericType(genericType: string): string {
   const m = genericType.match(/__SCRYPT_(\w+)__/);
-  if(m) {
+  if (m) {
     return m[1];
   }
   return genericType;
