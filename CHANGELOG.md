@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 0.12.0
+
+- Support `library` as contract property, function parameter and return type
+```javascript
+// now you can new contract with library as a property.
+const Test = buildContractClass(loadDescription('desc.json'));
+const { L, ST } = buildTypeClasses(Test);
+const contract = new Test(2, new L(1, 1));
+```
+- Add `library` and `statics` field to contract description file 
+- Add two function `toHashedMap` and `toHashedSet` to convert origin `Map` and `Set` to `HashedMap` and `toHashedSet`
+
+*Release Date: 2022/01/27*
+
+
 ## 0.11.0
 
 - Support `constructor` in contract with `@state` property
