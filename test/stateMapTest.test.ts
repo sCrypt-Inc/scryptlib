@@ -65,69 +65,69 @@ describe('test.stateMapTest', () => {
 
             testInsert(5, 6);
 
-            // testInsert(0, 11);
+            testInsert(0, 11);
 
-            // testInsert(1, 5);
+            testInsert(1, 5);
 
         })
 
 
-        // it('test update', () => {
+        it('test update', () => {
 
 
-        //     function testUpdate(key: number, val: number) {
+            function testUpdate(key: number, val: number) {
 
-        //         map.set(key, val);
+                map.set(key, val);
 
-        //         const tx = buildTx(map);
-        //         const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-        //         const result = mapTest.update(new MapEntry({
-        //             key: key,
-        //             val: val,
-        //             keyIndex: findKeyIndex(map, key)
-        //         }), preimage).verify()
-        //         expect(result.success, result.error).to.be.true;
+                const result = mapTest.update(new MapEntry({
+                    key: key,
+                    val: val,
+                    keyIndex: findKeyIndex(map, key)
+                }), preimage).verify()
+                expect(result.success, result.error).to.be.true;
 
-        //         mapTest._mpData = toData(map)
-        //     }
-
-
-        //     testUpdate(1, 6)
-
-        //     testUpdate(1, 8)
-        //     testUpdate(0, 1)
-
-        // })
+                mapTest._mpData = toData(map)
+            }
 
 
-        // it('test delete', () => {
+            testUpdate(1, 6)
+
+            testUpdate(1, 8)
+            testUpdate(0, 1)
+
+        })
 
 
-        //     function testDelete(key: number) {
-
-        //         const keyIndex = findKeyIndex(map, key);
-        //         map.delete(key);
-
-        //         const tx = buildTx(map);
-        //         const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-
-        //         const result = mapTest.delete(key, keyIndex, preimage).verify()
-        //         expect(result.success, result.error).to.be.true;
-
-        //         mapTest._mpData = toData(map)
-        //     }
+        it('test delete', () => {
 
 
-        //     testDelete(1)
+            function testDelete(key: number) {
 
-        //     testDelete(5)
+                const keyIndex = findKeyIndex(map, key);
+                map.delete(key);
 
-        //     testDelete(3)
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-        //     testDelete(0)
+                const result = mapTest.delete(key, keyIndex, preimage).verify()
+                expect(result.success, result.error).to.be.true;
 
-        // })
+                mapTest._mpData = toData(map)
+            }
+
+
+            testDelete(1)
+
+            testDelete(5)
+
+            testDelete(3)
+
+            testDelete(0)
+
+        })
 
     })
 
@@ -137,7 +137,7 @@ describe('test.stateMapTest', () => {
 
         const jsonDescr = loadDescription('LibAsState2_desc.json')
         const Test = buildContractClass(jsonDescr)
-        const {MapEntry} = buildTypeClasses(jsonDescr);
+        const { MapEntry } = buildTypeClasses(jsonDescr);
         let map = new Map<number, number>();
 
         before(() => {
@@ -190,69 +190,69 @@ describe('test.stateMapTest', () => {
 
             testInsert(5, 6);
 
-            //testInsert(0, 11);
+            testInsert(0, 11);
 
-            //testInsert(1, 5);
+            testInsert(1, 5);
 
         })
 
 
-        // it('test update', () => {
+        it('test update', () => {
 
 
-        //     function testUpdate(key: number, val: number) {
+            function testUpdate(key: number, val: number) {
 
-        //         map.set(key, val);
+                map.set(key, val);
 
-        //         const tx = buildTx(map);
-        //         const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-        //         const result = mapTest.update(new MapEntry({
-        //             key: key,
-        //             val: val,
-        //             keyIndex: findKeyIndex(map, key)
-        //         }), preimage).verify()
-        //         expect(result.success, result.error).to.be.true;
+                const result = mapTest.update(new MapEntry({
+                    key: key,
+                    val: val,
+                    keyIndex: findKeyIndex(map, key)
+                }), preimage).verify()
+                expect(result.success, result.error).to.be.true;
 
-        //         mapTest._mpData = toData(map)
-        //     }
-
-
-        //     testUpdate(1, 6)
-
-        //     testUpdate(1, 8)
-        //     testUpdate(0, 1)
-
-        // })
+                mapTest.map = toHashedMap(map)
+            }
 
 
-        // it('test delete', () => {
+            testUpdate(1, 6)
+
+            testUpdate(1, 8)
+            testUpdate(0, 1)
+
+        })
 
 
-        //     function testDelete(key: number) {
-
-        //         const keyIndex = findKeyIndex(map, key);
-        //         map.delete(key);
-
-        //         const tx = buildTx(map);
-        //         const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-
-        //         const result = mapTest.delete(key, keyIndex, preimage).verify()
-        //         expect(result.success, result.error).to.be.true;
-
-        //         mapTest._mpData = toData(map)
-        //     }
+        it('test delete', () => {
 
 
-        //     testDelete(1)
+            function testDelete(key: number) {
 
-        //     testDelete(5)
+                const keyIndex = findKeyIndex(map, key);
+                map.delete(key);
 
-        //     testDelete(3)
+                const tx = buildTx(map);
+                const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-        //     testDelete(0)
+                const result = mapTest.delete(key, keyIndex, preimage).verify()
+                expect(result.success, result.error).to.be.true;
 
-        // })
+                mapTest.map = toHashedMap(map)
+            }
+
+
+            testDelete(1)
+
+            testDelete(5)
+
+            testDelete(3)
+
+            testDelete(0)
+
+        })
 
     })
 })
