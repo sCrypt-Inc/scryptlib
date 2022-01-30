@@ -104,13 +104,13 @@ library Writer {
         }
 
         this.buf += header + b;
-        return new Writer(this.buf);
+        return this;
     }
 
     // uses fixed 1 byte to represent a boolean, plus length
     function writeBool(bool x) : Writer {
         this.buf += (x ? b'01' : b'00');
-        return new Writer(this.buf);
+        return this;
     }
 
     // int is little endian
