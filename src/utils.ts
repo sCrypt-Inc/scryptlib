@@ -817,8 +817,8 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-        expectedType,
-        resolver);
+      expectedType,
+      resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1409,8 +1409,8 @@ export function resolveConstValue(node: any): string | undefined {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -1611,28 +1611,28 @@ export function createLibraryProperties(contract: AbstractContract, param: Param
 
       Object.assign(properties, {
         [p.name]: createStruct(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
-      })
+      });
 
     } else if (isLibraryType(finalType)) {
 
       const library = createDefaultLibrary(contract, { name: `${param.name}.${p.name}`, type: p.type });
 
-      library.setProperties(createLibraryProperties(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap))
+      library.setProperties(createLibraryProperties(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap));
 
       Object.assign(properties, {
         [p.name]: library
-      })
+      });
 
     } else if (isArrayType(finalType)) {
 
       Object.assign(properties, {
         [p.name]: createArray(contract, p.type, `${param.name}.${p.name}`, opcodesMap)
-      })
+      });
 
     } else {
       Object.assign(properties, {
         [p.name]: asm2ScryptType(finalType, opcodesMap.get(`$${param.name}.${p.name}`))
-      })
+      });
     }
   });
 
@@ -1955,7 +1955,7 @@ export function deserializeArgfromState(contract: AbstractContract, arg: Argumen
     value = createStruct(contract, arg, opcodesMap);
   } else if (isLibraryType(arg.type)) {
 
-    value = createDefaultLibrary(contract, arg)
+    value = createDefaultLibrary(contract, arg);
 
     const properties = createLibraryProperties(contract, arg, opcodesMap);
 
@@ -2286,7 +2286,7 @@ export function arrayToScryptType(a: SupportedParamType[]): ScryptType[] {
     }
     return toScryptType(i);
   }) as ScryptType[];
-};
+}
 
 export function inferrType(a: SupportedParamType): string {
   if (Array.isArray(a)) {
@@ -2360,4 +2360,4 @@ export function arrayToLiteral(a: SupportedParamType[]): string {
   }).join(',');
 
   return `[${al}]`;
-};
+}

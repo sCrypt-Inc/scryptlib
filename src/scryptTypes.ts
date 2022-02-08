@@ -454,7 +454,7 @@ export class Struct extends ScryptType {
   }
 
   flatten(varName: string) {
-    return flatternStruct(this, varName)
+    return flatternStruct(this, varName);
   }
 
   protected init(structAst: StructEntity): void {
@@ -652,7 +652,7 @@ export class Library extends ScryptType {
       throw new Error(`Property ${property} not found, the properties of the current library are: ${JSON.stringify(this.properties)}`);
     }
 
-    return toScryptType(p)
+    return toScryptType(p);
   }
 
 
@@ -675,7 +675,7 @@ export class Library extends ScryptType {
   }
 
   flatten(varName: string) {
-    return flatternLibrary(this, varName)
+    return flatternLibrary(this, varName);
   }
 
   get finalType(): string {
@@ -791,7 +791,7 @@ export class Library extends ScryptType {
       if (error) {
         throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(args)}`);
       }
-    })
+    });
 
     libraryAst.properties.forEach(p => {
       Object.defineProperty(this, p.name, {
@@ -841,7 +841,7 @@ export class HashedMap extends Library {
     super(data);
     this.setProperties({
       '_data': data
-    })
+    });
     this._typeResolver = (t: string) => t; //we should assign this before bind
     this.bind();
   }
@@ -873,7 +873,7 @@ export class HashedSet extends Library {
     super(data);
     this.setProperties({
       '_data': data
-    })
+    });
     this._typeResolver = (t: string) => t; //we should assign this before bind
     this.bind();
   }
