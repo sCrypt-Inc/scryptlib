@@ -1,0 +1,57 @@
+// return a reader
+import "./serializer.scrypt";
+library L {
+  private int x;
+
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+  function f(int x) : Reader {
+    Writer writer = new Writer(b'');
+    writer.writeBool(true);
+    writer.writeInt(111);
+    writer.writeInt(this.x);
+    writer.writeInt(0);
+    writer.writeInt(0xff);
+    writer.writeBytes(b'09010a');
+    writer.writeBytes(b'1f1f1f');
+    writer.writeInt(x);
+    return new Reader(writer.toBuffer());
+  }
+
+  function f1(int x) : Writer {
+    Writer writer = new Writer(b'');
+    writer.writeInt(x);
+    return writer;
+  }
+}
+
+
+
+contract Test {
+  private int x;
+
+  public function unlock(int x) {
+    L l = new L(1, 2);
+    Reader reader = l.f(this.x + x);
+    require(reader.readBool() == true);
+    require(reader.readInt() == 111);
+    // int a = reader.readInt();
+    require(reader.readInt() == 3);
+    require(reader.readInt() == 0);
+    require(reader.readInt() == 0xff);
+    require(reader.readBytes() == b'09010a');
+    require(reader.readBytes() == b'1f1f1f');
+    require(reader.readInt() == this.x + x);
+
+    Writer writer = l.f1(9999);
+    writer.writeBytes(b'09010a');
+    writer.writeBytes(b'1f1f1f');
+
+    Reader reader1 = new Reader(writer.toBuffer());
+    require(reader1.readInt() == 9999);
+    require(reader1.readBytes() == b'09010a');
+    require(reader1.readBytes() == b'1f1f1f');
+    require(true);
+  }
+}

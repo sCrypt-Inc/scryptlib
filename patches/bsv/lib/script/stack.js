@@ -61,8 +61,18 @@ Stack.prototype.copy = function () {
   return new Stack(this.stack.slice() || [], this.varStack.slice() || [])
 }
 
+
+function bytesToHexString(bytearray ) {
+  return bytearray.reduce(function (o, c) { return o += ('0' + (c & 0xFF).toString(16)).slice(-2); }, '');
+}
+
 Stack.prototype.printVarStack = function () {
-  console.log(this.varStack.join(','))
+
+  let array = this.varStack.map((v,i) => ({
+    name: v,
+    value: bytesToHexString(this.rawstack[i].data)
+  }))
+  console.log(JSON.stringify(array, null, 4))
 }
 
 Stack.prototype.checkConsistency = function () {

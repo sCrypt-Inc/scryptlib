@@ -1,0 +1,31 @@
+// library with nested library as property, with constructor
+library L {
+  int x;
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+  function f() : int {
+    return this.x;
+  }
+}
+
+library L1 {
+  L x;
+  constructor(int a, int b) {
+    this.x = new L(a, b);
+  }
+
+  function f() : int {
+    return this.x.f();
+  }
+}
+
+contract Test {
+  int x;
+  L1 b;
+
+  public function unlock(int x) {
+    require(this.b.f() == this.x + x);
+    require(true);
+  }
+}

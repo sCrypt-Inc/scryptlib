@@ -25,7 +25,7 @@ function compileAllContracts() {
 
     if (result.errors.length > 0) {
       console.log(`Contract ${filePath} compiling failed with errors:`);
-      console.log(result.errors);
+      console.log(JSON.stringify(result.errors, null, 4));
       exit(1);
     }
   })

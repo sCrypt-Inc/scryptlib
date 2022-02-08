@@ -1,0 +1,34 @@
+
+
+library GenericA<T> {
+    T c;
+    function get() : T {
+        return this.c;
+    }
+}
+
+library GenericLibray<T> {
+    GenericA<T> a;
+
+    function getA() : GenericA<T> {
+        return this.a;
+    }
+}
+
+
+contract TestGenericLibray {
+    
+    GenericLibray<int> l;
+    
+    public function unlock(int x) {
+    
+        GenericLibray<int> lib = new GenericLibray(new GenericA<int>(8888));
+
+        require(lib.getA().get() == 8888);
+
+        require(this.l.getA().get() == x);
+
+        require(true);
+    }
+
+}

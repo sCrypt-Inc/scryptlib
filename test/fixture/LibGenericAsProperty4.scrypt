@@ -1,0 +1,52 @@
+
+
+struct ST {
+    int a;
+    bytes b;
+}
+library GenericA<T> {
+    T c;
+    function get() : T {
+        return this.c;
+    }
+}
+
+library GenericLibray<T> {
+    GenericA<ST> a;
+    T x;
+    function get() : GenericA<bytes>  {
+        GenericA<bytes> lib = new GenericA(b'');
+        bytes r = lib.get();
+        return lib;
+    }
+
+    function getA() : GenericA<ST> {
+        return this.a;
+    }
+
+    function getX() : T {
+        return this.x;
+    }
+}
+
+
+contract TestGenericLibray {
+    
+    GenericLibray<int> l;
+    
+    public function unlock(int x) {
+    
+        GenericLibray<int> lib = new GenericLibray(new GenericA<ST>({1, b'0905'}), 1001);
+
+        GenericA<bytes> a = this.l.get();
+
+        auto aa = this.l.getA();
+
+        require(aa.get() == {101, b'0f010f'});
+
+        require(x == this.l.getX());
+
+        require(true);
+    }
+
+}

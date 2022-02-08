@@ -262,11 +262,11 @@ describe('FunctionCall', () => {
   describe('struct type check', () => {
 
     it('should throw with wrong struct type', () => {
-      expect(() => { person.main(block, 18, true) }).to.throw('The type of parameter p is wrong, expected Person but got Block');
+      expect(() => { person.main(block, 18, true) }).to.throw('The type of p is wrong, expected Person but got Block');
     })
 
     it('should throw with wrong struct type', () => {
-      expect(() => { new PersonContract(block, 18) }).to.throw('The type of parameter some is wrong, expected Person but got Block');
+      expect(() => { new PersonContract(block, 18) }).to.throw('The type of some is wrong, expected Person but got Block');
     })
   })
 
