@@ -269,6 +269,13 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
     return ['', '', VariableType.STRUCT];
   }
 
+  // Library
+  m = /^\[([\w(){}[\],\s'-]*)\]$/.exec(l);
+  if (m) {
+    // we use array to constructor a library, no use literal, so here we return empty
+    return ['', '', VariableType.LIBRARY];
+  }
+
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
 
 }
@@ -810,8 +817,8 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-      expectedType,
-      resolver);
+        expectedType,
+        resolver);
     }).filter(e => e)[0];
   }
 }
@@ -847,6 +854,8 @@ export function flatternArray(arg: SupportedParamType[], name: string, finalType
       return flatternArray(item, `${name}[${index}]`, subArrayType(finalType));
     } else if (Struct.isStruct(item)) {
       return flatternStruct(item, `${name}[${index}]`);
+    } else if (Library.isLibrary(item)) {
+      return flatternLibrary(item, `${name}[${index}]`);
     }
     else {
       item = item as ScryptType;
@@ -888,19 +897,66 @@ export function flatternStruct(arg: SupportedParamType, name: string): Arguments
 }
 
 
-export function flatternLibrary(arg: SupportedParamType, name: string, fromState: boolean): Arguments {
-  if (fromState) {
-    if (Library.isLibrary(arg)) {
-      const argL = arg as Library;
-      return flatternStruct(argL.getProperties(), name);
-    }
-    return flatternStruct(arg, name);
+export function flatternLibrary(arg: SupportedParamType, name: string): Arguments {
+
+  if (Library.isLibrary(arg)) {
+    const library = arg as Library;
+
+    const args = library.getCtorArgs();
+
+    return library.getLibraryAst().params.map((param, index) => {
+      const arg = args[index];
+      if (Struct.isStruct(arg)) {
+        return flatternStruct(arg, `${name}.${param.name}`);
+      } else if (Array.isArray(arg)) {
+        return flatternArray(arg, `${name}.${param.name}`, param.type);
+      } else if (Library.isLibrary(arg)) {
+        return flatternLibrary(arg, `${name}.${param.name}`);
+      } else {
+        return {
+          value: arg,
+          name: `${name}.${param.name}`,
+          type: param.type
+        };
+      }
+    }).flat(Infinity) as Arguments;
+
+  } else {
+    throw new Error(`${arg} should be library`);
   }
-  return flatternStruct(arg, name);
 }
 
 
-export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, fromState: boolean): Arguments {
+
+export function flatternLibraryState(arg: SupportedParamType, name: string): Arguments {
+
+  if (Library.isLibrary(arg)) {
+    const library = arg as Library;
+
+    return library.getLibraryAst().properties.map((param, index) => {
+      const property = library.getProperty(param.name);
+      if (Struct.isStruct(property)) {
+        return flatternStruct(property, `${name}.${param.name}`);
+      } else if (Array.isArray(property)) {
+        return flatternArray(property, `${name}.${param.name}`, param.type);
+      } else if (Library.isLibrary(property)) {
+        return flatternLibraryState(property, `${name}.${param.name}`);
+      } else {
+        return {
+          value: property,
+          name: `${name}.${param.name}`,
+          type: param.type
+        };
+      }
+    }).flat(Infinity) as Arguments;
+
+  } else {
+    throw new Error(`${arg} should be library`);
+  }
+}
+
+//using for flattern contract constructor arguments
+export function flatternCtorArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
   const args_: Arguments = [];
   args.forEach((arg) => {
     const finalType = finalTypeResolver(arg.type);
@@ -913,7 +969,7 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
         });
       });
     } else if (isLibraryType(finalType)) {
-      flatternLibrary(arg.value, arg.name, fromState).forEach(e => {
+      flatternLibrary(arg.value, arg.name).forEach(e => {
         args_.push({
           name: e.name,
           type: finalTypeResolver(e.type),
@@ -942,13 +998,55 @@ export function flatternArgs(args: Arguments, finalTypeResolver: TypeResolver, f
   return args_;
 }
 
+//using for flattern stateful contract states
+export function flatternStateArgs(args: Arguments, finalTypeResolver: TypeResolver): Arguments {
+  const args_: Arguments = [];
+  args.forEach((arg) => {
+    const finalType = finalTypeResolver(arg.type);
+    if (isStructType(finalType)) {
+      flatternStruct(arg.value, arg.name).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value
+        });
+      });
+    } else if (isLibraryType(finalType)) {
+      flatternLibraryState(arg.value, arg.name).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value
+        });
+      });
+    }
+    else if (isArrayType(finalType)) {
+      flatternArray(arg.value as SupportedParamType[], arg.name, finalType).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: finalTypeResolver(e.type),
+          value: e.value
+        });
+      });
 
+    } else {
+      args_.push({
+        name: arg.name,
+        type: finalType,
+        value: arg.value
+      });
+    }
+  });
 
-function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
+  return args_;
+}
+
+function flatternLibraryParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>, property: boolean): Arguments {
   if (isLibraryType(param.type)) {
     const libraryName = getNameByType(param.type);
-    const StructClass = types['__propertiesOf' + libraryName] as typeof Struct;
-    return StructClass.structAst.params.map(p => {
+    const libraryClass = types[libraryName] as typeof Library;
+    const ast = property ? libraryClass.libraryAst.properties : libraryClass.libraryAst.params;
+    return ast.map(p => {
       p.type = typeResolver(p.type);
       if (isStructType(p.type)) {
         return flatternStructParam({
@@ -956,10 +1054,10 @@ function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolve
           type: p.type
         }, typeResolver, types);
       } else if (isLibraryType(p.type)) {
-        return flatternLibraryProperties({
+        return flatternLibraryParam({
           name: `${param.name}.${p.name}`,
           type: p.type
-        }, typeResolver, types);
+        }, typeResolver, types, property);
       }
       else if (isArrayType(p.type)) {
         return flatternArrayParam({
@@ -982,9 +1080,8 @@ function flatternLibraryProperties(param: ParamEntity, typeResolver: TypeResolve
 }
 
 
-function flatternLibraryParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
-  return flatternStructParam(param, typeResolver, types);
-}
+
+
 
 function flatternStructParam(param: ParamEntity, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   if (isStructOrLibraryType(param.type)) {
@@ -1039,11 +1136,18 @@ function flatternArrayParam(param: ParamEntity, typeResolver: TypeResolver, type
       }, typeResolver, types).forEach(a => {
         args.push(a);
       });
-    } else if (isStructOrLibraryType(elemTypeName)) {
+    } else if (isStructType(elemTypeName)) {
       flatternStructParam({
         name: `${param.name}[${index}]`,
         type: elemTypeName
       }, typeResolver, types).forEach(a => {
+        args.push(a);
+      });
+    } else if (isLibraryType(elemTypeName)) {
+      flatternLibraryParam({
+        name: `${param.name}[${index}]`,
+        type: elemTypeName
+      }, typeResolver, types, true).forEach(a => {
         args.push(a);
       });
     } else {
@@ -1062,10 +1166,7 @@ function flatternArrayParam(param: ParamEntity, typeResolver: TypeResolver, type
 
 
 
-
-
-
-export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>, fromState: boolean): Arguments {
+export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeResolver, types: Record<string, typeof ScryptType>): Arguments {
   const args_: Arguments = [];
   params.forEach((param) => {
     param.type = typeResolver(param.type);
@@ -1078,24 +1179,13 @@ export function flatternParams(params: Array<ParamEntity>, typeResolver: TypeRes
         });
       });
     } else if (isLibraryType(param.type)) {
-      if (fromState) {
-        flatternLibraryProperties(param, typeResolver, types).forEach(e => {
-          args_.push({
-            name: e.name,
-            type: e.type,
-            value: e.value
-          });
+      flatternLibraryParam(param, typeResolver, types, true).forEach(e => {
+        args_.push({
+          name: e.name,
+          type: e.type,
+          value: e.value
         });
-      } else {
-
-        flatternLibraryParam(param, typeResolver, types).forEach(e => {
-          args_.push({
-            name: e.name,
-            type: e.type,
-            value: e.value
-          });
-        });
-      }
+      });
     } else if (isArrayType(param.type)) {
       flatternArrayParam(param, typeResolver, types).forEach(e => {
         args_.push({
@@ -1319,8 +1409,8 @@ export function resolveConstValue(node: any): string | undefined {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -1422,31 +1512,37 @@ export function stripAnsi(string: string): string {
 }
 
 
-export function createStruct(contract: AbstractContract, structClass: typeof Struct, name: string, opcodesMap: Map<string, string>): Struct {
+export function createStruct(contract: AbstractContract, param: ParamEntity, opcodesMap: Map<string, string>): Struct {
+
+  const structClass = contract.getTypeClassByType(param.type) as typeof Struct;
 
   const obj = Object.create({});
-  structClass.structAst.params.forEach(param => {
+  structClass.structAst.params.forEach(p => {
 
-    const finalType = contract.typeResolver(param.type);
+    const finalType = contract.typeResolver(p.type);
 
-    if (isStructOrLibraryType(finalType)) {
-
-      const stclass = contract.getTypeClassByType(param.type);
+    if (isStructType(finalType)) {
 
       Object.assign(obj, {
-        [param.name]: createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap)
+        [p.name]: createStruct(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
+      });
+
+    } else if (isLibraryType(finalType)) {
+
+      Object.assign(obj, {
+        [p.name]: createLibrary(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
       });
 
     } else if (isArrayType(finalType)) {
 
       Object.assign(obj, {
-        [param.name]: createArray(contract, finalType, `${name}.${param.name}`, opcodesMap)
+        [p.name]: createArray(contract, finalType, `${param.name}.${p.name}`, opcodesMap)
       });
 
     } else {
 
       Object.assign(obj, {
-        [param.name]: asm2ScryptType(finalType, opcodesMap.get(`$${name}.${param.name}`))
+        [p.name]: asm2ScryptType(finalType, opcodesMap.get(`$${param.name}.${p.name}`))
       });
 
     }
@@ -1459,35 +1555,120 @@ export function createStruct(contract: AbstractContract, structClass: typeof Str
 
 
 
-export function createLibrary(contract: AbstractContract, libraryClass: typeof Library, name: string, opcodesMap: Map<string, string>): Library {
+export function createLibrary(contract: AbstractContract, param: ParamEntity, opcodesMap: Map<string, string>): Library {
 
 
-  const args = libraryClass.structAst.params.map(param => {
+  let libraryName = getNameByType(param.type);
+  if (isGenericType(param.type)) {
+    libraryName = parseGenericType(param.type)[0];
+  }
 
-    const finalType = contract.typeResolver(param.type);
+  const libraryClass = contract.getTypeClassByType(libraryName) as typeof Library;
+
+  const args = libraryClass.libraryAst.params.map(p => {
+
+    const finalType = contract.typeResolver(p.type);
 
     if (isStructType(finalType)) {
 
-      const stclass = contract.getTypeClassByType(param.type);
-
-      return createStruct(contract, stclass as typeof Struct, `${name}.${param.name}`, opcodesMap);
+      return createStruct(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
 
     } else if (isLibraryType(finalType)) {
 
-      const libraryClass = contract.getTypeClassByType(param.type);
-
-      return createLibrary(contract, libraryClass as typeof Library, `${name}.${param.name}`, opcodesMap);
+      return createLibrary(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
 
     } else if (isArrayType(finalType)) {
 
-      return createArray(contract, finalType, `${name}.${param.name}`, opcodesMap);
+      return createArray(contract, finalType, `${param.name}.${p.name}`, opcodesMap);
 
     } else {
-      return asm2ScryptType(finalType, opcodesMap.get(`$${name}.${param.name}`));
+      return asm2ScryptType(finalType, opcodesMap.get(`$${param.name}.${p.name}`));
     }
   });
 
   return new libraryClass(...args);
+
+}
+
+
+export function createLibraryProperties(contract: AbstractContract, param: ParamEntity, opcodesMap: Map<string, string>): Record<string, SupportedParamType> {
+
+
+  let libraryName = getNameByType(param.type);
+  if (isGenericType(param.type)) {
+    libraryName = parseGenericType(param.type)[0];
+  }
+
+  const libraryClass = contract.getTypeClassByType(libraryName) as typeof Library;
+
+  const properties: Record<string, SupportedParamType> = {};
+
+  libraryClass.libraryAst.properties.forEach(p => {
+
+    const finalType = contract.typeResolver(p.type);
+
+    if (isStructType(finalType)) {
+
+      Object.assign(properties, {
+        [p.name]: createStruct(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
+      })
+
+    } else if (isLibraryType(finalType)) {
+
+      const library = createDefaultLibrary(contract, { name: `${param.name}.${p.name}`, type: p.type });
+
+      library.setProperties(createLibraryProperties(contract, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap))
+
+      Object.assign(properties, {
+        [p.name]: library
+      })
+
+    } else if (isArrayType(finalType)) {
+
+      Object.assign(properties, {
+        [p.name]: createArray(contract, p.type, `${param.name}.${p.name}`, opcodesMap)
+      })
+
+    } else {
+      Object.assign(properties, {
+        [p.name]: asm2ScryptType(finalType, opcodesMap.get(`$${param.name}.${p.name}`))
+      })
+    }
+  });
+
+  return properties;
+
+}
+
+
+
+export function createDefaultLibrary(contract: AbstractContract, param: ParamEntity): Library {
+
+  const flatternparams = flatternLibraryParam(param, contract.typeResolver, contract.allTypes, false);
+
+  const asmTemplate: Map<string, string> = new Map();
+
+  flatternparams.forEach(p => {
+
+    if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
+      asmTemplate.set(`$${p.name}`, 'OP_0');
+    } else if (p.type === VariableType.BOOL) {
+      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+    } else if (p.type === VariableType.BYTES
+      || p.type === VariableType.PUBKEY
+      || p.type === VariableType.SIG
+      || p.type === VariableType.RIPEMD160
+      || p.type === VariableType.SHA1
+      || p.type === VariableType.SHA256
+      || p.type === VariableType.SIGHASHTYPE
+      || p.type === VariableType.SIGHASHPREIMAGE
+      || p.type === VariableType.OPCODETYPE) {
+      asmTemplate.set(`$${p.name}`, '00');
+    } else {
+      throw new Error(`param ${p.name} has unknown type ${p.type}`);
+    }
+  });
+  return createLibrary(contract, param, asmTemplate);
 }
 
 
@@ -1504,12 +1685,19 @@ export function createArray(contract: AbstractContract, type: string, name: stri
     for (let index = 0; index < arraylen; index++) {
       const finalType = contract.typeResolver(elemTypeName);
 
-      if (isStructOrLibraryType(finalType)) {
+      if (isStructType(finalType)) {
 
-        const stclass = contract.getTypeClassByType(finalType);
-        arrays.push(createStruct(contract, stclass as typeof Struct, `${name}[${index}]`, opcodesMap));
-      } else {
-
+        arrays.push(createStruct(contract, {
+          name: `${name}[${index}]`,
+          type: finalType
+        }, opcodesMap));
+      } else if (isLibraryType(finalType)) {
+        arrays.push(createLibrary(contract, {
+          name: `${name}[${index}]`,
+          type: finalType
+        }, opcodesMap));
+      }
+      else {
         arrays.push(asm2ScryptType(finalType, opcodesMap.get(`$${name}[${index}]`)));
       }
 
@@ -1615,7 +1803,7 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
 
   let state_hex = '';
   let state_len = 0;
-  const args_ = flatternArgs(args, finalTypeResolver, true);
+  const args_ = flatternStateArgs(args, finalTypeResolver);
 
   if (args_.length <= 0) {
     throw new Error('no state property found, buildContractState only used for state contract');
@@ -1660,7 +1848,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
   const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
 
-  const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes, true);
+  const flatternparams = flatternParams(stateProps, contract.typeResolver, contract.allTypes);
 
   const asmTemplate: Map<string, string> = new Map();
 
@@ -1690,7 +1878,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
     type: contract.typeResolver(p.type),
     name: p.name,
     value: undefined
-  })).map(arg => deserializeArgfromASM(contract, arg, asmTemplate, true));
+  })).map(arg => deserializeArgfromState(contract, arg, asmTemplate));
 }
 
 
@@ -1734,27 +1922,44 @@ export function readBytes(br: bsv.encoding.BufferReader): {
 
 
 
-export function deserializeArgfromASM(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>, fromState: boolean): Argument {
+export function deserializeArgfromASM(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>): Argument {
 
   let value;
 
   if (isStructType(arg.type)) {
-    const stclass = contract.getTypeClassByType(getNameByType(arg.type));
-    value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
+    value = createStruct(contract, arg, opcodesMap);
   } else if (isLibraryType(arg.type)) {
 
-    let libraryName = getNameByType(arg.type);
-    if (isGenericType(arg.type)) {
-      libraryName = parseGenericType(arg.type)[0];
-    }
+    value = createLibrary(contract, arg, opcodesMap);
 
-    if (fromState) {
-      const stclass = contract.getTypeClassByType(`__propertiesOf${libraryName}`);
-      value = createStruct(contract, stclass as typeof Struct, arg.name, opcodesMap);
-    } else {
-      const libraryClass = contract.getTypeClassByType(libraryName);
-      value = createLibrary(contract, libraryClass as typeof Library, arg.name, opcodesMap);
-    }
+  } else if (isArrayType(arg.type)) {
+
+    value = createArray(contract, arg.type, arg.name, opcodesMap);
+
+  } else {
+    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+  }
+
+  arg.value = value;
+
+  return arg;
+}
+
+
+
+export function deserializeArgfromState(contract: AbstractContract, arg: Argument, opcodesMap: Map<string, string>): Argument {
+
+  let value;
+
+  if (isStructType(arg.type)) {
+    value = createStruct(contract, arg, opcodesMap);
+  } else if (isLibraryType(arg.type)) {
+
+    value = createDefaultLibrary(contract, arg)
+
+    const properties = createLibraryProperties(contract, arg, opcodesMap);
+
+    value.setProperties(properties);
 
   } else if (isArrayType(arg.type)) {
 
@@ -1907,9 +2112,6 @@ export function toHashedMap(collection: Map<SupportedParamType, SupportedParamTy
   const data = toData(collection);
   const hashedMap = new HashedMap(data);
 
-  hashedMap.setProperties({
-    _data: toData(collection)
-  });
   return hashedMap;
 }
 
@@ -1917,9 +2119,6 @@ export function toHashedSet(collection: Map<SupportedParamType, SupportedParamTy
   const data = toData(collection);
   const hashedSet = new HashedSet(data);
 
-  hashedSet.setProperties({
-    _data: toData(collection)
-  });
   return hashedSet;
 }
 
@@ -2073,10 +2272,21 @@ export function toScryptType(a: SupportedParamType): ScryptType {
     return new Bool(a);
   } else if (a instanceof ScryptType) {
     return a;
-  } else {
+  }
+  else {
     throw `${a} cannot be convert to ScryptType`;
   }
 }
+
+
+export function arrayToScryptType(a: SupportedParamType[]): ScryptType[] {
+  return a.map(i => {
+    if (Array.isArray(i)) {
+      return arrayToScryptType(i);
+    }
+    return toScryptType(i);
+  }) as ScryptType[];
+};
 
 export function inferrType(a: SupportedParamType): string {
   if (Array.isArray(a)) {
@@ -2139,3 +2349,15 @@ export function structSign(structEntity: StructEntity) {
     [v.name]: v.type
   }), {}), null, 4)}`;
 }
+
+export function arrayToLiteral(a: SupportedParamType[]): string {
+
+  const al = a.map(i => {
+    if (Array.isArray(i)) {
+      return arrayToLiteral(i);
+    }
+    return toScryptType(i).toLiteral();
+  }).join(',');
+
+  return `[${al}]`;
+};

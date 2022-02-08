@@ -1,4 +1,4 @@
-import { isStructType, LibraryEntity, ParamEntity } from '.';
+import { isLibraryType, isStructType, LibraryEntity, ParamEntity } from '.';
 import { StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
@@ -567,13 +567,11 @@ function buildStdLibraryClass(): Record<string, typeof Library> {
   const libraryTypes: Record<string, typeof Library> = {};
 
   Object.assign(libraryTypes, {
-    ['HashedMap']: HashedMap,
-    ['__propertiesOfHashedMap']: HashedMap.propertiesClass
+    ['HashedMap']: HashedMap
   });
 
   Object.assign(libraryTypes, {
-    ['HashedSet']: HashedSet,
-    ['__propertiesOfHashedSet']: HashedSet.propertiesClass
+    ['HashedSet']: HashedSet
   });
 
   return libraryTypes;
@@ -593,17 +591,6 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
   library.forEach(element => {
     const name = element.name;
 
-    const propertiesClass = class extends Struct {
-      constructor(o: StructObject) {
-        super(o);
-        this._typeResolver = finalTypeResolver; //we should assign this before bind
-        this.bind();
-      }
-    };
-    propertiesClass.structAst = {
-      name: element.name,
-      params: element.properties
-    };
 
     const libraryClass = class extends Library {
       constructor(...args: SupportedParamType[]) {
@@ -613,12 +600,11 @@ export function buildLibraryClass(desc: CompileResult | ContractDescription): Re
       }
     };
 
-    libraryClass.propertiesClass = propertiesClass;
-    libraryClass.structAst = element;
+
+    libraryClass.libraryAst = element;
 
     Object.assign(libraryTypes, {
-      [name]: libraryClass,
-      ['__propertiesOf' + name]: propertiesClass
+      [name]: libraryClass
     });
 
   });
@@ -714,6 +700,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
   resolvedTypes['HashedMap'] = 'library HashedMap {}';
   resolvedTypes['HashedSet'] = 'library HashedSet {}';
+
 
 
   const resolver = (type: string) => {

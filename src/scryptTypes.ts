@@ -1,7 +1,10 @@
 import {
   parseLiteral, getValidatedHexString, LibraryEntity, intValue2hex, flatternStruct, typeOfArg, isInteger, StructEntity, bsv, checkStructField,
   checkStruct, toScryptType, inferrType, checkSupportedParamType, toGenericType, typeNameOfArg, parseGenericType, resolveGenericType, librarySign,
-  isGenericType
+  isGenericType,
+  flatternLibrary,
+  arrayToLiteral,
+  arrayToScryptType
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -24,7 +27,7 @@ export class ScryptType {
 
   constructor(...value: ValueType[]) {
     try {
-      this._value = this.checkValue(value[0]);
+      this._value = this.checkValue(value);
       this._literal = this.toLiteral();
       const [asm, _, scrType] = parseLiteral(this._literal);
       this._type = scrType;
@@ -74,12 +77,17 @@ export class ScryptType {
   toLiteral(): string {
     return '';
   }
-  checkValue(value: ValueType): ValueType {
+
+  checkValue(value: ValueType[]): ValueType {
     if (typeof value === 'undefined') {
       throw new Error('constructor argument undefined');
     }
 
-    return value;
+    if (value.length !== 1) {
+      throw new Error('constructor argument undefined');
+    }
+
+    return value[0];
   }
 
   public equals(obj: ScryptType): boolean {
@@ -98,20 +106,20 @@ export class Int extends ScryptType {
   toLiteral(): string {
     return this._value.toString();
   }
-  checkValue(value: ValueType): ValueType {
+  checkValue(value: ValueType[]): ValueType {
     super.checkValue(value);
-    if (!isInteger(value)) {
-      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string: ' + value);
+    if (!isInteger(value[0])) {
+      throw new Error('Only supports integers, should use integer number, bigint, hex string or decimal string: ' + value[0]);
     }
 
-    if (typeof value == 'number' && !isNaN(value)) {
+    if (typeof value[0] == 'number' && !isNaN(value[0])) {
 
-      if (!Number.isSafeInteger(value)) {
-        throw new Error(`<${value}> is not safe integer, should use bigint, hex string or decimal string`);
+      if (!Number.isSafeInteger(value[0])) {
+        throw new Error(`<${value[0]}> is not safe integer, should use bigint, hex string or decimal string`);
       }
     }
 
-    return value;
+    return value[0];
   }
 
   toJSON(): string | unknown {
@@ -248,6 +256,12 @@ export enum SigHash {
   SINGLE = 0x03,
   FORKID = 0x40,
   ANYONECANPAY = 0x80,
+  ALL_FORKID = ALL | FORKID,
+  SINGLE_FORKID = SINGLE | FORKID,
+  NONE_FORKID = NONE | FORKID,
+  ANYONECANPAY_ALL_FORKID = ANYONECANPAY | ALL | FORKID,
+  ANYONECANPAY_SINGLE_FORKID = ANYONECANPAY | SINGLE | FORKID,
+  ANYONECANPAY_NONE_FORKID = ANYONECANPAY | NONE | FORKID,
 }
 
 export class SigHashType extends ScryptType {
@@ -439,6 +453,10 @@ export class Struct extends ScryptType {
     return Object.getPrototypeOf(self).constructor.structAst;
   }
 
+  flatten(varName: string) {
+    return flatternStruct(this, varName)
+  }
+
   protected init(structAst: StructEntity): void {
     checkStruct(structAst, this, this._typeResolver);
     const ordered = {};
@@ -557,24 +575,14 @@ export class Struct extends ScryptType {
   }
 
 
-  static arrayToLiteral(a: SupportedParamType[]): string {
 
-    const al = a.map(i => {
-      if (Array.isArray(i)) {
-        return Struct.arrayToLiteral(i);
-      }
-      return toScryptType(i).toLiteral();
-    }).join(',');
-
-    return `[${al}]`;
-  }
 
 
   toLiteral(): string {
     const v = this.value as StructObject;
     const l = Object.keys(this.value).map(key => {
       if (Array.isArray(v[key])) {
-        return Struct.arrayToLiteral(v[key] as SupportedParamType[]);
+        return arrayToLiteral(v[key] as SupportedParamType[]);
       } else {
         return toScryptType(v[key]).toLiteral();
       }
@@ -611,45 +619,47 @@ export class Struct extends ScryptType {
   }
 }
 
+export class Library extends ScryptType {
 
-
-function toStructObject(structAst: LibraryEntity, args: SupportedParamType[], resolver: TypeResolver): StructObject {
-  return args.reduce((previousValue, currentValue, index) => {
-    const param = structAst.params[index];
-    const error = checkSupportedParamType(args[index], param, resolver);
-    if (error) {
-      throw new Error(`The type of ${structAst.name} is wrong, expected ${librarySign(structAst)} but got ${JSON.stringify(args)}`);
-    }
-    previousValue[param.name] = currentValue;
-    return previousValue;
-  }, {});
-}
-
-export class Library extends Struct {
-  private args: SupportedParamType[] = [];
-
-  // a struct class which for creating a struct with all library properties
-  public static propertiesClass: typeof Struct;
+  // store the value of properties
   private properties: Record<string, SupportedParamType> = {};
+
   private inferredTypes: Record<string, string> = {};
-  private structAst: LibraryEntity | undefined = undefined;
+  public static libraryAst: LibraryEntity;
   constructor(...args: SupportedParamType[]) {
-    super({});
-    this.args = this.checkArgs(args);
+    super(...args);
   }
 
-  static setPropertiesClass(cls: typeof Struct): void {
-    Library.propertiesClass = cls;
+  static setLibraryAst(self: Library, libraryAst: LibraryEntity) {
+    Object.getPrototypeOf(self).constructor.libraryAst = libraryAst;
+  }
+
+  static getLibraryAst(self: Library): LibraryEntity {
+    return Object.getPrototypeOf(self).constructor.libraryAst;
+  }
+
+  getCtorArgs(): SupportedParamType[] {
+    const args = this.value as SupportedParamType[];
+    return arrayToScryptType(args);
   }
 
 
-  getStructAst(): StructEntity {
-    return this.structAst || Struct.getStructAst(this);
+
+  getProperty(property: string): SupportedParamType {
+    const p = this.properties[property];
+
+    if (typeof p === 'undefined') {
+      throw new Error(`Property ${property} not found, the properties of the current library are: ${JSON.stringify(this.properties)}`);
+    }
+
+    return toScryptType(p)
   }
 
-  updateStructAst(): void {
-    const libraryAst = this.getStructAst() as LibraryEntity;
-    this.structAst = {
+
+
+  getLibraryAst(): LibraryEntity {
+    const libraryAst = Library.getLibraryAst(this);
+    return {
       name: libraryAst.name,
       params: libraryAst.params.map(p => ({
         name: p.name,
@@ -664,9 +674,13 @@ export class Library extends Struct {
 
   }
 
+  flatten(varName: string) {
+    return flatternLibrary(this, varName)
+  }
+
   get finalType(): string {
     if (Library.hasGeneric(this)) {
-      const libraryAst = this.getStructAst() as LibraryEntity;
+      const libraryAst = this.getLibraryAst();
       const type = toGenericType(this.type, libraryAst.genericTypes.map(t => (this.inferredTypes[t] || t)));
       return type;
     }
@@ -675,24 +689,24 @@ export class Library extends Struct {
     return this.type;
   }
 
-
-  private checkArgs(args: SupportedParamType[]): SupportedParamType[] {
-    const libraryAst = this.getStructAst() as LibraryEntity;
+  checkValue(args: SupportedParamType[]): ValueType {
+    const libraryAst = Library.getLibraryAst(this);
     if (libraryAst.params.length !== args.length) {
-      throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
+      throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(args)}`);
     }
     return args;
   }
 
   private inferrTypesByCtorArgs(): void {
-    const libraryAst = this.getStructAst() as LibraryEntity;
+    const args = this.value as SupportedParamType[];
+    const libraryAst = this.getLibraryAst();
     libraryAst.params.forEach((p, index) => {
-      const argType = inferrType(this.args[index]);
+      const argType = inferrType(args[index]);
       if (libraryAst.genericTypes.includes(p.type)) {
 
         if (this.inferredTypes[p.type]) {
           if (this.inferredTypes[p.type] != argType) {
-            throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
+            throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(args)}`);
           }
         } else {
           Object.assign(this.inferredTypes, {
@@ -700,28 +714,28 @@ export class Library extends Struct {
           });
         }
       } else if (isGenericType(p.type)) {
-        if (!isGenericType(argType)) {
-          throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
-        }
-
-        const [_, argGenericTypes] = parseGenericType(argType);
-        const [__, paramGenericTypes] = parseGenericType(p.type);
-
-        paramGenericTypes.forEach((t, index) => {
-          if (this.inferredTypes[t]) {
-            if (this.inferredTypes[t] != argGenericTypes[index]) {
-              throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(this.args)}`);
-            }
-          } else {
-            Object.assign(this.inferredTypes, {
-              [t]: argGenericTypes[index]
-            });
+        if (libraryAst.genericTypes.length > 0) {
+          if (!isGenericType(argType)) {
+            throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(args)}`);
           }
-        });
+
+          const [_, argGenericTypes] = parseGenericType(argType);
+          const [__, paramGenericTypes] = parseGenericType(p.type);
+
+          paramGenericTypes.forEach((t, index) => {
+            if (this.inferredTypes[t]) {
+              if (this.inferredTypes[t] != argGenericTypes[index]) {
+                throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(args)}`);
+              }
+            } else {
+              Object.assign(this.inferredTypes, {
+                [t]: argGenericTypes[index]
+              });
+            }
+          });
+        }
       }
     });
-
-    this.updateStructAst();
 
   }
 
@@ -734,7 +748,7 @@ export class Library extends Struct {
 
     const [library, genericTypes] = parseGenericType(assignType);
 
-    const libraryAst = this.getStructAst() as LibraryEntity;
+    const libraryAst = this.getLibraryAst();
 
     if (libraryAst.name !== library)
       return false;
@@ -756,42 +770,36 @@ export class Library extends Struct {
       }
     });
 
-    if (succces) {
-      this.updateStructAst();
-    }
-
     return succces;
   }
 
   static hasGeneric(self: Library): boolean {
-    const ast: LibraryEntity = Struct.getStructAst(self) as LibraryEntity;
+    const ast: LibraryEntity = Library.getLibraryAst(self) as LibraryEntity;
     return (ast.genericTypes || []).length > 0;
   }
 
 
-  static getPropertiesClass(self: Library): typeof Struct {
-    return Object.getPrototypeOf(self).constructor.propertiesClass;
-  }
 
   attach() {
-    const libraryAst = this.getStructAst() as LibraryEntity;
-    this._value = toStructObject(libraryAst, this.args, this._typeResolver);
+    const libraryAst = this.getLibraryAst();
+    this._type = libraryAst.name;
+
+    const args = this.value as SupportedParamType[];
+    //check value type
+    libraryAst.params.forEach((param, index) => {
+      const error = checkSupportedParamType(args[index], param, this._typeResolver);
+      if (error) {
+        throw new Error(`The type of ${libraryAst.name} is wrong, expected ${librarySign(libraryAst)} but got ${JSON.stringify(args)}`);
+      }
+    })
 
     libraryAst.properties.forEach(p => {
       Object.defineProperty(this, p.name, {
         get() {
-          if (typeof this.properties[p.name] !== 'undefined') {
-            return this.properties[p.name];
-          } else {
-            throw new Error(`property ${p.name} does not exists`);
-          }
+          return this.properties[p.name];
         },
         set(value: SupportedParamType) {
-          if (typeof this.properties[p.name] !== 'undefined') {
-            this.properties[p.name] = value;
-          } else {
-            throw new Error(`property ${p.name} does not exists`);
-          }
+          this.properties[p.name] = value;
         }
       });
     });
@@ -804,18 +812,11 @@ export class Library extends Struct {
   protected bind(): void {
     this.inferrTypesByCtorArgs();
     this.attach();
-    super.init(this.getStructAst());
-    // dont't call super.bind();
   }
 
   public setProperties(properties: Record<string, SupportedParamType>) {
     this.properties = Object.assign(this.properties, properties);
     return this;
-  }
-
-  public getProperties(): Struct {
-    const propertiesClass = Library.getPropertiesClass(this);
-    return new propertiesClass(this.properties);
   }
 
 
@@ -828,38 +829,25 @@ export class Library extends Struct {
       }
     });
   }
+
+  toLiteral(): string {
+    return arrayToLiteral(this.value as SupportedParamType[]);
+  }
 }
 
 
 export class HashedMap extends Library {
   constructor(data: Bytes) {
     super(data);
+    this.setProperties({
+      '_data': data
+    })
     this._typeResolver = (t: string) => t; //we should assign this before bind
     this.bind();
   }
 }
 
-const propertiesOfHashedMapClass = class extends Struct {
-  constructor(o: StructObject) {
-    super(o);
-    this._typeResolver = (t: string) => t; //Just need a empty type resolver
-    this.bind();
-  }
-};
-
-propertiesOfHashedMapClass.structAst = {
-  name: 'HashedMap',
-  params: [
-    {
-      name: '_data',
-      type: 'bytes'
-    }
-  ]
-};
-
-HashedMap.propertiesClass = propertiesOfHashedMapClass;
-
-HashedMap.structAst = {
+HashedMap.libraryAst = {
   name: 'HashedMap',
   params: [
     {
@@ -874,7 +862,7 @@ HashedMap.structAst = {
     }
   ],
   genericTypes: ['K', 'V']
-} as StructEntity;
+} as LibraryEntity;
 
 
 
@@ -883,33 +871,15 @@ HashedMap.structAst = {
 export class HashedSet extends Library {
   constructor(data: Bytes) {
     super(data);
+    this.setProperties({
+      '_data': data
+    })
     this._typeResolver = (t: string) => t; //we should assign this before bind
     this.bind();
   }
 }
 
-
-const propertiesOfHashedSetClass = class extends Struct {
-  constructor(o: StructObject) {
-    super(o);
-    this._typeResolver = (t: string) => t; //Just need a empty type resolver
-    this.bind();
-  }
-};
-
-propertiesOfHashedSetClass.structAst = {
-  name: 'HashedSet',
-  params: [
-    {
-      name: '_data',
-      type: 'bytes'
-    }
-  ]
-};
-
-HashedSet.propertiesClass = propertiesOfHashedSetClass;
-
-HashedSet.structAst = {
+HashedSet.libraryAst = {
   name: 'HashedSet',
   params: [
     {
@@ -924,7 +894,7 @@ HashedSet.structAst = {
     }
   ],
   genericTypes: ['E']
-} as StructEntity;
+} as LibraryEntity;
 
 
 export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct;
@@ -954,7 +924,8 @@ export enum VariableType {
   SIGHASHPREIMAGE = 'SigHashPreimage',
   OPCODETYPE = 'OpCodeType',
   PUBKEYHASH = 'PubKeyHash',
-  STRUCT = 'struct'
+  STRUCT = 'struct',
+  LIBRARY = 'library'
 }
 
 
