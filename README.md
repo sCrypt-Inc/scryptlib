@@ -146,6 +146,48 @@ woman.addr = new Bytes("")
 ```
 
 
+### 4. Library
+
+Library is another composite types. When the constructor parameter of the contract contains library, we need to create library through sdk.
+
+Library defined in sCrypt:
+
+```javascript
+library L {
+  private int x;
+
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+  function f() : int {
+    return this.x;
+  }
+}
+
+contract Test {
+  public int x;
+  L l;
+
+  public function unlock(int x) {
+    require(this.l.f() == this.x);
+  }
+}
+```
+
+Access Library by **SDK** :
+
+```typescript
+
+const Test = buildContractClass(loadDescription('test_desc.json'));
+
+const { L } = buildTypeClasses(Test);
+
+let test = new Test(1, new L(1, 2));
+
+```
+
+As you can see, creating a library instance is similar to creating a contract instance. Sometimes the constructor parameters of the library may be generic types. At this time, the sdk will deduce the generic type based on the constructor arguments you pass.
+
 ## Deploy A Contract and Call Its Function
 
 Both **deploying a contract** and **calling a contract function**are achieved by sending a transaction. Generally speaking,

@@ -494,7 +494,7 @@ describe('buildContractClass and create instance from script', () => {
 
       let newContract = Test.fromHex(instance.lockingScript.toHex());
 
-      assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)), `[{1,{1,true,[1,1,1]}}]`) //TODO: change to `[[12]]`
+      assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)), `[[1,{1,true,[1,1,1]}]]`)
 
     })
   })

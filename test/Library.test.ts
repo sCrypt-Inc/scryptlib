@@ -2,7 +2,7 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { bsv, toHex, getPreimage } from '../src/utils';
+import { bsv, toHex, getPreimage, toHashedMap } from '../src/utils';
 import { Bytes, SigHashPreimage } from '../src';
 
 const inputIndex = 0;
@@ -318,7 +318,7 @@ describe('library as property or return or param', () => {
 
         it('should throw when wrong constructor args ', () => {
           expect(() => new GenericLibray([new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11]))
-            .to.throw('The type of GenericLibray is wrong, expected \[GenericA<ST>,T\] but got \[\]');
+            .to.throw(`can't construct libraryClass from <[{101,b'0f010f'}],11>, The type of GenericLibray is wrong, expected [GenericA<ST>,T] but got [[[{"a":101,"b":"b'0f010f'"}],11]]`);
         });
 
       });
