@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.12.1
+
+- Supports property nested generic library
+
+*Release Date: 2022/02/08*
+
+
 ## 0.12.0
 
 - Support `library` as contract property, function parameter and return type
