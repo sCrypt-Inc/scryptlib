@@ -30,6 +30,8 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
   before(() => {
     map = new Map();
     erc20 = new ERC20(0, toHashedMap(map));
+    erc20._totalSupply = 0
+    erc20.balances = toHashedMap(map)
     coin = new Coin(new PubKey(toHex(publicKeyMinter)), erc20)
   });
 
@@ -39,11 +41,13 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
 
     map.set(sender, FIRST_MINT)
 
-    erc20._totalSupply = FIRST_MINT
-    erc20.balances = toHashedMap(map)
+    const cloned = erc20.clone()
+
+    cloned._totalSupply = FIRST_MINT
+    cloned.balances = toHashedMap(map)
 
     let newLockingScript = coin.getNewStateScript({
-      liberc20: erc20
+      liberc20: cloned
     })
 
 
@@ -70,7 +74,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     result = coin.mint(sender, sigMinter, 0, FIRST_MINT, keyIndex, preimage).verify()
     expect(result.success, result.error).to.be.true
 
-    coin.liberc20 = erc20;
+    coin.liberc20 = cloned;
   });
 
 
@@ -84,11 +88,10 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     map.set(receiver, amount)
     map.set(sender, FIRST_MINT - amount)
 
-    const erc20 = new ERC20(FIRST_MINT, toHashedMap(map))
-    erc20._totalSupply = FIRST_MINT
-    erc20.balances = toHashedMap(map)
+    const cloned = coin.liberc20.clone()
+    cloned.balances = toHashedMap(map)
     let newLockingScript = coin.getNewStateScript({
-      liberc20: erc20
+      liberc20: cloned
     })
 
 
@@ -117,7 +120,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     result = coin.transferFrom(sender, receiver, amount, senderSig, senderBalance, senderKeyIndex, receiverBalance, receiverKeyIndex, preimage).verify()
     expect(result.success, result.error).to.be.true
 
-    coin.liberc20 = erc20;
+    coin.liberc20 = cloned;
 
   });
 
@@ -132,11 +135,11 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     map.set(receiver, senderBalance - amount)
     map.set(sender, FIRST_MINT - 1000000 + amount)
 
-    const erc20 = new ERC20(FIRST_MINT, toHashedMap(map))
-    erc20._totalSupply = FIRST_MINT
-    erc20.balances = toHashedMap(map)
+
+    const cloned = coin.liberc20.clone()
+    cloned.balances = toHashedMap(map)
     let newLockingScript = coin.getNewStateScript({
-      liberc20: erc20
+      liberc20: cloned
     })
 
 

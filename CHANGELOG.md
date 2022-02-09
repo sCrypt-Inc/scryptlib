@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.12.2
+
+- Added PubKeyHash type support
+- Added `clone` function for `ScryptType` class
+
+*Release Date: 2022/02/09*
+
+
 ## 0.12.1
 
 - Supports property nested generic library

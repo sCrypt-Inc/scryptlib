@@ -2288,6 +2288,15 @@ export function arrayToScryptType(a: SupportedParamType[]): ScryptType[] {
   }) as ScryptType[];
 }
 
+export function cloneArray(a: SupportedParamType[]): ScryptType[] {
+  return a.map(i => {
+    if (Array.isArray(i)) {
+      return cloneArray(i);
+    }
+    return toScryptType(i).clone();
+  }) as ScryptType[];
+}
+
 export function inferrType(a: SupportedParamType): string {
   if (Array.isArray(a)) {
     if (a.length === 0) {
@@ -2360,4 +2369,11 @@ export function arrayToLiteral(a: SupportedParamType[]): string {
   }).join(',');
 
   return `[${al}]`;
+}
+
+// If the property is the same as the construction parameter, there may be no constructor, in which case the construction parameter can be assigned to the property. But this does not guarantee that the property is always correct, the user may have modified the value of the property in the constructor
+export function canAssignProperty(libraryAst: LibraryEntity): boolean {
+  return libraryAst.params.length === libraryAst.properties.length && libraryAst.params.every((param, index) => {
+    return param.name === libraryAst.properties[index].name && param.type === libraryAst.properties[index].type;
+  });
 }
