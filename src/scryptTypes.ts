@@ -592,13 +592,13 @@ export class Struct extends ScryptType {
         if (Array.isArray(value)) {
           Object.assign(pre, {
             [current]: cloneArray(value)
-          })
+          });
         } else {
           Object.assign(pre, {
             [current]: toScryptType(value).clone()
-          })
+          });
         }
-        return pre
+        return pre;
       }, {})
     });
   }
@@ -660,8 +660,8 @@ export class Library extends ScryptType {
       args.forEach((arg, index) => {
         Object.assign(this.properties, {
           [libraryAst.params[index].name]: arg
-        })
-      })
+        });
+      });
     }
   }
 
@@ -686,16 +686,16 @@ export class Library extends ScryptType {
       if (Array.isArray(value)) {
         Object.assign(pre, {
           [current]: cloneArray(value)
-        })
+        });
       } else {
         Object.assign(pre, {
           [current]: toScryptType(value).clone()
-        })
+        });
       }
 
-      return pre
+      return pre;
 
-    }, {})
+    }, {});
   }
 
   clone(): ScryptType {
