@@ -8,6 +8,8 @@ var child_process_1 = require("child_process");
 const chalk = require("chalk");
 const { exit } = require('process');
 
+const DEFAULT_COMPILER_VERSION = '1.8.3';
+
 function getPlatformScryptc() {
   switch (os.platform()) {
     case 'win32':
@@ -40,11 +42,13 @@ const getBinary = async () => {
     const fromAPI = await fetch('https://api.github.com/repos/scrypt-inc/compiler_dist/releases');
     const res = await fromAPI.json();
 
-    if (!res || !res[0] || !res[0].tag_name) {
-      console.error('fetch compiler version failed', res);
-      exit(-1);
+    if (res && res[0] && res[0].tag_name) {
+      VERSION = res[0].tag_name.substring(1);
+    } else {
+      console.error(`fetch latest compiler version failed, using default compiler version: ${DEFAULT_COMPILER_VERSION}`, res);
+      VERSION = DEFAULT_COMPILER_VERSION
     }
-    VERSION = res[0].tag_name.substring(1);
+
   }
 
   if (os.platform() === 'linux') {
