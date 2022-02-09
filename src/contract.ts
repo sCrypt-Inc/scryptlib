@@ -700,6 +700,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
   resolvedTypes['HashedMap'] = 'library HashedMap {}';
   resolvedTypes['HashedSet'] = 'library HashedSet {}';
+  resolvedTypes['PubKeyHash'] = 'Ripemd160';
 
 
 

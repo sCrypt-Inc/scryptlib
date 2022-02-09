@@ -1,9 +1,8 @@
-import { getContractFilePath, loadDescription } from './helper';
+import { getContractFilePath, loadDescription, newTx } from './helper';
 import { assert, expect } from 'chai';
 import { buildContractClass, buildTypeClasses, buildTypeResolver } from '../src/contract';
-import { Bytes, Int } from '../src/scryptTypes';
-import { compileContract } from '../src/utils';
-
+import { Bytes, Int, PubKeyHash, PubKey } from '../src/scryptTypes';
+import { compileContract, toHex, signTx, bsv } from '../src/utils';
 
 
 
@@ -226,6 +225,41 @@ describe('Alias type check', () => {
       const finalTypeResolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.statics)
       expect(finalTypeResolver("int[1][SUB]")).to.equal('int[1][3]')
       expect(finalTypeResolver("int[1][VarAsSub.SUB]")).to.equal('int[1][3]')
+
+    })
+
+  })
+
+
+  describe('test pubKeyHash', () => {
+
+
+    it('should success when unlock by pubKeyHash ', () => {
+
+      const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+      const publicKey = privateKey.publicKey;
+      const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
+
+      const inputSatoshis = 100000;
+      const tx = newTx(inputSatoshis);
+
+      const jsonDescr = loadDescription('p2pkh_desc.json');
+      const DemoP2PKH = buildContractClass(jsonDescr);
+      const p2pkh = new DemoP2PKH(new PubKeyHash(toHex(pubKeyHash)));
+
+      p2pkh.txContext = {
+        tx,
+        inputIndex: 0,
+        inputSatoshis: inputSatoshis
+      }
+
+      const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
+      const pubkey = new PubKey(toHex(publicKey));
+
+      let result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx })
+
+      expect(result.success).to.be.true;
+
 
     })
 
