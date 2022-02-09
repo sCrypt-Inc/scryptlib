@@ -6,6 +6,7 @@ const util = require('util');
 const path = require('path');
 var child_process_1 = require("child_process");
 const chalk = require("chalk");
+const { exit } = require('process');
 
 function getPlatformScryptc() {
   switch (os.platform()) {
@@ -39,6 +40,10 @@ const getBinary = async () => {
     const fromAPI = await fetch('https://api.github.com/repos/scrypt-inc/compiler_dist/releases');
     const res = await fromAPI.json();
     VERSION = res[0].tag_name.substring(1);
+    if (!VERSION) {
+      console.log('fetch compiler version failed', res);
+      exit(-1);
+    }
   }
 
   if (os.platform() === 'linux') {
