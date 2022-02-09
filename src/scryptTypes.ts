@@ -4,7 +4,9 @@ import {
   isGenericType,
   flatternLibrary,
   arrayToLiteral,
-  arrayToScryptType
+  arrayToScryptType,
+  cloneArray,
+  canAssignProperty
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -96,6 +98,14 @@ export class ScryptType {
 
   public serialize(): string {
     return '';
+  }
+
+
+
+  clone(): ScryptType {
+    return Object.assign(Object.create(this), {
+      _value: this.value
+    });
   }
 }
 
@@ -575,7 +585,23 @@ export class Struct extends ScryptType {
   }
 
 
-
+  clone(): ScryptType {
+    return Object.assign(Object.create(this), {
+      _value: Object.keys(this.value).reduce((pre, current) => {
+        const value = this.value[current];
+        if (Array.isArray(value)) {
+          Object.assign(pre, {
+            [current]: cloneArray(value)
+          })
+        } else {
+          Object.assign(pre, {
+            [current]: toScryptType(value).clone()
+          })
+        }
+        return pre
+      }, {})
+    });
+  }
 
 
   toLiteral(): string {
@@ -628,6 +654,15 @@ export class Library extends ScryptType {
   public static libraryAst: LibraryEntity;
   constructor(...args: SupportedParamType[]) {
     super(...args);
+
+    const libraryAst = this.getLibraryAst();
+    if (canAssignProperty(libraryAst)) {
+      args.forEach((arg, index) => {
+        Object.assign(this.properties, {
+          [libraryAst.params[index].name]: arg
+        })
+      })
+    }
   }
 
   static setLibraryAst(self: Library, libraryAst: LibraryEntity) {
@@ -641,6 +676,33 @@ export class Library extends ScryptType {
   getCtorArgs(): SupportedParamType[] {
     const args = this.value as SupportedParamType[];
     return arrayToScryptType(args);
+  }
+
+
+  cloneProperties(): Record<string, SupportedParamType> {
+
+    return Object.keys(this.properties).reduce((pre, current) => {
+      const value = this.properties[current];
+      if (Array.isArray(value)) {
+        Object.assign(pre, {
+          [current]: cloneArray(value)
+        })
+      } else {
+        Object.assign(pre, {
+          [current]: toScryptType(value).clone()
+        })
+      }
+
+      return pre
+
+    }, {})
+  }
+
+  clone(): ScryptType {
+    return Object.assign(Object.create(this), {
+      _value: cloneArray(this.getCtorArgs()),
+      properties: this.cloneProperties()
+    });
   }
 
 

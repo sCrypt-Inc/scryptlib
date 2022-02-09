@@ -466,17 +466,17 @@ describe('library as property or return or param', () => {
       });
 
       it('should success when call unlock', () => {
-        l.setProperties({
-          x: 6,
-          st: new ST({
-            x: 1,
-            c: false,
-            aa: [1, 1, 1]
-          })
-        });
+        const cloned = l.clone();
+        cloned.x = 6
+        cloned.st = new ST({
+          x: 1,
+          c: false,
+          aa: [1, 1, 1]
+        }).clone()
+
 
         let newLockingScript = instance.getNewStateScript({
-          l: l
+          l: cloned
         })
 
         const tx = newTx(inputSatoshis);
@@ -532,7 +532,7 @@ describe('library as property or return or param', () => {
               c: true,
               aa: [1, 1, 1]
             })
-          })
+          }).clone()
         })
 
         const tx = newTx(inputSatoshis);
