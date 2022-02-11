@@ -5,7 +5,7 @@ import {
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver, arrayTypeAndSize, resolveArrayType, toLiteralArrayType,
   StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, ABIEntityType, checkSupportedParamType, hash160, buildDefaultStateProps, isStructOrLibraryType
 } from './internal';
-import { HashedMap, HashedSet, Library } from './scryptTypes';
+import { HashedMap, HashedSet, Library, ScryptTypeResolver } from './scryptTypes';
 
 
 export interface TxContext {
@@ -60,7 +60,7 @@ export class AbstractContract {
   public static asmContract: boolean;
   public static statics: Array<StaticEntity>;
 
-  public static typeResolver: TypeResolver;
+  public static resolver: ScryptTypeResolver;
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   constructor(...ctorParams: SupportedParamType[]) {
@@ -100,13 +100,12 @@ export class AbstractContract {
   }
 
   get typeResolver(): TypeResolver {
-    const typeResolver = Object.getPrototypeOf(this).constructor.typeResolver as TypeResolver;
-    return typeResolver;
+    const resolver = this.resolver;
+    return resolver.resolverType;
   }
 
-  get allTypes(): Record<string, typeof ScryptType> {
-    const allTypes = Object.getPrototypeOf(this).constructor.types as Record<string, typeof ScryptType>;
-    return allTypes;
+  get resolver(): ScryptTypeResolver {
+    return Object.getPrototypeOf(this).constructor.resolver as ScryptTypeResolver;
   }
 
   // replace assembly variables with assembly values
@@ -469,12 +468,12 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 
 
   const statics = desc.statics || [];
-  ContractClass.typeResolver = buildTypeResolverFromDesc(desc);
+  ContractClass.resolver = buildScryptTypeResolver(desc);
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
   ContractClass.asm = desc.asm.map(item => item['opcode'].trim()).join(' ');
-  ContractClass.abiCoder = new ABICoder(desc.abi, ContractClass.typeResolver);
+  ContractClass.abiCoder = new ABICoder(desc.abi, ContractClass.resolver);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
   ContractClass.structs = desc.structs;
@@ -681,6 +680,7 @@ export function buildTypeResolverFromDesc(desc: CompileResult | ContractDescript
 
 }
 
+// build a resolver witch can only resolve type
 export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[], library: LibraryEntity[], statics: StaticEntity[]): TypeResolver {
 
   const resolvedTypes: Record<string, string> = {};
@@ -718,4 +718,22 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
   };
 
   return resolver;
+}
+
+// build a resolver which can resolve type and ScryptType class
+export function buildScryptTypeResolver(desc: CompileResult | ContractDescription): ScryptTypeResolver {
+  const resolver = buildTypeResolverFromDesc(desc);
+  const allTypes = buildTypeClasses(desc);
+
+  return {
+    resolverType: resolver,
+    resolverClass: (type: string) => {
+      const finalType = resolver(type);
+      const typeName = getNameByType(finalType) ? getNameByType(finalType) : finalType;
+      return allTypes[typeName];
+    },
+    allTypes: () => {
+      return allTypes;
+    }
+  };
 }
