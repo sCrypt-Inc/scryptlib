@@ -1,5 +1,5 @@
 export {
-  buildContractClass, buildTypeClasses, buildStructsClass, buildTypeResolver,
+  buildContractClass, buildTypeClasses, buildStructsClass, buildTypeResolver, buildScryptTypeResolver,
   ContractDescription, VerifyResult, VerifyError, AbstractContract
 } from './internal';
 export { compile, StructEntity, LibraryEntity, getStructDeclaration, getABIDeclaration, ABIEntity, ABIEntityType, ABI, ParamEntity, BuildType, RelatedInformation } from './internal';
@@ -11,7 +11,7 @@ export {
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
   arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType, serializeSupportedParamType, shortType, getLibraryNameByType,
-  librarySign, structSign, resolveGenericType
+  librarySign, structSign, resolveGenericType, createDefaultLibrary, createLibraryProperties, canAssignProperty, arrayToLiteral, cloneArray, arrayToScryptType
 } from './internal';
 export { serializeState, deserializeState, State, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {

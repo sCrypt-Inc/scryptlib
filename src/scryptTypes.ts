@@ -17,6 +17,13 @@ export type TypeResolver = (type: string) => string;
 export type ValueType = RawTypes | StructObject | ValueType[];
 
 
+export interface ScryptTypeResolver {
+  resolverType: (type: string) => string;
+  resolverClass: (type: string) => typeof ScryptType;
+  allTypes: () => Record<string, typeof ScryptType>;
+}
+
+
 export class ScryptType {
 
   protected _value: ValueType;
