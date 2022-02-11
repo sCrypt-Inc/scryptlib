@@ -655,7 +655,7 @@ export class Struct extends ScryptType {
 export class Library extends ScryptType {
 
   // store the value of properties
-  private properties: Record<string, SupportedParamType> = {};
+  private properties: StructObject = {};
 
   private inferredTypes: Record<string, string> = {};
   public static libraryAst: LibraryEntity;
@@ -686,7 +686,7 @@ export class Library extends ScryptType {
   }
 
 
-  cloneProperties(): Record<string, SupportedParamType> {
+  cloneProperties(): StructObject {
 
     return Object.keys(this.properties).reduce((pre, current) => {
       const value = this.properties[current];
@@ -724,7 +724,9 @@ export class Library extends ScryptType {
     return toScryptType(p);
   }
 
-
+  getProperties(): StructObject {
+    return this.properties;
+  }
 
   getLibraryAst(): LibraryEntity {
     const libraryAst = Library.getLibraryAst(this);
