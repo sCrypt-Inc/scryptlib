@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.12.3
+
+- Added `buildScryptTypeResolver`
+
+*Release Date: 2022/02/11*
+
 ## 0.12.2
 
 - Added PubKeyHash type support
