@@ -735,5 +735,5 @@ export function buildScryptTypeResolver(desc: CompileResult | ContractDescriptio
     allTypes: () => {
       return allTypes;
     }
-  }
+  };
 }
