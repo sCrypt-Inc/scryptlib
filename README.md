@@ -169,7 +169,7 @@ contract Test {
   L l;
 
   public function unlock(int x) {
-    require(this.l.f() == this.x);
+    require(this.l.f() == x + this.x);
   }
 }
 ```
