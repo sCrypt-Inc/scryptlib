@@ -1,0 +1,28 @@
+library L {
+  private int x;
+  constructor(int a, int b) {
+    this.x = a + b;
+  }
+
+  function f() : int {
+    return this.x;
+  }
+}
+
+contract Test {
+  int x;
+  L l;
+
+  constructor(int x, L l) {
+      this.x = x;
+      this.l = l;
+  }
+
+  function cloneL(L l) : L {
+    return l;
+  }
+
+  public function unlock(int x) {
+    require(this.cloneL(this.l).f() == x + this.x);
+  }
+}
