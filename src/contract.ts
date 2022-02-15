@@ -185,7 +185,7 @@ export class AbstractContract {
   run_verify(unlockingScriptASM: string, txContext?: TxContext, args?: Arguments): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
-    const us = bsv.Script.fromASM(unlockingScriptASM.trim());
+    const us = unlockingScriptASM.trim() ? bsv.Script.fromASM(unlockingScriptASM.trim()) : new bsv.Script();
     const ls = this.lockingScript;
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
@@ -216,7 +216,7 @@ export class AbstractContract {
 
     // some time there is no opcodes, such as when sourcemap flag is disabled. 
     if (opcodes) {
-      const offset = unlockingScriptASM.trim().split(' ').length;
+      const offset = unlockingScriptASM.trim() ? unlockingScriptASM.trim().split(' ').length : 0;
       // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
 
       const lastStepIndex = stepCounter - 1;

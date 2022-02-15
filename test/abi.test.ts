@@ -63,14 +63,6 @@ describe('FunctionCall', () => {
         assert.equal(target.toASM(), p2pkh.lockingScript.toASM());
       })
     })
-
-    describe('verify()', () => {
-      it('should fail', () => {
-        result = target.verify({ inputSatoshis, tx });
-        assert.isFalse(result.success);
-        assert.equal(result.error, 'verification failed, missing unlockingScript');
-      })
-    })
   })
 
   describe('when it is a contract public function', () => {
