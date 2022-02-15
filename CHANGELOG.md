@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.12.4
+
+- Support verify public function without parameters
+
+*Release Date: 2022/02/15*
+
 ## 0.12.3
 
 - Added `buildScryptTypeResolver`
