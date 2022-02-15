@@ -1,0 +1,20 @@
+library A {
+    static const int num = 10;
+}
+
+contract B {
+    int a;
+
+    function loopFunc(static const int num): int {
+        int a = 1;
+        loop(num): i {
+            a += 1;
+        }
+        return a;
+    }
+
+    public function unlock() {
+        int a = this.loopFunc(A.num);
+        require(a  == this.a);
+    }
+}
