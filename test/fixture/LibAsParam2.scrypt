@@ -1,0 +1,22 @@
+library L {
+  private int x;
+
+
+  function f() : int {
+    return this.x;
+  }
+}
+
+contract Test {
+    int x;
+    L l;
+
+  constructor(int x, L l) {
+      this.x = x;
+      this.l = l;
+  }
+
+  public function unlock(int x) {
+    require(this.l.f() == x + this.x);
+  }
+}

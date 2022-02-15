@@ -50,7 +50,7 @@ export class FunctionCall {
   private _lockingScriptAsm?: string;
 
   get unlockingScript(): Script | undefined {
-    return this._unlockingScriptAsm === undefined ? undefined : bsv.Script.fromASM(this._unlockingScriptAsm);
+    return this._unlockingScriptAsm === undefined ? new bsv.Script() : bsv.Script.fromASM(this._unlockingScriptAsm);
   }
 
   get lockingScript(): Script | undefined {
@@ -136,22 +136,15 @@ export class FunctionCall {
   }
 
   verify(txContext?: TxContext): VerifyResult {
-    if (this.unlockingScript) {
-      const result = this.contract.run_verify(this.unlockingScript.toASM(), txContext, this.args);
+    const result = this.contract.run_verify(this.unlockingScript.toASM() || '', txContext, this.args);
 
-      if (!result.success) {
-        const debugUrl = this.genLaunchConfig(txContext);
-        if (debugUrl) {
-          result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
-        }
+    if (!result.success) {
+      const debugUrl = this.genLaunchConfig(txContext);
+      if (debugUrl) {
+        result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
       }
-      return result;
     }
-
-    return {
-      success: false,
-      error: 'verification failed, missing unlockingScript'
-    };
+    return result;
   }
 
 }
