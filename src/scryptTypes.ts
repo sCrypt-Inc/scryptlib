@@ -188,6 +188,12 @@ export class UTF8Bytes extends Bytes {
     const uint8array = encoder.encode(val);
     return toHex(Buffer.from(uint8array))
   }
+
+  show(): string {
+    let utf8decoder = new TextDecoder();
+    const hex = this.value as string;
+    return utf8decoder.decode(Buffer.from(hex, 'hex'))
+  }
 }
 
 export class PrivKey extends Int {

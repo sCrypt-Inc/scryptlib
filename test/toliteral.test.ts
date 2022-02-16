@@ -2,6 +2,7 @@ import { assert, expect } from 'chai';
 import { loadDescription } from './helper';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
 import { Bool, Bytes, Int, OpCodeType, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage } from '../src';
+import { UTF8Bytes } from '../src/scryptTypes';
 
 
 
@@ -133,6 +134,22 @@ describe('toLiteral test', () => {
             let result = bytesLiteral.main(new Bytes(""), new Bytes("00"), new Bytes("01"), new Bytes("02"), new Bytes("0002"), new Bytes("10"), new Bytes("11")).verify();
 
             assert.isTrue(result.success, result.error);
+
+        })
+    })
+
+
+    describe('test UTF8Bytes', () => {
+
+        it('should show right', () => {
+
+            expect(new UTF8Bytes('asdfasdfa asdfasdf()[]{}:+-=*/').show()).to.equal('asdfasdfa asdfasdf()[]{}:+-=*/');
+
+            expect(new UTF8Bytes('Debugger listening on ws://127.0.0.1:51079/2577f5ca-d3cd-462e-a0ce-31f361e6a62c').show()).to.equal('Debugger listening on ws://127.0.0.1:51079/2577f5ca-d3cd-462e-a0ce-31f361e6a62c');
+
+            expect(new UTF8Bytes('{}[][][3489&&^**)^$#@##$??>>??>L:ZQWQ]} asdfa/\'"\\fsdf').show()).to.equal('{}[][][3489&&^**)^$#@##$??>>??>L:ZQWQ]} asdfa/\'"\\fsdf');
+
+            expect(new UTF8Bytes('😃 Home of Emoji Meanings 💁👌🎍😍').show()).to.equal('😃 Home of Emoji Meanings 💁👌🎍😍');
 
         })
     })
