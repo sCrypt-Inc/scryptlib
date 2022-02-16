@@ -4,7 +4,7 @@ import { newTx, loadDescription } from './helper';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { bsv, toHex, getPreimage, toHashedMap } from '../src/utils';
 import { Bytes, SigHash, SigHashPreimage } from '../src';
-import { UTF8Bytes } from '../src/scryptTypes';
+import { String } from '../src/scryptTypes';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 
@@ -23,12 +23,12 @@ describe('stringbytes.test', () => {
     });
 
     it('should success when call unlock', () => {
-      result = instance.unlock(new Bytes("1234ab"), new UTF8Bytes("你好world"), new UTF8Bytes("abcd"), new UTF8Bytes("こんにちは"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊")).verify()
+      result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.true
     });
 
     it('should fail when using wrong value', () => {
-      result = instance.unlock(new Bytes("1234ab"), new UTF8Bytes("你好world"), new UTF8Bytes("abcd"), new UTF8Bytes("ここんにちは"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊")).verify()
+      result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("ここんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.false
     });
 
@@ -49,27 +49,27 @@ describe('stringbytes.test', () => {
     const Test = buildContractClass(loadDescription('stringbytes1_desc.json'));
     const { L } = buildTypeClasses(Test);
     before(() => {
-      instance = new Test(new L(new Bytes("1234ab"), new UTF8Bytes("你好world"), new UTF8Bytes("abcd"), new UTF8Bytes("こんにちは"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊")),
-        new Bytes("1234ab"), new UTF8Bytes("你好world"), new UTF8Bytes("abcd"), new UTF8Bytes("こんにちは"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊"));
+      instance = new Test(new L(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊")),
+        new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊"));
     });
 
     it('should success when call unlock', () => {
-      result = instance.unlock(new Bytes("1234ab"), new UTF8Bytes("你好world"), new UTF8Bytes("abcd"), new UTF8Bytes("こんにちは"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊")).verify()
+      result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.true
     });
 
     it('should success when with empty space', () => {
 
-      instance = new Test(new L(new Bytes("1234ab"), new UTF8Bytes("你好  world"), new UTF8Bytes("ab/[]]]cd"), new UTF8Bytes("()rrr)"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊😊")),
-        new Bytes("1234ab"), new UTF8Bytes("你好  world"), new UTF8Bytes("ab/[]]]cd"), new UTF8Bytes("()rrr)"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊😊"));
+      instance = new Test(new L(new Bytes("1234ab"), new String("你好  world"), new String("ab/[]]]cd"), new String("()rrr)"), new String("b'aa'"), new String("😊😊")),
+        new Bytes("1234ab"), new String("你好  world"), new String("ab/[]]]cd"), new String("()rrr)"), new String("b'aa'"), new String("😊😊"));
 
 
-      result = instance.unlock(new Bytes("1234ab"), new UTF8Bytes("你好  world"), new UTF8Bytes("ab/[]]]cd"), new UTF8Bytes("()rrr)"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊😊")).verify()
+      result = instance.unlock(new Bytes("1234ab"), new String("你好  world"), new String("ab/[]]]cd"), new String("()rrr)"), new String("b'aa'"), new String("😊😊")).verify()
       expect(result.success, result.error).to.be.true
     });
 
     it('should fail when using wrong value', () => {
-      result = instance.unlock(new Bytes("1234ab"), new UTF8Bytes("你好world"), new UTF8Bytes("abcd"), new UTF8Bytes("ここんにちは"), new UTF8Bytes("b'aa'"), new UTF8Bytes("😊")).verify()
+      result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("ここんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.false
     });
   })
@@ -82,14 +82,14 @@ describe('stringbytes.test', () => {
     const Logger = buildContractClass(loadDescription('stringbytes2_desc.json'));
 
     before(() => {
-      instance = new Logger(new UTF8Bytes("message:"));
+      instance = new Logger(new String("message:"));
     });
 
     it('should success when call unlock', () => {
 
 
       let newLockingScript = instance.getNewStateScript({
-        message: new UTF8Bytes("message:this is a logger contract")
+        message: new String("message:this is a logger contract")
       })
 
       const tx = newTx(inputSatoshis);
@@ -106,7 +106,7 @@ describe('stringbytes.test', () => {
         inputSatoshis
       }
 
-      result = instance.log(new SigHashPreimage(toHex(preimage)), new UTF8Bytes("this is a logger contract")).verify()
+      result = instance.log(new SigHashPreimage(toHex(preimage)), new String("this is a logger contract")).verify()
       expect(result.success, result.error).to.be.true
     });
 

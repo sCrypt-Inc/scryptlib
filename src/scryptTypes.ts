@@ -177,16 +177,20 @@ export class Bytes extends ScryptType {
 
 
 
-export class UTF8Bytes extends Bytes {
+export class String extends Bytes {
 
   constructor(val: string) {
-    super(UTF8Bytes.str2utf8(val));
+    super(String.str2utf8(val));
   }
 
   static str2utf8(val: string) {
     const encoder = new TextEncoder();
     const uint8array = encoder.encode(val);
     return toHex(Buffer.from(uint8array))
+  }
+
+  toLiteral(): string {
+    return `String('${this.show()}')`;
   }
 
   show(): string {
