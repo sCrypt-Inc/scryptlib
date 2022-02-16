@@ -21,7 +21,7 @@ export {
 } from './internal';
 
 //Equivalent to the built-in functions
-export { hash160, sha256, hash256, num2bin, buildOpreturnScript, len, buildPublicKeyHashScript } from './internal';
+export { hash160, sha256, hash256, num2bin, buildOpreturnScript, len, buildPublicKeyHashScript, toHashedMap, toHashedSet, writeVarint, toLEUnsigned } from './internal';
 export { serializeState, deserializeState, STATE_LEN_2BYTES, STATE_LEN_4BYTES, serialize } from './internal';
 export {
   getPlatformScryptc, findCompiler
