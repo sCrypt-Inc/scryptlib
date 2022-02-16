@@ -190,7 +190,7 @@ export class String extends Bytes {
   }
 
   toLiteral(): string {
-    return `String('${this.show()}')`;
+    return `"${this.show()}"`;
   }
 
   show(): string {
