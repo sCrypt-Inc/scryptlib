@@ -139,7 +139,7 @@ describe('toLiteral test', () => {
     })
 
 
-    describe('test UTF8Bytes', () => {
+    describe('test String', () => {
 
         it('should show right', () => {
 
@@ -151,6 +151,7 @@ describe('toLiteral test', () => {
 
             expect(new String('😃 Home of Emoji Meanings 💁👌🎍😍').show()).to.equal('😃 Home of Emoji Meanings 💁👌🎍😍');
 
+            expect(new String('').show()).to.equal('');
         })
     })
 

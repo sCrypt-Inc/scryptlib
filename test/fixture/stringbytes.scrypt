@@ -1,7 +1,7 @@
 
 library L {
   static const bytes p = "😊"; // emoji
-
+  static const bytes e = ""; // empty string
   static const  bytes b1 = b'1234ab';
   static const  bytes b2 = "你好world";
   static const  bytes b3 = "abcd";
@@ -11,6 +11,7 @@ library L {
 
 contract Test {
   static const bytes p = "😊"; // emoji
+  static const bytes e = ""; // empty string
 
   public function unlock(bytes bb1, bytes bb2, bytes bb3, bytes bb4, bytes bb5, bytes x) {
     bytes b1 = b'1234ab';
@@ -29,5 +30,16 @@ contract Test {
     require(bb5 == b5);
     require(L.p == x);
     require(Test.p == x);
+  }
+
+  public function testEmpty(bytes b) {
+  
+    bytes b1 = "";
+    bytes b2 = b'';
+
+    require(b1 == b);
+    require(b2 == b);
+    require(L.e == b);
+    require(Test.e == b);
   }
 }

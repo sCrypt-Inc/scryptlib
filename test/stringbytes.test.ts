@@ -11,9 +11,9 @@ const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
 
-describe('stringbytes.test', () => {
+describe('String.test', () => {
 
-  describe('test stringbytes.scrypt ', () => {
+  describe('test String', () => {
 
     let instance, result;
 
@@ -24,6 +24,12 @@ describe('stringbytes.test', () => {
 
     it('should success when call unlock', () => {
       result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊")).verify()
+      expect(result.success, result.error).to.be.true
+    });
+
+
+    it('should success when call testEmpty', () => {
+      result = instance.testEmpty(new String("")).verify()
       expect(result.success, result.error).to.be.true
     });
 
@@ -65,6 +71,13 @@ describe('stringbytes.test', () => {
 
 
       result = instance.unlock(new Bytes("1234ab"), new String("你好  world"), new String("ab/[]]]cd"), new String("()rrr)"), new String("b'aa'"), new String("😊😊")).verify()
+      expect(result.success, result.error).to.be.true
+    });
+
+    it('should success when with empty bytes', () => {
+      instance = new Test(new L(new Bytes(""), new String(""), new String(""), new String(""), new String(""), new String("")),
+        new Bytes(""), new String(""), new String(""), new String(""), new String(""), new String(""));
+      result = instance.unlock(new Bytes(""), new String(""), new String(""), new String(""), new String(""), new String("")).verify()
       expect(result.success, result.error).to.be.true
     });
 
