@@ -199,7 +199,7 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   // String
   m = /^"(.*)"$/.exec(l);
   if (m) {
-    const value = String.str2utf8(m[1]);
+    const value = String.toUtf8Hex(m[1]);
     return parseBytesLiteral(value);
   }
 

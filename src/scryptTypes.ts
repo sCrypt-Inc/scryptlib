@@ -180,13 +180,18 @@ export class Bytes extends ScryptType {
 export class String extends Bytes {
 
   constructor(val: string) {
-    super(String.str2utf8(val));
+    super(String.toUtf8Hex(val));
   }
 
-  static str2utf8(val: string) {
+  static toUtf8Hex(val: string) {
     const encoder = new TextEncoder();
     const uint8array = encoder.encode(val);
     return toHex(Buffer.from(uint8array));
+  }
+
+  static fromUtf8Hex(hex: string) {
+    const utf8decoder = new TextDecoder();
+    return utf8decoder.decode(Buffer.from(hex, 'hex'));
   }
 
   toLiteral(): string {
@@ -194,9 +199,8 @@ export class String extends Bytes {
   }
 
   show(): string {
-    const utf8decoder = new TextDecoder();
     const hex = this.value as string;
-    return utf8decoder.decode(Buffer.from(hex, 'hex'));
+    return String.fromUtf8Hex(hex);
   }
 }
 
