@@ -27,7 +27,7 @@ describe('MDArray test', () => {
       ]]);
     });
 
-    it('should success when call unlock', () => {
+    it('should succeeding when call unlock', () => {
       result = mdArray.unlock([[3, 1, 2], [4, 5, new Int(6)]], [1, 32]).verify()
       expect(result.success, result.error).to.be.true
     });
@@ -44,7 +44,7 @@ describe('MDArray test', () => {
       }).to.throw('The type of P1 is wrong, should be int[2][3]');
     });
 
-    it('should success when call unlockST1', () => {
+    it('should succeeding when call unlockST1', () => {
       result = mdArray.unlockST1([new ST1({
         x: false,
         y: new Bytes("68656c6c6f20776f726c6421"),
@@ -57,7 +57,7 @@ describe('MDArray test', () => {
       expect(result.success, result.error).to.be.true
     });
 
-    it('should success when call unlockAliasST1', () => {
+    it('should succeeding when call unlockAliasST1', () => {
       result = mdArray.unlockAliasST2([new AliasST2({
         x: false,
         y: new Bytes("68656c6c6f20776f726c6421"),
@@ -77,7 +77,7 @@ describe('MDArray test', () => {
     });
 
 
-    it('should success when call unlockMDArrayST1', () => {
+    it('should succeeding when call unlockMDArrayST1', () => {
       result = mdArray.unlockMDArrayST1([[[new ST1({
         x: false,
         y: new Bytes("aa"),

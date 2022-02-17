@@ -988,28 +988,28 @@ describe('utils', () => {
 
   describe('isArrayType()', () => {
 
-    it('isArrayType should success when test int[1]', () => {
+    it('isArrayType should succeeding when test int[1]', () => {
       expect(isArrayType('int[1]')).to.be.true
     })
 
-    it('isArrayType should success when test bytes[1][2][1]', () => {
+    it('isArrayType should succeeding when test bytes[1][2][1]', () => {
       expect(isArrayType('bytes[1][2][1]')).to.be.true
     })
 
 
-    it('isArrayType should success when test st.y[1][2][1]', () => {
+    it('isArrayType should succeeding when test st.y[1][2][1]', () => {
       expect(isArrayType('st.y[1][2][1]')).to.be.true
     })
 
-    it('isArrayType should success when test struct Token {}[3]', () => {
+    it('isArrayType should succeeding when test struct Token {}[3]', () => {
       expect(isArrayType('struct Token {}[3]')).to.be.true
     })
 
-    it('isArrayType should success when test L<int, bool>[3]', () => {
+    it('isArrayType should succeeding when test L<int, bool>[3]', () => {
       expect(isArrayType('L<int, bool>[3]')).to.be.true
     })
 
-    it('isArrayType should success when test L<struct ST {}, int[3]>[3]', () => {
+    it('isArrayType should succeeding when test L<struct ST {}, int[3]>[3]', () => {
       expect(isArrayType('L<struct ST {}, int[3]>[3]')).to.be.true
     })
 
@@ -1031,7 +1031,7 @@ describe('utils', () => {
 
   describe('isStructType()', () => {
 
-    it('isStructType should success when test struct Token {}', () => {
+    it('isStructType should succeeding when test struct Token {}', () => {
       expect(isStructType('struct Token {}')).to.be.true
     })
 
@@ -1065,19 +1065,19 @@ describe('utils', () => {
 
   describe('isLibraryType()', () => {
 
-    it('isLibraryType should success when test library L {}', () => {
+    it('isLibraryType should succeeding when test library L {}', () => {
       expect(isLibraryType('library L {}')).to.be.true
     })
 
-    it('isLibraryType should success when test L<int>', () => {
+    it('isLibraryType should succeeding when test L<int>', () => {
       expect(isLibraryType('L<int>')).to.be.true
     })
 
-    it('isLibraryType should success when test L<K>', () => {
+    it('isLibraryType should succeeding when test L<K>', () => {
       expect(isLibraryType('L<K>')).to.be.true
     })
 
-    it('isLibraryType should success when test L<K,T>', () => {
+    it('isLibraryType should succeeding when test L<K,T>', () => {
       expect(isLibraryType('L<K,T>')).to.be.true
     })
   })

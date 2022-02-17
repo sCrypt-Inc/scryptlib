@@ -19,7 +19,7 @@ describe('toLiteral test', () => {
 
     describe('basic type', () => {
 
-        it('basic type toLiteral test should success', () => {
+        it('basic type toLiteral test should succeeding', () => {
             expect(new Int(11).toLiteral()).to.equal('11')
             expect(new Bool(true).toLiteral()).to.equal('true')
             expect(new Bytes("00af").toLiteral()).to.equal('b\'00af\'');
@@ -38,7 +38,7 @@ describe('toLiteral test', () => {
 
     describe('struct type', () => {
 
-        it('struct type toLiteral test should success', () => {
+        it('struct type toLiteral test should succeeding', () => {
 
             expect(new ST1({
                 x: false,

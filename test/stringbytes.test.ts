@@ -22,13 +22,13 @@ describe('String.test', () => {
       instance = new Test();
     });
 
-    it('should success when call unlock', () => {
+    it('should succeeding when call unlock', () => {
       result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.true
     });
 
 
-    it('should success when call testEmpty', () => {
+    it('should succeeding when call testEmpty', () => {
       result = instance.testEmpty(new String("")).verify()
       expect(result.success, result.error).to.be.true
     });
@@ -59,12 +59,12 @@ describe('String.test', () => {
         new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊"));
     });
 
-    it('should success when call unlock', () => {
+    it('should succeeding when call unlock', () => {
       result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("こんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.true
     });
 
-    it('should success when with empty space', () => {
+    it('should succeeding when with empty space', () => {
 
       instance = new Test(new L(new Bytes("1234ab"), new String("你好  world"), new String("ab/[]]]cd"), new String("()rrr)"), new String("b'aa'"), new String("😊😊")),
         new Bytes("1234ab"), new String("你好  world"), new String("ab/[]]]cd"), new String("()rrr)"), new String("b'aa'"), new String("😊😊"));
@@ -74,7 +74,7 @@ describe('String.test', () => {
       expect(result.success, result.error).to.be.true
     });
 
-    it('should success when with empty bytes', () => {
+    it('should succeeding when with empty bytes', () => {
       instance = new Test(new L(new Bytes(""), new String(""), new String(""), new String(""), new String(""), new String("")),
         new Bytes(""), new String(""), new String(""), new String(""), new String(""), new String(""));
       result = instance.unlock(new Bytes(""), new String(""), new String(""), new String(""), new String(""), new String("")).verify()
@@ -98,7 +98,7 @@ describe('String.test', () => {
       instance = new Logger(new String("message:"));
     });
 
-    it('should success when call unlock', () => {
+    it('should succeeding when call unlock', () => {
 
 
       let newLockingScript = instance.getNewStateScript({

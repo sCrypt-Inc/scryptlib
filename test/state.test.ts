@@ -261,7 +261,7 @@ describe('state_test', () => {
     });
 
 
-    it('should success when not all state properties are provided in getNewStateScript() ', () => {
+    it('should succeeding when not all state properties are provided in getNewStateScript() ', () => {
 
         const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
         let counter = new StateCounter(0, true);
@@ -320,7 +320,7 @@ describe('state_test', () => {
     });
 
 
-    it('should success when state contract with a constructor with a param', () => {
+    it('should succeeding when state contract with a constructor with a param', () => {
 
         const StateCounter = buildContractClass(loadDescription('statecounter1_desc.json'));
         let counter = new StateCounter(6);
@@ -349,7 +349,7 @@ describe('state_test', () => {
     });
 
 
-    it('should success when state contract with a constructor with two param', () => {
+    it('should succeeding when state contract with a constructor with two param', () => {
 
         const StateCounter = buildContractClass(loadDescription('statecounter2_desc.json'));
         let counter = new StateCounter(1, 2);
@@ -377,7 +377,7 @@ describe('state_test', () => {
 
     });
 
-    it('should success when state contract with a constructor with a struct param and an array param', () => {
+    it('should succeeding when state contract with a constructor with a struct param and an array param', () => {
 
         const StateCounter = buildContractClass(loadDescription('statecounter3_desc.json'));
 
@@ -413,7 +413,7 @@ describe('state_test', () => {
     });
 
 
-    it('should success when state property is struct', () => {
+    it('should succeeding when state property is struct', () => {
 
         const Counter = buildContractClass(loadDescription('ststate_desc.json'));
         const { States, MyStates } = buildTypeClasses(loadDescription('ststate_desc.json'));
@@ -450,7 +450,7 @@ describe('state_test', () => {
     });
 
 
-    it('should success when state property is array', () => {
+    it('should succeeding when state property is array', () => {
 
         const Counter = buildContractClass(loadDescription('arraystate_desc.json'));
         let counter = new Counter([0, 1, 2]);
@@ -478,7 +478,7 @@ describe('state_test', () => {
     });
 
 
-    it('should success state property is mix struct and array', () => {
+    it('should succeeding state property is mix struct and array', () => {
 
         const Counter = buildContractClass(loadDescription('mixstate_desc.json'));
         const { States, StatesA } = buildTypeClasses(loadDescription('mixstate_desc.json'));

@@ -218,7 +218,7 @@ describe('VerifyError', () => {
       asm = new ASM();
     });
 
-    it('it should success when replace correctly ', () => {
+    it('it should succeeding when replace correctly ', () => {
 
       asm.replaceAsmVars({
         'ASM.equalImpl.x': 'OP_5'
