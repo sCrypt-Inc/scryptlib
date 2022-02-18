@@ -136,5 +136,21 @@ aa`;
 
 
   })
+
+
+  describe('test helloworld', () => {
+
+    let instance, result;
+
+    const HelloWorld = buildContractClass(loadDescription('helloworld_desc.json'));
+    before(() => {
+      instance = new HelloWorld();
+    });
+
+    it('should succeeding when call unlock', () => {
+      result = instance.unlock(new String("hello world, sCrypt 😊"), new String("\r\n")).verify()
+      expect(result.success, result.error).to.be.true
+    });
+  })
 })
 
