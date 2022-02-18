@@ -197,7 +197,7 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // String
-  m = /^"(.*)"$/.exec(l);
+  m = /^"([\s\S]*)"$/.exec(l);
   if (m) {
     const value = String.toUtf8Hex(m[1]);
     return parseBytesLiteral(value);
@@ -273,14 +273,14 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // Struct
-  m = /^\{(.*)\}$/.exec(l);
+  m = /^\{([\s\S]*)\}$/.exec(l);
   if (m) {
     // we use object to constructor a struct, no use literal, so here we return empty
     return ['', '', VariableType.STRUCT];
   }
 
   // Library
-  m = /^\[(.*)\]$/.exec(l);
+  m = /^\[([\s\S]*)\]$/.exec(l);
   if (m) {
     // we use array to constructor a library, no use literal, so here we return empty
     return ['', '', VariableType.LIBRARY];

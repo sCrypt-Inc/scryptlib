@@ -81,6 +81,17 @@ describe('String.test', () => {
       expect(result.success, result.error).to.be.true
     });
 
+    it('should succeeding when \n, \", \'', () => {
+
+      const str = `aa " " " ' 
+
+aa`;
+      instance = new Test(new L(new Bytes(""), new String(str), new String(str), new String(str), new String(str), new String(str)),
+        new Bytes(""), new String(str), new String(str), new String(str), new String(str), new String(str));
+      result = instance.unlock(new Bytes(""), new String(str), new String(str), new String(str), new String(str), new String(str)).verify()
+      expect(result.success, result.error).to.be.true
+    });
+
     it('should fail when using wrong value', () => {
       result = instance.unlock(new Bytes("1234ab"), new String("你好world"), new String("abcd"), new String("ここんにちは"), new String("b'aa'"), new String("😊")).verify()
       expect(result.success, result.error).to.be.false
