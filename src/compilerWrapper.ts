@@ -627,7 +627,9 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
   const allAst = [astRoot];
 
   Object.keys(dependencyAsts).forEach(key => {
-    allAst.push(dependencyAsts[key]);
+    if (key !== 'std') {
+      allAst.push(dependencyAsts[key]);
+    }
   });
 
   return allAst.map(ast => {

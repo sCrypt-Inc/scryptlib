@@ -827,8 +827,8 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-      expectedType,
-      resolver);
+        expectedType,
+        resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1417,8 +1417,8 @@ export function resolveConstValue(node: any): string | undefined {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
