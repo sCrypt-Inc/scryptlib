@@ -60,7 +60,7 @@ All basic types of the **sCrypt** language have their corresponding javascript c
 | :---------: | :--------: |
 | `int` | `new Int(1)` or `number` or `bigint` |
 | `bool` | `new Bool(true)` or `boolean` |
-| `bytes` | `new Bytes('0001')`|
+| `bytes` | `new Bytes('0001')` or `new String("hello world 😊")`|
 | `PubKey` | `new PubKey('0001')`|
 | `PrivKey` | `new PrivKey(1)`|
 | `Sig` | `new Sig('0001')`|

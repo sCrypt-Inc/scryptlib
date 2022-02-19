@@ -49,7 +49,7 @@ describe('MixedStruct  test', () => {
 
 
 
-    it('should success when call unlock', () => {
+    it('should succeeding when call unlock', () => {
       result = mixedStruct.unlock(new Person({
         name: new Bytes('7361746f736869206e616b616d6f746f'),
         addr: new Bytes('68656c6c6f20776f726c6421'),
@@ -65,7 +65,7 @@ describe('MixedStruct  test', () => {
     });
 
 
-    it('should success when call unlock', () => {
+    it('should succeeding when call unlock', () => {
 
       let person = new Person({
         name: new Bytes('7361746f736869206e616b616d6f746f'),
@@ -250,7 +250,7 @@ describe('MixedStruct  test', () => {
     });
 
 
-    it('unlock mixed should success', () => {
+    it('unlock mixed should succeeding', () => {
       result = mixed.unlock(1).verify()
       expect(result.success, result.error).to.be.true
     });

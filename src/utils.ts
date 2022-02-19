@@ -17,7 +17,7 @@ import {
   Script, ParamEntity, SingletonParamType
 } from './internal';
 import { StaticEntity } from './compilerWrapper';
-import { HashedMap, HashedSet, Library, ScryptTypeResolver } from './scryptTypes';
+import { HashedMap, HashedSet, Library, ScryptTypeResolver, String } from './scryptTypes';
 import { VerifyError } from './contract';
 import { ABIEntity, LibraryEntity } from '.';
 
@@ -148,6 +148,25 @@ export function intValue2hex(val: number | bigint): string {
   return hex;
 }
 
+function parseBytesLiteral(hex: string): [string /*asm*/, ValueType, VariableType] {
+  const hexString = getValidatedHexString(hex);
+  if (hexString === '') {
+    return ['OP_0', hexString, VariableType.BYTES];
+  }
+
+  if (hexString.length / 2 > 1) {
+    return [hexString, hexString, VariableType.BYTES];
+  }
+
+
+  const intValue = parseInt(hexString, 16);
+
+  if (intValue >= 1 && intValue <= 16) {
+    return [`OP_${intValue}`, hexString, VariableType.BYTES];
+  }
+
+  return [hexString, hexString, VariableType.BYTES];
+}
 export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableType] {
 
   // bool
@@ -174,23 +193,14 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   // note: special handling of empty bytes b''
   m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    const hexString = getValidatedHexString(m[1]);
-    if (hexString === '') {
-      return ['OP_0', hexString, VariableType.BYTES];
-    }
+    return parseBytesLiteral(m[1]);
+  }
 
-    if (hexString.length / 2 > 1) {
-      return [hexString, hexString, VariableType.BYTES];
-    }
-
-
-    const intValue = parseInt(hexString, 16);
-
-    if (intValue >= 1 && intValue <= 16) {
-      return [`OP_${intValue}`, hexString, VariableType.BYTES];
-    }
-
-    return [hexString, hexString, VariableType.BYTES];
+  // String
+  m = /^"([\s\S]*)"$/.exec(l);
+  if (m) {
+    const value = String.toUtf8Hex(m[1]);
+    return parseBytesLiteral(value);
   }
 
 
@@ -263,14 +273,14 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   }
 
   // Struct
-  m = /^\{([\w(){}[\],\s'-]*)\}$/.exec(l);
+  m = /^\{([\s\S]*)\}$/.exec(l);
   if (m) {
     // we use object to constructor a struct, no use literal, so here we return empty
     return ['', '', VariableType.STRUCT];
   }
 
   // Library
-  m = /^\[([\w(){}[\],\s'-]*)\]$/.exec(l);
+  m = /^\[([\s\S]*)\]$/.exec(l);
   if (m) {
     // we use array to constructor a library, no use literal, so here we return empty
     return ['', '', VariableType.LIBRARY];

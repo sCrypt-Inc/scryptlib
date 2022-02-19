@@ -2,6 +2,7 @@ import { assert, expect } from 'chai';
 import { loadDescription } from './helper';
 import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
 import { Bool, Bytes, Int, OpCodeType, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage } from '../src';
+import { String } from '../src/scryptTypes';
 
 
 
@@ -18,7 +19,7 @@ describe('toLiteral test', () => {
 
     describe('basic type', () => {
 
-        it('basic type toLiteral test should success', () => {
+        it('basic type toLiteral test should succeeding', () => {
             expect(new Int(11).toLiteral()).to.equal('11')
             expect(new Bool(true).toLiteral()).to.equal('true')
             expect(new Bytes("00af").toLiteral()).to.equal('b\'00af\'');
@@ -37,7 +38,7 @@ describe('toLiteral test', () => {
 
     describe('struct type', () => {
 
-        it('struct type toLiteral test should success', () => {
+        it('struct type toLiteral test should succeeding', () => {
 
             expect(new ST1({
                 x: false,
@@ -134,6 +135,23 @@ describe('toLiteral test', () => {
 
             assert.isTrue(result.success, result.error);
 
+        })
+    })
+
+
+    describe('test String', () => {
+
+        it('should show right', () => {
+
+            expect(new String('asdfasdfa asdfasdf()[]{}:+-=*/').show()).to.equal('asdfasdfa asdfasdf()[]{}:+-=*/');
+
+            expect(new String('Debugger listening on ws://127.0.0.1:51079/2577f5ca-d3cd-462e-a0ce-31f361e6a62c').show()).to.equal('Debugger listening on ws://127.0.0.1:51079/2577f5ca-d3cd-462e-a0ce-31f361e6a62c');
+
+            expect(new String('{}[][][3489&&^**)^$#@##$??>>??>L:ZQWQ]} asdfa/\'"\\fsdf').show()).to.equal('{}[][][3489&&^**)^$#@##$??>>??>L:ZQWQ]} asdfa/\'"\\fsdf');
+
+            expect(new String('😃 Home of Emoji Meanings 💁👌🎍😍').show()).to.equal('😃 Home of Emoji Meanings 💁👌🎍😍');
+
+            expect(new String('').show()).to.equal('');
         })
     })
 

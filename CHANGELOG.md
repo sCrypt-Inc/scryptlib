@@ -1,5 +1,13 @@
 # CHANGELOG
 
+
+## 0.13.0
+
+- Support bytes with string literal: `new String("hello world 😊")`
+
+*Release Date: 2022/02/19*
+
+
 ## 0.12.4
 
 - Support verify public function without parameters

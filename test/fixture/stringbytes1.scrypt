@@ -1,0 +1,34 @@
+
+library L {
+  bytes b1;
+  bytes b2;
+  bytes b3;
+  bytes b4;
+  bytes b5;
+  bytes x;
+}
+
+contract Test {
+  L l;
+  bytes b1;
+  bytes b2;
+  bytes b3;
+  bytes b4;
+  bytes b5;
+  bytes x;
+  public function unlock(bytes b1, bytes b2, bytes b3, bytes b4, bytes b5, bytes x) {
+    require(this.l.b1 == b1);
+    require(this.l.b2 == b2);
+    require(this.l.b3 == b3);
+    require(this.l.b4 == b4);
+    require(this.l.b5 == b5);
+    require(this.l.x == x);
+
+    require(this.b1 == b1);
+    require(this.b2 == b2);
+    require(this.b3 == b3);
+    require(this.b4 == b4);
+    require(this.b5 == b5);
+    require(this.x == x);
+  }
+}

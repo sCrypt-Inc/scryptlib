@@ -6,7 +6,8 @@ import {
   arrayToLiteral,
   arrayToScryptType,
   cloneArray,
-  canAssignProperty
+  canAssignProperty,
+  toHex
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -171,6 +172,35 @@ export class Bytes extends ScryptType {
 
   public serialize(): string {
     return serialize(this.value as string);
+  }
+}
+
+
+
+export class String extends Bytes {
+
+  constructor(val: string) {
+    super(String.toUtf8Hex(val));
+  }
+
+  static toUtf8Hex(val: string) {
+    const encoder = new TextEncoder();
+    const uint8array = encoder.encode(val);
+    return toHex(Buffer.from(uint8array));
+  }
+
+  static fromUtf8Hex(hex: string) {
+    const utf8decoder = new TextDecoder();
+    return utf8decoder.decode(Buffer.from(hex, 'hex'));
+  }
+
+  toLiteral(): string {
+    return `"${this.show()}"`;
+  }
+
+  show(): string {
+    const hex = this.value as string;
+    return String.fromUtf8Hex(hex);
   }
 }
 

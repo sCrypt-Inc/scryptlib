@@ -23,7 +23,7 @@ describe('library as property or return or param', () => {
         instance = new Test(new L(1, 1, [1, 1, 1], true, 2, 2));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1, 1, [1, 1, 1], true, 2, 2).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -55,7 +55,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, new L(1, 2));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(2).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -77,7 +77,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, new L(1));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(0).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -99,7 +99,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, new L1(new L(1)));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(0).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -121,7 +121,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, new L1(1, 1));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -143,7 +143,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, [new L(1), new L(2), new L(3)]);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(5).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -164,12 +164,12 @@ describe('library as property or return or param', () => {
         instance = new Test(1, [new L(1, 1), new L(2, 2), new L(3, 3)]);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(11).verify()
         expect(result.success, result.error).to.be.true
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(12).verify()
         expect(result.success, result.error).to.be.false
       });
@@ -188,7 +188,7 @@ describe('library as property or return or param', () => {
         })));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -219,7 +219,7 @@ describe('library as property or return or param', () => {
         })]));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(10).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -237,7 +237,7 @@ describe('library as property or return or param', () => {
         const Test = buildContractClass(loadDescription('LibGenericAsProperty1_desc.json'));
         const { L } = buildTypeClasses(Test);
 
-        it('should success when using int to new L', () => {
+        it('should succeeding when using int to new L', () => {
           instance = new Test(2, new L(1, 1));
           result = instance.unlock(2).verify()
           expect(result.success, result.error).to.be.true
@@ -268,7 +268,7 @@ describe('library as property or return or param', () => {
         const Test = buildContractClass(loadDescription('LibGenericAsProperty2_desc.json'));
         const { L } = buildTypeClasses(Test);
 
-        it('should success when using int to new L', () => {
+        it('should succeeding when using int to new L', () => {
           instance = new Test(2, new L(1, 1));
           result = instance.unlock(2).verify()
           expect(result.success, result.error).to.be.true
@@ -287,7 +287,7 @@ describe('library as property or return or param', () => {
         const Test = buildContractClass(loadDescription('LibGenericAsProperty3_desc.json'));
         const { L } = buildTypeClasses(Test);
 
-        it('should success when using int to new L', () => {
+        it('should succeeding when using int to new L', () => {
           instance = new Test(2, new L(1, 1), new L(new Bytes("0101"), 1));
           result = instance.unlock(2).verify()
           expect(result.success, result.error).to.be.true
@@ -304,7 +304,7 @@ describe('library as property or return or param', () => {
         const TestGenericLibray = buildContractClass(loadDescription('LibGenericAsProperty4_desc.json'));
         const { GenericLibray, GenericA, ST } = buildTypeClasses(TestGenericLibray);
 
-        it('should success', () => {
+        it('should succeeding', () => {
           instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11));
           result = instance.unlock(11).verify()
           expect(result.success, result.error).to.be.true
@@ -337,7 +337,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -360,7 +360,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(0).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -382,7 +382,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -392,12 +392,12 @@ describe('library as property or return or param', () => {
         expect(result.success, result.error).to.be.false
       });
 
-      it('should success when call unlock1', () => {
+      it('should succeeding when call unlock1', () => {
         result = instance.unlock2(4).verify()
         expect(result.success, result.error).to.be.true
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock2(2).verify()
         expect(result.success, result.error).to.be.false
       });
@@ -414,12 +414,12 @@ describe('library as property or return or param', () => {
         instance = new Test(1);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(2).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -437,7 +437,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(2).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -458,7 +458,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, new L(2));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -479,7 +479,7 @@ describe('library as property or return or param', () => {
         instance = new Test(1, new L(1, 1));
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         result = instance.unlock(1).verify()
         expect(result.success, result.error).to.be.true
       });
@@ -506,7 +506,7 @@ describe('library as property or return or param', () => {
         instance = new Test(l);
       });
 
-      it('should success when call unlock', () => {
+      it('should succeeding when call unlock', () => {
         const cloned = l.clone();
         cloned.x = 6
         cloned.st = new ST({
@@ -594,7 +594,7 @@ describe('library as property or return or param', () => {
         expect(result.success, result.error).to.be.false
       });
 
-      it('should success when only update one field', () => {
+      it('should succeeding when only update one field', () => {
         l.st.c = false;
         let newLockingScript = instance.getNewStateScript({
           l: l

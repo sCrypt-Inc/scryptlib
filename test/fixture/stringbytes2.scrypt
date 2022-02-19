@@ -1,0 +1,13 @@
+contract Logger {
+
+  @state
+  bytes message;
+
+  public function log(SigHashPreimage txPreimage, bytes appendmsg) {
+    require(Tx.checkPreimageSigHashType(txPreimage, SigHash.SINGLE | SigHash.FORKID));
+    this.message += appendmsg;
+    bytes outputScript = this.getStateScript();
+    bytes output = Utils.buildOutput(outputScript, SigHash.value(txPreimage));
+    require(hash256(output) == SigHash.hashOutputs(txPreimage));
+  }
+}

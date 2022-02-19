@@ -24,7 +24,7 @@ describe('Alias type check', () => {
     token: new Token(101)
   }));
 
-  it('should success when using MaleAAA', () => {
+  it('should succeeding when using MaleAAA', () => {
 
     let result = alias.unlock(new MaleAAA({
       name: new Name("68656c6c6f20776f726c6421"),
@@ -35,7 +35,7 @@ describe('Alias type check', () => {
 
   })
 
-  it('should success when using bytes', () => {
+  it('should succeeding when using bytes', () => {
 
     let result = alias.unlock(new MaleAAA({
       name: new Bytes("68656c6c6f20776f726c6421"),
@@ -46,7 +46,7 @@ describe('Alias type check', () => {
 
   })
 
-  it('should success when using Male', () => {
+  it('should succeeding when using Male', () => {
 
     let result = alias.unlock(new Male({
       name: new Name("68656c6c6f20776f726c6421"),
@@ -58,7 +58,7 @@ describe('Alias type check', () => {
   })
 
 
-  it('should success when using Person', () => {
+  it('should succeeding when using Person', () => {
 
     let result = alias.unlock(new Person({
       name: new Name("68656c6c6f20776f726c6421"),
@@ -68,7 +68,7 @@ describe('Alias type check', () => {
     assert.isTrue(result.success, result.error);
   })
 
-  it('should success when using Female', () => {
+  it('should succeeding when using Female', () => {
     let result = alias.unlock(new Female({
       name: new Name("68656c6c6f20776f726c6421"),
       age: new Age(33),
@@ -88,7 +88,7 @@ describe('Alias type check', () => {
     }).to.throw('The type of bob is wrong, expected Person but got Block');
   })
 
-  it('should success when using Female', () => {
+  it('should succeeding when using Female', () => {
     let result = alias.unlock(new Male({
       name: new Coinbase("68656c6c6f20776f726c6421"),
       age: new Time(33),
@@ -99,18 +99,18 @@ describe('Alias type check', () => {
 
 
 
-  it('should success when using number', () => {
+  it('should succeeding when using number', () => {
     let result = alias.setToken([10, 3, 3]).verify()
     assert.isTrue(result.success, result.error);
   })
 
-  it('should success when using all int alias', () => {
+  it('should succeeding when using all int alias', () => {
     let result = alias.setToken([new Time(10), new Age(3), new Token(3)]).verify()
     assert.isTrue(result.success, result.error);
   })
 
 
-  it('should success when parameter is array struct have member with alias', () => {
+  it('should succeeding when parameter is array struct have member with alias', () => {
     let result = alias.isPerson([new Female({
       name: new Name("68656c6c6f20776f726c6421"),
       age: new Age(1),
@@ -123,7 +123,7 @@ describe('Alias type check', () => {
   describe('buildTypeResolver', () => {
 
 
-    it('should success when call buildTypeResolver', () => {
+    it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias_desc.json');
       const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
       expect(finalTypeResolver("Age")).to.equal('int')
@@ -159,7 +159,7 @@ describe('Alias type check', () => {
 
     })
 
-    it('should success when resolver generic type', () => {
+    it('should succeeding when resolver generic type', () => {
       const jsondesc = loadDescription('autoTyped_desc.json');
 
       const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
@@ -169,7 +169,7 @@ describe('Alias type check', () => {
 
     })
 
-    it('should success when call buildTypeResolver', () => {
+    it('should succeeding when call buildTypeResolver', () => {
 
       const finalTypeResolver = buildTypeResolver('', [], [], [], [])
 
@@ -196,7 +196,7 @@ describe('Alias type check', () => {
     const { Tokens, TokenArray, Token } = buildTypeClasses(loadDescription('alias1_desc.json'));
 
 
-    it('should success when call buildTypeResolver', () => {
+    it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias1_desc.json');
       const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
       expect(finalTypeResolver("Tokens")).to.equal('int[3]')
@@ -209,7 +209,7 @@ describe('Alias type check', () => {
 
     const alias = new Alias1Contract([1, 3, 3], [[2, 1, 3]]);
 
-    it('should success when unlock', () => {
+    it('should succeeding when unlock', () => {
 
       let result = alias.unlock([1, 3, 3], [[2, 1, 3]]).verify()
       assert.isTrue(result.success, result.error);
@@ -220,7 +220,7 @@ describe('Alias type check', () => {
   describe('VarAsSub check', () => {
 
     const result = compileContract(getContractFilePath('varassub.scrypt'));
-    it('should success when call buildTypeResolver', () => {
+    it('should succeeding when call buildTypeResolver', () => {
 
       const finalTypeResolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.statics)
       expect(finalTypeResolver("int[1][SUB]")).to.equal('int[1][3]')
@@ -234,7 +234,7 @@ describe('Alias type check', () => {
   describe('test pubKeyHash', () => {
 
 
-    it('should success when unlock by pubKeyHash ', () => {
+    it('should succeeding when unlock by pubKeyHash ', () => {
 
       const privateKey = new bsv.PrivateKey.fromRandom('testnet');
       const publicKey = privateKey.publicKey;

@@ -1,0 +1,45 @@
+
+library L {
+  static const bytes p = "😊"; // emoji
+  static const bytes e = ""; // empty string
+  static const  bytes b1 = b'1234ab';
+  static const  bytes b2 = "你好world";
+  static const  bytes b3 = "abcd";
+  static const  bytes b4 = "こんにちは";
+
+}
+
+contract Test {
+  static const bytes p = "😊"; // emoji
+  static const bytes e = ""; // empty string
+
+  public function unlock(bytes bb1, bytes bb2, bytes bb3, bytes bb4, bytes bb5, bytes x) {
+    bytes b1 = b'1234ab';
+    bytes b2 = "你好world";
+    bytes b3 = "abcd";
+    bytes b4 = "こんにちは";
+    bytes b5 = "b'aa'";
+    require(L.b1 == b1);
+    require(L.b2 == b2);
+    require(L.b3 == b3);
+    require(L.b4 == b4);
+    require(bb1 == b1);
+    require(bb2 == b2);
+    require(bb3 == b3);
+    require(bb4 == b4);
+    require(bb5 == b5);
+    require(L.p == x);
+    require(Test.p == x);
+  }
+
+  public function testEmpty(bytes b) {
+  
+    bytes b1 = "";
+    bytes b2 = b'';
+
+    require(b1 == b);
+    require(b2 == b);
+    require(L.e == b);
+    require(Test.e == b);
+  }
+}

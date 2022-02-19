@@ -49,7 +49,7 @@ describe('Preimage', () => {
       ocsPreimage = new OCSPreimage(1)
     })
 
-    it('should success when using cropped preimage', () => {
+    it('should succeeding when using cropped preimage', () => {
 
 
       const tx = newTx(inputSatoshis);
@@ -96,7 +96,7 @@ describe('Preimage', () => {
 
 
 
-    it('checkPreimageOptOCS should success when using right cropped preimage', () => {
+    it('checkPreimageOptOCS should succeeding when using right cropped preimage', () => {
 
 
       const tx = newTx(inputSatoshis);
