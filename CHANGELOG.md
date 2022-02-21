@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 0.13.1
+
+- Fix `literal2ScryptType` issue
+
+*Release Date: 2022/02/21*
+
+
 ## 0.13.0
 
 - Support bytes with string literal: `new String("hello world 😊")`
