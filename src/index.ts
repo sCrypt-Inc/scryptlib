@@ -12,7 +12,7 @@ export {
   librarySign, structSign, resolveGenericType, createDefaultLibrary, createLibraryProperties, canAssignProperty, arrayToLiteral, cloneArray, arrayToScryptType,
   buildStructsClass, buildTypeResolver, buildScryptTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg, buildContractState,
   compilerVersion, flatternLibrary, flatternLibraryState, flatternCtorArgs, flatternStruct, flatternArray, flatternParams, flatternStateArgs,
-  isEmpty
+  isEmpty, isStringLiteral
 } from './internal';
 
 export {

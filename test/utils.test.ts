@@ -306,6 +306,9 @@ describe('utils', () => {
         .to.equal("01");
       expect(literal2ScryptType("OpCodeType(b'01')").toLiteral())
         .to.equal("OpCodeType(b'01')");
+
+      expect(literal2ScryptType("b''").toLiteral()).to.equal("b''");
+      expect(literal2ScryptType("\"b''\"").toLiteral()).to.equal("\"b''\"");
     });
   })
 
