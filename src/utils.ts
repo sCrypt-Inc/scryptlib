@@ -290,7 +290,13 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
 
 }
 
-
+export function isStringLiteral(l: string) {
+  const m = /^"([\s\S]*)"$/.exec(l.trim());
+  if (m) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * convert literals to Scrypt Type
@@ -304,7 +310,7 @@ export function literal2ScryptType(l: string): ScryptType {
     case VariableType.INT:
       return new Int(value as number);
     case VariableType.BYTES:
-      return new Bytes(value as string);
+      return isStringLiteral(l) ? new String(String.fromUtf8Hex(value as string)) : new Bytes(value as string);
     case VariableType.PRIVKEY:
       return new PrivKey(value as bigint);
     case VariableType.PUBKEY:
