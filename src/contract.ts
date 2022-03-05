@@ -520,7 +520,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
         }
       }
     });
-  })
+  });
 
   return ContractClass;
 }
