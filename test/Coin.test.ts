@@ -97,6 +97,7 @@ describe('Coin.test', () => {
 
 
         it('test send', () => {
+            const oldKeyIndex = findKeyIndex(map, pkhReceiver);
             const tx = buildSendTx();
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
@@ -105,7 +106,7 @@ describe('Coin.test', () => {
             const result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
                 publicKeyReceiver,
                 mintAmount,
-                findKeyIndex(map, pkhReceiver),
+                oldKeyIndex,
                 0,
                 findKeyIndex(map, pkhReceiver1)).verify()
             expect(result.success, result.error).to.be.true;
