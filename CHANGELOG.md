@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+
+## 0.13.2
+
+- Support auto initializing instance property 
+
+*Release Date: 2022/03/05*
+
+
 ## 0.13.1
 
 - Fix `literal2ScryptType` issue
