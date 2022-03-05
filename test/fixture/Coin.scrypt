@@ -1,0 +1,60 @@
+contract Coin {
+  @state
+  public PubKeyHash minter;
+
+  @state
+  public HashedMap<PubKeyHash, int> balances;
+
+  constructor(PubKeyHash msgSender) {
+    this.minter = msgSender;
+  }
+
+  public function mint(PubKeyHash receiver, int amount, SigHashPreimage txPreimage, Sig sig, PubKey pubKey, int this_balances_receiver, int this_balances_receiver_index) {
+    bool ret = false;
+    bool returned = false;
+    PubKeyHash msgSender = hash160(pubKey);
+    require(checkSig(sig, pubKey));
+    require((!this.balances.has(receiver, this_balances_receiver_index)) || this.balances.canGet(receiver, this_balances_receiver, this_balances_receiver_index));
+    if (msgSender != this.minter) {
+      {
+        ret = true;
+        returned = true;
+      }
+    }
+    if (!returned) {
+      this_balances_receiver += amount;
+    }
+    require(this.balances.set(receiver, this_balances_receiver, this_balances_receiver_index));
+    require(this.propagateState(txPreimage));
+  }
+
+  public function send(PubKeyHash receiver, int amount, SigHashPreimage txPreimage, Sig sig, PubKey pubKey, int this_balances_msgSender, int this_balances_msgSender_index, int this_balances_receiver, int this_balances_receiver_index) {
+    bool ret = false;
+    bool returned = false;
+    PubKeyHash msgSender = hash160(pubKey);
+    require(checkSig(sig, pubKey));
+    require((!this.balances.has(msgSender, this_balances_msgSender_index) && this_balances_msgSender == 0) || this.balances.canGet(msgSender, this_balances_msgSender, this_balances_msgSender_index));
+    require((!this.balances.has(receiver, this_balances_receiver_index) && this_balances_receiver == 0) || this.balances.canGet(receiver, this_balances_receiver, this_balances_receiver_index));
+    if (this_balances_msgSender < amount) {
+      {
+        ret = true;
+        returned = true;
+      }
+    }
+    if (!returned) {
+      this_balances_msgSender -= amount;
+      this_balances_receiver += amount;
+    }
+    require(this.balances.set(msgSender, this_balances_msgSender, this_balances_msgSender_index));
+    require(this.balances.set(receiver, this_balances_receiver, this_balances_receiver_index));
+
+    require(this.propagateState(txPreimage));
+  }
+
+  function propagateState(SigHashPreimage txPreimage) : bool {
+    require(Tx.checkPreimage(txPreimage));
+    bytes outputScript = this.getStateScript();
+    bytes output = Utils.buildOutput(outputScript, SigHash.value(txPreimage));
+    return hash256(output) == SigHash.hashOutputs(txPreimage);
+  }
+}
