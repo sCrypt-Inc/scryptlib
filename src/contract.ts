@@ -486,46 +486,41 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
     if (invalidMethodName.indexOf(entity.name) > -1) {
       throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
     }
-
-
-    if (entity.type === 'constructor') {
-
-      entity.params.forEach(p => {
-        Object.defineProperty(ContractClass.prototype, p.name, {
-          get() {
-            const arg = this.statePropsArgs.find(arg => {
-              return arg.name === p.name;
-            });
-
-            if (arg) {
-              return arg.value;
-            } else {
-              throw new Error(`property ${p.name} does not exists`);
-            }
-          },
-          set(value: SupportedParamType) {
-            const arg = this.statePropsArgs.find(arg => {
-              return arg.name === p.name;
-            });
-
-            if (arg) {
-              arg.value = value;
-              this.firstCall = false;
-            } else {
-              throw new Error(`property ${p.name} does not exists`);
-            }
-          }
-        });
-      });
-
-    }
-
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
       const call = ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
       this.calls.set(entity.name, call);
       return call;
     };
   });
+
+  ContractClass.stateProps.forEach(p => {
+
+    Object.defineProperty(ContractClass.prototype, p.name, {
+      get() {
+        const arg = this.statePropsArgs.find(arg => {
+          return arg.name === p.name;
+        });
+
+        if (arg) {
+          return arg.value;
+        } else {
+          throw new Error(`property ${p.name} does not exists`);
+        }
+      },
+      set(value: SupportedParamType) {
+        const arg = this.statePropsArgs.find(arg => {
+          return arg.name === p.name;
+        });
+
+        if (arg) {
+          arg.value = value;
+          this.firstCall = false;
+        } else {
+          throw new Error(`property ${p.name} does not exists`);
+        }
+      }
+    });
+  })
 
   return ContractClass;
 }
