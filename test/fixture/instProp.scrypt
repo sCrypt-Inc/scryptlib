@@ -1,0 +1,86 @@
+
+struct ST1 {
+    int x;
+    int[3] y;
+    bool c;
+    bytes a;
+}
+
+struct ST2 {
+    ST1[1][1] x;
+    ST1 y;
+    int z;
+}
+
+library L1 {
+    private int x;
+
+    constructor(int a, int b) {
+        this.x = a + b;
+    }
+    function f() : int {
+        return this.x;
+    }
+
+    function f1(int x) : int {
+        return this.x + x;
+    }
+}
+
+library L2 {
+    private int x;
+    ST2 b;
+
+    ST1[1] c;
+
+    L1 l1;
+
+}
+
+library L3 {
+    private int x;
+    ST2 b;
+
+    ST1[1] c;
+
+    L1 l1;
+    L2 l2;
+    constructor() {
+    }
+}
+
+contract C {
+
+    int a;
+
+    ST2 b;
+
+    ST1[1] c;
+
+    L1 l1;
+
+    L1[1][2] l1_;
+
+    L2 l2;
+
+    L3 l3;
+
+    L3[1][1][2] l3_;
+
+    constructor() {
+    }
+
+    public function unlock() {
+        require(this.a == 0);
+        ST1 defaultst1 = { 0, [0, 0, 0], false, b'' };
+        ST2 defaultst2 = { [[defaultst1]], defaultst1, 0 };
+        require(this.b == defaultst2);
+        require(this.c == [defaultst1]);
+        require(this.l1 == new L1(0, 0));
+        require(this.l1_ == [[new L1(0, 0), new L1(0, 0)]]);
+        require(this.l2 == new L2(0, defaultst2, [defaultst1], new L1(0, 0)));
+        require(this.l3 == new L3());
+        require(this.l3_ == [[[new L3(), new L3()]]]);
+        require(true);
+    }
+}

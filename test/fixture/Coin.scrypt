@@ -33,8 +33,8 @@ contract Coin {
     bool returned = false;
     PubKeyHash msgSender = hash160(pubKey);
     require(checkSig(sig, pubKey));
-    require((!this.balances.has(msgSender, this_balances_msgSender_index)) || this.balances.canGet(msgSender, this_balances_msgSender, this_balances_msgSender_index));
-    require((!this.balances.has(receiver, this_balances_receiver_index)) || this.balances.canGet(receiver, this_balances_receiver, this_balances_receiver_index));
+    require((!this.balances.has(msgSender, this_balances_msgSender_index) && this_balances_msgSender == 0) || this.balances.canGet(msgSender, this_balances_msgSender, this_balances_msgSender_index));
+    require((!this.balances.has(receiver, this_balances_receiver_index) && this_balances_receiver == 0) || this.balances.canGet(receiver, this_balances_receiver, this_balances_receiver_index));
     if (this_balances_msgSender < amount) {
       {
         ret = true;
