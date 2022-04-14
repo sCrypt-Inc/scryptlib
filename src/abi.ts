@@ -2,7 +2,7 @@ import { int2Asm, bsv, genLaunchConfigFile, isArrayType, checkSupportedParamType
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { ScryptType, Bool, Int, SupportedParamType, Struct, TypeResolver, VariableType, ScryptTypeResolver } from './scryptTypes';
 import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { asm2int, buildContractCodeASM, buildDefaultStateProps, deserializeArgfromState, flatternCtorArgs, flatternParams, readBytes } from './internal';
+import { buildContractCodeASM, buildDefaultStateProps, deserializeArgfromState, flatternCtorArgs, flatternParams, readBytes } from './internal';
 
 export type Script = bsv.Script;
 

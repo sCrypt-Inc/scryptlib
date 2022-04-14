@@ -1,0 +1,19 @@
+
+contract Intbitwise {
+
+    public function and(int l, int r, int val) {
+        require((l & r) == val);
+    }
+
+    public function or(int l, int r, int val) {
+        require((l | r) == val);
+    }
+
+    public function xor(int l, int r, int val) {
+        require((l ^ r) == val);
+    }
+
+    public function invert(int a, int val) {
+        require(~a == val);
+    }
+}

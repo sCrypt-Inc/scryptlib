@@ -7,7 +7,11 @@ import {
   flatternParams, flatternStruct, isArrayType, isStructType, compileContract,
   toLiteral, asm2int, isGenericType, sha256, hash256, hash160, isLibraryType,
   buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript,
-  inferrType
+  inferrType,
+  and,
+  or,
+  xor,
+  invert
 } from '../src/utils'
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
@@ -171,7 +175,7 @@ describe('utils', () => {
 
     it('asm string to int', () => {
       expect(asm2int("cce42011b595b8ef7742710a4492a130e4b7e020097044e7b86258f82ae25f0467e8a0141ae5afd7038810f692f52d43fbb03363b8320d3b43dc65092eddf112"))
-        .to.equal(992218700866541488854030164190743727617658394826382323005192752278160641622424126616186015754450906117445668830393086070718237548341612508577988597572812n)
+        .to.equal("992218700866541488854030164190743727617658394826382323005192752278160641622424126616186015754450906117445668830393086070718237548341612508577988597572812")
 
 
       expect(asm2int("OP_1"))
@@ -194,7 +198,7 @@ describe('utils', () => {
   describe('parseLiteral()', () => {
 
     it('parser Literal string', () => {
-      expect(parseLiteral("9007199254740991")).to.have.members(["ffffffffffff1f", BigInt(9007199254740991), "int"]);
+      expect(parseLiteral("9007199254740991")).to.have.members(["ffffffffffff1f", "9007199254740991", "int"]);
       expect(parseLiteral("0xdebc9a78563")).to.have.members(["6385a7c9eb0d", 15306351674723, "int"]);
       expect(parseLiteral("0")).to.have.members(["OP_0", 0, "int"]);
       expect(parseLiteral("16")).to.have.members(["OP_16", 16, "int"]);
@@ -208,7 +212,7 @@ describe('utils', () => {
       expect(parseLiteral("PrivKey(0)")).to.have.members(["OP_0", 0, "PrivKey"]);
       expect(parseLiteral("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)")).to.have.members([
         "62f0245bb90aef0d18f914c3c8191d430f99fff925d981d2656c9a7626f14738",
-        BigInt("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062"),
+        "0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062",
         "PrivKey"
       ]);
       expect(parseLiteral("PubKey(b'3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062')")).to.have.members([
@@ -243,7 +247,7 @@ describe('utils', () => {
   describe('literal2ScryptType()', () => {
 
     it('literal2ScryptType', () => {
-      expect(literal2ScryptType("9007199254740991").value).to.equal(BigInt(9007199254740991));
+      expect(literal2ScryptType("9007199254740991").value).to.equal('9007199254740991');
       expect(literal2ScryptType("0xdebc9a78563").value).to.equal(15306351674723);
       expect(literal2ScryptType("0").value).to.equal(0);
       expect(literal2ScryptType("-1").value).to.equal(-1);
@@ -254,7 +258,7 @@ describe('utils', () => {
       expect(literal2ScryptType("PrivKey(1)").toLiteral()).to.equal("PrivKey(0x01)");
       //mocha do not  know how to serialize a BigInt, so call toString and compare it
       expect(literal2ScryptType("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)").value.toString())
-        .to.equal("25456630020100109444707942782143792492829674412994957270434525334028981432418");
+        .to.equal("0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062");
 
       expect(literal2ScryptType("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)").toLiteral())
         .to.equal("PrivKey(0x3847f126769a6c65d281d925f9ff990f431d19c8c314f9180def0ab95b24f062)");
@@ -1482,6 +1486,135 @@ describe('utils', () => {
           index: 4,
           params: [{ name: 'x', type: 'int[2][3][4]' }]
         })
+
+    })
+  })
+
+  describe('bitwise', () => {
+    let bitwise
+    before(() => {
+      const jsonDescr = loadDescription('intbitwise_desc.json')
+      const Intbitwise = buildContractClass(jsonDescr)
+      bitwise = new Intbitwise()
+    })
+
+    function getRandomInt(min, max) {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+    }
+
+    it('and', () => {
+      // &
+      expect(and(new Int(0), new Int(0)).toNumber())
+        .to.eq(0);
+
+      expect(and(new Int(1), new Int(0)).toNumber())
+        .to.eq(0);
+
+      expect(and(new Int(1), new Int(1)).toNumber())
+        .to.eq(1);
+
+      expect(and(new Int(-1), new Int(-1)).toNumber())
+        .to.eq(-1);
+
+      expect(and(new Int(-1), new Int(1)).toNumber())
+        .to.eq(1);
+
+      // |
+      expect(or(new Int(0), new Int(0)).toNumber())
+        .to.eq(0);
+
+      expect(or(new Int(1), new Int(0)).toNumber())
+        .to.eq(1);
+
+      expect(or(new Int(1), new Int(1)).toNumber())
+        .to.eq(1);
+
+      expect(or(new Int(-1), new Int(-1)).toNumber())
+        .to.eq(-1);
+
+      expect(or(new Int(-1), new Int(1)).toNumber())
+        .to.eq(-1);
+
+      // ^
+
+      expect(xor(new Int(0), new Int(0)).toNumber())
+        .to.eq(0);
+
+      expect(xor(new Int(1), new Int(0)).toNumber())
+        .to.eq(1);
+
+      expect(xor(new Int(1), new Int(1)).toNumber())
+        .to.eq(0);
+
+      expect(xor(new Int(-1), new Int(-1)).toNumber())
+        .to.eq(0);
+
+      expect(xor(new Int(-1), new Int(1)).toNumber())
+        .to.eq(0);
+
+      // ~
+
+
+      expect(invert(new Int(-2142284617)).toNumber())
+        .to.eq(5199030);
+
+      expect(invert(new Int(0)).toNumber())
+        .to.eq(0);
+
+      expect(invert(new Int(1)).toNumber())
+        .to.eq(-126);
+
+      expect(invert(new Int(-1)).toNumber())
+        .to.eq(126);
+
+      expect(invert(new Int(-2)).toNumber())
+        .to.eq(125);
+
+      expect(invert(new Int(2)).toNumber())
+        .to.eq(-125);
+
+
+
+
+
+      let bigL = new Int("12394723457348573489578978964");
+      let bigR = new Int("2345243523456256345623456");
+      let bigV = new Int("758103938891062806383232");
+      expect(and(bigL, bigR).toNumber())
+        .to.eq(bigV.toNumber());
+
+      expect(bitwise.and(bigL, bigR, and(bigL, bigR)).verify().success).to.be.true
+
+      expect(bitwise.or(bigL, bigR, or(bigL, bigR)).verify().success).to.be.true
+
+      expect(bitwise.xor(bigL, bigR, xor(bigL, bigR)).verify().success).to.be.true
+
+      expect(bitwise.invert(bigL, invert(bigL)).verify().success).to.be.true
+      expect(bitwise.invert(bigR, invert(bigR)).verify().success).to.be.true
+      let counter = 10000;
+
+      while (--counter > 0) {
+        let l = new Int(getRandomInt(-100000000000, 100000000000));
+        let r = new Int(getRandomInt(-100000000000, 100000000000));
+        let result = bitwise.and(l, r, and(l, r)).verify();
+        expect(result.success, result.error).to.be.true
+
+
+        result = bitwise.or(l, r, or(l, r)).verify();
+        expect(result.success, result.error).to.be.true
+
+
+        result = bitwise.xor(l, r, xor(l, r)).verify();
+        expect(result.success, result.error).to.be.true
+
+        result = bitwise.invert(l, invert(l)).verify();
+        expect(result.success, result.error).to.be.true
+
+        result = bitwise.invert(r, invert(r)).verify();
+        expect(result.success, result.error).to.be.true
+      }
 
     })
   })
