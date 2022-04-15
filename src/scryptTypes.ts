@@ -7,7 +7,8 @@ import {
   arrayToScryptType,
   cloneArray,
   canAssignProperty,
-  toHex
+  toHex,
+  int2Value
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -143,8 +144,19 @@ export class Int extends ScryptType {
   toJSON(): string | unknown {
     return this.value;
   }
-  public serialize(): string {
+
+  serialize(): string {
     return serializeInt(this.value as string);
+  }
+
+  toNumber(): number | string {
+    if (typeof this._value === 'number') {
+      return this._value;
+    } else if (typeof this._value === 'bigint') {
+      return int2Value(this._value.toString());
+    }
+
+    return int2Value(this.value as string);
   }
 
 }

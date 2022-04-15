@@ -8,7 +8,7 @@ var child_process_1 = require("child_process");
 const chalk = require("chalk");
 const { exit } = require('process');
 
-const DEFAULT_COMPILER_VERSION = '1.9.1';
+const DEFAULT_COMPILER_VERSION = '1.12.0';
 
 function getPlatformScryptc() {
   switch (os.platform()) {
