@@ -1504,7 +1504,7 @@ describe('utils', () => {
       return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
     }
 
-    it('and', () => {
+    it('should succeed', () => {
       // &
       expect(and(new Int(0), new Int(0)).toNumber())
         .to.eq(0);

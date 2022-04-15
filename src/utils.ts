@@ -829,8 +829,8 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-        expectedType,
-        resolver);
+      expectedType,
+      resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1419,8 +1419,8 @@ export function resolveConstValue(node: any): string | undefined {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -2373,10 +2373,10 @@ export function int2Number(value: ValueType): number | bigint {
     return value;
   } else if (typeof value === 'string') {
     if (value.startsWith('0x')) {
-      let bn = new BN(value.substr(2), 16);
+      const bn = new BN(value.substr(2), 16);
       return bn.toNumber();
     } else {
-      let bn = new BN(value);
+      const bn = new BN(value);
       return bn.toNumber();
     }
   }
@@ -2392,7 +2392,7 @@ export function and(a: Int, b: Int): Int {
   const bb = Buffer.from(num2bin(b.toNumber(), maxSize), 'hex');
 
   for (let i = 0; i < ba.length; i++) {
-    ba[i] &= bb[i]
+    ba[i] &= bb[i];
   }
 
   return new Int(bin2num(ba));
@@ -2408,7 +2408,7 @@ export function or(a: Int, b: Int): Int {
   const bb = Buffer.from(num2bin(b.toNumber(), maxSize), 'hex');
 
   for (let i = 0; i < ba.length; i++) {
-    ba[i] |= bb[i]
+    ba[i] |= bb[i];
   }
 
   return new Int(bin2num(ba));
@@ -2424,7 +2424,7 @@ export function xor(a: Int, b: Int): Int {
   const bb = Buffer.from(num2bin(b.toNumber(), maxSize), 'hex');
 
   for (let i = 0; i < ba.length; i++) {
-    ba[i] ^= bb[i]
+    ba[i] ^= bb[i];
   }
 
   return new Int(bin2num(ba));
@@ -2440,7 +2440,7 @@ export function invert(a: Int): Int {
   const buffer = Buffer.from(num2bin(a.toNumber(), size), 'hex');
 
   for (let i = 0; i < buffer.length; i++) {
-    buffer[i] = ~buffer[i]
+    buffer[i] = ~buffer[i];
   }
 
   return new Int(bin2num(buffer));
