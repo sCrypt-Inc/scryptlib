@@ -19,7 +19,7 @@
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "testlint": "eslint src --ext .ts,.js",
     "test": "npm run td",
-    "td": "mocha -r ts-node/register 'test/**/*.test.ts' --timeout 600000 -g 'utils' ",
+    "td": "mocha -r ts-node/register 'test/**/*.test.ts' --timeout 600000 -g '' ",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "husky install && npm run compile",
     "postinstall": "node patches/applyPatch.js",

@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## 0.14.0
+
+- Add util functions: `and()`, `or()`, `xor()`, `invert()`, which are equivalent to the bitwise operators `&`, `|`, `^`, `~`  in scrypt
+
+*Release Date: 2022/04/15*
+
+## 0.13.2
+
+- Support auto initializing instance property 
+
+*Release Date: 2022/03/05*
+
 
 ## 0.13.2
 
