@@ -114,9 +114,9 @@ export class AbstractContract {
     this.scriptedConstructor.init(asmVarValues);
   }
 
-  static findSrcInfo(interpretStates: any[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
+  static findSrcInfo(fExecs: boolean[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
     while (--stepIndex > 0 && --opcodesIndex > 0) {
-      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0 && interpretStates[stepIndex].step.fExec) {
+      if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0 && fExecs[stepIndex]) {
         return opcodes[opcodesIndex];
       }
     }
@@ -199,9 +199,9 @@ export class AbstractContract {
     const bsi = bsv.Script.Interpreter();
 
     let stepCounter: StepIndex = 0;
-    const interpretStates: { step: any, mainstack: any, altstack: any }[] = [];
-    bsi.stepListener = function (step: any, stack: any[], altstack: any[]) {
-      interpretStates.push({ mainstack: stack, altstack: altstack, step: step });
+    const fExecs: Array<boolean> = [];
+    bsi.stepListener = function (step: any) {
+      fExecs.push(step.fExec);
       stepCounter++;
     };
 
@@ -247,7 +247,7 @@ export class AbstractContract {
 
         if (!opcode.pos || opcode.pos.file === 'std') {
 
-          const srcInfo = AbstractContract.findSrcInfo(interpretStates, opcodes, lastStepIndex, opcodeIndex);
+          const srcInfo = AbstractContract.findSrcInfo(fExecs, opcodes, lastStepIndex, opcodeIndex);
 
           if (srcInfo) {
             opcode.pos = srcInfo.pos;

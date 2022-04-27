@@ -551,7 +551,7 @@ Interpreter.prototype.evaluate = function (scriptType) {
 Interpreter.prototype._callbackStep = function (thisStep) {
   if (typeof this.stepListener === 'function') {
     try {
-      this.stepListener(thisStep, cloneDeep(this.stack.rawstack, true), cloneDeep(this.altstack.rawstack, true), cloneDeep(this.stack.varStack, true))
+      this.stepListener(thisStep)
     } catch (err) {
       console.log(`Error in Step callback:${err}`)
     }
