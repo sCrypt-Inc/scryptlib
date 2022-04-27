@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 0.14.1
+
+- Fix memory leak when `verify`
+
+*Release Date: 2022/04/27*
+
+
 ## 0.14.0
 
 - Add util functions: `and()`, `or()`, `xor()`, `invert()`, which are equivalent to the bitwise operators `&`, `|`, `^`, `~`  in scrypt
