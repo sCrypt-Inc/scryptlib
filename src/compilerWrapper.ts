@@ -178,6 +178,45 @@ export interface StaticEntity {
   value?: any;
 }
 
+export function justCompiling(source: {
+  path: string,
+  content?: string,
+},
+settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  }): {
+    path: string,
+    output: string,
+    md5: string,
+  } {
+  const sourcePath = source.path;
+  const srcDir = dirname(sourcePath);
+  const curWorkingDir = settings.cwd || srcDir;
+  const outputDir = settings.outputDir || srcDir;
+  const timeout = settings.timeout || 1200000;
+  const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
+  const cmdPrefix = settings.cmdPrefix || findCompiler();
+  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
+
+  return {
+    path: sourcePath,
+    output: output,
+    md5: md5(sourceContent),
+  };
+}
+
 export function compile(
   source: {
     path: string,
@@ -198,19 +237,43 @@ export function compile(
     timeout?: number  // in ms
   }
 ): CompileResult {
-  const st = Date.now();
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
   const curWorkingDir = settings.cwd || srcDir;
-  const sourceFileName = basename(sourcePath);
   const outputDir = settings.outputDir || srcDir;
   const timeout = settings.timeout || 1200000;
+  const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
+  const cmdPrefix = settings.cmdPrefix || findCompiler();
+  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
+  return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
+}
+
+export function handleCompilerOutput(
+  sourcePath: string,
+  settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  },
+  output: string,
+  md5: string,
+): CompileResult {
+
+  const srcDir = dirname(sourcePath);
+  const sourceFileName = basename(sourcePath);
+  const outputDir = settings.outputDir || srcDir;
   const outputFiles = {};
   try {
-    const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-    const cmdPrefix = settings.cmdPrefix || findCompiler();
-    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-    let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
     let result: CompileResult = { errors: [], warnings: [] };
@@ -375,7 +438,7 @@ export function compile(
         version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
         compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
         contract: result.contract,
-        md5: md5(sourceContent),
+        md5: md5,
         structs: result.structs || [],
         library: result.library || [],
         alias: result.alias || [],
