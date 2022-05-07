@@ -43,7 +43,22 @@ There are three ways to generate this file (named as `xxx_desc.json`):
   );
 ```
 
-3. Run `npx` command in CLI:
+3. `compileAsync` is the asynchronous version of the function `compile`
+
+```javascript
+  import { compileAsync } from 'scryptlib';
+
+  ...
+
+  compileAsync(
+    {
+      path: contractFilePath  //  the file path of the contract
+    },
+    settings
+  ) : Promise<CompileResult>;
+```
+
+4. Run `npx` command in CLI:
 ```sh
   # install compiler binary
   npx scryptlib download

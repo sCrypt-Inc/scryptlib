@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.15.0
+
+- Add [compileAsync](README.md#contract-description-file), `compileContractAsync`
+
+```javascript
+const result = await compileContractAsync(absolute path);
+```
+
+*Release Date: 2022/05/07*
+
 
 ## 0.14.1
 
