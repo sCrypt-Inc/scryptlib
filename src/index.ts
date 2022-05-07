@@ -1,5 +1,5 @@
 export {
-  buildContractClass, buildTypeClasses, compile, compileContract, getPreimage, signTx, handleCompilerOutput, justCompiling
+  buildContractClass, buildTypeClasses, compile, compileAsync, compileContract, getPreimage, signTx, handleCompilerOutput, compileContractAsync
 } from './internal';
 
 export {

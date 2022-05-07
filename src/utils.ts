@@ -16,10 +16,10 @@ import {
   Arguments, Argument,
   Script, ParamEntity, SingletonParamType
 } from './internal';
-import { StaticEntity } from './compilerWrapper';
+import { compileAsync, StaticEntity } from './compilerWrapper';
 import { HashedMap, HashedSet, Library, ScryptTypeResolver, String } from './scryptTypes';
 import { VerifyError } from './contract';
-import { ABIEntity, LibraryEntity } from '.';
+import { ABIEntity, handleCompilerOutput, LibraryEntity } from '.';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -1324,6 +1324,50 @@ export function compileContract(file: string, options?: {
 }
 
 
+export function compileContractAsync(file: string, options?: {
+  out?: string,
+  sourceMap?: boolean
+}): Promise<CompileResult> {
+  console.log(`compiling contract ${file} ...`);
+  options = Object.assign({
+    out: join(__dirname, '..', 'out'),
+    sourceMap: true
+  }, options);
+  if (!fs.existsSync(file)) {
+    throw (`file ${file} not exists!`);
+  }
+
+  if (!fs.existsSync(options.out)) {
+    fs.mkdirSync(options.out);
+  }
+
+  const settings = {
+    desc: true, debug: options.sourceMap, outputDir: options.out,
+    hex: true,
+    cmdPrefix: findCompiler()
+  };
+
+  return new Promise((resolve, reject) => {
+    compileAsync(
+      { path: file },
+      settings,
+      (error: Error, data) => {
+        if (error) {
+          reject(error);
+        }
+
+        try {
+          const result = handleCompilerOutput(file, settings, data.output, data.md5);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }
+    );
+  });
+}
+
+
 export function newCall(Cls: typeof AbstractContract, args: Array<SupportedParamType>): AbstractContract {
   return new (Function.prototype.bind.apply(Cls, [null].concat(args)));
 }
@@ -2141,19 +2185,19 @@ export function parseGenericType(type: string): [string, Array<string>] {
 
 
 // Equivalent to the built-in function `hash160` in scrypt
-export function hash160(hexstr: string): string {
-  return bsv.crypto.Hash.sha256ripemd160(Buffer.from(hexstr, 'hex')).toString('hex');
+export function hash160(hexstr: string, encoding?: BufferEncoding): string {
+  return bsv.crypto.Hash.sha256ripemd160(Buffer.from(hexstr, encoding || 'hex')).toString('hex');
 }
 
 // Equivalent to the built-in function `sha256` in scrypt
-export function sha256(hexstr: string): string {
-  return bsv.crypto.Hash.sha256(Buffer.from(hexstr, 'hex')).toString('hex');
+export function sha256(hexstr: string, encoding?: BufferEncoding): string {
+  return bsv.crypto.Hash.sha256(Buffer.from(hexstr, encoding || 'hex')).toString('hex');
 }
 
 
 // Equivalent to the built-in function `hash256` in scrypt
-export function hash256(hexstr: string): string {
-  return sha256(sha256(hexstr));
+export function hash256(hexstr: string, encoding?: BufferEncoding): string {
+  return sha256(sha256(hexstr, encoding), encoding);
 }
 
 
