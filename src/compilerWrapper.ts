@@ -1,11 +1,12 @@
 import { basename, dirname, join } from 'path';
-import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 'fs';
+import { execSync, exec } from 'child_process';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync } from 'fs';
 import md5 = require('md5');
+import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
 import {
   path2uri, ContractDescription, findCompiler,
-  buildTypeResolver, TypeResolver, resolveConstValue, shortType
+  buildTypeResolver, TypeResolver, resolveConstValue, shortType, hash160
 } from './internal';
 
 
@@ -178,6 +179,112 @@ export interface StaticEntity {
   value?: any;
 }
 
+function toOutputDir(descDir: string, sourcePath: string) {
+  return join(descDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf-8').substring(0, 10));
+}
+export function doCompileAsync(source: {
+  path: string,
+  content?: string,
+},
+settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  }, callback?: (error: Error | null, result: {
+    path: string,
+    output: string,
+    md5: string,
+  } | null) => void) {
+  const sourcePath = source.path;
+  const srcDir = dirname(sourcePath);
+  const curWorkingDir = settings.cwd || srcDir;
+  const descDir = settings.outputDir || srcDir;
+  const outputDir = toOutputDir(descDir, sourcePath);
+
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir);
+  }
+
+  const timeout = settings.timeout || 1200000;
+  const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
+  const cmdPrefix = settings.cmdPrefix || findCompiler();
+  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  const childProcess = exec(cmd, { cwd: curWorkingDir, timeout, killSignal: 'SIGKILL' },
+    (error: Error | null, stdout: string, stderr: string) => {
+      if (error) {
+        console.error(`exec error: ${error}`);
+        callback(error, null);
+        return;
+      }
+
+      callback(null, {
+        path: sourcePath,
+        output: stdout,
+        md5: md5(sourceContent),
+      });
+    });
+
+  childProcess.stdin.write(sourceContent, (error: Error) => {
+    if (error) {
+      callback(error, null);
+      return;
+    }
+
+    childProcess.stdin.end();
+  });
+
+  return childProcess;
+}
+
+export function compileAsync(source: {
+  path: string,
+  content?: string,
+},
+settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  }): Promise<CompileResult> {
+
+  return new Promise((resolve, reject) => {
+    doCompileAsync(
+      source,
+      settings,
+      (error: Error, data) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        try {
+          const result = handleCompilerOutput(source.path, settings, data.output, data.md5);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }
+    );
+  });
+}
+
 export function compile(
   source: {
     path: string,
@@ -198,19 +305,52 @@ export function compile(
     timeout?: number  // in ms
   }
 ): CompileResult {
-  const st = Date.now();
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
+  //dir that store desc file
+  const descDir = settings.outputDir || srcDir;
   const curWorkingDir = settings.cwd || srcDir;
-  const sourceFileName = basename(sourcePath);
-  const outputDir = settings.outputDir || srcDir;
+  //dir that store ast,asm file
+  const outputDir = toOutputDir(descDir, sourcePath);
+
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir);
+  }
+
   const timeout = settings.timeout || 1200000;
+  const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
+  const cmdPrefix = settings.cmdPrefix || findCompiler();
+  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
+  return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
+}
+
+export function handleCompilerOutput(
+  sourcePath: string,
+  settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  },
+  output: string,
+  md5: string,
+): CompileResult {
+
+  const srcDir = dirname(sourcePath);
+  const sourceFileName = basename(sourcePath);
+  const descDir = settings.outputDir || srcDir;
+  const outputDir = toOutputDir(descDir, sourcePath);
   const outputFiles = {};
   try {
-    const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
-    const cmdPrefix = settings.cmdPrefix || findCompiler();
-    const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-    let output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
     let result: CompileResult = { errors: [], warnings: [] };
@@ -369,13 +509,13 @@ export function compile(
 
     if (settings.desc) {
       settings.outputToFiles = true;
-      const outputFilePath = getOutputFilePath(outputDir, 'desc');
+      const outputFilePath = getOutputFilePath(descDir, 'desc');
       outputFiles['desc'] = outputFilePath;
       const description: ContractDescription = {
         version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
         compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
         contract: result.contract,
-        md5: md5(sourceContent),
+        md5: md5,
         structs: result.structs || [],
         library: result.library || [],
         alias: result.alias || [],
@@ -423,6 +563,10 @@ export function compile(
           unlinkSync(file);
         }
       });
+    }
+
+    if (readdirSync(outputDir).length === 0) {
+      rimraf.sync(outputDir);
     }
     // console.log('compile time spent: ', Date.now() - st)
   }

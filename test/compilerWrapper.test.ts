@@ -1,8 +1,8 @@
 import { assert, expect } from 'chai';
-import path = require("path");
+import * as path from "path";
 import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers } from './helper'
 import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
-import { compileContract } from '../src/utils';
+import { compileContract, compileContractAsync } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
 import { basename, join } from 'path';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
@@ -104,7 +104,7 @@ describe('compile()', () => {
     });
 
     it('source should be sort as expected', () => {
-      expect(desc.sources.map(path => basename(path))).to.members(["std", "util.scrypt", "tokenUtxo.scrypt"])
+      expect(desc.sources.map(path => basename(path))).to.members(["util.scrypt", "tokenUtxo.scrypt"])
     })
 
 
@@ -915,6 +915,48 @@ describe('compile()', () => {
       expect(result.hex).to.be.equal('00<pubKeyHash>610079527a75517a75615179a95179876952795279ac777777')
     })
   })
+
+
+  describe('test compileContractAsync hex', () => {
+    it('compileContractAsync successfully', async () => {
+      const result = await compileContractAsync(getContractFilePath('p2pkh.scrypt'));
+      expect(result.hex).to.be.equal('00<pubKeyHash>610079527a75517a75615179a95179876952795279ac777777')
+    })
+
+    it('compileContractAsync tokenSwap successfully', async () => {
+      const result = await compileContractAsync(getContractFilePath('tokenSwap.scrypt'));
+      expect(result.errors.length === 0).to.be.true;
+    })
+
+    it('compileContractAsync invalid lib.scrypt', async () => {
+      const result = await compileContractAsync(getInvalidContractFilePath('lib.scrypt'));
+
+      assert.typeOf(result.errors, 'array');
+
+      result.errors.forEach(e => {
+        e.filePath = path.basename(e.filePath);
+      })
+
+      expect(result.errors).to.deep.include.members([{
+        filePath: "lib.scrypt",
+        message: "Contact `Lib` must have at least one public function",
+        position: [
+          {
+            "column": 10,
+            "line": 1
+          },
+          {
+            "column": 13,
+            "line": 1
+          }
+        ],
+        type: "SemanticError",
+        relatedInformation: []
+      }])
+    })
+
+  })
+
 
   describe('test statics', () => {
     it('compile successfully', () => {

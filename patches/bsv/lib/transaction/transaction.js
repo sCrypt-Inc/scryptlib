@@ -1326,9 +1326,9 @@ Transaction.prototype.checkFeeRate = function (feePerKb) {
   const fee = this._getUnspentValue()
 
   var estimatedSize = this._estimateSize()
-  var expectedFee = Math.ceil(estimatedSize / 1000 * (feePerKb || this._feePerKb || Transaction.FEE_PER_KB))
-
-  return fee >= expectedFee
+  var expectedRate = (feePerKb || this._feePerKb || Transaction.FEE_PER_KB) / 1000
+  var realFeeRate = fee / estimatedSize;
+  return realFeeRate >= expectedRate
 }
 
 
