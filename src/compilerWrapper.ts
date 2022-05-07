@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync, exec } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync } from 'fs';
 import md5 = require('md5');
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
@@ -179,11 +179,14 @@ export interface StaticEntity {
   value?: any;
 }
 
+function toOutputDir(descDir: string, sourcePath: string) {
+  return join(descDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf-8').substring(0, 10));
+}
 export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
+  settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -205,7 +208,7 @@ settings: {
   const srcDir = dirname(sourcePath);
   const curWorkingDir = settings.cwd || srcDir;
   const descDir = settings.outputDir || srcDir;
-  const outputDir = join(descDir, hash160(sourcePath, 'utf-8'));
+  const outputDir = toOutputDir(descDir, sourcePath);
 
   if (!existsSync(outputDir)) {
     mkdirSync(outputDir);
@@ -246,7 +249,7 @@ export function compileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
+  settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -308,7 +311,7 @@ export function compile(
   const descDir = settings.outputDir || srcDir;
   const curWorkingDir = settings.cwd || srcDir;
   //dir that store ast,asm file
-  const outputDir = join(descDir, hash160(sourcePath, 'utf-8'));
+  const outputDir = toOutputDir(descDir, sourcePath);
 
   if (!existsSync(outputDir)) {
     mkdirSync(outputDir);
@@ -345,7 +348,7 @@ export function handleCompilerOutput(
   const srcDir = dirname(sourcePath);
   const sourceFileName = basename(sourcePath);
   const descDir = settings.outputDir || srcDir;
-  const outputDir = join(descDir, hash160(sourcePath, 'utf-8'));
+  const outputDir = toOutputDir(descDir, sourcePath);
   const outputFiles = {};
   try {
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
@@ -553,7 +556,6 @@ export function handleCompilerOutput(
           }
         }
       });
-      rimraf.sync(outputDir);
     } else {
       // cleanup all output files
       Object.values<string>(outputFiles).forEach(file => {
@@ -561,6 +563,10 @@ export function handleCompilerOutput(
           unlinkSync(file);
         }
       });
+    }
+
+    if (readdirSync(outputDir).length === 0) {
+      rimraf.sync(outputDir);
     }
     // console.log('compile time spent: ', Date.now() - st)
   }
