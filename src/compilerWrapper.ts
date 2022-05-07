@@ -186,7 +186,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: {
+settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -249,7 +249,7 @@ export function compileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: {
+settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
