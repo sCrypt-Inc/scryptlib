@@ -179,11 +179,11 @@ export interface StaticEntity {
   value?: any;
 }
 
-export function compileAsync(source: {
+export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
+  settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -240,6 +240,46 @@ settings: {
   });
 
   return childProcess;
+}
+
+export function compileAsync(source: {
+  path: string,
+  content?: string,
+},
+  settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  }): Promise<CompileResult> {
+
+  return new Promise((resolve, reject) => {
+    doCompileAsync(
+      source,
+      settings,
+      (error: Error, data) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        try {
+          const result = handleCompilerOutput(source.path, settings, data.output, data.md5);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }
+    );
+  });
 }
 
 export function compile(
