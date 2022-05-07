@@ -104,7 +104,7 @@ describe('compile()', () => {
     });
 
     it('source should be sort as expected', () => {
-      expect(desc.sources.map(path => basename(path))).to.members(["std", "util.scrypt", "tokenUtxo.scrypt"])
+      expect(desc.sources.map(path => basename(path))).to.members(["util.scrypt", "tokenUtxo.scrypt"])
     })
 
 
