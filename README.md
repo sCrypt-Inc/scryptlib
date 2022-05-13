@@ -203,13 +203,15 @@ let test = new Test(1, new L(1, 2));
 
 As you can see, creating a library instance is similar to creating a contract instance. Sometimes the constructor parameters of the library may be generic types. At this time, the sdk will deduce the generic type based on the constructor arguments you pass.
 
-## Deploy A Contract and Call Its Function
+## Deploy a Contract and Call Its Function
 
-Both **deploying a contract** and **calling a contract function**are achieved by sending a transaction. Generally speaking,
+Both **deploying a contract** and **calling a contract function** are achieved by sending a transaction. Generally speaking,
 
-* Deploying a contract needs the locking script in the output of this transaction to be set properly;
-* Calling a contract function needs the unlocking script in the input of this transaction to be set properly;
+* deploying a contract needs the locking script in the output of this transaction to be set properly;
+* calling a contract function needs the unlocking script in the input of this transaction to be set properly.
 
+There are 2 steps.
+### 1. Get Locking and Unlocking Script
 You can use the description file to build a reflected contract class in Javascript/TypeScript like this:
 ```typescript
 const MyContract = buildContractClass(JSON.parse(descFileContent));
@@ -234,9 +236,8 @@ const unlockingScriptASM = unlockingScript.toASM();
 const unlockingScriptHex = unlockingScript.toHex();
 ```
 
-```typescript
-const {Person, Male, Female} = buildTypeClasses(JSON.parse(descFileContent));
-```
+### 2. Wrap Locking and Unlocking Script into a Transaction
+[Chained APIs](./docs/chained_api_en.md) make building transactions super easy.
 
 ## Local Unit Tests
 
@@ -355,10 +356,6 @@ let counter = Counter.fromTransaction(response.data, 0/** output index**/);
 let counterClone = Counter.fromHex(counter.lockingScript.toHex());
 
 ```
-
-## Chained APIs
-
-[Chained APIs](./docs/chained_api_en.md) makes building transactions easy.
 
 ## Support browsers that are not compatible with BigInt
 
