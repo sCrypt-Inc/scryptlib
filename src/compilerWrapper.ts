@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync, exec } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, createReadStream } from 'fs';
 import md5 = require('md5');
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
@@ -8,6 +8,11 @@ import {
   path2uri, ContractDescription, findCompiler,
   buildTypeResolver, TypeResolver, resolveConstValue, shortType, hash160
 } from './internal';
+
+const { chain } = require('stream-chain');
+
+const { parser } = require('stream-json');
+const Assembler = require('stream-json/Assembler');
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -186,7 +191,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
+  settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -245,11 +250,24 @@ settings: {
   return childProcess;
 }
 
+
+async function JSONParser(file: string): Promise<any> {
+
+  return new Promise((resolve, reject) => {
+    const pipeline = chain([
+      createReadStream(file),
+      parser(),
+    ]);
+    const asm = Assembler.connectTo(pipeline);
+    asm.on('done', asm => resolve(asm.current));
+  })
+}
+
 export function compileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
+  settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -268,14 +286,15 @@ settings: {
     doCompileAsync(
       source,
       settings,
-      (error: Error, data) => {
+      async (error: Error, data) => {
         if (error) {
           reject(error);
           return;
         }
 
         try {
-          const result = handleCompilerOutput(source.path, settings, data.output, data.md5);
+
+          const result = await handleCompilerOutputAsync(source.path, settings, data.output, data.md5);
           resolve(result);
         } catch (error) {
           reject(error);
@@ -284,6 +303,258 @@ settings: {
     );
   });
 }
+
+
+export async function handleCompilerOutputAsync(
+  sourcePath: string,
+  settings: {
+    ast?: boolean,
+    asm?: boolean,
+    hex?: boolean,
+    debug?: boolean,
+    desc?: boolean,
+    outputDir?: string,
+    outputToFiles?: boolean,
+    cwd?: string,
+    cmdPrefix?: string,
+    cmdArgs?: string,
+    buildType?: string,
+    timeout?: number  // in ms
+  },
+  output: string,
+  md5: string,
+): Promise<CompileResult> {
+
+  const srcDir = dirname(sourcePath);
+  const sourceFileName = basename(sourcePath);
+  const descDir = settings.outputDir || srcDir;
+  const outputDir = toOutputDir(descDir, sourcePath);
+  const outputFiles = {};
+  try {
+    // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
+    output = output.split(/\r?\n/g).join('\n');
+    let result: CompileResult = { errors: [], warnings: [] };
+    if (output.startsWith('Error:') || output.startsWith('Warning:')) {
+      result = getErrorsAndWarnings(output, srcDir, sourceFileName);
+
+      if (result.errors.length > 0) {
+        return Promise.resolve(result);
+      }
+
+    }
+
+
+
+    if (settings.ast || settings.desc) {
+      const outputFilePath = getOutputFilePath(outputDir, 'ast');
+      outputFiles['ast'] = outputFilePath;
+
+      const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
+
+      const sourceUri = path2uri(sourcePath);
+      result.file = sourceUri;
+      result.ast = allAst[sourceUri];
+      delete allAst[sourceUri];
+      result.dependencyAsts = allAst;
+
+      const alias = getAliasDeclaration(result.ast, allAst);
+      const structs = getStructDeclaration(result.ast, allAst);
+      const library = getLibraryDeclaration(result.ast, allAst);
+
+      const statics = getStaticDeclaration(result.ast, allAst);
+
+      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, statics);
+
+      result.alias = alias.map(a => ({
+        name: a.name,
+        type: shortType(typeResolver(a.type))
+      }));
+
+      result.structs = structs.map(a => ({
+        name: a.name,
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+      }));
+
+      result.library = library.map(a => ({
+        name: a.name,
+        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        genericTypes: a.genericTypes.map(t => shortGenericType(t))
+      }));
+
+      result.statics = statics.map(s => (Object.assign({ ...s }, {
+        type: shortType(typeResolver(s.type))
+      })));
+
+
+
+      const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
+
+      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
+
+      result.abi = abi;
+      result.contract = name;
+
+    }
+
+    let asmObj = null;
+
+    if (settings.asm || settings.desc) {
+      const outputFilePath = getOutputFilePath(outputDir, 'asm');
+      outputFiles['asm'] = outputFilePath;
+
+
+      asmObj = await JSONParser(outputFilePath);
+
+      const sources = asmObj.sources;
+
+      result.hex = settings.hex ? asmObj.output.map(item => item.hex).join('') : '';
+
+      result.asm = asmObj.output.map(item => {
+
+        if (!settings.debug) {
+          return {
+            opcode: item.opcode
+          };
+        }
+
+        const match = SOURCE_REG.exec(item.src);
+
+        if (match && match.groups) {
+          const fileIndex = parseInt(match.groups.fileIndex);
+
+          let debugInfo: DebugInfo | undefined;
+
+          const tagStr = match.groups.tagStr;
+
+          const m = /^(\w+)\.(\w+):(\d)(#(?<context>.+))?$/.exec(tagStr);
+
+          if (m) {
+            debugInfo = {
+              contract: m[1],
+              func: m[2],
+              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
+              context: m.groups.context
+            };
+          } else if (/loop:0/.test(tagStr)) {
+            debugInfo = {
+              contract: '',
+              func: '',
+              tag: DebugModeTag.LoopStart,
+              context: ''
+            };
+          }
+
+          const pos: Pos | undefined = sources[fileIndex] ? {
+            file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+            line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+            endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+            column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+            endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+          } : undefined;
+
+          return {
+            opcode: item.opcode,
+            stack: item.stack,
+            topVars: item.topVars || [],
+            pos: pos,
+            debugInfo
+          } as OpCode;
+        }
+        throw new Error('Compile Failed: Asm output parsing Error!');
+      });
+
+
+      if (settings.debug) {
+        result.autoTypedVars = asmObj.autoTypedVars.map(item => {
+          const match = SOURCE_REG.exec(item.src);
+          if (match && match.groups) {
+            const fileIndex = parseInt(match.groups.fileIndex);
+
+            const pos: Pos | undefined = sources[fileIndex] ? {
+              file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+              line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+              endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+              column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+              endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+            } : undefined;
+            return {
+              name: item.name,
+              type: item.type,
+              pos: pos
+            };
+          }
+        });
+      }
+    }
+
+    if (settings.desc) {
+      settings.outputToFiles = true;
+      const outputFilePath = getOutputFilePath(descDir, 'desc');
+      outputFiles['desc'] = outputFilePath;
+      const description: ContractDescription = {
+        version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
+        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
+        contract: result.contract,
+        md5: md5,
+        structs: result.structs || [],
+        library: result.library || [],
+        alias: result.alias || [],
+        abi: result.abi || [],
+        stateProps: result.stateProps || [],
+        buildType: settings.buildType || BuildType.Debug,
+        file: '',
+        asm: result.asm.map(item => item['opcode'].trim()).join(' '),
+        hex: result.hex || '',
+        sources: [],
+        sourceMap: []
+      };
+
+      if (settings.debug && asmObj) {
+        Object.assign(description, {
+          file: result.file,
+          sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
+          sourceMap: asmObj.output.map(item => item.src),
+        });
+      }
+      writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
+
+      result.compilerVersion = description.compilerVersion;
+      result.md5 = description.md5;
+    }
+
+    return Promise.resolve(result);
+  } catch (e) {
+    return Promise.reject(e);
+  } finally {
+    if (settings.outputToFiles) {
+      Object.keys(outputFiles).forEach(outputType => {
+        const file = outputFiles[outputType];
+        if (existsSync(file)) {
+          if (settings[outputType]) {
+            // rename all output files
+            renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
+          } else {
+            unlinkSync(file);
+          }
+        }
+      });
+    } else {
+      // cleanup all output files
+      Object.values<string>(outputFiles).forEach(file => {
+        if (existsSync(file)) {
+          unlinkSync(file);
+        }
+      });
+    }
+
+    if (readdirSync(outputDir).length === 0) {
+      rimraf.sync(outputDir);
+    }
+    // console.log('compile time spent: ', Date.now() - st)
+  }
+}
+
 
 export function compile(
   source: {
