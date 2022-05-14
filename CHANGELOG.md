@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.15.1
+
+- Support for parsing compilation results in asynchronous mode
+
+*Release Date: 2022/05/14*
+
+
 ## 0.15.0
 
 - Add [compileAsync](README.md#contract-description-file), `compileContractAsync`
