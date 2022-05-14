@@ -9,10 +9,9 @@ import {
   buildTypeResolver, TypeResolver, resolveConstValue, shortType, hash160
 } from './internal';
 
-const { chain } = require('stream-chain');
-
-const { parser } = require('stream-json');
-const Assembler = require('stream-json/Assembler');
+import { chain } from 'stream-chain';
+import { parser } from 'stream-json';
+import * as Assembler from 'stream-json/Assembler';
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -191,7 +190,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: {
+settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
@@ -260,14 +259,14 @@ async function JSONParser(file: string): Promise<any> {
     ]);
     const asm = Assembler.connectTo(pipeline);
     asm.on('done', asm => resolve(asm.current));
-  })
+  });
 }
 
 export function compileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: {
+settings: {
     ast?: boolean,
     asm?: boolean,
     hex?: boolean,
