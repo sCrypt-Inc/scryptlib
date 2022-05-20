@@ -13,7 +13,7 @@ import {
   xor,
   invert
 } from '../src/utils'
-import { getContractFilePath, loadDescription, newTx } from './helper';
+import { getContractFilePath, getRandomInt, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
 import { FunctionCall } from '../src/abi';
 
@@ -1498,11 +1498,6 @@ describe('utils', () => {
       bitwise = new Intbitwise()
     })
 
-    function getRandomInt(min, max) {
-      min = Math.ceil(min);
-      max = Math.floor(max);
-      return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
-    }
 
     it('should succeed', () => {
       // &

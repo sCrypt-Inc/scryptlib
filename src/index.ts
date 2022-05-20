@@ -31,3 +31,7 @@ export { serializeState, deserializeState, STATE_LEN_2BYTES, STATE_LEN_4BYTES, s
 export {
   getPlatformScryptc, findCompiler
 } from './internal';
+
+export {
+  partialSha256, sha256ByPartialHash
+} from './internal';
