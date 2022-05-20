@@ -12,7 +12,7 @@ const K = [
 /**
  * 
  * @param message origin message to sha256
- * @param index The partial hash returned is the hash of 0~index chucks, 512 bits per chuck.
+ * @param index The partial hash returned is the hash of 0~index chunks, 512 bits per chunk.
  * @returns [partialHash, partialPreimage, padding]
  */
 export function partialSha256(message: Buffer, index: number) {
@@ -144,13 +144,13 @@ function g(hprev: number[], chunk: Buffer, W: number[]): number[] {
     } else {
       const gamma0x = W[i - 15];
       const gamma0 = (((gamma0x << 25) | (gamma0x >>> 7)) ^
-                ((gamma0x << 14) | (gamma0x >>> 18)) ^
-                (gamma0x >>> 3));
+        ((gamma0x << 14) | (gamma0x >>> 18)) ^
+        (gamma0x >>> 3));
 
       const gamma1x = W[i - 2];
       const gamma1 = (((gamma1x << 15) | (gamma1x >>> 17)) ^
-                ((gamma1x << 13) | (gamma1x >>> 19)) ^
-                (gamma1x >>> 10));
+        ((gamma1x << 13) | (gamma1x >>> 19)) ^
+        (gamma1x >>> 10));
 
       W[i] = (gamma0 + W[i - 7] + gamma1 + W[i - 16]);
 
