@@ -421,4 +421,65 @@ describe('Alias type check', () => {
   })
 
 
+  describe('test resolver_generic', () => {
+    const C = buildContractClass(loadDescription('genericsst_alias_desc.json'));
+
+    it('should succeeding when resolver type', () => {
+
+      expect(C.resolver.resolverType("ST0")).deep.equal({
+        finalType: 'ST0',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST2")).deep.equal({
+        finalType: 'ST2',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST1<ST2[2]>")).deep.equal({
+        finalType: 'ST1<ST2[2]>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST1<ST0<int>>")).deep.equal({
+        finalType: 'ST1<ST0<int>>',
+        symbolType: SymbolType.Struct
+      })
+
+
+      expect(C.resolver.resolverType("ST1<ST0<int[3]>[3][1]>")).deep.equal({
+        finalType: 'ST1<ST0<int[3]>[3][1]>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST0A")).deep.equal({
+        finalType: 'ST0<int>',
+        symbolType: SymbolType.Struct
+      })
+      
+      expect(C.resolver.resolverType("ST0AA")).deep.equal({
+        finalType: 'ST0<ST0<int>>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("INTA")).deep.equal({
+        finalType: 'int[3]',
+        symbolType: SymbolType.BaseType
+      })
+
+      expect(C.resolver.resolverType("ST1A")).deep.equal({
+        finalType: 'ST1<int[3]>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST3A")).deep.equal({
+        finalType: 'ST3<ST1<int[3]>,ST0<ST0<int>>>',
+        symbolType: SymbolType.Struct
+      })
+
+    })
+
+  })
+
+
 })

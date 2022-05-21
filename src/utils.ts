@@ -17,7 +17,7 @@ import {
   Script, ParamEntity, SingletonParamType
 } from './internal';
 import { compileAsync, StaticEntity } from './compilerWrapper';
-import { HashedMap, HashedSet, Library, ScryptTypeResolver, String, SymbolType, TypeInfo } from './scryptTypes';
+import { BasicScryptType, HashedMap, HashedSet, Library, ScryptTypeResolver, String, SymbolType, TypeInfo } from './scryptTypes';
 import { VerifyError } from './contract';
 import { ABIEntity, handleCompilerOutput, LibraryEntity } from '.';
 
@@ -1462,8 +1462,9 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
   } else if(isGenericType(type)) {
     const [name, genericTypes] = parseGenericType(type);
     const typeInfo = resolveAliasType(originTypes, alias, name);
+    const gts = genericTypes.map(t => resolveAliasType(originTypes, alias, t).finalType);
     return {
-      finalType: toGenericType(typeInfo.finalType, genericTypes.map(t => resolveAliasType(originTypes, alias, t).finalType)),
+      finalType: toGenericType(typeInfo.finalType, gts),
       symbolType: typeInfo.symbolType
     };
   }
@@ -1476,10 +1477,15 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
     return resolveAliasType(originTypes, alias, a.type);
   } else if(originTypes[type]) {
     return originTypes[type];
-  } else {
+  } else if(BasicScryptType[type]) {
     return {
       finalType: type,
       symbolType: SymbolType.BaseType
+    };
+  } else {
+    return {
+      finalType: type,
+      symbolType: SymbolType.Unknown
     };
   }
 }
@@ -2098,7 +2104,7 @@ export function toHashedSet(collection: Map<SupportedParamType, SupportedParamTy
  * @returns 
  */
 export function isGenericType(type: string): boolean {
-  return /^([\w]+)<([\w,[\]\s])+>$/.test(type);
+  return /^([\w]+)<([\w,[\]\s<>]+)>$/.test(type);
 }
 
 /**
@@ -2110,7 +2116,7 @@ export function isGenericType(type: string): boolean {
 export function parseGenericType(type: string): [string, Array<string>] {
 
   if (isGenericType(type)) {
-    const m = type.match(/([\w]+)<([\w,[\]\s]+)>$/);
+    const m = type.match(/([\w]+)<([\w,[\]<>\s]+)>$/);
     if (m) {
       const library = m[1];
       const realTypes = m[2].split(',').map(t => t.trim());

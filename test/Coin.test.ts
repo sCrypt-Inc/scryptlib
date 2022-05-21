@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { PubKey, PubKeyHash } from '../src/scryptTypes'
+import { buildContractClass } from '../src/contract'
+import { PubKey, PubKeyHash, SortedItem } from '../src/scryptTypes'
 import { bsv, toHex, getPreimage, findKeyIndex, toData, toHashedMap, signTx } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -89,7 +89,10 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKey, coin.lockingScript, inputSatoshis);
 
-            const result = coin.mint(pkhReceiver, mintAmount, preimage, sig, publicKey, 0, findKeyIndex(map, pkhReceiver)).verify()
+            const result = coin.mint(new SortedItem({
+                item: pkhReceiver,
+                idx: findKeyIndex(map, pkhReceiver)
+            }), mintAmount, preimage, sig, publicKey, 0).verify()
             expect(result.success, result.error).to.be.true;
             coin.balances = toHashedMap(map)
             coin.minter = pkh
@@ -103,12 +106,14 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
+            const result = coin.send(new SortedItem({
+                item: pkhReceiver1,
+                idx: findKeyIndex(map, pkhReceiver1)
+            }), sendAmount, preimage, sig,
                 publicKeyReceiver,
                 mintAmount,
                 oldKeyIndex,
-                0,
-                findKeyIndex(map, pkhReceiver1)).verify()
+                0).verify()
             expect(result.success, result.error).to.be.true;
             coin.balances = toHashedMap(map)
         })
@@ -121,12 +126,14 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
+            const result = coin.send(new SortedItem({
+                item: pkhReceiver1,
+                idx: findKeyIndex(map, pkhReceiver1)
+            }), sendAmount, preimage, sig,
                 publicKeyReceiver,
                 mintAmount - sendAmount,
                 oldKeyIndex,
-                sendAmount,
-                findKeyIndex(map, pkhReceiver1)).verify()
+                sendAmount).verify()
             expect(result.success, result.error).to.be.true;
             coin.balances = toHashedMap(map)
         })
@@ -147,28 +154,34 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKeyFake, coin.lockingScript, inputSatoshis);
 
-            let result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
+            let result = coin.send(new SortedItem({
+                item: pkhReceiver1,
+                idx: findKeyIndex(map, pkhReceiver1)
+            }), sendAmount, preimage, sig,
                 publicKeyFake,
                 fake_balances_msgSender,
                 0,
-                balances_receiver,
-                findKeyIndex(map, pkhReceiver1)).verify()
+                balances_receiver).verify()
             expect(result.success, result.error).to.be.false;
 
-            result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
+            result = coin.send(new SortedItem({
+                item: pkhReceiver1,
+                idx: findKeyIndex(map, pkhReceiver1)
+            }), sendAmount, preimage, sig,
                 publicKeyFake,
                 fake_balances_msgSender,
                 1,
-                balances_receiver,
-                findKeyIndex(map, pkhReceiver1)).verify()
+                balances_receiver).verify()
             expect(result.success, result.error).to.be.false;
 
-            result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
+            result = coin.send(new SortedItem({
+                item: pkhReceiver1,
+                idx: findKeyIndex(map, pkhReceiver1)
+            }), sendAmount, preimage, sig,
                 publicKeyFake,
                 fake_balances_msgSender,
                 2,
-                balances_receiver,
-                findKeyIndex(map, pkhReceiver1)).verify()
+                balances_receiver).verify()
             expect(result.success, result.error).to.be.false;
 
             //must reset map to make  not affecting test below.
@@ -187,14 +200,16 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(pkhReceiver1, sendAmount, preimage, sig,
+            const result = coin.send(new SortedItem({
+                item: pkhReceiver1,
+                idx: findKeyIndex(map, pkhReceiver1)
+            }), sendAmount, preimage, sig,
                 publicKeyReceiver,
                 balances_sender,
                 oldKeyIndex,
-                balances_receiver,
-                findKeyIndex(map, pkhReceiver1)).verify()
+                balances_receiver).verify()
             expect(result.success, result.error).to.be.false;
-            expect(result.error).to.contains("Coin.scrypt#51")
+            expect(result.error).to.contains("Coin.scrypt#53")
         })
 
     })

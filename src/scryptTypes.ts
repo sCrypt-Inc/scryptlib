@@ -19,6 +19,7 @@ export enum SymbolType  {
   Contract = "Contract",
   Library = "Library",
   Struct = "Struct",
+  Unknown = "Unknown",
 };
 
 
@@ -539,7 +540,7 @@ export class Struct extends ScryptType {
       const member = this.memberByKey(p.name);
       checkStructField(structAst, p, member, this._typeResolver);
     });
-    
+
     const ordered = {};
     const unordered = this.value;
     Object.keys(this.value).sort((a: string, b: string) => {
@@ -624,9 +625,7 @@ export class Struct extends ScryptType {
           });
         }
       }
-    });
-
-    
+    });    
   }
 
   public inferrTypesByAssign(assignType: string): boolean {
@@ -715,7 +714,7 @@ export class Struct extends ScryptType {
    * Get the member type declared by the structure by structAst
    */
   getMemberAstFinalType(key: string): string {
-    const structAst = Struct.getStructAst(this);
+    const structAst = this.getStructAst();
     const paramEntity = structAst.params.find(p => {
       return p.name === key;
     });
@@ -1141,6 +1140,29 @@ HashedSet.libraryAst = {
   genericTypes: ['E']
 } as LibraryEntity;
 
+
+export class SortedItem extends Struct {
+  constructor(data: any) {
+    super(data);
+    this._typeResolver = (t: string) => ({finalType: t, symbolType: SymbolType.Struct}); //we should assign this before bind
+    this.bind();
+  }
+}
+
+SortedItem.structAst = {
+  name: 'SortedItem',
+  params: [
+    {
+      name: 'item',
+      type: 'T'
+    },
+    {
+      name: 'idx',
+      type: 'int'
+    }
+  ],
+  genericTypes: ['T']
+} as StructEntity;
 
 export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | Struct | Library;
 

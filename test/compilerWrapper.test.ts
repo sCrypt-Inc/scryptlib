@@ -69,7 +69,8 @@ describe('compile()', () => {
       }, {
         "name": "age",
         "type": "int"
-      }]
+      }],
+      "genericTypes": []
     }, {
       name: 'Block',
       params: [{
@@ -81,7 +82,8 @@ describe('compile()', () => {
       }, {
         "name": "time",
         "type": "int"
-      }]
+      }],
+      "genericTypes": []
     }
     ])
   })

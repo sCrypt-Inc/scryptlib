@@ -1237,6 +1237,13 @@ describe('utils', () => {
       expect(isGenericType("A<Da, da>"))
         .to.be.true;
 
+      expect(isGenericType("ST1<ST0<int>>"))
+        .to.be.true;
+
+      
+      expect(isGenericType("ST1<ST0<int>[3],ST0<int, [3]>[3]>"))
+        .to.be.true;
+
     })
 
     it('parseGenericType', () => {

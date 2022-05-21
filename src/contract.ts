@@ -695,6 +695,10 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
     symbolType: SymbolType.Library
   };
 
+  resolvedTypes['SortedItem'] = {
+    finalType: 'SortedItem',
+    symbolType: SymbolType.Struct
+  };
 
   resolvedTypes['PubKeyHash'] = {
     finalType: 'Ripemd160',
