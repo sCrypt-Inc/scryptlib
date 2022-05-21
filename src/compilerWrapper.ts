@@ -6,7 +6,7 @@ import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
 import {
   path2uri, ContractDescription, findCompiler,
-  buildTypeResolver, TypeResolver, resolveConstValue, shortType, hash160
+  buildTypeResolver, TypeResolver, resolveConstValue, hash160
 } from './internal';
 
 import { chain } from 'stream-chain';
@@ -166,10 +166,10 @@ export interface ABIEntity {
 export interface StructEntity {
   name: string;
   params: Array<ParamEntity>;
+  genericTypes: Array<string>;
 }
 export interface LibraryEntity extends StructEntity {
   properties: Array<ParamEntity>;
-  genericTypes: Array<string>;
 }
 export interface AliasEntity {
   name: string;
@@ -366,30 +366,31 @@ export async function handleCompilerOutputAsync(
 
       result.alias = alias.map(a => ({
         name: a.name,
-        type: shortType(typeResolver(a.type))
+        type: typeResolver(a.type).finalType
       }));
 
       result.structs = structs.map(a => ({
         name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+        params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+        genericTypes: a.genericTypes.map(t => shortGenericType(t))
       }));
 
       result.library = library.map(a => ({
         name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
-        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+        properties: a.properties.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
         genericTypes: a.genericTypes.map(t => shortGenericType(t))
       }));
 
       result.statics = statics.map(s => (Object.assign({ ...s }, {
-        type: shortType(typeResolver(s.type))
+        type: typeResolver(s.type).finalType
       })));
 
 
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
-      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
+      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: typeResolver(p.type).finalType }));
 
       result.abi = abi;
       result.contract = name;
@@ -658,30 +659,31 @@ export function handleCompilerOutput(
 
       result.alias = alias.map(a => ({
         name: a.name,
-        type: shortType(typeResolver(a.type))
+        type: typeResolver(a.type).finalType
       }));
 
       result.structs = structs.map(a => ({
         name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
+        params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+        genericTypes: a.genericTypes.map(t => shortGenericType(t))
       }));
 
       result.library = library.map(a => ({
         name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
-        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
+        params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+        properties: a.properties.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
         genericTypes: a.genericTypes.map(t => shortGenericType(t))
       }));
 
       result.statics = statics.map(s => (Object.assign({ ...s }, {
-        type: shortType(typeResolver(s.type))
+        type: typeResolver(s.type).finalType
       })));
 
 
 
       const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
-      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
+      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: typeResolver(p.type).finalType }));
 
       result.abi = abi;
       result.contract = name;
@@ -994,7 +996,7 @@ export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   interfaces.forEach(abi => {
     abi.params = abi.params.map(param => {
       return Object.assign(param, {
-        type: shortType(typeResolver(param.type))
+        type: typeResolver(param.type).finalType
       });
     });
   });
@@ -1024,6 +1026,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
     return (ast.structs || []).map(s => ({
       name: s['name'],
       params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+      genericTypes: s.genericTypes || [],
     }));
   }).flat(1);
 }

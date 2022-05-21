@@ -5,11 +5,11 @@ export {
 
 export {
   bsv, ECIES, toHex, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
-  findStructByType, findStructByName, isStructType, isStructOrLibraryType, isArrayType,
+  findStructByType, findStructByName,  isArrayType,
   arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
   flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
-  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType, serializeSupportedParamType, shortType, getLibraryNameByType,
+  arrayTypeAndSizeStr, toLiteralArrayType, serializeSupportedParamType, getLibraryNameByType,
   librarySign, structSign, resolveGenericType, createDefaultLibrary, createLibraryProperties, canAssignProperty, arrayToLiteral, cloneArray, arrayToScryptType,
   buildStructsClass, buildTypeResolver, buildScryptTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg, buildContractState,
   compilerVersion, flatternLibrary, flatternLibraryState, flatternCtorArgs, flatternStruct, flatternArray, flatternParams, flatternStateArgs,

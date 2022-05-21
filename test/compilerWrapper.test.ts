@@ -871,7 +871,8 @@ describe('compile()', () => {
             "name": "x",
             "type": "int[3]"
           }
-        ]
+        ],
+        "genericTypes": []
       },
       {
         "name": "St2",
@@ -880,7 +881,8 @@ describe('compile()', () => {
             "name": "st1s",
             "type": "St1[2]"
           }
-        ]
+        ],
+        "genericTypes": []
       }
     ])
 
