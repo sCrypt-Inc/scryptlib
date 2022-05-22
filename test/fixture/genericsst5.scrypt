@@ -3,34 +3,53 @@ struct ST0<T, K> {
     T y;
 }
 
-struct ST1 {
-    ST0<int[3], bool[1]> a;
-    ST0<bool, bytes> b;
+
+struct ST1<T, K> {
+    ST0<T, K>  x;
+    T y;
 }
 
+
+
+library ERC20 {
+    int _totalSupply;
+
+    HashedMap<ST1<int,  bool>, int> balances;
+
+    function balanceOf(SortedItem<ST1<int,  bool>> account, int balance) : bool {
+        return this.balances.canGet(account, balance);
+    }
+
+    function put(SortedItem<ST1<int,  bool>> account, int balance) : bool {
+        return this.balances.set(account, balance);
+    }
+
+    function getSt1() : ST1<int,  bool> {
+        ST1<int,  bool> accounta = {{false, 3000}, 2000};
+        return accounta;
+    }
+ }
+
 contract C {
-     
-    ST0<int[3], bool[1]> a;
 
-    constructor(ST0<int[3], bool[1]> a) {
-        this.a = a;
-    }
+    ERC20 erc20;
 
-    public function unlock(ST0<int, bool> aa, ST0<int[3], bool[1]> aaa) {
-        ST0<int, bool> a = {true, 1};
-        require(a == aa);
-        require(this.a == aaa);
-        ST1 st1 = {{[false], [1,2,3]}, {b'0011', true}};
 
-        loop(3) : i {
-            st1.a.y[this.f1(i*1)] = st1.a.y[this.f1(i*1)] * 10 + 100;
-        }
+    public function unlock(ST1<int,  bool> account) {
+        ST1<int,  bool> accounta = {{false, 3000}, 2000};
 
-        require(st1.a.y == [110, 120, 130]);
+        require(account == accounta);
+
+        auto acc = this.erc20.getSt1();
+
+        require(account == acc);
+
+        SortedItem<ST1<int,  bool>> key = {account, 0};
+
+        require(this.erc20.put(key, 10000));
+        
+        require(this.erc20.balanceOf(key, 10000));
+        require(!this.erc20.balanceOf(key, 10001));
         require(true);
-    }
-
-    function f1(int i) : int {
-        return i * 1;
     }
 }

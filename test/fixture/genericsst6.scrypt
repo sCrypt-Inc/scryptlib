@@ -3,49 +3,55 @@ struct ST0<T, K> {
     T y;
 }
 
-struct ST1 {
-    ST0<int[3], bool[1]> a;
-    ST0<bool, bytes> b;
+
+struct ST1<T, K> {
+    ST0<T, K>  x;
+    T y;
 }
 
 
-library L<T>{
-    T x;
-
-    static const int N = 3;
-    
-    static function clone(T x) : T {
-    
-        return x;
-    }
-
-    function get() : T {
-        return this.x;
-    }
+struct ST2<T> {
+    ST1<int[2], T>  x;
+    T y;
 }
+
+
+
+library L {
+    ST2<int> st2;
+    static const ST0<int[2], int> ST0 = {1, [2,3]};
+    static const ST1<int[2], int> ST1 = {ST0, [4,5]};
+    static const ST2<int> ST2 = {ST1, 100};
+
+    function getSt2() : ST2<int> {
+        return this.st2;
+    }
+
+    static function getStaticSt2() : ST2<int> {
+        return L.ST2;
+    } 
+
+ }
 
 contract C {
-     
-    ST0<int[3], bool[1]> a;
 
-    constructor(ST0<int[3], bool[1]> a) {
-        this.a = a;
+     L l;
+
+
+    function st2() : ST2<int> {
+        return this.l.st2;
     }
 
-    public function unlock(ST0<int, bool> aa, ST0<int[3], bool[1]> aaa) {
-        ST0<int, bool> a = {true, 1};
-        require(a == L<ST0<int, bool>>.clone(aa));
-        require(L<ST0<int[3], bool[1]>>.clone(this.a) == aaa);
-        require(true);
+    static function staticSt2() : ST2<int> {
+        return L.getStaticSt2();
     }
 
+    public function unlock(ST2<int> st2) {
 
-    public function unlock0(ST0<int, bool> aa, ST0<int[3], bool[1]> aaa) {
-        ST0<int, bool> a = {true, 1};
-        L<ST0<int, bool>> l = new L(aa);
-        require(a == l.get());
-        L<ST0<int[3], bool[1]>> ll = new L(aaa);
-        require(ll.get() == this.a);
+        require(st2 == this.st2());
+
+        require(st2 == C.staticSt2());
+
         require(true);
     }
 }
