@@ -1,0 +1,16 @@
+
+contract C {
+    public function add2Set(SortedItem<int> val) {
+        HashedSet<int> set = new HashedSet(b'');
+        require(set.add(val));
+        require(set.has(val));
+        require(true);
+    }
+
+    public function add2Map(SortedItem<int> key, int val) {
+        HashedMap<int, int> map = new HashedMap(b'');
+        require(map.set(key, val));
+        require(map.canGet(key, val));
+        require(true);
+    }
+}

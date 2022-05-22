@@ -170,20 +170,5 @@ describe('test.setTest', () => {
 
     })
 
-    describe('set_simple', () => {
-        let set_simple;
 
-        before(() => {
-            const jsonDescr = loadDescription('set_simple_desc.json')
-            const C = buildContractClass(jsonDescr)
-
-            set_simple = new C()
-        })
-
-        it('test set_simple', () => {
-            const result = set_simple.unlock(100).verify();
-            console.log(result)
-
-        })
-    });
 })
