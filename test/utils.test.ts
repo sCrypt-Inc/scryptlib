@@ -1262,6 +1262,9 @@ describe('utils', () => {
       expect(parseGenericType("LL<int, ST1>"))
         .to.deep.eq(["LL", ["int", "ST1"]]);
 
+      expect(parseGenericType("ST0<ST0<int,int>,int>"))
+        .to.deep.eq(["ST0", ["ST0<int,int>", "int"]]);
+
 
       //dont allow space
       expect(() => parseGenericType("Mylib <int, bool>"))

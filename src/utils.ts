@@ -2119,7 +2119,28 @@ export function parseGenericType(type: string): [string, Array<string>] {
     const m = type.match(/([\w]+)<([\w,[\]<>\s]+)>$/);
     if (m) {
       const library = m[1];
-      const realTypes = m[2].split(',').map(t => t.trim());
+      const realTypes = [];
+      const brackets = [];
+      let tmpType = '';
+      for(let i = 0; i< m[2].length; i++) {
+        const ch = m[2].charAt(i);
+        
+        if(ch === '<' || ch === '[') {
+          brackets.push(ch);
+        } else if(ch === '>' || ch === ']') {
+          brackets.pop();
+        } else if(ch === ',') {
+
+          if(brackets.length === 0) {
+            realTypes.push(tmpType.trim());
+            tmpType = '';
+            continue;
+          }
+        }
+        tmpType += ch;
+      }
+      realTypes.push(tmpType.trim());
+
       return [library, realTypes];
     }
   }
