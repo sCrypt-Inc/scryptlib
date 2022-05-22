@@ -17,7 +17,7 @@ export {
 } from './internal';
 
 export {
-  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, String,
+  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, String, SortedItem,
   OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType, PubKeyHash, TxContext,
   Struct, StructObject, VariableType, TypeResolver, PrimitiveTypes, Library, ScryptTypeResolver, AsmVarValues,
   RawTypes, SigHash, Arguments, Argument, State, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
