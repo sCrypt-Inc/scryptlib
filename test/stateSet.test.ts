@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, HashedSet, Struct } from '../src/scryptTypes'
-import { findKeyIndex, toData } from '../src/internal'
+import { Bytes, HashedSet, SortedItem, Struct } from '../src/scryptTypes'
+import { findKeyIndex, toData, toHashedSet } from '../src/internal'
 import { bsv, toHex, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -17,12 +17,12 @@ describe('test.stateSet', () => {
         before(() => {
             const jsonDescr = loadDescription('stateSet_desc.json')
             StateSet = buildContractClass(jsonDescr)
-            stateSet = new StateSet(new Bytes('')) // empty initial set
+            stateSet = new StateSet(toHashedSet(set)) // empty initial set
         })
 
         function buildTx(set: Set<number>) {
             let newLockingScript = stateSet.getNewStateScript({
-                _setData: toData(set),
+                set: toHashedSet(set),
             });
 
             const tx = newTx(inputSatoshis);
@@ -46,12 +46,14 @@ describe('test.stateSet', () => {
             function testInsert(key: number) {
 
                 set.add(key);
-
                 const tx = buildTx(set);
                 const preimage = getPreimage(tx, stateSet.lockingScript, inputSatoshis)
-                const result = stateSet.insert(key, findKeyIndex(set, key), preimage).verify()
+                const result = stateSet.insert(new SortedItem({
+                    item: key,
+                    idx: findKeyIndex(set, key)
+                }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
-                stateSet._setData = toData(set)
+                stateSet.set = toHashedSet(set)
             }
 
             testInsert(3);
@@ -76,7 +78,7 @@ describe('test.stateSet', () => {
                 const result = stateSet.delete(key, keyIndex, preimage).verify()
                 expect(result.success, result.error).to.be.eq(expectedResult);
 
-                stateSet._setData = toData(set)
+                stateSet.set = toHashedSet(set)
             }
 
 

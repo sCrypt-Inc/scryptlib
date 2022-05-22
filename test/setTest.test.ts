@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, HashedSet, Struct } from '../src/scryptTypes'
+import { Bytes, HashedSet, SortedItem, Struct } from '../src/scryptTypes'
 import { findKeyIndex, sortset, toData } from '../src/internal'
 import { bsv, toHex, getPreimage } from '../src/utils';
 const inputIndex = 0;
@@ -37,7 +37,10 @@ describe('test.setTest', () => {
 
             set.add(st);
 
-            const result = setTest.testStructAsKey(st, findKeyIndex(set, st), toData(set)).verify()
+            const result = setTest.testStructAsKey(new SortedItem({
+                item: st,
+                idx: findKeyIndex(set, st)
+            }), toData(set)).verify()
             expect(result.success, result.error).to.be.true;
         })
 
@@ -71,7 +74,10 @@ describe('test.setTest', () => {
             set.add(initData as Struct[]);
             set.add(newElem as Struct[]);
 
-            const result = setTest.testArrayAsKey2(newElem, findKeyIndex(set, newElem), toData(set)).verify()
+            const result = setTest.testArrayAsKey2(new SortedItem({
+                item: newElem,
+                idx: findKeyIndex(set, newElem)
+            }), toData(set)).verify()
             expect(result.success, result.error).to.be.true;
         })
 
@@ -82,7 +88,10 @@ describe('test.setTest', () => {
             set.add([3, 5, 7]);
             set.add(newElem);
 
-            const result = setTest.testArrayAsKey(newElem, findKeyIndex(set, newElem), toData(set)).verify()
+            const result = setTest.testArrayAsKey(new SortedItem({
+                item: newElem,
+                idx: findKeyIndex(set, newElem)
+            }), toData(set)).verify()
             expect(result.success, result.error).to.be.true;
         })
 
@@ -92,16 +101,18 @@ describe('test.setTest', () => {
 
         it('test testDeleteInt', () => {
 
-            const { Entry } = buildTypeClasses(SetTest);
             const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new Entry({
-                key: e,
-                keyIndex: findKeyIndex(set, e)
+            const initData = Array.from(set).map(e => new SortedItem({
+                item: e,
+                idx: findKeyIndex(set, e)
             }))
 
 
             for (const iterator of set) {
-                const result = setTest.testDeleteInt(initData, iterator, findKeyIndex(set, iterator)).verify()
+                const result = setTest.testDeleteInt(initData, new SortedItem({
+                    item: iterator,
+                    idx: findKeyIndex(set, iterator)
+                })).verify()
                 expect(result.success, result.error).to.be.true;
             }
         })
@@ -110,14 +121,17 @@ describe('test.setTest', () => {
 
             const { Entry } = buildTypeClasses(SetTest);
             const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new Entry({
-                key: e,
-                keyIndex: findKeyIndex(set, e)
+            const initData = Array.from(set).map(e => new SortedItem({
+                item: e,
+                idx: findKeyIndex(set, e)
             }))
 
             const fakeElem = 44667;
             set.add(fakeElem);
-            const result = setTest.testDeleteInt(initData, fakeElem, findKeyIndex(sortset(set), fakeElem)).verify()
+            const result = setTest.testDeleteInt(initData, new SortedItem({
+                item: fakeElem,
+                idx: findKeyIndex(set, fakeElem)
+            })).verify()
             expect(result.success, result.error).to.be.false;
         })
 
@@ -126,28 +140,50 @@ describe('test.setTest', () => {
 
             const { Entry } = buildTypeClasses(SetTest);
             const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new Entry({
-                key: e,
-                keyIndex: findKeyIndex(set, e)
+            const initData = Array.from(set).map(e => new SortedItem({
+                item: e,
+                idx: findKeyIndex(set, e)
             }))
-            const result = setTest.testHas(initData, 6667, findKeyIndex(set, 6667)).verify()
+            const result = setTest.testHas(initData, new SortedItem({
+                item: 6667,
+                idx: findKeyIndex(set, 6667)
+            })).verify()
             expect(result.success, result.error).to.be.true;
         })
 
         it('test testHas: should fail when elem not exist', () => {
 
-            const { Entry } = buildTypeClasses(SetTest);
             const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new Entry({
-                key: e,
-                keyIndex: findKeyIndex(set, e)
+            const initData = Array.from(set).map(e => new SortedItem({
+                item: e,
+                idx: findKeyIndex(set, e)
             }))
             const fakeElem = 5676;
             set.add(fakeElem);
 
-            const result = setTest.testHas(initData, fakeElem, findKeyIndex(sortset(set), fakeElem)).verify()
+            const result = setTest.testHas(initData, new SortedItem({
+                item: fakeElem,
+                idx: findKeyIndex(sortset(set), fakeElem)
+            })).verify()
             expect(result.success, result.error).to.be.false;
         })
 
     })
+
+    describe('set_simple', () => {
+        let set_simple;
+
+        before(() => {
+            const jsonDescr = loadDescription('set_simple_desc.json')
+            const C = buildContractClass(jsonDescr)
+
+            set_simple = new C()
+        })
+
+        it('test set_simple', () => {
+            const result = set_simple.unlock(100).verify();
+            console.log(result)
+
+        })
+    });
 })

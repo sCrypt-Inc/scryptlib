@@ -1,0 +1,13 @@
+
+struct ST<T> {
+    T x;
+}
+
+contract C {
+    
+    ST<int> a;
+
+    public function unlock(ST<int> a) {
+        require(this.a == a);
+    }
+}

@@ -1,0 +1,23 @@
+struct ST0<T> {
+    int x;
+    T y;
+}
+
+struct ST1<T> {
+    T x;
+    ST0<T> st0;
+}
+
+struct ST2 {
+    int x;
+}
+
+
+contract C {
+     
+
+    public function unlock(ST1<int> a) {
+        
+        require(true);
+    }
+}

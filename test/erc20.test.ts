@@ -4,12 +4,12 @@ import { newTx, loadDescription } from './helper';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { bsv, toHex, getPreimage, toHashedMap, signTx } from '../src/utils';
 import { PubKey, findKeyIndex, SigHash } from '../src';
+import { SortedItem } from '../src/scryptTypes';
 
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
-const tx = newTx(inputSatoshis);
 
 const privateKeyMinter = new bsv.PrivateKey.fromRandom('testnet');
 const publicKeyMinter = privateKeyMinter.publicKey;
@@ -20,8 +20,8 @@ const publicKeyReceiver = privateKeyReceiver.publicKey;
 const publicKeyHashReceiver = bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver.toBuffer());
 
 
+const minter = new PubKey(toHex(publicKeyMinter));
 const receiver = new PubKey(toHex(publicKeyReceiver));
-const sender = new PubKey(toHex(publicKeyMinter));
 
 describe('Test sCrypt contract erc20 In Javascript', () => {
   let coin, preimage, result, map, erc20
@@ -38,9 +38,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
   const FIRST_MINT = 1000000000;
   it('should succeed when mint coin', () => {
 
-
-    map.set(sender, FIRST_MINT)
-
+    map.set(minter, FIRST_MINT)
     const cloned = erc20.clone()
 
     cloned._totalSupply = FIRST_MINT
@@ -69,9 +67,12 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
       inputSatoshis
     }
 
-    const keyIndex = findKeyIndex(map, sender);
+    const keyIndex = findKeyIndex(map, minter);
 
-    result = coin.mint(sender, sigMinter, 0, FIRST_MINT, keyIndex, preimage).verify()
+    result = coin.mint(new SortedItem({
+      item: minter,
+      idx: keyIndex
+    }), sigMinter, 0, FIRST_MINT, preimage).verify()
     expect(result.success, result.error).to.be.true
 
     coin.liberc20 = cloned;
@@ -81,6 +82,8 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
 
   it('should succeed when transferFrom coin: 1000000 from Minter to Receiver ', () => {
     const amount = 1000000;
+
+    const sender = minter;
 
     const senderKeyIndex = findKeyIndex(map, sender);
     const senderBalance = FIRST_MINT;
@@ -116,8 +119,13 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     const receiverKeyIndex = findKeyIndex(map, receiver);
     const receiverBalance = 0;
 
-
-    result = coin.transferFrom(sender, receiver, amount, senderSig, senderBalance, senderKeyIndex, receiverBalance, receiverKeyIndex, preimage).verify()
+    result = coin.transferFrom(new SortedItem({
+      item: sender,
+      idx: senderKeyIndex
+    }), new SortedItem({
+      item: receiver,
+      idx: receiverKeyIndex
+    }), amount, senderSig, senderBalance, receiverBalance, preimage).verify()
     expect(result.success, result.error).to.be.true
 
     coin.liberc20 = cloned;
@@ -127,13 +135,18 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
 
 
   it('should succeed when transferFrom coin: 50 from Receiver to Minter ', () => {
+
+    const senderPubKey = receiver;
+    const senderPrivateKey = privateKeyReceiver;
+    const receiverPubKey = minter;
+
     const amount = 50;
 
-    const senderKeyIndex = findKeyIndex(map, receiver);
+    const senderKeyIndex = findKeyIndex(map, senderPubKey);
     const senderBalance = 1000000;
 
-    map.set(receiver, senderBalance - amount)
-    map.set(sender, FIRST_MINT - 1000000 + amount)
+    map.set(senderPubKey, senderBalance - amount)
+    map.set(receiverPubKey, FIRST_MINT - 1000000 + amount)
 
 
     const cloned = coin.liberc20.clone()
@@ -152,7 +165,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
 
     preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE_FORKID)
 
-    const senderSig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE_FORKID);
+    const senderSig = signTx(tx, senderPrivateKey, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE_FORKID);
 
     // set txContext for verification
     coin.txContext = {
@@ -161,11 +174,16 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
       inputSatoshis
     }
 
-    const receiverKeyIndex = findKeyIndex(map, sender);
+    const receiverKeyIndex = findKeyIndex(map, receiverPubKey);
     const receiverBalance = FIRST_MINT - 1000000;
 
-
-    result = coin.transferFrom(receiver, sender, amount, senderSig, senderBalance, senderKeyIndex, receiverBalance, receiverKeyIndex, preimage).verify()
+    result = coin.transferFrom(new SortedItem({
+      item: senderPubKey,
+      idx: senderKeyIndex
+    }), new SortedItem({
+      item: receiverPubKey,
+      idx: receiverKeyIndex
+    }), amount, senderSig, senderBalance, receiverBalance, preimage).verify()
     expect(result.success, result.error).to.be.true
   });
 

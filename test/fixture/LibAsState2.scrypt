@@ -1,7 +1,6 @@
 struct MapEntry {
-    int key;
+    SortedItem<int>  key;
     int val;
-    int keyIndex;
 }
 
 
@@ -12,26 +11,26 @@ contract Test {
     public function insert(MapEntry entry, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
         int size = this.map.size();
-        require(!this.map.has(entry.key, entry.keyIndex));
-        require(this.map.set(entry.key, entry.val, entry.keyIndex));
-        require(this.map.canGet(entry.key, entry.val, entry.keyIndex));
+        require(!this.map.has(entry.key));
+        require(this.map.set(entry.key, entry.val));
+        require(this.map.canGet(entry.key, entry.val));
         require(this.map.size() == size + 1);
         require(this.passMap(preimage));
     }
 
     public function update(MapEntry entry, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
-        require(this.map.has(entry.key, entry.keyIndex));
-        require(this.map.set(entry.key, entry.val, entry.keyIndex));
-        require(this.map.canGet(entry.key, entry.val, entry.keyIndex));
+        require(this.map.has(entry.key));
+        require(this.map.set(entry.key, entry.val));
+        require(this.map.canGet(entry.key, entry.val));
         require(this.passMap(preimage));
     }
 
-    public function delete(int key, int keyIndex, SigHashPreimage preimage) {
+    public function delete(SortedItem<int>  key, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
-        require(this.map.has(key, keyIndex));
-        require(this.map.delete(key, keyIndex));
-        require(!this.map.has(key, keyIndex));
+        require(this.map.has(key));
+        require(this.map.delete(key));
+        require(!this.map.has(key));
         require(this.passMap(preimage));
     }
 

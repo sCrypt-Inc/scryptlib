@@ -1,9 +1,5 @@
 import "util.scrypt";
 
-struct Entry {
-    int key;
-    int keyIndex;
-}
 
 struct SetST {
     int a;
@@ -12,66 +8,71 @@ struct SetST {
 
 contract SetTest {
 
-    public function testStructAsKey(SetST key, int keyIndex, bytes data) {
+    public function testStructAsKey(SortedItem<SetST> key, bytes data) {
 
         HashedSet<SetST> set = new HashedSet(b'');
         int size = set.size();
-        SetST tmp = { 3, b'003300' };
-        require(set.add(tmp, 0));
+        SortedItem<SetST>  tmp = {{ 3, b'003300' }, 0};
+        require(set.add(tmp));
         require(set.size() == size + 1);
-        require(!set.has(key, keyIndex));
-        require(set.add(key, keyIndex));
+        require(!set.has(key));
+        require(set.add(key));
+        require(set.has(key));
         require(set.size() == size + 2);
         require(set.data() == data);
     }
 
-    public function testArrayAsKey(int[3] key, int keyIndex, bytes data) {
+    public function testArrayAsKey(SortedItem<int[3]> key, bytes data) {
 
         HashedSet<int[3]> set = new HashedSet(b'');
         int size = set.size();
-        int[3] tmp = [3, 5, 7];
-        require(set.add(tmp, 0));
+        SortedItem<int[3]>  tmp = {[3, 5, 7], 0};
+        require(set.add(tmp));
         require(set.size() == size + 1);
-        require(!set.has(key, keyIndex));
-        require(set.add(key, keyIndex));
+        require(!set.has(key));
+        require(set.add(key));
+        require(set.has(key));
         require(set.size() == size + 2);
         require(set.data() == data);
     }
 
-    public function testArrayAsKey2(SetST[3] key, int keyIndex, bytes data) {
+    public function testArrayAsKey2(SortedItem<SetST[3]> key, bytes data) {
 
         HashedSet<SetST[3]> set = new HashedSet(b'');
         int size = set.size();
-        SetST[3] tmp = [{ 3, b'01' }, { 5, b'0001' }, { 7, b'010101' }];
-        require(set.add(tmp, 0));
+        SortedItem<SetST[3]> tmp = {[{ 3, b'01' }, { 5, b'0001' }, { 7, b'010101' }], 0};
+        require(set.add(tmp));
+        require(set.has(tmp));
         require(set.size() == size + 1);
-        require(!set.has(key, keyIndex));
-        require(set.add(key, keyIndex));
+        require(!set.has(key));
+        require(set.add(key));
         require(set.size() == size + 2);
         require(set.data() == data);
     }
 
-    public function testDeleteInt(Entry[10] initData, int key, int keyIndex) {
+    public function testDeleteInt(SortedItem<int>[10] initData, SortedItem<int> key) {
 
         HashedSet<int> set = new HashedSet(b'');
 
         loop (10) : i {
-            require(set.add(initData[i].key, initData[i].keyIndex));
+            require(set.add(initData[i]));
+            require(set.has(initData[i]));
         }
         require(set.size() == 10);
-        require(set.delete(key, keyIndex));
-        require(!set.has(key, keyIndex));
+        require(set.delete(key));
+        require(!set.has(key));
         require(set.size() == 9);
     }
 
-    public function testHas(Entry[10] initData, int key, int keyIndex) {
+    public function testHas(SortedItem<int>[10] initData, SortedItem<int> key) {
 
         HashedSet<int> set = new HashedSet(b'');
 
         loop (10) : i {
-            require(set.add(initData[i].key, initData[i].keyIndex));
+            require(set.add(initData[i]));
+            require(set.has(initData[i]));
         }
         require(set.size() == 10);
-        require(set.has(key, keyIndex));
+        require(set.has(key));
     }
 }

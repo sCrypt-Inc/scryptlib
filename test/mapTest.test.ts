@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, Struct } from '../src/scryptTypes'
+import { Bytes, SortedItem, Struct } from '../src/scryptTypes'
 import { findKeyIndex, num2bin, toData, sortmap } from '../src/internal'
 
 function getRandomInt() {
@@ -49,7 +49,10 @@ describe('test.mapTest', () => {
         it('test unlock', () => {
             let map = new Map<number, number>();
             map.set(3, 1);
-            const result = mapTest.unlock(3, 1, findKeyIndex(map, 3)).verify()
+            const result = mapTest.unlock(new SortedItem({
+                item: 3,
+                idx: findKeyIndex(map, 3)
+              }), 1).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -60,10 +63,12 @@ describe('test.mapTest', () => {
 
             let map = getRandomMap(10);
 
-
-            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key: new SortedItem({
+                item: key,
+                idx: findKeyIndex(map, key)
+              }), val}))
                 .map(entry => new MapEntry(entry)).sort((a, b) => {
-                    return a.keyIndex - b.keyIndex;
+                    return a.key.idx - b.key.idx;
                 })
 
 
@@ -84,9 +89,12 @@ describe('test.mapTest', () => {
             let map = getRandomBoolMap(10);
 
 
-            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key: new SortedItem({
+                item: key,
+                idx: findKeyIndex(map, key)
+              }), val}))
                 .map(entry => new MapEntryBool(entry)).sort((a, b) => {
-                    return a.keyIndex - b.keyIndex;
+                    return a.key.idx - b.key.idx;
                 })
 
 
@@ -103,8 +111,11 @@ describe('test.mapTest', () => {
 
             const mapEntrys = Array.from(sortmap(map), ([key, val]) => ({ key, val }))
                 .map((entry, index) => new MapEntryBytes({
-                    ...entry,
-                    keyIndex: index
+                    key: new SortedItem({
+                        item: entry.key,
+                        idx: index
+                      }),
+                    val: entry.val
                 }))
 
 
@@ -136,9 +147,12 @@ describe('test.mapTest', () => {
             let map = getRandomStMap(10);
 
 
-            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key: new SortedItem({
+                item: key,
+                idx: findKeyIndex(map, key)
+            }), val }))
                 .map(entry => new _MapEntrySt(entry)).sort((a, b) => {
-                    return a.keyIndex - b.keyIndex;
+                    return a.key.idx - b.key.idx;
                 })
 
 
@@ -158,29 +172,40 @@ describe('test.mapTest', () => {
             map.set(19, 22);
 
             //init
-            const mapEntrys = Array.from(map, ([key, val]) => ({ key, val, keyIndex: findKeyIndex(map, key) }))
+
+            const mapEntrys = Array.from(map, ([key, val]) => ({ key: new SortedItem({
+                item: key,
+                idx: findKeyIndex(map, key)
+              }), val}))
                 .map(entry => new MapEntry(entry)).sort((a, b) => {
-                    return a.keyIndex - b.keyIndex;
+                    return a.key.idx - b.key.idx;
                 })
+
             // delete
 
             mapEntrys.push(new MapEntry({
-                key: 5,
-                val: 3,
-                keyIndex: findKeyIndex(map, 5)
+                key: new SortedItem({
+                    item: 5,
+                    idx: findKeyIndex(map, 5)
+                  }),
+                val: 3
             }))
             map.delete(5)
 
             mapEntrys.push(new MapEntry({
-                key: 9,
-                val: 11,
-                keyIndex: findKeyIndex(map, 9)
+                key:  new SortedItem({
+                    item: 9,
+                    idx: findKeyIndex(map, 9)
+                  }),
+                val: 11
             }))
             map.delete(9)
             mapEntrys.push(new MapEntry({
-                key: 19,
-                val: 22,
-                keyIndex: findKeyIndex(map, 19)
+                key:  new SortedItem({
+                    item: 19,
+                    idx: findKeyIndex(map, 19)
+                  }),
+                val: 22
             }))
 
 

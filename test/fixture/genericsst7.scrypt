@@ -1,0 +1,52 @@
+struct ST0<T, K> {
+    K x;
+    T y;
+}
+
+struct ST1 {
+    ST0<int[3], bool[1]> a;
+    ST0<bool, bytes> b;
+}
+
+
+library L{
+    ST1[2][2] x;
+
+    function sum() : int {
+        int sum = 0;
+        loop(2) : i {
+            loop(2) : j {
+                loop (3) : k {
+                    sum += this.x[i][j].a.y[k];
+                }
+            }
+        }
+        return sum;
+    }
+}
+
+contract C {
+     
+    L l;
+
+    public function unlock(ST0<int[3], bool[1]> a, ST0<bool, bytes> b) {
+        ST1 st1 = {a, b};
+        L l = new L([
+            [st1, st1],
+            [st1, st1]
+        ]);
+        require(this.l.sum() == 34);
+        require(l.sum() == 12);
+
+        loop(2) : i {
+            loop(2) : j {
+                loop (3) : k {
+                    l.x[i][j].a.y[k] = (i + j + k) << k;
+                }
+            }
+        }
+        require(l.sum() == 12);
+        require(true);
+    }
+
+}

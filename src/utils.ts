@@ -2091,7 +2091,7 @@ export function toHashedMap(collection: Map<SupportedParamType, SupportedParamTy
   return hashedMap;
 }
 
-export function toHashedSet(collection: Map<SupportedParamType, SupportedParamType>): HashedSet {
+export function toHashedSet(collection: Set<SupportedParamType>): HashedSet {
   const data = toData(collection);
   const hashedSet = new HashedSet(data);
 

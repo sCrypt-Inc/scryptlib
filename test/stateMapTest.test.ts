@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, } from '../src/scryptTypes'
+import { Bytes, SortedItem, } from '../src/scryptTypes'
 import { findKeyIndex, toData, toHashedMap } from '../src/internal'
 import { bsv, toHex, getPreimage } from '../src/utils';
 const inputIndex = 0;
@@ -18,12 +18,12 @@ describe('test.stateMapTest', () => {
             const jsonDescr = loadDescription('stateMap_desc.json')
             StateMapTest = buildContractClass(jsonDescr)
             MapEntry = buildTypeClasses(StateMapTest).MapEntry
-            mapTest = new StateMapTest(new Bytes('')) // empty initial map
+            mapTest = new StateMapTest(toHashedMap(map)) // empty initial map
         })
 
         function buildTx(map: Map<number, number>) {
             let newLockingScript = mapTest.getNewStateScript({
-                _mpData: toData(map),
+                map: toHashedMap(map),
             });
 
             const tx = newTx(inputSatoshis);
@@ -51,14 +51,13 @@ describe('test.stateMapTest', () => {
                 const keyIndex = findKeyIndex(map, key);
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-                const result = mapTest.insert(new MapEntry({
-                    key: key,
-                    val: val,
-                    keyIndex: keyIndex
-                }), preimage).verify()
+                const result = mapTest.insert(new SortedItem({
+                    item: key,
+                    idx: keyIndex
+                }), val, preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest._mpData = toData(map)
+                mapTest.map = toHashedMap(map)
             }
 
             testInsert(3, 1);
@@ -82,14 +81,13 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.update(new MapEntry({
-                    key: key,
-                    val: val,
-                    keyIndex: findKeyIndex(map, key)
-                }), preimage).verify()
+                const result = mapTest.update(new SortedItem({
+                    item: key,
+                    idx: findKeyIndex(map, key)
+                }), val, preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest._mpData = toData(map)
+                mapTest.map = toHashedMap(map)
             }
 
 
@@ -112,10 +110,13 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.delete(key, keyIndex, preimage).verify()
+                const result = mapTest.delete(new SortedItem({
+                    item: key,
+                    idx: keyIndex
+                }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest._mpData = toData(map)
+                mapTest.map = toHashedMap(map)
             }
 
 
@@ -177,9 +178,11 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
                 const result = mapTest.insert(new MapEntry({
-                    key: key,
-                    val: val,
-                    keyIndex: keyIndex
+                    key: new SortedItem({
+                        item: key,
+                        idx: keyIndex
+                    }),
+                    val: val
                 }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
@@ -208,9 +211,11 @@ describe('test.stateMapTest', () => {
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
                 const result = mapTest.update(new MapEntry({
-                    key: key,
-                    val: val,
-                    keyIndex: findKeyIndex(map, key)
+                    key: new SortedItem({
+                        item: key,
+                        idx: findKeyIndex(map, key)
+                    }),
+                    val: val
                 }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
@@ -237,7 +242,10 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.delete(key, keyIndex, preimage).verify()
+                const result = mapTest.delete(new SortedItem({
+                    item: key,
+                    idx: keyIndex
+                }), preimage).verify()
                 expect(result.success, result.error).to.be.true;
 
                 mapTest.map = toHashedMap(map)
