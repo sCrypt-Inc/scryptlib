@@ -1,5 +1,73 @@
 # CHANGELOG
 
+## 0.16.0
+
+- Support for structs with generics
+
+```js
+
+struct ST<T> {
+    T x;
+}
+
+contract C {
+    
+    ST<int> a;
+
+    public function unlock(ST<int> a) {
+        require(this.a == a);
+    }
+}
+
+```
+
+- Breaking change: accessing `HashedMap` and `HashedSet` requires using the structure `SortedItem`.
+
+```js
+contract C {
+    public function add2Set(SortedItem<int> val) {
+        HashedSet<int> set = new HashedSet(b'');
+        require(set.add(val));
+        require(set.has(val));
+        require(true);
+    }
+
+    public function add2Map(SortedItem<int> key, int val) {
+        HashedMap<int, int> map = new HashedMap(b'');
+        require(map.set(key, val));
+        require(map.canGet(key, val));
+        require(true);
+    }
+}
+
+
+// call public function in SDK: 
+const C = buildContractClass(loadDescription('set_map_simple_desc.json'));
+let c = new C();
+
+// accessing `HashedSet` using the structure `SortedItem`
+let set = new Set<number>();
+const e = 1;
+set.add(e)
+result = c.add2Set(new SortedItem({   
+    item: 1,
+    idx: findKeyIndex(set, e)
+})).verify();
+
+// accessing `HashedMap` using the structure `SortedItem`
+let map = new Map<number, number>();
+const key = 1, val = 2;
+map.set(key, val)
+result = c.add2Map(new SortedItem({
+    item: key,
+    idx: findKeyIndex(map, key)
+}), val).verify();
+```
+
+*Release Date: 2022/05/22*
+
+
+
 ## 0.15.1
 
 - Support for parsing compilation results in asynchronous mode
