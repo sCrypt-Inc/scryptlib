@@ -15,12 +15,12 @@ import { serialize, serializeInt } from './serializer';
 
 
 export enum SymbolType  {
-  BaseType = "BaseType",
-  Contract = "Contract",
-  Library = "Library",
-  Struct = "Struct",
-  Unknown = "Unknown",
-};
+  BaseType = 'BaseType',
+  Contract = 'Contract',
+  Library = 'Library',
+  Struct = 'Struct',
+  Unknown = 'Unknown',
+}
 
 
 export type TypeInfo = {

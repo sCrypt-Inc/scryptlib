@@ -1407,7 +1407,7 @@ export function resolveType(type: string, originTypes: Record<string, TypeInfo>,
     return {
       finalType: resolveArrayType(contract, typeInfo.finalType, statics),
       symbolType: typeInfo.symbolType
-    }
+    };
   } 
   return typeInfo;
 }
