@@ -125,7 +125,7 @@ describe('Alias type check', () => {
 
     it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias_desc.json');
-      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
+      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
       expect(resolver("Age")).deep.equal({
         finalType: 'int',
         symbolType: SymbolType.BaseType
@@ -250,7 +250,7 @@ describe('Alias type check', () => {
     it('should succeeding when resolver generic type', () => {
       const jsondesc = loadDescription('autoTyped_desc.json');
 
-      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
+      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
 
       expect(resolver("LL<int,ST1>")).deep.equal({
         finalType: 'LL<int,ST1>',
@@ -265,7 +265,7 @@ describe('Alias type check', () => {
 
     it('should succeeding when call buildTypeResolver', () => {
 
-      const resolver = buildTypeResolver('', [], [], [], [])
+      const resolver = buildTypeResolver('', [], [], [], [], [])
 
       expect(resolver("int")).deep.equal({
         finalType: 'int',
@@ -332,7 +332,7 @@ describe('Alias type check', () => {
 
     it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias1_desc.json');
-      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
+      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
         symbolType: SymbolType.BaseType
@@ -371,7 +371,7 @@ describe('Alias type check', () => {
     const result = compileContract(getContractFilePath('varassub.scrypt'));
     it('should succeeding when call buildTypeResolver', () => {
 
-      const resolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.statics)
+      const resolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.contracts, result.statics)
       expect(resolver("int[1][SUB]")).deep.equal({
         finalType: 'int[1][3]',
         symbolType: SymbolType.BaseType
@@ -456,7 +456,7 @@ describe('Alias type check', () => {
         finalType: 'ST0<int>',
         symbolType: SymbolType.Struct
       })
-      
+
       expect(C.resolver.resolverType("ST0AA")).deep.equal({
         finalType: 'ST0<ST0<int>>',
         symbolType: SymbolType.Struct

@@ -582,19 +582,6 @@ export function findStructByName(name: string, s: StructEntity[]): StructEntity 
   });
 }
 
-export function findLibraryByGeneric(type: string): string {
-
-  if (isGenericType(type)) {
-    const group = type.split('<');
-    const library = group[0].trim();
-    return library;
-  }
-
-  throw new Error(type + ' is not a generic type');
-
-}
-
-
 
 
 // test Token[3], int[3], st.b.c[3]
@@ -606,7 +593,7 @@ export function isArrayType(type: string): boolean {
 
 export function getNameByType(type: string): string {
 
-  if(isArrayType(type)) {
+  if (isArrayType(type)) {
     const [elemType, _] = arrayTypeAndSizeStr(type);
     return getNameByType(elemType);
   }
@@ -619,14 +606,6 @@ export function getNameByType(type: string): string {
   return type;
 }
 
-export function getLibraryNameByType(type: string): string {
-  const m = /^library\s(\w+)\s\{\}$/.exec(type.trim());
-  if (m) {
-    return m[1];
-  }
-
-  return '';
-}
 
 
 export function findStructByType(type: string, s: StructEntity[]): StructEntity | undefined {
@@ -693,7 +672,7 @@ export function checkSupportedParamType(arg: SupportedParamType, param: ParamEnt
       if (!argL.inferrTypesByAssign(finalType)) {
         return error;
       }
-    } else if(Struct.isStruct(arg)) {
+    } else if (Struct.isStruct(arg)) {
       const argS = arg as Struct;
       if (!argS.inferrTypesByAssign(finalType)) {
         return error;
@@ -1408,7 +1387,7 @@ export function resolveType(type: string, originTypes: Record<string, TypeInfo>,
       finalType: resolveArrayType(contract, typeInfo.finalType, statics),
       symbolType: typeInfo.symbolType
     };
-  } 
+  }
   return typeInfo;
 }
 
@@ -1445,7 +1424,7 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
   if (isArrayType(type)) {
     const [elemTypeName, sizes] = arrayTypeAndSizeStr(type);
     const elemTypeInfo = resolveAliasType(originTypes, alias, elemTypeName);
-    
+
     if (isArrayType(elemTypeInfo.finalType)) {
       const [elemTypeName_, sizes_] = arrayTypeAndSizeStr(elemTypeInfo.finalType);
       return {
@@ -1459,7 +1438,7 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
       symbolType: elemTypeInfo.symbolType
     };
 
-  } else if(isGenericType(type)) {
+  } else if (isGenericType(type)) {
     const [name, genericTypes] = parseGenericType(type);
     const typeInfo = resolveAliasType(originTypes, alias, name);
     const gts = genericTypes.map(t => resolveAliasType(originTypes, alias, t).finalType);
@@ -1475,9 +1454,9 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
 
   if (a) {
     return resolveAliasType(originTypes, alias, a.type);
-  } else if(originTypes[type]) {
+  } else if (originTypes[type]) {
     return originTypes[type];
-  } else if(BasicScryptType[type]) {
+  } else if (BasicScryptType[type]) {
     return {
       finalType: type,
       symbolType: SymbolType.BaseType
@@ -1574,7 +1553,7 @@ export function createLibrary(resolver: ScryptTypeResolver, param: ParamEntity, 
 
       return createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
 
-    }  else {
+    } else {
       return asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`));
     }
   });
@@ -1941,7 +1920,7 @@ export function deserializeArgfromState(resolver: ScryptTypeResolver, arg: Argum
     value = createDefaultLibrary(resolver, arg);
     const properties = createLibraryProperties(resolver, arg, opcodesMap);
     value.setProperties(properties);
-  }  else {
+  } else {
     value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
   }
 
@@ -2122,16 +2101,16 @@ export function parseGenericType(type: string): [string, Array<string>] {
       const realTypes = [];
       const brackets = [];
       let tmpType = '';
-      for(let i = 0; i< m[2].length; i++) {
+      for (let i = 0; i < m[2].length; i++) {
         const ch = m[2].charAt(i);
-        
-        if(ch === '<' || ch === '[') {
-          brackets.push(ch);
-        } else if(ch === '>' || ch === ']') {
-          brackets.pop();
-        } else if(ch === ',') {
 
-          if(brackets.length === 0) {
+        if (ch === '<' || ch === '[') {
+          brackets.push(ch);
+        } else if (ch === '>' || ch === ']') {
+          brackets.pop();
+        } else if (ch === ',') {
+
+          if (brackets.length === 0) {
             realTypes.push(tmpType.trim());
             tmpType = '';
             continue;

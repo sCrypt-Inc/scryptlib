@@ -5,11 +5,11 @@ export {
 
 export {
   bsv, ECIES, toHex, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
-  findStructByType, findStructByName,  isArrayType,
+  findStructByType, findStructByName, isArrayType,
   arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
-  flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
+  flattenSha256, isGenericType, parseGenericType, toData, findKeyIndex,
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
-  arrayTypeAndSizeStr, toLiteralArrayType, serializeSupportedParamType, getLibraryNameByType,
+  arrayTypeAndSizeStr, toLiteralArrayType, serializeSupportedParamType,
   librarySign, structSign, resolveGenericType, createDefaultLibrary, createLibraryProperties, canAssignProperty, arrayToLiteral, cloneArray, arrayToScryptType,
   buildStructsClass, buildTypeResolver, buildScryptTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg, buildContractState,
   compilerVersion, flatternLibrary, flatternLibraryState, flatternCtorArgs, flatternStruct, flatternArray, flatternParams, flatternStateArgs,
@@ -22,7 +22,7 @@ export {
   Struct, StructObject, VariableType, TypeResolver, PrimitiveTypes, Library, ScryptTypeResolver, AsmVarValues,
   RawTypes, SigHash, Arguments, Argument, State, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, ContractDescription, VerifyResult, VerifyError, AbstractContract,
-  DebugInfo, DebugModeTag
+  DebugInfo, DebugModeTag, ContractEntity, TypeInfo
 } from './internal';
 
 //Equivalent to the built-in functions
