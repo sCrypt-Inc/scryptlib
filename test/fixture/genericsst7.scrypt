@@ -1,0 +1,23 @@
+struct ST0<T> {
+    T x;
+    T y;
+}
+
+type Key = int;
+
+contract C {
+    @state
+    HashedMap<Key, ST0<int>> hm;
+
+    @state
+    HashedSet<ST0<int>> hs;
+
+    public function unlock(SortedItem<int> key, ST0<int> val, SortedItem<ST0<int>> e,  SigHashPreimage txPreimage) {
+        require(Tx.checkPreimage(txPreimage));
+        require(this.hm.set(key, val));
+        require(this.hs.add(e));
+        bytes outputScript = this.getStateScript();
+        bytes output = Utils.buildOutput(outputScript, SigHash.value(txPreimage));
+        require(hash256(output) == SigHash.hashOutputs(txPreimage));
+    }
+}

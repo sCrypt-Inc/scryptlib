@@ -6,7 +6,7 @@ import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
 import {
   path2uri, ContractDescription, findCompiler,
-  buildTypeResolver, TypeResolver, resolveConstValue, shortType, hash160
+  buildTypeResolver, TypeResolver, resolveConstValue, hash160
 } from './internal';
 
 import { chain } from 'stream-chain';
@@ -102,11 +102,14 @@ export interface CompileResult {
   md5?: string;
   structs?: Array<StructEntity>;
   library?: Array<LibraryEntity>;
+  contracts?: Array<ContractEntity>;
   alias?: Array<AliasEntity>;
   file?: string;
   buildType?: string;
   autoTypedVars?: AutoTypedVar[];
   statics?: Array<StaticEntity>;
+  sources?: Array<string>;
+  sourceMap?: Array<string>;
 }
 
 export enum DebugModeTag {
@@ -166,21 +169,39 @@ export interface ABIEntity {
 export interface StructEntity {
   name: string;
   params: Array<ParamEntity>;
+  genericTypes: Array<string>;
 }
 export interface LibraryEntity extends StructEntity {
   properties: Array<ParamEntity>;
-  genericTypes: Array<string>;
 }
 export interface AliasEntity {
   name: string;
   type: string;
 }
 
+export type ContractEntity = LibraryEntity
+
 export interface StaticEntity {
   name: string;
   type: string;
   const: boolean;
   value?: any;
+}
+
+export interface CompilingSettings {
+  ast?: boolean,
+  asm?: boolean,
+  hex?: boolean,
+  debug?: boolean,
+  desc?: boolean,
+  outputDir?: string,
+  outputToFiles?: boolean,
+  cwd?: string,
+  cmdPrefix?: string,
+  cmdArgs?: string,
+  buildType?: string,
+  stdout?: boolean,
+  timeout?: number  // in ms
 }
 
 function toOutputDir(descDir: string, sourcePath: string) {
@@ -190,20 +211,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
-    ast?: boolean,
-    asm?: boolean,
-    hex?: boolean,
-    debug?: boolean,
-    desc?: boolean,
-    outputDir?: string,
-    outputToFiles?: boolean,
-    cwd?: string,
-    cmdPrefix?: string,
-    cmdArgs?: string,
-    buildType?: string,
-    timeout?: number  // in ms
-  }, callback?: (error: Error | null, result: {
+settings: CompilingSettings, callback?: (error: Error | null, result: {
     path: string,
     output: string,
     md5: string,
@@ -249,37 +257,11 @@ settings: {
   return childProcess;
 }
 
-
-async function JSONParser(file: string): Promise<any> {
-
-  return new Promise((resolve, reject) => {
-    const pipeline = chain([
-      createReadStream(file),
-      parser(),
-    ]);
-    const asm = Assembler.connectTo(pipeline);
-    asm.on('done', asm => resolve(asm.current));
-  });
-}
-
 export function compileAsync(source: {
   path: string,
   content?: string,
 },
-settings: {
-    ast?: boolean,
-    asm?: boolean,
-    hex?: boolean,
-    debug?: boolean,
-    desc?: boolean,
-    outputDir?: string,
-    outputToFiles?: boolean,
-    cwd?: string,
-    cmdPrefix?: string,
-    cmdArgs?: string,
-    buildType?: string,
-    timeout?: number  // in ms
-  }): Promise<CompileResult> {
+settings: CompilingSettings): Promise<CompileResult> {
 
   return new Promise((resolve, reject) => {
     doCompileAsync(
@@ -306,20 +288,7 @@ settings: {
 
 export async function handleCompilerOutputAsync(
   sourcePath: string,
-  settings: {
-    ast?: boolean,
-    asm?: boolean,
-    hex?: boolean,
-    debug?: boolean,
-    desc?: boolean,
-    outputDir?: string,
-    outputToFiles?: boolean,
-    cwd?: string,
-    cmdPrefix?: string,
-    cmdArgs?: string,
-    buildType?: string,
-    timeout?: number  // in ms
-  },
+  settings: CompilingSettings,
   output: string,
   md5: string,
 ): Promise<CompileResult> {
@@ -332,9 +301,13 @@ export async function handleCompilerOutputAsync(
   try {
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
-    let result: CompileResult = { errors: [], warnings: [] };
+    const result: CompileResult = { errors: [], warnings: [] };
+
+    result.compilerVersion = compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler());
+    result.md5 = md5;
+
     if (output.startsWith('Error:') || output.startsWith('Warning:')) {
-      result = getErrorsAndWarnings(output, srcDir, sourceFileName);
+      Object.assign(result, getErrorsAndWarnings(output, srcDir, sourceFileName));
 
       if (result.errors.length > 0) {
         return Promise.resolve(result);
@@ -342,215 +315,32 @@ export async function handleCompilerOutputAsync(
 
     }
 
-
-
     if (settings.ast || settings.desc) {
       const outputFilePath = getOutputFilePath(outputDir, 'ast');
       outputFiles['ast'] = outputFilePath;
+      const ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'));
 
-      const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
-
-      const sourceUri = path2uri(sourcePath);
-      result.file = sourceUri;
-      result.ast = allAst[sourceUri];
-      delete allAst[sourceUri];
-      result.dependencyAsts = allAst;
-
-      const alias = getAliasDeclaration(result.ast, allAst);
-      const structs = getStructDeclaration(result.ast, allAst);
-      const library = getLibraryDeclaration(result.ast, allAst);
-
-      const statics = getStaticDeclaration(result.ast, allAst);
-
-      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, statics);
-
-      result.alias = alias.map(a => ({
-        name: a.name,
-        type: shortType(typeResolver(a.type))
-      }));
-
-      result.structs = structs.map(a => ({
-        name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
-      }));
-
-      result.library = library.map(a => ({
-        name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
-        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
-        genericTypes: a.genericTypes.map(t => shortGenericType(t))
-      }));
-
-      result.statics = statics.map(s => (Object.assign({ ...s }, {
-        type: shortType(typeResolver(s.type))
-      })));
-
-
-
-      const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
-
-      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
-
-      result.abi = abi;
-      result.contract = name;
-
+      parserAst(result, ast, srcDir, sourceFileName, sourcePath, outputFiles);
     }
-
-    let asmObj = null;
 
     if (settings.asm || settings.desc) {
       const outputFilePath = getOutputFilePath(outputDir, 'asm');
       outputFiles['asm'] = outputFilePath;
 
+      const asmObj = await JSONParser(outputFilePath);
 
-      asmObj = await JSONParser(outputFilePath);
-
-      const sources = asmObj.sources;
-
-      result.hex = settings.hex ? asmObj.output.map(item => item.hex).join('') : '';
-
-      result.asm = asmObj.output.map(item => {
-
-        if (!settings.debug) {
-          return {
-            opcode: item.opcode
-          };
-        }
-
-        const match = SOURCE_REG.exec(item.src);
-
-        if (match && match.groups) {
-          const fileIndex = parseInt(match.groups.fileIndex);
-
-          let debugInfo: DebugInfo | undefined;
-
-          const tagStr = match.groups.tagStr;
-
-          const m = /^(\w+)\.(\w+):(\d)(#(?<context>.+))?$/.exec(tagStr);
-
-          if (m) {
-            debugInfo = {
-              contract: m[1],
-              func: m[2],
-              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
-              context: m.groups.context
-            };
-          } else if (/loop:0/.test(tagStr)) {
-            debugInfo = {
-              contract: '',
-              func: '',
-              tag: DebugModeTag.LoopStart,
-              context: ''
-            };
-          }
-
-          const pos: Pos | undefined = sources[fileIndex] ? {
-            file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-            line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-            endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-            column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-            endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-          } : undefined;
-
-          return {
-            opcode: item.opcode,
-            stack: item.stack,
-            topVars: item.topVars || [],
-            pos: pos,
-            debugInfo
-          } as OpCode;
-        }
-        throw new Error('Compile Failed: Asm output parsing Error!');
-      });
-
-
-      if (settings.debug) {
-        result.autoTypedVars = asmObj.autoTypedVars.map(item => {
-          const match = SOURCE_REG.exec(item.src);
-          if (match && match.groups) {
-            const fileIndex = parseInt(match.groups.fileIndex);
-
-            const pos: Pos | undefined = sources[fileIndex] ? {
-              file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-              line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-              endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-              column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-              endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-            } : undefined;
-            return {
-              name: item.name,
-              type: item.type,
-              pos: pos
-            };
-          }
-        });
-      }
+      parserASM(result, asmObj, settings, srcDir, sourceFileName);
     }
 
     if (settings.desc) {
-      settings.outputToFiles = true;
-      const outputFilePath = getOutputFilePath(descDir, 'desc');
-      outputFiles['desc'] = outputFilePath;
-      const description: ContractDescription = {
-        version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
-        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
-        contract: result.contract,
-        md5: md5,
-        structs: result.structs || [],
-        library: result.library || [],
-        alias: result.alias || [],
-        abi: result.abi || [],
-        stateProps: result.stateProps || [],
-        buildType: settings.buildType || BuildType.Debug,
-        file: '',
-        asm: result.asm.map(item => item['opcode'].trim()).join(' '),
-        hex: result.hex || '',
-        sources: [],
-        sourceMap: []
-      };
-
-      if (settings.debug && asmObj) {
-        Object.assign(description, {
-          file: result.file,
-          sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
-          sourceMap: asmObj.output.map(item => item.src),
-        });
-      }
-      writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
-
-      result.compilerVersion = description.compilerVersion;
-      result.md5 = description.md5;
+      generateDescFile(result, settings, descDir, outputFiles);
     }
 
     return Promise.resolve(result);
   } catch (e) {
     return Promise.reject(e);
   } finally {
-    if (settings.outputToFiles) {
-      Object.keys(outputFiles).forEach(outputType => {
-        const file = outputFiles[outputType];
-        if (existsSync(file)) {
-          if (settings[outputType]) {
-            // rename all output files
-            renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
-          } else {
-            unlinkSync(file);
-          }
-        }
-      });
-    } else {
-      // cleanup all output files
-      Object.values<string>(outputFiles).forEach(file => {
-        if (existsSync(file)) {
-          unlinkSync(file);
-        }
-      });
-    }
-
-    if (readdirSync(outputDir).length === 0) {
-      rimraf.sync(outputDir);
-    }
-    // console.log('compile time spent: ', Date.now() - st)
+    doClean(settings, outputFiles, outputDir, sourcePath);
   }
 }
 
@@ -560,20 +350,7 @@ export function compile(
     path: string,
     content?: string,
   },
-  settings: {
-    ast?: boolean,
-    asm?: boolean,
-    hex?: boolean,
-    debug?: boolean,
-    desc?: boolean,
-    outputDir?: string,
-    outputToFiles?: boolean,
-    cwd?: string,
-    cmdPrefix?: string,
-    cmdArgs?: string,
-    buildType?: string,
-    timeout?: number  // in ms
-  }
+  settings: CompilingSettings
 ): CompileResult {
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
@@ -583,34 +360,27 @@ export function compile(
   //dir that store ast,asm file
   const outputDir = toOutputDir(descDir, sourcePath);
 
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir);
-  }
+
 
   const timeout = settings.timeout || 1200000;
   const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
   const cmdPrefix = settings.cmdPrefix || findCompiler();
-  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  let outOption = `-o "${outputDir}"`;
+  if (settings.stdout) {
+    outOption = '--stdout';
+  } else {
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir);
+    }
+  }
+  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
   const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
   return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
 }
 
 export function handleCompilerOutput(
   sourcePath: string,
-  settings: {
-    ast?: boolean,
-    asm?: boolean,
-    hex?: boolean,
-    debug?: boolean,
-    desc?: boolean,
-    outputDir?: string,
-    outputToFiles?: boolean,
-    cwd?: string,
-    cmdPrefix?: string,
-    cmdArgs?: string,
-    buildType?: string,
-    timeout?: number  // in ms
-  },
+  settings: CompilingSettings,
   output: string,
   md5: string,
 ): CompileResult {
@@ -623,222 +393,55 @@ export function handleCompilerOutput(
   try {
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
-    let result: CompileResult = { errors: [], warnings: [] };
+    const result: CompileResult = { errors: [], warnings: [] };
+    result.compilerVersion = compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler());
+    result.md5 = md5;
     if (output.startsWith('Error:') || output.startsWith('Warning:')) {
-      result = getErrorsAndWarnings(output, srcDir, sourceFileName);
+      Object.assign(result, getErrorsAndWarnings(output, srcDir, sourceFileName));
 
       if (result.errors.length > 0) {
         return result;
       }
-
+    }
+    let ast: any = null;
+    let asm: any = null;
+    if (settings.stdout) {
+      const stdout = JSONbigAlways.parse(output);
+      ast = stdout.ast;
+      asm = stdout.asm;
     }
 
 
 
     if (settings.ast || settings.desc) {
-      const outputFilePath = getOutputFilePath(outputDir, 'ast');
-      outputFiles['ast'] = outputFilePath;
 
+      if (!settings.stdout) {
+        const outputFilePath = getOutputFilePath(outputDir, 'ast');
+        outputFiles['ast'] = outputFilePath;
+        ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'));
+      }
 
-      const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
-
-      const sourceUri = path2uri(sourcePath);
-      result.file = sourceUri;
-      result.ast = allAst[sourceUri];
-      delete allAst[sourceUri];
-      result.dependencyAsts = allAst;
-
-      const alias = getAliasDeclaration(result.ast, allAst);
-      const structs = getStructDeclaration(result.ast, allAst);
-      const library = getLibraryDeclaration(result.ast, allAst);
-
-      const statics = getStaticDeclaration(result.ast, allAst);
-
-      const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, statics);
-
-      result.alias = alias.map(a => ({
-        name: a.name,
-        type: shortType(typeResolver(a.type))
-      }));
-
-      result.structs = structs.map(a => ({
-        name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }))
-      }));
-
-      result.library = library.map(a => ({
-        name: a.name,
-        params: a.params.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
-        properties: a.properties.map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) })),
-        genericTypes: a.genericTypes.map(t => shortGenericType(t))
-      }));
-
-      result.statics = statics.map(s => (Object.assign({ ...s }, {
-        type: shortType(typeResolver(s.type))
-      })));
-
-
-
-      const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
-
-      result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: shortType(typeResolver(p.type)) }));
-
-      result.abi = abi;
-      result.contract = name;
-
+      parserAst(result, ast, srcDir, sourceFileName, sourcePath, outputFiles);
     }
 
-    let asmObj = null;
-
     if (settings.asm || settings.desc) {
-      const outputFilePath = getOutputFilePath(outputDir, 'asm');
-      outputFiles['asm'] = outputFilePath;
 
-      asmObj = JSON.parse(readFileSync(outputFilePath, 'utf8'));
-      const sources = asmObj.sources;
-
-      result.hex = settings.hex ? asmObj.output.map(item => item.hex).join('') : '';
-
-      result.asm = asmObj.output.map(item => {
-
-        if (!settings.debug) {
-          return {
-            opcode: item.opcode
-          };
-        }
-
-        const match = SOURCE_REG.exec(item.src);
-
-        if (match && match.groups) {
-          const fileIndex = parseInt(match.groups.fileIndex);
-
-          let debugInfo: DebugInfo | undefined;
-
-          const tagStr = match.groups.tagStr;
-
-          const m = /^(\w+)\.(\w+):(\d)(#(?<context>.+))?$/.exec(tagStr);
-
-          if (m) {
-            debugInfo = {
-              contract: m[1],
-              func: m[2],
-              tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
-              context: m.groups.context
-            };
-          } else if (/loop:0/.test(tagStr)) {
-            debugInfo = {
-              contract: '',
-              func: '',
-              tag: DebugModeTag.LoopStart,
-              context: ''
-            };
-          }
-
-          const pos: Pos | undefined = sources[fileIndex] ? {
-            file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-            line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-            endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-            column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-            endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-          } : undefined;
-
-          return {
-            opcode: item.opcode,
-            stack: item.stack,
-            topVars: item.topVars || [],
-            pos: pos,
-            debugInfo
-          } as OpCode;
-        }
-        throw new Error('Compile Failed: Asm output parsing Error!');
-      });
-
-
-      if (settings.debug) {
-        result.autoTypedVars = asmObj.autoTypedVars.map(item => {
-          const match = SOURCE_REG.exec(item.src);
-          if (match && match.groups) {
-            const fileIndex = parseInt(match.groups.fileIndex);
-
-            const pos: Pos | undefined = sources[fileIndex] ? {
-              file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-              line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-              endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-              column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-              endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-            } : undefined;
-            return {
-              name: item.name,
-              type: item.type,
-              pos: pos
-            };
-          }
-        });
+      if (!settings.stdout) {
+        const outputFilePath = getOutputFilePath(outputDir, 'asm');
+        outputFiles['asm'] = outputFilePath;
+        asm = JSON.parse(readFileSync(outputFilePath, 'utf8'));
       }
+
+      parserASM(result, asm, settings, srcDir, sourceFileName);
     }
 
     if (settings.desc) {
-      settings.outputToFiles = true;
-      const outputFilePath = getOutputFilePath(descDir, 'desc');
-      outputFiles['desc'] = outputFilePath;
-      const description: ContractDescription = {
-        version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
-        compilerVersion: compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler()),
-        contract: result.contract,
-        md5: md5,
-        structs: result.structs || [],
-        library: result.library || [],
-        alias: result.alias || [],
-        abi: result.abi || [],
-        stateProps: result.stateProps || [],
-        buildType: settings.buildType || BuildType.Debug,
-        file: '',
-        asm: result.asm.map(item => item['opcode'].trim()).join(' '),
-        hex: result.hex || '',
-        sources: [],
-        sourceMap: []
-      };
-
-      if (settings.debug && asmObj) {
-        Object.assign(description, {
-          file: result.file,
-          sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
-          sourceMap: asmObj.output.map(item => item.src),
-        });
-      }
-      writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
-
-      result.compilerVersion = description.compilerVersion;
-      result.md5 = description.md5;
+      generateDescFile(result, settings, descDir, outputFiles);
     }
 
     return result;
   } finally {
-    if (settings.outputToFiles) {
-      Object.keys(outputFiles).forEach(outputType => {
-        const file = outputFiles[outputType];
-        if (existsSync(file)) {
-          if (settings[outputType]) {
-            // rename all output files
-            renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
-          } else {
-            unlinkSync(file);
-          }
-        }
-      });
-    } else {
-      // cleanup all output files
-      Object.values<string>(outputFiles).forEach(file => {
-        if (existsSync(file)) {
-          unlinkSync(file);
-        }
-      });
-    }
-
-    if (readdirSync(outputDir).length === 0) {
-      rimraf.sync(outputDir);
-    }
-    // console.log('compile time spent: ', Date.now() - st)
+    doClean(settings, outputFiles, outputDir, sourcePath);
   }
 }
 
@@ -994,7 +597,7 @@ export function getABIDeclaration(astRoot, typeResolver: TypeResolver): ABI {
   interfaces.forEach(abi => {
     abi.params = abi.params.map(param => {
       return Object.assign(param, {
-        type: shortType(typeResolver(param.type))
+        type: typeResolver(param.type).finalType
       });
     });
   });
@@ -1024,6 +627,7 @@ export function getStructDeclaration(astRoot, dependencyAsts): Array<StructEntit
     return (ast.structs || []).map(s => ({
       name: s['name'],
       params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+      genericTypes: s.genericTypes || [],
     }));
   }).flat(1);
 }
@@ -1054,6 +658,41 @@ export function getLibraryDeclaration(astRoot, dependencyAsts): Array<LibraryEnt
           params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
           properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
           genericTypes: c.genericTypes || [],
+        };
+      } else {
+        // implicit constructor
+        if (c['properties']) {
+          return {
+            name: c.name,
+            params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            genericTypes: c.genericTypes || [],
+          };
+        }
+      }
+    });
+  }).flat(1);
+}
+
+
+export function getContractDeclaration(astRoot, dependencyAsts): Array<ContractEntity> {
+
+  const allAst = [astRoot];
+
+  Object.keys(dependencyAsts).forEach(key => {
+    if (key !== 'std') {
+      allAst.push(dependencyAsts[key]);
+    }
+  });
+
+  return allAst.map(ast => {
+    return (ast.contracts || []).filter(c => c.nodeType == 'Contract').map(c => {
+      if (c['constructor']) {
+        return {
+          name: c.name,
+          params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
+          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+          genericTypes: c.genericTypes || []
         };
       } else {
         // implicit constructor
@@ -1150,6 +789,9 @@ export function desc2CompileResult(description: ContractDescription): CompileRes
     buildType: description.buildType || BuildType.Debug,
     stateProps: description.stateProps || [],
     library: description.library || [],
+    sources: description.sources || [],
+    sourceMap: description.sourceMap || [],
+    contracts: [],
     errors: [],
     warnings: [],
     statics: [],
@@ -1311,5 +953,226 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
       warnings: warnings,
       errors: semanticErrors
     };
+
   }
+}
+
+function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileName: string, sourcePath: string, outputFiles: Record<string, string>) {
+
+  const allAst = addSourceLocation(ast, srcDir, sourceFileName);
+
+  const sourceUri = path2uri(sourcePath);
+  result.file = sourceUri;
+  result.ast = allAst[sourceUri];
+  delete allAst[sourceUri];
+  result.dependencyAsts = allAst;
+
+  const alias = getAliasDeclaration(result.ast, allAst);
+  const structs = getStructDeclaration(result.ast, allAst);
+  const library = getLibraryDeclaration(result.ast, allAst);
+
+  const statics = getStaticDeclaration(result.ast, allAst);
+
+  result.contracts = getContractDeclaration(result.ast, allAst);
+
+  const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, result.contracts, statics);
+
+  result.alias = alias.map(a => ({
+    name: a.name,
+    type: typeResolver(a.type).finalType
+  }));
+
+  result.structs = structs.map(a => ({
+    name: a.name,
+    params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+    genericTypes: a.genericTypes.map(t => shortGenericType(t))
+  }));
+
+  result.library = library.map(a => ({
+    name: a.name,
+    params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+    properties: a.properties.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
+    genericTypes: a.genericTypes.map(t => shortGenericType(t))
+  }));
+
+  result.statics = statics.map(s => (Object.assign({ ...s }, {
+    type: typeResolver(s.type).finalType
+  })));
+
+
+
+  const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
+
+  result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: typeResolver(p.type).finalType }));
+
+  result.abi = abi;
+  result.contract = name;
+}
+
+function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettings, srcDir: string, sourceFileName: string) {
+
+  const sources = asmObj.sources;
+
+  if (settings.debug) {
+    Object.assign(result, {
+      file: result.file,
+      sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
+      sourceMap: asmObj.output.map(item => item.src),
+    });
+  }
+
+  result.hex = settings.hex ? asmObj.output.map(item => item.hex).join('') : '';
+
+  result.asm = asmObj.output.map(item => {
+
+    if (!settings.debug) {
+      return {
+        opcode: item.opcode
+      };
+    }
+
+    const match = SOURCE_REG.exec(item.src);
+
+    if (match && match.groups) {
+      const fileIndex = parseInt(match.groups.fileIndex);
+
+      let debugInfo: DebugInfo | undefined;
+
+      const tagStr = match.groups.tagStr;
+
+      const m = /^(\w+)\.(\w+):(\d)(#(?<context>.+))?$/.exec(tagStr);
+
+      if (m) {
+        debugInfo = {
+          contract: m[1],
+          func: m[2],
+          tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
+          context: m.groups.context
+        };
+      } else if (/loop:0/.test(tagStr)) {
+        debugInfo = {
+          contract: '',
+          func: '',
+          tag: DebugModeTag.LoopStart,
+          context: ''
+        };
+      }
+
+      const pos: Pos | undefined = sources[fileIndex] ? {
+        file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+        line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+        endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+        column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+        endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+      } : undefined;
+
+      return {
+        opcode: item.opcode,
+        stack: item.stack,
+        topVars: item.topVars || [],
+        pos: pos,
+        debugInfo
+      } as OpCode;
+    }
+    throw new Error('Compile Failed: Asm output parsing Error!');
+  });
+
+
+  if (settings.debug) {
+    result.autoTypedVars = asmObj.autoTypedVars.map(item => {
+      const match = SOURCE_REG.exec(item.src);
+      if (match && match.groups) {
+        const fileIndex = parseInt(match.groups.fileIndex);
+
+        const pos: Pos | undefined = sources[fileIndex] ? {
+          file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
+          line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+          endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
+          column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+          endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
+        } : undefined;
+        return {
+          name: item.name,
+          type: item.type,
+          pos: pos
+        };
+      }
+    });
+  }
+}
+
+function generateDescFile(result: CompileResult, settings: CompilingSettings, descDir: string, outputFiles: Record<string, string>) {
+  settings.outputToFiles = true;
+  const outputFilePath = getOutputFilePath(descDir, 'desc');
+  outputFiles['desc'] = outputFilePath;
+  const description: ContractDescription = {
+    version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
+    compilerVersion: result.compilerVersion,
+    contract: result.contract,
+    md5: result.md5,
+    structs: result.structs || [],
+    library: result.library || [],
+    alias: result.alias || [],
+    abi: result.abi || [],
+    stateProps: result.stateProps || [],
+    buildType: settings.buildType || BuildType.Debug,
+    file: result.file || '',
+    asm: result.asm.map(item => item['opcode'].trim()).join(' '),
+    hex: result.hex || '',
+    sources: result.sources || [],
+    sourceMap: result.sourceMap || []
+  };
+  writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
+}
+
+function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
+
+  try {
+    if (settings.stdout) {
+      return;
+    }
+    if (settings.outputToFiles) {
+      Object.keys(outputFiles).forEach(outputType => {
+        const file = outputFiles[outputType];
+        if (existsSync(file)) {
+          if (settings[outputType]) {
+            // rename all output files
+            renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
+          } else {
+            unlinkSync(file);
+          }
+        }
+      });
+    } else {
+      // cleanup all output files
+      Object.values<string>(outputFiles).forEach(file => {
+        if (existsSync(file)) {
+          unlinkSync(file);
+        }
+      });
+    }
+
+    if (readdirSync(outputDir).length === 0) {
+      rimraf.sync(outputDir);
+    }
+
+  } catch (error) {
+    console.error('doClean fail', error);
+  }
+
+
+  // console.log('compile time spent: ', Date.now() - st)
+}
+
+
+async function JSONParser(file: string): Promise<any> {
+
+  return new Promise((resolve, reject) => {
+    const pipeline = chain([
+      createReadStream(file),
+      parser(),
+    ]);
+    const asm = Assembler.connectTo(pipeline);
+    asm.on('done', asm => resolve(asm.current));
+  });
 }

@@ -334,7 +334,7 @@ export class ABICoder {
         this.checkArgs(contractName, name, entity.params, ...args);
         let asm = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
-          type: this.resolver.resolverType(p.type)
+          type: this.resolver.resolverType(p.type).finalType
         })));
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
@@ -408,7 +408,7 @@ export class ABICoder {
 
   encodeParamArray(args: SupportedParamType[], arrayParam: ParamEntity): string {
     return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
-      return this.encodeParam(arg.value, { name: arg.name, type: this.resolver.resolverType(arg.type) });
+      return this.encodeParam(arg.value, { name: arg.name, type: this.resolver.resolverType(arg.type).finalType });
     }).join(' ');
   }
 

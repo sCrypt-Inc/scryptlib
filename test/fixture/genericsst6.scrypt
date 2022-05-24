@@ -1,0 +1,57 @@
+struct ST0<T, K> {
+    K x;
+    T y;
+}
+
+
+struct ST1<T, K> {
+    ST0<T, K>  x;
+    T y;
+}
+
+
+struct ST2<T> {
+    ST1<int[2], T>  x;
+    T y;
+}
+
+
+
+library L {
+    ST2<int> st2;
+    static const ST0<int[2], int> SST0 = {1, [2,3]};
+    static const ST1<int[2], int> SST1 = {SST0, [4,5]};
+    static const ST2<int> ST2 = {SST1, 100};
+
+    function getSt2() : ST2<int> {
+        return this.st2;
+    }
+
+    static function getStaticSt2() : ST2<int> {
+        return L.ST2;
+    } 
+
+ }
+
+contract C {
+
+     L l;
+
+
+    function st2() : ST2<int> {
+        return this.l.st2;
+    }
+
+    static function staticSt2() : ST2<int> {
+        return L.getStaticSt2();
+    }
+
+    public function unlock(ST2<int> st2) {
+
+        require(st2 == this.st2());
+
+        require(st2 == C.staticSt2());
+
+        require(true);
+    }
+}

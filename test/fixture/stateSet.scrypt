@@ -1,33 +1,32 @@
-import "util.scrypt";
 
 contract StateSet {
 
     @state
-    bytes _setData;
+    HashedSet<int> set;
 
-    public function insert(int key, int keyIndex, SigHashPreimage preimage) {
+    public function insert(SortedItem<int> key, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
-        HashedSet<int> set = new HashedSet(this._setData);
-        int size = set.size();
-        require(!set.has(key, keyIndex));
-        require(set.add(key, keyIndex));
-        require(set.size() == size + 1);
-        require(this.passSet(set.data(), preimage));
+        int size = this.set.size();
+        require(!this.set.has(key));
+        require(this.set.add(key));
+        require(this.set.has(key));
+        require(this.set.size() == size + 1);
+        require(this.passSet(preimage));
     }
 
-    public function delete(int key, int keyIndex, SigHashPreimage preimage) {
+    public function delete(int k, int i, SigHashPreimage preimage) {
         require(Tx.checkPreimage(preimage));
-        HashedSet<int> set = new HashedSet(this._setData);
-        require(set.has(key, keyIndex));
-        require(set.delete(key, keyIndex));
-        require(!set.has(key, keyIndex));
-        require(this.passSet(set.data(), preimage));
+
+        SortedItem<int> key = {k, i};
+        require(this.set.has(key));
+        require(this.set.delete(key));
+        require(!this.set.has(key));
+        require(this.passSet(preimage));
     }
 
-    function passSet(bytes newData, SigHashPreimage preimage) : bool {
-        this._setData = newData;
+    function passSet(SigHashPreimage preimage) : bool {
         bytes outputScript = this.getStateScript();
-        bytes output = Util.buildOutput(outputScript, Util.value(preimage));
-        return (hash256(output) == Util.hashOutputs(preimage));
+        bytes output = Utils.buildOutput(outputScript, SigHash.value(preimage));
+        return (hash256(output) == SigHash.hashOutputs(preimage));
     }
 }

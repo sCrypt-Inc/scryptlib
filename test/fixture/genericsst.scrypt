@@ -1,0 +1,58 @@
+struct ST0<T> {
+    int x;
+    T y;
+}
+
+struct ST1<T> {
+    T x;
+}
+
+struct ST2 {
+    int x;
+}
+
+struct ST3<T> {
+    T x;
+    ST0<T> st0;
+}
+
+contract C {
+    
+    ST1<int> a;
+    ST1<int[3]> b;
+    ST1<ST0<int> > c;
+    ST1<ST2[2]> d;
+
+    static const ST1<int> as = {1};
+    static const ST1<int[3]> bs = {[1,2,3]};
+    static const ST1<ST0<int> > cs = {{1, 2}};
+    static const ST1<ST2[2]> ds = {[{1},{2}]};
+    
+    public function unlock(ST1<int> ap, ST1<int[3]> bp, ST1<ST0<int> > cp, ST1<ST2[2]> dp) {
+    
+        ST1<int> a = {1};
+        ST1<int[3]> b = {[1,2,3]};
+        ST1<ST0<int> > c = {{1, 2}};
+        ST1<ST2[2]> d = {[{1},{2}]};
+        ST1<bool> e = {false};
+        ST1<bytes> f = {b''};
+        require(e == {false});
+        require(f == {b''});
+        require(this.a == a);
+        require(this.b == b);
+        require(this.c == c);
+        require(this.d == d);
+        require(this.a == ap);
+        require(this.b == bp);
+        require(this.c == cp);
+        require(this.d == dp);
+    }
+
+    public function unlock1(ST3<ST1<ST0<ST2[3]>>[2]> a) {
+        ST2[3] st2a = [{1}, {2}, {3}];
+        ST0<ST2[3]> st0 = {11, st2a};
+        ST1<ST0<ST2[3]>>[2] st1a = [{st0}, {st0}];
+        ST3<ST1<ST0<ST2[3]>>[2]> a_ = {st1a, {111, st1a}};
+        require(a_ == a);
+    }
+}

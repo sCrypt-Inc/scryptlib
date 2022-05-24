@@ -39,6 +39,8 @@ There are three ways to generate this file (named as `xxx_desc.json`):
       asm: true // set this flag to be `true` to get the asm file output
       optimize: false //set this flag to be `true` to get optimized asm opcode
       sourceMap: true //set this flag to be `true` to get source map
+      hex: true //set this flag to be `true` to get hex format script
+      stdout: false//set this flag to be `true` to make that the compiler will output the compilation result through stdout
     }
   );
 ```

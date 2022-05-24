@@ -1,15 +1,15 @@
 export {
   buildContractClass, buildTypeClasses, compile, compileAsync, compileContract, doCompileAsync, getPreimage, signTx,
-  handleCompilerOutputAsync, handleCompilerOutput, compileContractAsync
+  handleCompilerOutputAsync, handleCompilerOutput, compileContractAsync, CompilingSettings
 } from './internal';
 
 export {
   bsv, ECIES, toHex, bin2num, bool2Asm, int2Asm, parseLiteral, bytes2Literal, bytesToHexString, getValidatedHexString, literal2ScryptType, literal2Asm,
-  findStructByType, findStructByName, isStructType, isStructOrLibraryType, isArrayType,
+  findStructByType, findStructByName, isArrayType,
   arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
-  flattenSha256, isGenericType, parseGenericType, findLibraryByGeneric, toData, findKeyIndex,
+  flattenSha256, isGenericType, parseGenericType, toData, findKeyIndex,
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
-  arrayTypeAndSizeStr, isLibraryType, toLiteralArrayType, serializeSupportedParamType, shortType, getLibraryNameByType,
+  arrayTypeAndSizeStr, toLiteralArrayType, serializeSupportedParamType,
   librarySign, structSign, resolveGenericType, createDefaultLibrary, createLibraryProperties, canAssignProperty, arrayToLiteral, cloneArray, arrayToScryptType,
   buildStructsClass, buildTypeResolver, buildScryptTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg, buildContractState,
   compilerVersion, flatternLibrary, flatternLibraryState, flatternCtorArgs, flatternStruct, flatternArray, flatternParams, flatternStateArgs,
@@ -17,12 +17,12 @@ export {
 } from './internal';
 
 export {
-  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, String,
+  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, String, SortedItem,
   OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType, PubKeyHash, TxContext,
   Struct, StructObject, VariableType, TypeResolver, PrimitiveTypes, Library, ScryptTypeResolver, AsmVarValues,
   RawTypes, SigHash, Arguments, Argument, State, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, ContractDescription, VerifyResult, VerifyError, AbstractContract,
-  DebugInfo, DebugModeTag
+  DebugInfo, DebugModeTag, ContractEntity, TypeInfo
 } from './internal';
 
 //Equivalent to the built-in functions

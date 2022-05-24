@@ -1,0 +1,55 @@
+struct ST0<T, K> {
+    K x;
+    T y;
+}
+
+
+struct ST1<T, K> {
+    ST0<T, K>  x;
+    T y;
+}
+
+
+
+library ERC20 {
+    int _totalSupply;
+
+    HashedMap<ST1<int,  bool>, int> balances;
+
+    function balanceOf(SortedItem<ST1<int,  bool>> account, int balance) : bool {
+        return this.balances.canGet(account, balance);
+    }
+
+    function put(SortedItem<ST1<int,  bool>> account, int balance) : bool {
+        return this.balances.set(account, balance);
+    }
+
+    function getSt1() : ST1<int,  bool> {
+        ST1<int,  bool> accounta = {{false, 3000}, 2000};
+        return accounta;
+    }
+ }
+
+contract C {
+
+    ERC20 erc20;
+
+
+    public function unlock(ST1<int,  bool> account) {
+        ST1<int,  bool> accounta = {{false, 3000}, 2000};
+
+        require(account == accounta);
+
+        auto acc = this.erc20.getSt1();
+
+        require(account == acc);
+
+        SortedItem<ST1<int,  bool>> key = {account, 0};
+
+        require(this.erc20.put(key, 10000));
+        
+        require(this.erc20.balanceOf(key, 10000));
+        require(!this.erc20.balanceOf(key, 10001));
+        require(true);
+    }
+}

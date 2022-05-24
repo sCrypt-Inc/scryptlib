@@ -14,3 +14,4 @@ publishcheck.sh
 coverage
 .nyc_output
 docs
+*.log

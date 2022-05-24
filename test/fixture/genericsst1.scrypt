@@ -1,0 +1,37 @@
+struct ST0<T> {
+    int x;
+    T y;
+}
+
+struct ST1<T> {
+    T x;
+    ST0<T> st0;
+}
+
+struct ST2 {
+    int x;
+}
+
+
+library L<T> {
+    T t;
+    function get() : T {
+        return this.t;
+    }
+
+    function set(T t) : L<T> {
+        this.t = t;
+        return this;
+    }
+}
+
+contract C {
+    
+    L<ST1<ST0<ST2[2]>>> l;
+
+    public function unlock(ST1<ST0<ST2[2]>> v) {
+        require(this.l.get() != v);
+        require(this.l.set(v).get() == v);
+        require(true);
+    }
+}

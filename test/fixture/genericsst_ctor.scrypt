@@ -1,0 +1,55 @@
+struct ST0<T> {
+    int x;
+    T y;
+}
+
+struct ST1<T> {
+    T x;
+}
+
+struct ST2 {
+    int x;
+}
+
+
+contract C {
+    
+    ST1<int> a;
+    ST1<int[3]> b;
+    ST1<ST0<int> > c;
+    ST1<ST2[2]> d;
+
+
+    static const ST1<int> as = {1};
+    static const ST1<int[3]> bs = {[1,2,3]};
+    static const ST1<ST0<int> > cs = {{1, 2}};
+    static const ST1<ST2[2]> ds = {[{1},{2}]};
+    
+    constructor(ST1<int> a, ST1<int[3]> b, ST1<ST0<int> > c, ST1<ST2[2]> d) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.d = d;
+    }
+
+    
+    public function unlock(ST1<int> ap, ST1<int[3]> bp, ST1<ST0<int> > cp, ST1<ST2[2]> dp) {
+    
+        ST1<int> a = {1};
+        ST1<int[3]> b = {[1,2,3]};
+        ST1<ST0<int> > c = {{1, 2}};
+        ST1<ST2[2]> d = {[{1},{2}]};
+        ST1<bool> e = {false};
+        ST1<bytes> f = {b''};
+        require(e == {false});
+        require(f == {b''});
+        require(this.a == a);
+        require(this.b == b);
+        require(this.c == c);
+        require(this.d == d);
+        require(a == ap);
+        require(b == bp);
+        require(c == cp);
+        require(d == dp);
+    }
+}

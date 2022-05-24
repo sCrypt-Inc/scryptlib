@@ -1,0 +1,60 @@
+struct ST0<T, K> {
+    K x;
+    T y;
+}
+
+struct ST1 {
+    ST0<int[3], bool[1]> a;
+    ST0<bool, bytes> b;
+}
+
+library L<T>{
+    T x;
+
+    static const int N = 3;
+    
+    static function clone(T x) : T {
+    
+        return x;
+    }
+
+    function get() : T {
+        return this.x;
+    }
+}
+
+contract C {
+     
+    ST0<int[3], bool[1]> a;
+
+    constructor(ST0<int[3], bool[1]> a) {
+        this.a = a;
+    }
+
+    public function unlock(ST0<int, bool> aa, ST0<int[3], bool[1]> aaa) {
+        ST0<int, bool> a = {true, 1};
+        require(a == aa);
+        require(this.a == aaa);
+        ST1 st1 = {{[false], [1,2,3]}, {b'0011', true}};
+
+        loop(3) : i {
+            st1.a.y[this.f1(i*1)] = st1.a.y[this.f1(i*1)] * 10 + 100;
+        }
+
+        require(st1.a.y == [110, 120, 130]);
+
+        require(a == L<ST0<int, bool>>.clone(aa));
+        require(L<ST0<int[3], bool[1]>>.clone(this.a) == aaa);
+
+        L<ST0<int, bool>> l = new L(aa);
+        require(a == l.get());
+        L<ST0<int[3], bool[1]>> ll = new L(aaa);
+        require(ll.get() == this.a);
+        
+        require(true);
+    }
+
+    function f1(int i) : int {
+        return i * 1;
+    }
+}

@@ -1,7 +1,7 @@
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { assert, expect } from 'chai';
 import { buildContractClass, buildTypeClasses, buildTypeResolver } from '../src/contract';
-import { Bytes, Int, PubKeyHash, PubKey } from '../src/scryptTypes';
+import { Bytes, Int, PubKeyHash, PubKey, SymbolType } from '../src/scryptTypes';
 import { compileContract, toHex, signTx, bsv } from '../src/utils';
 
 
@@ -125,66 +125,200 @@ describe('Alias type check', () => {
 
     it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias_desc.json');
-      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
-      expect(finalTypeResolver("Age")).to.equal('int')
-      expect(finalTypeResolver("Time")).to.equal('int')
-      expect(finalTypeResolver("Name")).to.equal('bytes')
-      expect(finalTypeResolver("Token")).to.equal('int')
-      expect(finalTypeResolver("Tokens")).to.equal('int[3]')
-      expect(finalTypeResolver("MaleAAA")).to.equal('struct Person {}')
-      expect(finalTypeResolver("Male")).to.equal('struct Person {}')
-      expect(finalTypeResolver("Female")).to.equal('struct Person {}')
-      expect(finalTypeResolver("Block")).to.equal('struct Block {}')
-      expect(finalTypeResolver("Coinbase")).to.equal('bytes')
-      expect(finalTypeResolver("Integer")).to.equal('int')
-      expect(finalTypeResolver("Height")).to.equal('int')
-      expect(finalTypeResolver("struct Person {}[3]")).to.equal('struct Person {}[3]')
-      expect(finalTypeResolver("struct MaleAAA {}[3]")).to.equal('struct Person {}[3]')
-      expect(finalTypeResolver("struct MaleB {}[1]")).to.equal('struct Person {}[1][3]')
-      expect(finalTypeResolver("struct MaleC {}[5]")).to.equal('struct Person {}[5][2][3]')
+      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
+      expect(resolver("Age")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Time")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Name")).deep.equal({
+        finalType: 'bytes',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Token")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Tokens")).deep.equal({
+        finalType: 'int[3]',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("MaleAAA")).deep.equal({
+        finalType: 'Person',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("Male")).deep.equal({
+        finalType: 'Person',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("Female")).deep.equal({
+        finalType: 'Person',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("Block")).deep.equal({
+        finalType: 'Block',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("Coinbase")).deep.equal({
+        finalType: 'bytes',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Integer")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Height")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Person[3]")).deep.equal({
+        finalType: 'Person[3]',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("MaleAAA[3]")).deep.equal({
+        finalType: 'Person[3]',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("MaleB[1]")).deep.equal({
+        finalType: 'Person[1][3]',
+        symbolType: SymbolType.Struct
+      })
+      expect(resolver("MaleC[5]")).deep.equal({
+        finalType: 'Person[5][2][3]',
+        symbolType: SymbolType.Struct
+      })
 
 
-      expect(finalTypeResolver("int")).to.equal('int')
-      expect(finalTypeResolver("PubKey")).to.equal('PubKey')
-      expect(finalTypeResolver("PrivKey")).to.equal('PrivKey')
-      expect(finalTypeResolver("SigHashPreimage")).to.equal('SigHashPreimage')
-      expect(finalTypeResolver("bool")).to.equal('bool')
-      expect(finalTypeResolver("bytes")).to.equal('bytes')
-      expect(finalTypeResolver("Sig")).to.equal('Sig')
-      expect(finalTypeResolver("Ripemd160")).to.equal('Ripemd160')
-      expect(finalTypeResolver("Sha1")).to.equal('Sha1')
-      expect(finalTypeResolver("Sha256")).to.equal('Sha256')
-      expect(finalTypeResolver("SigHashType")).to.equal('SigHashType')
-      expect(finalTypeResolver("OpCodeType")).to.equal('OpCodeType')
+      expect(resolver("int")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("PubKey")).deep.equal({
+        finalType: 'PubKey',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("PrivKey")).deep.equal({
+        finalType: 'PrivKey',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("SigHashPreimage")).deep.equal({
+        finalType: 'SigHashPreimage',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("bool")).deep.equal({
+        finalType: 'bool',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("bytes")).deep.equal({
+        finalType: 'bytes',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Sig")).deep.equal({
+        finalType: 'Sig',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Ripemd160")).deep.equal({
+        finalType: 'Ripemd160',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("PubKeyHash")).deep.equal({
+        finalType: 'Ripemd160',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Sha1")).deep.equal({
+        finalType: 'Sha1',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Sha256")).deep.equal({
+        finalType: 'Sha256',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("SigHashType")).deep.equal({
+        finalType: 'SigHashType',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("OpCodeType")).deep.equal({
+        finalType: 'OpCodeType',
+        symbolType: SymbolType.BaseType
+      })
 
     })
 
     it('should succeeding when resolver generic type', () => {
       const jsondesc = loadDescription('autoTyped_desc.json');
 
-      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
+      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
 
-      expect(finalTypeResolver("LL<int, struct ST1 {}>")).to.equal('LL<int,struct ST1 {}>')
-      expect(finalTypeResolver("LL<bool[2], ST1>")).to.equal('LL<bool[2],struct ST1 {}>')
+      expect(resolver("LL<int,ST1>")).deep.equal({
+        finalType: 'LL<int,ST1>',
+        symbolType: SymbolType.Library
+      })
+      expect(resolver("LL<bool[2], ST1>")).deep.equal({
+        finalType: 'LL<bool[2],ST1>',
+        symbolType: SymbolType.Library
+      })
 
     })
 
     it('should succeeding when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver('', [], [], [], [])
+      const resolver = buildTypeResolver('', [], [], [], [], [])
 
-      expect(finalTypeResolver("int")).to.equal('int')
-      expect(finalTypeResolver("PubKey")).to.equal('PubKey')
-      expect(finalTypeResolver("PrivKey")).to.equal('PrivKey')
-      expect(finalTypeResolver("SigHashPreimage")).to.equal('SigHashPreimage')
-      expect(finalTypeResolver("bool")).to.equal('bool')
-      expect(finalTypeResolver("bytes")).to.equal('bytes')
-      expect(finalTypeResolver("Sig")).to.equal('Sig')
-      expect(finalTypeResolver("Ripemd160")).to.equal('Ripemd160')
-      expect(finalTypeResolver("Sha1")).to.equal('Sha1')
-      expect(finalTypeResolver("Sha256")).to.equal('Sha256')
-      expect(finalTypeResolver("SigHashType")).to.equal('SigHashType')
-      expect(finalTypeResolver("OpCodeType")).to.equal('OpCodeType')
+      expect(resolver("int")).deep.equal({
+        finalType: 'int',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("PubKey")).deep.equal({
+        finalType: 'PubKey',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("PrivKey")).deep.equal({
+        finalType: 'PrivKey',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("SigHashPreimage")).deep.equal({
+        finalType: 'SigHashPreimage',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("bool")).deep.equal({
+        finalType: 'bool',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("bytes")).deep.equal({
+        finalType: 'bytes',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Sig")).deep.equal({
+        finalType: 'Sig',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Ripemd160")).deep.equal({
+        finalType: 'Ripemd160',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("PubKeyHash")).deep.equal({
+        finalType: 'Ripemd160',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Sha1")).deep.equal({
+        finalType: 'Sha1',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Sha256")).deep.equal({
+        finalType: 'Sha256',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("SigHashType")).deep.equal({
+        finalType: 'SigHashType',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("OpCodeType")).deep.equal({
+        finalType: 'OpCodeType',
+        symbolType: SymbolType.BaseType
+      })
 
     })
   })
@@ -198,12 +332,27 @@ describe('Alias type check', () => {
 
     it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias1_desc.json');
-      const finalTypeResolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library, [])
-      expect(finalTypeResolver("Tokens")).to.equal('int[3]')
-      expect(finalTypeResolver("TokenArray")).to.equal('int[1][3]')
-      expect(finalTypeResolver("TokenAA")).to.equal('int[4][5][1][3]')
-      expect(finalTypeResolver("Tokens[1]")).to.equal('int[1][3]')
-      expect(finalTypeResolver("TokenArray[4][5]")).to.equal('int[4][5][1][3]')
+      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
+      expect(resolver("Tokens")).deep.equal({
+        finalType: 'int[3]',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("TokenArray")).deep.equal({
+        finalType: 'int[1][3]',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("TokenAA")).deep.equal({
+        finalType: 'int[4][5][1][3]',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("Tokens[1]")).deep.equal({
+        finalType: 'int[1][3]',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("TokenArray[4][5]")).deep.equal({
+        finalType: 'int[4][5][1][3]',
+        symbolType: SymbolType.BaseType
+      })
 
     })
 
@@ -222,9 +371,15 @@ describe('Alias type check', () => {
     const result = compileContract(getContractFilePath('varassub.scrypt'));
     it('should succeeding when call buildTypeResolver', () => {
 
-      const finalTypeResolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.statics)
-      expect(finalTypeResolver("int[1][SUB]")).to.equal('int[1][3]')
-      expect(finalTypeResolver("int[1][VarAsSub.SUB]")).to.equal('int[1][3]')
+      const resolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.contracts, result.statics)
+      expect(resolver("int[1][SUB]")).deep.equal({
+        finalType: 'int[1][3]',
+        symbolType: SymbolType.BaseType
+      })
+      expect(resolver("int[1][VarAsSub.SUB]")).deep.equal({
+        finalType: 'int[1][3]',
+        symbolType: SymbolType.BaseType
+      })
 
     })
 
@@ -260,6 +415,67 @@ describe('Alias type check', () => {
 
       expect(result.success).to.be.true;
 
+
+    })
+
+  })
+
+
+  describe('test resolver_generic', () => {
+    const C = buildContractClass(loadDescription('genericsst_alias_desc.json'));
+
+    it('should succeeding when resolver type', () => {
+
+      expect(C.resolver.resolverType("ST0")).deep.equal({
+        finalType: 'ST0',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST2")).deep.equal({
+        finalType: 'ST2',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST1<ST2[2]>")).deep.equal({
+        finalType: 'ST1<ST2[2]>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST1<ST0<int>>")).deep.equal({
+        finalType: 'ST1<ST0<int>>',
+        symbolType: SymbolType.Struct
+      })
+
+
+      expect(C.resolver.resolverType("ST1<ST0<int[3]>[3][1]>")).deep.equal({
+        finalType: 'ST1<ST0<int[3]>[3][1]>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST0A")).deep.equal({
+        finalType: 'ST0<int>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST0AA")).deep.equal({
+        finalType: 'ST0<ST0<int>>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("INTA")).deep.equal({
+        finalType: 'int[3]',
+        symbolType: SymbolType.BaseType
+      })
+
+      expect(C.resolver.resolverType("ST1A")).deep.equal({
+        finalType: 'ST1<int[3]>',
+        symbolType: SymbolType.Struct
+      })
+
+      expect(C.resolver.resolverType("ST3A")).deep.equal({
+        finalType: 'ST3<ST1<int[3]>,ST0<ST0<int>>>',
+        symbolType: SymbolType.Struct
+      })
 
     })
 

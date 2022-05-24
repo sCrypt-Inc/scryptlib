@@ -9,12 +9,12 @@ contract Coin {
     this.minter = msgSender;
   }
 
-  public function mint(PubKeyHash receiver, int amount, SigHashPreimage txPreimage, Sig sig, PubKey pubKey, int this_balances_receiver, int this_balances_receiver_index) {
+  public function mint(SortedItem<PubKeyHash> receiver, int amount, SigHashPreimage txPreimage, Sig sig, PubKey pubKey, int this_balances_receiver) {
     bool ret = false;
     bool returned = false;
     PubKeyHash msgSender = hash160(pubKey);
     require(checkSig(sig, pubKey));
-    require((!this.balances.has(receiver, this_balances_receiver_index)) || this.balances.canGet(receiver, this_balances_receiver, this_balances_receiver_index));
+    require((!this.balances.has(receiver)) || this.balances.canGet(receiver, this_balances_receiver));
     if (msgSender != this.minter) {
       {
         ret = true;
@@ -24,17 +24,19 @@ contract Coin {
     if (!returned) {
       this_balances_receiver += amount;
     }
-    require(this.balances.set(receiver, this_balances_receiver, this_balances_receiver_index));
+    require(this.balances.set(receiver, this_balances_receiver));
     require(this.propagateState(txPreimage));
   }
 
-  public function send(PubKeyHash receiver, int amount, SigHashPreimage txPreimage, Sig sig, PubKey pubKey, int this_balances_msgSender, int this_balances_msgSender_index, int this_balances_receiver, int this_balances_receiver_index) {
+
+  public function send(SortedItem<PubKeyHash> receiver, int amount, SigHashPreimage txPreimage, Sig sig, PubKey pubKey, int this_balances_msgSender, int this_balances_msgSender_index, int this_balances_receiver) {
     bool ret = false;
     bool returned = false;
     PubKeyHash msgSender = hash160(pubKey);
     require(checkSig(sig, pubKey));
-    require((!this.balances.has(msgSender, this_balances_msgSender_index) && this_balances_msgSender == 0) || this.balances.canGet(msgSender, this_balances_msgSender, this_balances_msgSender_index));
-    require((!this.balances.has(receiver, this_balances_receiver_index) && this_balances_receiver == 0) || this.balances.canGet(receiver, this_balances_receiver, this_balances_receiver_index));
+    SortedItem<PubKeyHash> stMsgSender = {msgSender, this_balances_msgSender_index};
+    require((!this.balances.has(stMsgSender) && this_balances_msgSender == 0) || this.balances.canGet(stMsgSender, this_balances_msgSender));
+    require((!this.balances.has(receiver) && this_balances_receiver == 0) || this.balances.canGet(receiver, this_balances_receiver));
     if (this_balances_msgSender < amount) {
       {
         ret = true;
@@ -45,8 +47,8 @@ contract Coin {
       this_balances_msgSender -= amount;
       this_balances_receiver += amount;
     }
-    require(this.balances.set(msgSender, this_balances_msgSender, this_balances_msgSender_index));
-    require(this.balances.set(receiver, this_balances_receiver, this_balances_receiver_index));
+    require(this.balances.set(stMsgSender, this_balances_msgSender));
+    require(this.balances.set(receiver, this_balances_receiver));
 
     require(this.propagateState(txPreimage));
   }

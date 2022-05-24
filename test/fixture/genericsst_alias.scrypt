@@ -1,0 +1,40 @@
+struct ST0<T> {
+    int x;
+    T y;
+}
+
+struct ST1<T> {
+    T x;
+}
+
+struct ST3<T, K> {
+    T x;
+    K y;
+}
+
+struct ST2 {
+    int x;
+}
+
+type ST0A = ST0<int>;
+
+type ST0AA = ST0<ST0A>;
+
+type INTA = int[3];
+
+type ST1A = ST1<INTA>;
+
+type ST3A = ST3<ST1A, ST0AA>;
+
+
+contract C {
+    
+    ST3A a;
+
+    ST0AA b;
+    
+    public function unlock(ST3A a, ST0AA b) {
+        require(this.a == a);
+        require(this.b == b);
+    }
+}
