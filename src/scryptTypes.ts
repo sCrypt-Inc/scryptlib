@@ -14,7 +14,7 @@ import {
 import { serialize, serializeInt } from './serializer';
 
 
-export enum SymbolType  {
+export enum SymbolType {
   BaseType = 'BaseType',
   Contract = 'Contract',
   Library = 'Library',
@@ -625,7 +625,7 @@ export class Struct extends ScryptType {
           });
         }
       }
-    });    
+    });
   }
 
   public inferrTypesByAssign(assignType: string): boolean {
@@ -817,7 +817,7 @@ export class Struct extends ScryptType {
         return this._typeResolver(this.type).finalType;
       }
     }
-      
+
     return this.type;
   }
 }
@@ -1074,7 +1074,7 @@ export class Library extends ScryptType {
         return this._typeResolver(this.type).finalType;
       }
     }
-      
+
     return this.type;
   }
 }
@@ -1086,7 +1086,7 @@ export class HashedMap extends Library {
     this.setProperties({
       '_data': data
     });
-    this._typeResolver = (t: string) => ({finalType: t, symbolType: SymbolType.Library}); //we should assign this before bind
+    this._typeResolver = (t: string) => ({ finalType: t, symbolType: SymbolType.Library }); //we should assign this before bind
     this.bind();
   }
 }
@@ -1118,7 +1118,7 @@ export class HashedSet extends Library {
     this.setProperties({
       '_data': data
     });
-    this._typeResolver = (t: string) => ({finalType: t, symbolType: SymbolType.Library}); //we should assign this before bind
+    this._typeResolver = (t: string) => ({ finalType: t, symbolType: SymbolType.Library }); //we should assign this before bind
     this.bind();
   }
 }
@@ -1144,7 +1144,7 @@ HashedSet.libraryAst = {
 export class SortedItem extends Struct {
   constructor(data: any) {
     super(data);
-    this._typeResolver = (t: string) => ({finalType: t, symbolType: SymbolType.Struct}); //we should assign this before bind
+    this._typeResolver = (t: string) => ({ finalType: t, symbolType: SymbolType.Struct }); //we should assign this before bind
     this.bind();
   }
 }
