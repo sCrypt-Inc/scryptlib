@@ -211,7 +211,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: CompilingSettings, callback?: (error: Error | null, result: {
+settings: CompilingSettings, callback?: (error: Error | null, result: {
     path: string,
     output: string,
     md5: string,
@@ -261,7 +261,7 @@ export function compileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: CompilingSettings): Promise<CompileResult> {
+settings: CompilingSettings): Promise<CompileResult> {
 
   return new Promise((resolve, reject) => {
     doCompileAsync(
@@ -301,7 +301,7 @@ export async function handleCompilerOutputAsync(
   try {
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
     output = output.split(/\r?\n/g).join('\n');
-    let result: CompileResult = { errors: [], warnings: [] };
+    const result: CompileResult = { errors: [], warnings: [] };
 
     result.compilerVersion = compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler());
     result.md5 = md5;
@@ -318,7 +318,7 @@ export async function handleCompilerOutputAsync(
     if (settings.ast || settings.desc) {
       const outputFilePath = getOutputFilePath(outputDir, 'ast');
       outputFiles['ast'] = outputFilePath;
-      const ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'))
+      const ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'));
 
       parserAst(result, ast, srcDir, sourceFileName, sourcePath, outputFiles);
     }
@@ -365,7 +365,7 @@ export function compile(
   const timeout = settings.timeout || 1200000;
   const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
   const cmdPrefix = settings.cmdPrefix || findCompiler();
-  let outOption = `-o "${outputDir}"`
+  let outOption = `-o "${outputDir}"`;
   if (settings.stdout) {
     outOption = '--stdout';
   } else {
@@ -418,7 +418,7 @@ export function handleCompilerOutput(
       if (!settings.stdout) {
         const outputFilePath = getOutputFilePath(outputDir, 'ast');
         outputFiles['ast'] = outputFilePath;
-        ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'))
+        ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'));
       }
 
       parserAst(result, ast, srcDir, sourceFileName, sourcePath, outputFiles);
@@ -429,7 +429,7 @@ export function handleCompilerOutput(
       if (!settings.stdout) {
         const outputFilePath = getOutputFilePath(outputDir, 'asm');
         outputFiles['asm'] = outputFilePath;
-        asm = JSON.parse(readFileSync(outputFilePath, 'utf8'))
+        asm = JSON.parse(readFileSync(outputFilePath, 'utf8'));
       }
 
       parserASM(result, asm, settings, srcDir, sourceFileName);
@@ -1128,6 +1128,9 @@ function generateDescFile(result: CompileResult, settings: CompilingSettings, de
 function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
 
   try {
+    if (settings.stdout) {
+      return;
+    }
     if (settings.outputToFiles) {
       Object.keys(outputFiles).forEach(outputType => {
         const file = outputFiles[outputType];
@@ -1154,7 +1157,7 @@ function doClean(settings: CompilingSettings, outputFiles: Record<string, string
     }
 
   } catch (error) {
-
+    console.error('doClean fail', error);
   }
 
 
