@@ -1,12 +1,13 @@
 import { assert, expect } from 'chai';
 import * as path from "path";
-import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers } from './helper'
-import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion } from '../src/compilerWrapper';
-import { compileContract, compileContractAsync } from '../src/utils';
+import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
+import { ABIEntityType, CompileResult, desc2CompileResult, compilerVersion, compile } from '../src/compilerWrapper';
+import { compileContract, compileContractAsync, bsv, toHex, signTx } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
 import { basename, join } from 'path';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
+import { Ripemd160, PubKey } from '../src';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -332,7 +333,7 @@ describe('compile()', () => {
         },
         {
           name: 'ss',
-          type: 'struct ST1 {}[2]'
+          type: 'ST1[2]'
         },
         {
           name: 'l',
@@ -344,11 +345,11 @@ describe('compile()', () => {
         },
         {
           name: 'ss1',
-          type: 'struct ST1 {}[2]'
+          type: 'ST1[2]'
         },
         {
           name: 'll',
-          type: 'LL<int, struct ST1 {}>'
+          type: 'LL<int, ST1>'
         }
       ])
     })
@@ -1011,9 +1012,39 @@ describe('compile()', () => {
           value: "2988348162058574136915891421498819466320163312926952423791023078876139"
         }
       ])
-
-
     })
+  })
+
+
+  it('compile with stdout successfully', () => {
+
+    const result = compile(
+      { path: getContractFilePath('p2pkh.scrypt') },
+      {
+        desc: false,
+        asm: true,
+        ast: true,
+        debug: true,
+        hex: true,
+        stdout: true,
+        cmdPrefix: findCompiler()
+      }
+    );
+
+    const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+    const publicKey = privateKey.publicKey;
+    const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
+    const inputSatoshis = 100000;
+    const tx = newTx(inputSatoshis);
+
+    const DemoP2PKH = buildContractClass(result);
+
+    const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+    const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
+    const pubkey = new PubKey(toHex(publicKey));
+    p2pkh.txContext = { inputSatoshis, tx };
+    const verifyresult = p2pkh.unlock(sig, pubkey).verify();
+    expect(verifyresult.success, verifyresult.error).to.true
   })
 
 })

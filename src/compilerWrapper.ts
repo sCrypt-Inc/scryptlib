@@ -257,19 +257,6 @@ export function doCompileAsync(source: {
   return childProcess;
 }
 
-
-async function JSONParser(file: string): Promise<any> {
-
-  return new Promise((resolve, reject) => {
-    const pipeline = chain([
-      createReadStream(file),
-      parser(),
-    ]);
-    const asm = Assembler.connectTo(pipeline);
-    asm.on('done', asm => resolve(asm.current));
-  });
-}
-
 export function compileAsync(source: {
   path: string,
   content?: string,
@@ -301,20 +288,7 @@ export function compileAsync(source: {
 
 export async function handleCompilerOutputAsync(
   sourcePath: string,
-  settings: {
-    ast?: boolean,
-    asm?: boolean,
-    hex?: boolean,
-    debug?: boolean,
-    desc?: boolean,
-    outputDir?: string,
-    outputToFiles?: boolean,
-    cwd?: string,
-    cmdPrefix?: string,
-    cmdArgs?: string,
-    buildType?: string,
-    timeout?: number  // in ms
-  },
+  settings: CompilingSettings,
   output: string,
   md5: string,
 ): Promise<CompileResult> {
@@ -342,7 +316,11 @@ export async function handleCompilerOutputAsync(
     }
 
     if (settings.ast || settings.desc) {
-      parserAst(result, outputDir, srcDir, sourceFileName, sourcePath, outputFiles);
+      const outputFilePath = getOutputFilePath(outputDir, 'ast');
+      outputFiles['ast'] = outputFilePath;
+      const ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'))
+
+      parserAst(result, ast, srcDir, sourceFileName, sourcePath, outputFiles);
     }
 
     if (settings.asm || settings.desc) {
@@ -351,7 +329,7 @@ export async function handleCompilerOutputAsync(
 
       const asmObj = await JSONParser(outputFilePath);
 
-      parserASM(result, asmObj, settings, outputDir, srcDir, sourceFileName, outputFiles);
+      parserASM(result, asmObj, settings, srcDir, sourceFileName);
     }
 
     if (settings.desc) {
@@ -382,14 +360,20 @@ export function compile(
   //dir that store ast,asm file
   const outputDir = toOutputDir(descDir, sourcePath);
 
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir);
-  }
+
 
   const timeout = settings.timeout || 1200000;
   const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
   const cmdPrefix = settings.cmdPrefix || findCompiler();
-  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r -o "${outputDir}" ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  let outOption = `-o "${outputDir}"`
+  if (settings.stdout) {
+    outOption = '--stdout';
+  } else {
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir);
+    }
+  }
+  const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
   const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
   return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
 }
@@ -419,15 +403,36 @@ export function handleCompilerOutput(
         return result;
       }
     }
-
-    if (settings.ast || settings.desc) {
-      parserAst(result, outputDir, srcDir, sourceFileName, sourcePath, outputFiles);
+    let ast: any = null;
+    let asm: any = null;
+    if (settings.stdout) {
+      const stdout = JSONbigAlways.parse(output);
+      ast = stdout.ast;
+      asm = stdout.asm;
     }
 
-    let asmObj = null;
+
+
+    if (settings.ast || settings.desc) {
+
+      if (!settings.stdout) {
+        const outputFilePath = getOutputFilePath(outputDir, 'ast');
+        outputFiles['ast'] = outputFilePath;
+        ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'))
+      }
+
+      parserAst(result, ast, srcDir, sourceFileName, sourcePath, outputFiles);
+    }
 
     if (settings.asm || settings.desc) {
-      parserASM(result, null, settings, outputDir, srcDir, sourceFileName, outputFiles);
+
+      if (!settings.stdout) {
+        const outputFilePath = getOutputFilePath(outputDir, 'asm');
+        outputFiles['asm'] = outputFilePath;
+        asm = JSON.parse(readFileSync(outputFilePath, 'utf8'))
+      }
+
+      parserASM(result, asm, settings, srcDir, sourceFileName);
     }
 
     if (settings.desc) {
@@ -952,12 +957,9 @@ function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: st
   }
 }
 
-function parserAst(result: CompileResult, outputDir: string, srcDir: string, sourceFileName: string, sourcePath: string, outputFiles: Record<string, string>) {
-  const outputFilePath = getOutputFilePath(outputDir, 'ast');
-  outputFiles['ast'] = outputFilePath;
+function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileName: string, sourcePath: string, outputFiles: Record<string, string>) {
 
-
-  const allAst = addSourceLocation(JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8')), srcDir, sourceFileName);
+  const allAst = addSourceLocation(ast, srcDir, sourceFileName);
 
   const sourceUri = path2uri(sourcePath);
   result.file = sourceUri;
@@ -1007,11 +1009,8 @@ function parserAst(result: CompileResult, outputDir: string, srcDir: string, sou
   result.contract = name;
 }
 
-function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettings, outputDir: string, srcDir: string, sourceFileName: string, outputFiles: Record<string, string>) {
-  const outputFilePath = getOutputFilePath(outputDir, 'asm');
-  outputFiles['asm'] = outputFilePath;
+function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettings, srcDir: string, sourceFileName: string) {
 
-  asmObj = asmObj ? asmObj : JSON.parse(readFileSync(outputFilePath, 'utf8'));
   const sources = asmObj.sources;
 
   if (settings.debug) {
@@ -1123,9 +1122,7 @@ function generateDescFile(result: CompileResult, settings: CompilingSettings, de
     sources: result.sources || [],
     sourceMap: result.sourceMap || []
   };
-
   writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
-
 }
 
 function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
@@ -1162,4 +1159,17 @@ function doClean(settings: CompilingSettings, outputFiles: Record<string, string
 
 
   // console.log('compile time spent: ', Date.now() - st)
+}
+
+
+async function JSONParser(file: string): Promise<any> {
+
+  return new Promise((resolve, reject) => {
+    const pipeline = chain([
+      createReadStream(file),
+      parser(),
+    ]);
+    const asm = Assembler.connectTo(pipeline);
+    asm.on('done', asm => resolve(asm.current));
+  });
 }
