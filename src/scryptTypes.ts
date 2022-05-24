@@ -9,7 +9,8 @@ import {
   canAssignProperty,
   toHex,
   int2Value,
-  structSign
+  structSign,
+  arrayToJson
 } from './internal';
 import { serialize, serializeInt } from './serializer';
 
@@ -783,7 +784,7 @@ export class Struct extends ScryptType {
         if (Struct.isStruct(v[key])) {
           return Object.assign(obj, { [key]: (v[key] as ScryptType).toJSON() });
         } else if (Array.isArray(v[key])) {
-          return Object.assign(obj, { [key]: JSON.stringify(v[key]) });
+          return Object.assign(obj, { [key]: arrayToJson(v[key]) });
         } else {
           return Object.assign(obj, { [key]: (v[key] as ScryptType).toLiteral() });
         }
@@ -1053,7 +1054,7 @@ export class Library extends ScryptType {
   toJSON(): unknown {
     return Array.from(Object.values(this.value)).map(v => {
       if (Array.isArray(v)) {
-        return JSON.stringify(v);
+        return arrayToJson(v);
       } else {
         return toScryptType(v).toJSON();
       }

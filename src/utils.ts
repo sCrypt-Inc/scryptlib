@@ -2264,6 +2264,15 @@ export function arrayToScryptType(a: SupportedParamType[]): ScryptType[] {
   }) as ScryptType[];
 }
 
+export function arrayToJson(a: SupportedParamType[]): any[] {
+  return a.map(i => {
+    if (Array.isArray(i)) {
+      return arrayToJson(i);
+    }
+    return toScryptType(i).toJSON();
+  });
+}
+
 export function cloneArray(a: SupportedParamType[]): ScryptType[] {
   return a.map(i => {
     if (Array.isArray(i)) {
