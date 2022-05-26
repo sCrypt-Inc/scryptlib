@@ -22,7 +22,7 @@ export {
   Struct, StructObject, VariableType, TypeResolver, PrimitiveTypes, Library, ScryptTypeResolver, AsmVarValues,
   RawTypes, SigHash, Arguments, Argument, State, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, ContractDescription, VerifyResult, VerifyError, AbstractContract,
-  DebugInfo, DebugModeTag, ContractEntity, TypeInfo
+  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, HashedMap, HashedSet
 } from './internal';
 
 //Equivalent to the built-in functions
