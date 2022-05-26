@@ -5,7 +5,6 @@
 - Support for structs with generics
 
 ```js
-
 struct ST<T> {
     T x;
 }
@@ -18,10 +17,9 @@ contract C {
         require(this.a == a);
     }
 }
-
 ```
 
-- Breaking change: accessing `HashedMap` and `HashedSet` requires using the structure `SortedItem`.
+- Breaking change: accessing `HashedMap` and `HashedSet` requires using the structure `SortedItem<T>`.
 
 ```js
 contract C {
