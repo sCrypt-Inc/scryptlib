@@ -373,8 +373,9 @@ export function compile(
       mkdirSync(outputDir);
     }
   }
+  const maxBuffer = settings.stdout ? 1024 * 1024 * 100 : 1024 * 1024;
   const cmd = `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == false ? '' : '--debug'} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
-  const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout }).toString();
+  const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout, maxBuffer: maxBuffer }).toString();
   return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
 }
 
@@ -402,7 +403,12 @@ export function handleCompilerOutput(
       if (result.errors.length > 0) {
         return result;
       }
+
+      if (settings.stdout && result.warnings.length > 0) { // stdout not allowed warnings
+        return result;
+      }
     }
+
     let ast: any = null;
     let asm: any = null;
     if (settings.stdout) {

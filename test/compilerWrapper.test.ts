@@ -1047,4 +1047,46 @@ describe('compile()', () => {
     expect(verifyresult.success, verifyresult.error).to.true
   })
 
+
+  it('compile erc20.scrypt with stdout successfully', () => {
+
+    const result = compile(
+      { path: getContractFilePath('erc20.scrypt') },
+      {
+        desc: false,
+        asm: true,
+        ast: true,
+        debug: true,
+        hex: true,
+        stdout: true,
+        cmdPrefix: findCompiler()
+      }
+    );
+
+    expect(result.errors.length === 0).to.true
+  })
+
+
+  it('compile issue146.scrypt with stdout successfully', () => {
+
+    const result = compile(
+      { path: getContractFilePath('issue146.scrypt') },
+      {
+        desc: false,
+        asm: true,
+        ast: true,
+        debug: true,
+        hex: true,
+        stdout: true,
+        cmdPrefix: findCompiler()
+      }
+    );
+
+    expect(result.errors.length === 0).to.true
+    expect(result.warnings.length === 1).to.true
+  })
+
+
+
+
 })
