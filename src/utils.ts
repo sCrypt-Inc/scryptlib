@@ -1312,9 +1312,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     if (tx) {
       Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
     }
-    if (typeof txContext.opReturn === 'string') {
+    if (txContext.opReturn) {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
-    } else if (typeof txContext.opReturnHex === 'string') {
+    } else if (txContext.opReturnHex) {
       Object.assign(debugTxContext, { opReturnHex: txContext.opReturnHex });
     }
   }

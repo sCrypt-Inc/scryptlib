@@ -212,21 +212,14 @@ export class AbstractContract {
 
       const lastStepIndex = stepCounter - 1;
 
-      if (typeof this._dataPart === 'string') {
+      if (this.dataPart) {
         opcodes.push({ opcode: 'OP_RETURN', stack: [] });
-        const dp = this._dataPart.trim();
+        const dp = this.dataPart.toASM();
         if (dp) {
           dp.split(' ').forEach(data => {
             opcodes.push({ opcode: data, stack: [] });
           });
         }
-      } else if (AbstractContract.isStateful(this)) {
-        opcodes.push({ opcode: 'OP_RETURN', stack: [] });
-        const stateHex = this.dataPart.toHex();
-        const dp = bsv.Script.fromHex(stateHex).toASM();
-        dp.split(' ').forEach(data => {
-          opcodes.push({ opcode: data, stack: [] });
-        });
       }
 
       const opcodeIndex = lastStepIndex - offset;
@@ -266,7 +259,8 @@ export class AbstractContract {
     };
   }
 
-  private _dataPart: string | undefined;
+  private _dataPartInASM: string;
+  private _dataPartInHex: string;
 
   set dataPart(dataInScript: Script | undefined) {
     throw new Error('Setter for dataPart is not available. Please use: setDataPart() instead');
@@ -279,20 +273,40 @@ export class AbstractContract {
       return bsv.Script.fromHex(state);
     }
 
-    return this._dataPart !== undefined ? bsv.Script.fromASM(this._dataPart) : undefined;
+
+    if (this._dataPartInASM) {
+      return bsv.Script.fromASM(this._dataPartInASM);
+    }
+
+    if (this._dataPartInHex) {
+      return bsv.Script.fromHex(this._dataPartInHex);
+    }
+
   }
 
   setDataPart(state: State | string, isStateHex = false): void {
     if (isStateHex == false) {
+      console.warn('deprecated, using setDataPartInASM');
       if (typeof state === 'string') {
-        // TODO: validate hex string
-        this._dataPart = state.trim();
+        this.setDataPartInASM(state.trim());
       } else {
-        this._dataPart = serializeState(state);
+        this.setDataPartInASM(serializeState(state));
       }
     } else {
+      console.warn('deprecated, using setDataPartInHex');
+      this.setDataPartInHex(state as string);
+    }
+  }
+
+  setDataPartInASM(asm: string): void {
+    this._dataPartInASM = asm.trim();
+  }
+
+  setDataPartInHex(hex: string): void {
+    this._dataPartInHex = hex.trim();
+    if (AbstractContract.isStateful(this)) {
       const abiCoder = Object.getPrototypeOf(this).constructor.abiCoder as ABICoder;
-      this.statePropsArgs = abiCoder.parseStateHex(this, state as string);
+      this.statePropsArgs = abiCoder.parseStateHex(this, this._dataPartInHex);
     }
   }
 
