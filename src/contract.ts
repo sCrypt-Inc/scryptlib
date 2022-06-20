@@ -298,8 +298,12 @@ export class AbstractContract {
     }
   }
 
-  setDataPartInASM(asm: string): void {
-    this._dataPartInASM = asm.trim();
+  setDataPartInASM(state: State | string): void {
+    if (typeof state === 'string') {
+      this._dataPartInASM = state.trim();
+    } else {
+      this._dataPartInASM = serializeState(state);
+    }
   }
 
   setDataPartInHex(hex: string): void {
