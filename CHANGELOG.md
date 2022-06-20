@@ -1,5 +1,11 @@
 # CHANGELOG
 
+
+## 0.16.1
+
+- Deprecated `setDataPart`, add `setDataPartInASM` and `setDataPartInHex`
+
+
 ## 0.16.0
 
 - Support for structs with generics
