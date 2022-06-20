@@ -287,19 +287,19 @@ export class AbstractContract {
   setDataPart(state: State | string, isStateHex = false): void {
     if (isStateHex == false) {
       console.warn('deprecated, using setDataPartInASM');
-      if (typeof state === 'string') {
-        this.setDataPartInASM(state.trim());
-      } else {
-        this.setDataPartInASM(serializeState(state));
-      }
+      this.setDataPartInASM(state);
     } else {
       console.warn('deprecated, using setDataPartInHex');
       this.setDataPartInHex(state as string);
     }
   }
 
-  setDataPartInASM(asm: string): void {
-    this._dataPartInASM = asm.trim();
+  setDataPartInASM(state: State | string): void {
+    if (typeof state === 'string') {
+      this._dataPartInASM = state.trim();
+    } else {
+      this._dataPartInASM = serializeState(state);
+    }
   }
 
   setDataPartInHex(hex: string): void {
