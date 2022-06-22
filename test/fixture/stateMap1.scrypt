@@ -1,0 +1,16 @@
+contract StateMapTest {
+
+    @state
+    HashedMap<int, int> map;
+
+    public function unlock(SigHashPreimage preimage) {
+        require(Tx.checkPreimage(preimage));
+        require(this.passMap(preimage));
+    }
+
+    function passMap(SigHashPreimage preimage) : bool {
+        bytes outputScript = this.getStateScript();
+        bytes output = Utils.buildOutput(outputScript, SigHash.value(preimage));
+        return (hash256(output) == SigHash.hashOutputs(preimage));
+    }
+}
