@@ -209,7 +209,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: CompilingSettings, callback?: (error: Error | null, result: {
+settings: CompilingSettings, callback?: (error: Error | null, result: {
     path: string,
     output: string,
     md5: string,
@@ -259,7 +259,7 @@ export function compileAsync(source: {
   path: string,
   content?: string,
 },
-  settings: CompilingSettings): Promise<CompileResult> {
+settings: CompilingSettings): Promise<CompileResult> {
 
   return new Promise((resolve, reject) => {
     doCompileAsync(
