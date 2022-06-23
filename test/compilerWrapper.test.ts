@@ -311,7 +311,7 @@ describe('compile()', () => {
 
     it('autoTypedVars', () => {
 
-      let autoVars = result.autoTypedVars.map(v => Object.assign({}, { name: v.name, type: v.type }));
+      let autoVars = result.autoTypedVars?.map(v => Object.assign({}, { name: v.name, type: v.type }));
 
       expect(autoVars).to.deep.include.members([
 
@@ -786,7 +786,7 @@ describe('compile()', () => {
 
   it('Expecting bigint const toString right ', () => {
     const result = compileContract(getContractFilePath('const.scrypt'));
-    const contracts: any = result.ast.contracts;
+    const contracts: any = result.ast?.contracts;
     expect(contracts[0].statics[1].expr.value.toString(10)).to.equal('2988348162058574136915891421498819466320163312926952423791023078876139')
     expect(contracts[1].statics[7].expr.value.toString(10)).to.equal('2988348162058574136915891421498819466320163312926952423791023078876139')
   })
