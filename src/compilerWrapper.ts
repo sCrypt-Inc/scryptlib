@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync, exec } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, createReadStream } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, createReadStream, fstat, createWriteStream } from 'fs';
 import md5 = require('md5');
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
@@ -9,9 +9,7 @@ import {
   buildTypeResolver, TypeResolver, resolveConstValue, hash160
 } from './internal';
 
-import { chain } from 'stream-chain';
-import { parser } from 'stream-json';
-import * as Assembler from 'stream-json/Assembler';
+import { stringifyStream, parseChunked } from '@discoveryjs/json-ext';
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -211,7 +209,7 @@ export function doCompileAsync(source: {
   path: string,
   content?: string,
 },
-settings: CompilingSettings, callback?: (error: Error | null, result: {
+  settings: CompilingSettings, callback?: (error: Error | null, result: {
     path: string,
     output: string,
     md5: string,
@@ -261,7 +259,7 @@ export function compileAsync(source: {
   path: string,
   content?: string,
 },
-settings: CompilingSettings): Promise<CompileResult> {
+  settings: CompilingSettings): Promise<CompileResult> {
 
   return new Promise((resolve, reject) => {
     doCompileAsync(
@@ -333,7 +331,7 @@ export async function handleCompilerOutputAsync(
     }
 
     if (settings.desc) {
-      generateDescFile(result, settings, descDir, outputFiles);
+      await generateDescFileAsync(result, settings, descDir, outputFiles);
     }
 
     return Promise.resolve(result);
@@ -442,7 +440,10 @@ export function handleCompilerOutput(
     }
 
     if (settings.desc) {
-      generateDescFile(result, settings, descDir, outputFiles);
+      const outputFilePath = getOutputFilePath(descDir, 'desc');
+      const description = generateDescFile(result, settings, descDir, outputFiles);
+      writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
+
     }
 
     return result;
@@ -1107,7 +1108,7 @@ function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettin
   }
 }
 
-function generateDescFile(result: CompileResult, settings: CompilingSettings, descDir: string, outputFiles: Record<string, string>) {
+function generateDescFile(result: CompileResult, settings: CompilingSettings, descDir: string, outputFiles: Record<string, string>): ContractDescription {
   settings.outputToFiles = true;
   const outputFilePath = getOutputFilePath(descDir, 'desc');
   outputFiles['desc'] = outputFilePath;
@@ -1128,7 +1129,26 @@ function generateDescFile(result: CompileResult, settings: CompilingSettings, de
     sources: result.sources || [],
     sourceMap: result.sourceMap || []
   };
-  writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
+
+  return description;
+}
+
+
+function generateDescFileAsync(result: CompileResult, settings: CompilingSettings, descDir: string, outputFiles: Record<string, string>): Promise<any> {
+
+  const description = generateDescFile(result, settings, descDir, outputFiles);
+  const outputFilePath = getOutputFilePath(descDir, 'desc');
+  return new Promise((resolve, reject) => {
+    stringifyStream(description)
+      .pipe(createWriteStream(outputFilePath))
+      .on('finish', () => {
+        resolve(true);
+      })
+      .on('error', (e) => {
+        reject(e);
+      });
+  });
+
 }
 
 function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
@@ -1174,11 +1194,14 @@ function doClean(settings: CompilingSettings, outputFiles: Record<string, string
 async function JSONParser(file: string): Promise<any> {
 
   return new Promise((resolve, reject) => {
-    const pipeline = chain([
-      createReadStream(file),
-      parser(),
-    ]);
-    const asm = Assembler.connectTo(pipeline);
-    asm.on('done', asm => resolve(asm.current));
+
+    parseChunked(createReadStream(file))
+      .then(data => {
+        resolve(data);
+      })
+      .catch(e => {
+        reject(e);
+      });
+
   });
 }

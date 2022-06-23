@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## 0.16.2
+
+- Fix out of memery when generating contract description file for large contract
+
 ## 0.16.1
 
 - Deprecated `setDataPart`, add `setDataPartInASM` and `setDataPartInHex`
