@@ -1,0 +1,12 @@
+contract C {
+
+    HashedMap<int, bytes> map;
+
+    public function unlock() {
+
+        require(this.map.canGet({ 3, 0 }, b'99'));
+        require(this.map.canGet({ 22, 1 }, b'f1'));
+        require(this.map.canGet({ 1234, 2 }, b'f1ff'));
+        require(true);
+    }
+}
