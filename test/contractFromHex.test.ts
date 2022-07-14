@@ -143,18 +143,14 @@ describe('buildContractClass and create instance from script', () => {
     })
 
     it('static getAsmVars method', () => {
-      let lockingScriptAsm = instance.lockingScript.toASM()
-      let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
+      let lockingScriptHex = instance.lockingScript.toHex()
+      let asmVars = DemoP2PKH.getAsmVars(lockingScriptHex)
 
-      expect(asmVars).is.not.null
-      expect(asmVars).have.key('pubKeyHash')
-      expect(asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+      expect(asmVars).is.empty
     })
 
     it('should have an asm var', () => {
-      expect(instance.asmVars).is.not.null
-      expect(instance.asmVars).have.key('pubKeyHash')
-      expect(instance.asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+      expect(instance.asmVars).empty
     })
 
     it('should be an instance of AbstractContract', () => {

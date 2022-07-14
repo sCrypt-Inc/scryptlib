@@ -113,6 +113,53 @@ export function asm2int(str: string): number | string {
   }
 }
 
+
+/**
+ * convert asm string to number or bigint
+ */
+export function hex2int(str: string): number | string {
+
+  const b = bsv.Script.fromHex(str);
+  const chuck = b.chunks[0];
+
+
+  switch (chuck.opcodenum) {
+    case 0:
+      return 0;
+    case 79:
+      return -1;
+    case 81:
+    case 82:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
+    case 90:
+    case 91:
+    case 92:
+    case 93:
+    case 94:
+    case 95:
+    case 96:
+      return chuck.opcodenum - 80;
+    default: {
+      const value = chuck.buf.toString('hex');
+      const bn = BN.fromHex(value, {
+        endian: 'little'
+      });
+
+      if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+        return bn.toNumber();
+      } else {
+        return bn.toString();
+      }
+    }
+  }
+}
+
 /**
  * decimal int or hex str to number or bigint
  */
@@ -365,6 +412,43 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
 }
 
 
+export function hex2ScryptType(type: string, hex: string): ScryptType {
+
+  const b = bsv.Script.fromHex(hex);
+  const chuck = b.chunks[0];
+
+  switch (type) {
+    case VariableType.BOOL:
+      return new Bool(chuck.opcodenum == 0x51 ? true : false);
+    case VariableType.INT:
+      return new Int(hex2int(hex));
+    case VariableType.BYTES:
+      return new Bytes(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.PRIVKEY:
+      return new PrivKey(hex2int(hex));
+    case VariableType.PUBKEY:
+      return new PubKey(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SIG:
+      return new Sig(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.RIPEMD160:
+      return new Ripemd160(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SHA1:
+      return new Sha1(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SHA256:
+      return new Sha256(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SIGHASHTYPE:
+      return new SigHashType(hex2int(hex) as number);
+    case VariableType.SIGHASHPREIMAGE:
+      return new SigHashPreimage(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.OPCODETYPE:
+      return new OpCodeType(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    default:
+      throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  }
+
+}
+
+
 
 export function bytes2Literal(bytearray: number[], type: string): string {
 
@@ -455,6 +539,9 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
 }
 
 export function toHex(x: { toString(format: 'hex'): string }): string {
+  if (x instanceof ScryptType) {
+    return x.serialize();
+  }
   return x.toString('hex');
 }
 
@@ -786,7 +873,7 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
         name: param.name,
         type: subArrayType(finalType)
       },
-      expectedType, resolver);
+        expectedType, resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1369,8 +1456,8 @@ export function resolveConstValue(node: any): string | undefined {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
     if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
+    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -1519,7 +1606,7 @@ export function createStruct(resolver: ScryptTypeResolver, param: ParamEntity, o
     } else {
 
       Object.assign(obj, {
-        [p.name]: asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`))
+        [p.name]: hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
       });
 
     }
@@ -1554,7 +1641,7 @@ export function createLibrary(resolver: ScryptTypeResolver, param: ParamEntity, 
       return createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
 
     } else {
-      return asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`));
+      return hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`));
     }
   });
 
@@ -1598,7 +1685,7 @@ export function createLibraryProperties(resolver: ScryptTypeResolver, param: Par
 
     } else {
       Object.assign(properties, {
-        [p.name]: asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`))
+        [p.name]: hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
       });
     }
   });
@@ -1613,14 +1700,14 @@ export function createDefaultLibrary(resolver: ScryptTypeResolver, param: ParamE
 
   const flatternparams = flatternLibraryParam(param, resolver, false);
 
-  const asmTemplate: Map<string, string> = new Map();
+  const hexTemplateMap: Map<string, string> = new Map();
 
   flatternparams.forEach(p => {
 
     if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
-      asmTemplate.set(`$${p.name}`, 'OP_0');
+      hexTemplateMap.set(`<${p.name}>`, '00');
     } else if (p.type === VariableType.BOOL) {
-      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+      hexTemplateMap.set(`<${p.name}>`, '51');
     } else if (p.type === VariableType.BYTES
       || p.type === VariableType.PUBKEY
       || p.type === VariableType.SIG
@@ -1630,12 +1717,12 @@ export function createDefaultLibrary(resolver: ScryptTypeResolver, param: ParamE
       || p.type === VariableType.SIGHASHTYPE
       || p.type === VariableType.SIGHASHPREIMAGE
       || p.type === VariableType.OPCODETYPE) {
-      asmTemplate.set(`$${p.name}`, '00');
+      hexTemplateMap.set(`<${p.name}>`, '0100');
     } else {
       throw new Error(`param ${p.name} has unknown type ${p.type}`);
     }
   });
-  return createLibrary(resolver, param, asmTemplate);
+  return createLibrary(resolver, param, hexTemplateMap);
 }
 
 
@@ -1664,7 +1751,7 @@ export function createArray(resolver: ScryptTypeResolver, type: string, name: st
         }, opcodesMap));
       }
       else {
-        arrays.push(asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${name}[${index}]`)));
+        arrays.push(hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${name}[${index}]>`)));
       }
 
     }
@@ -1743,18 +1830,25 @@ function escapeRegExp(stringToGoIntoTheRegex) {
 // state version
 const CURRENT_STATE_VERSION = 0;
 
-export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTemplate: string): string {
+export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTemplateInlineASM: Map<string, string>, hexTemplate: string): bsv.Script {
 
 
-  let lsASM = asmTemplate;
-  for (const entry of asmTemplateArgs.entries()) {
+  let lsHex = hexTemplate;
+
+  for (const entry of hexTemplateArgs.entries()) {
     const name = entry[0];
     const value = entry[1];
-    const re = name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(name)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(name)}\\b`, 'g');
-    lsASM = lsASM.replace(re, value);
+    lsHex = lsHex.replace(name, value);
   }
 
-  return lsASM;
+
+  for (const entry of hexTemplateInlineASM.entries()) {
+    const name = entry[0];
+    const value = entry[1];
+    lsHex = lsHex.replace(new RegExp(`${escapeRegExp(name)}`, 'g'), value);
+  }
+
+  return bsv.Script.fromHex(lsHex);
 
 }
 
@@ -1816,14 +1910,14 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
   const flatternparams = flatternParams(stateProps, contract.resolver);
 
-  const asmTemplate: Map<string, string> = new Map();
+  const hexTemplateMap: Map<string, string> = new Map();
 
   flatternparams.forEach(p => {
 
     if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
-      asmTemplate.set(`$${p.name}`, 'OP_0');
+      hexTemplateMap.set(`<${p.name}>`, '00');
     } else if (p.type === VariableType.BOOL) {
-      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+      hexTemplateMap.set(`<${p.name}>`, '51');
     } else if (p.type === VariableType.BYTES
       || p.type === VariableType.PUBKEY
       || p.type === VariableType.SIG
@@ -1833,7 +1927,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
       || p.type === VariableType.SIGHASHTYPE
       || p.type === VariableType.SIGHASHPREIMAGE
       || p.type === VariableType.OPCODETYPE) {
-      asmTemplate.set(`$${p.name}`, '00');
+      hexTemplateMap.set(`<${p.name}>`, '0100');
     } else {
       throw new Error(`param ${p.name} has unknown type ${p.type}`);
     }
@@ -1842,7 +1936,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
   return stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
     value: undefined
-  }), asmTemplate));
+  }), hexTemplateMap));
 }
 
 
@@ -1886,7 +1980,7 @@ export function readBytes(br: bsv.encoding.BufferReader): {
 
 
 
-export function deserializeArgfromASM(resolver: ScryptTypeResolver, arg: Argument, opcodesMap: Map<string, string>): Argument {
+export function deserializeArgfromHex(resolver: ScryptTypeResolver, arg: Argument, opcodesMap: Map<string, string>): Argument {
 
   let value;
 
@@ -1899,7 +1993,7 @@ export function deserializeArgfromASM(resolver: ScryptTypeResolver, arg: Argumen
   } else if (typeInfo.symbolType === SymbolType.Library) {
     value = createLibrary(resolver, arg, opcodesMap);
   } else {
-    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+    value = hex2ScryptType(arg.type, opcodesMap.get(`<${arg.name}>`));
   }
 
   arg.value = value;
@@ -1921,7 +2015,7 @@ export function deserializeArgfromState(resolver: ScryptTypeResolver, arg: Argum
     const properties = createLibraryProperties(resolver, arg, opcodesMap);
     value.setProperties(properties);
   } else {
-    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+    value = hex2ScryptType(arg.type, opcodesMap.get(`<${arg.name}>`));
   }
 
   arg.value = value;
@@ -1963,7 +2057,7 @@ function flattenData(data: SupportedParamType): ScryptType[] {
 export function flattenSha256(data: SupportedParamType): string {
   const flattened = flattenData(data);
   if (flattened.length === 1) {
-    let hex = flattened[0].toHex();
+    let hex = flattened[0].serialize();
     if ((flattened[0] instanceof Bool || flattened[0] instanceof Int) && hex === '00'
     ) {
       hex = '';
@@ -1971,7 +2065,7 @@ export function flattenSha256(data: SupportedParamType): string {
     return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
   } else {
     const jointbytes = flattened.map(item => {
-      let hex = item.toHex();
+      let hex = item.serialize();
       if ((item instanceof Bool || item instanceof Int) && hex === '00'
       ) {
         hex = '';
@@ -2380,8 +2474,8 @@ export function int2Number(value: ValueType): number | bigint {
 
 
 export function and(a: Int, b: Int): Int {
-  const size1 = a.toHex().length / 2;
-  const size2 = b.toHex().length / 2;
+  const size1 = a.serialize().length / 2;
+  const size2 = b.serialize().length / 2;
   const maxSize = Math.max(size1, size2);
 
   const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
@@ -2396,8 +2490,8 @@ export function and(a: Int, b: Int): Int {
 }
 
 export function or(a: Int, b: Int): Int {
-  const size1 = a.toHex().length / 2;
-  const size2 = b.toHex().length / 2;
+  const size1 = a.serialize().length / 2;
+  const size2 = b.serialize().length / 2;
   const maxSize = Math.max(size1, size2);
 
   const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
@@ -2412,8 +2506,8 @@ export function or(a: Int, b: Int): Int {
 }
 
 export function xor(a: Int, b: Int): Int {
-  const size1 = a.toHex().length / 2;
-  const size2 = b.toHex().length / 2;
+  const size1 = a.serialize().length / 2;
+  const size2 = b.serialize().length / 2;
   const maxSize = Math.max(size1, size2);
 
   const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
@@ -2431,7 +2525,7 @@ export function invert(a: Int): Int {
   if (a.toNumber() === 0) {
     return a;
   }
-  const size = a.toHex().length / 2;
+  const size = a.serialize().length / 2;
 
   const buffer = Buffer.from(num2bin(a.toNumber(), size), 'hex');
 

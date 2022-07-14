@@ -72,7 +72,7 @@ describe('buildContractClass()', () => {
   it('should return a reflected contract class object', () => {
     assert.typeOf(DemoP2PKH, 'function');
     assert.deepEqual(DemoP2PKH.abi, jsonDescr.abi);
-    assert.deepEqual(DemoP2PKH.asm, jsonDescr.asm);
+    assert.deepEqual(DemoP2PKH.hexTemplate, jsonDescr.hex);
   })
 
   describe('instance of the returned contract class', () => {
@@ -85,7 +85,7 @@ describe('buildContractClass()', () => {
     beforeEach(() => {
       instance = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
       sig = signTx(tx, privateKey, instance.lockingScript, inputSatoshis);
-      unlockingScriptASM = [toHex(sig), toHex(publicKey)].join(' ');
+      unlockingScriptASM = [sig.toASM(), toHex(publicKey)].join(' ');
     })
 
     it("test arguments", () => {
@@ -98,18 +98,13 @@ describe('buildContractClass()', () => {
     })
 
     it('static getAsmVars method', () => {
-      let lockingScriptAsm = instance.lockingScript.toASM()
-      let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
+      let asmVars = DemoP2PKH.getAsmVars(instance.lockingScript.toHex())
 
-      expect(asmVars).is.not.null;
-      expect(asmVars).have.key('pubKeyHash')
-      expect(asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+      expect(asmVars).is.empty;
     })
 
     it('should have an asm var', () => {
-      expect(instance.asmVars).is.not.null;
-      expect(instance.asmVars).have.key('pubKeyHash')
-      expect(instance.asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+      expect(instance.asmVars).is.empty;
     })
 
     it('should be an instance of AbstractContract', () => {

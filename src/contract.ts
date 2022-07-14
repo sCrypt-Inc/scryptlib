@@ -3,7 +3,7 @@ import { ContractEntity, StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver,
-  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, checkSupportedParamType, hash160,
+  StructEntity, ABIEntity, OpCode, CompileResult, desc2CompileResult, AliasEntity, buildContractState, checkSupportedParamType, hash160, buildContractCode,
 } from './internal';
 import { HashedMap, HashedSet, Library, ScryptTypeResolver, SymbolType, TypeInfo } from './scryptTypes';
 
@@ -50,7 +50,7 @@ export class AbstractContract {
 
   public static contractName: string;
   public static abi: ABIEntity[];
-  public static asm: string;
+  public static hexTemplate: string;
   public static abiCoder: ABICoder;
   public static opcodes?: OpCode[];
   public static file: string;
@@ -70,8 +70,8 @@ export class AbstractContract {
 
   scriptedConstructor: FunctionCall;
   calls: Map<string, FunctionCall> = new Map();
-  asmArgs: AsmVarValues | null = null;
-  asmTemplateArgs: Map<string, string> = new Map();
+  hexTemplateInlineASM: Map<string, string> = new Map();
+  hexTemplateArgs: Map<string, string> = new Map();
   statePropsArgs: Arguments = [];
   // If true, the contract will read the state from property, if false, the contract will read the state from preimage
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
@@ -84,9 +84,7 @@ export class AbstractContract {
       return bsv.Script.fromHex(lsHex);
     }
 
-    const lsASM = this.scriptedConstructor.toASM();
-
-    return bsv.Script.fromASM(lsASM.trim());
+    return this.scriptedConstructor.lockingScript;
   }
 
   private _txContext?: TxContext;
@@ -97,6 +95,10 @@ export class AbstractContract {
 
   get txContext(): TxContext {
     return this._txContext;
+  }
+
+  get contractName(): string {
+    return Object.getPrototypeOf(this).constructor.contractName as string;
   }
 
   get typeResolver(): TypeResolver {
@@ -110,8 +112,34 @@ export class AbstractContract {
 
   // replace assembly variables with assembly values
   replaceAsmVars(asmVarValues: AsmVarValues): void {
-    this.asmArgs = asmVarValues;
-    this.scriptedConstructor.init(asmVarValues);
+
+    if (asmVarValues) {
+      for (const key in asmVarValues) {
+        const val = asmVarValues[key];
+        this.hexTemplateInlineASM.set(`<${key.startsWith('$') ? key.substring(1) : key}>`, bsv.Script.fromASM(val).toHex());
+      }
+    }
+
+    const hexTemplate = Object.getPrototypeOf(this).constructor.hexTemplate;
+
+    const lockingScript = buildContractCode(this.hexTemplateArgs, this.hexTemplateInlineASM, hexTemplate);
+
+    this.scriptedConstructor.lockingScript = lockingScript;
+
+  }
+
+  // replace assembly variables with assembly values
+  get asmArgs(): AsmVarValues {
+
+    const result: AsmVarValues = {};
+
+    for (const entry of this.hexTemplateInlineASM.entries()) {
+      const name = entry[0].replace('<', '').replace('>', '');
+      const value = entry[1];
+      result[name] = bsv.Script.fromHex(value).toASM();
+    }
+
+    return result;
   }
 
   static findSrcInfo(fExecs: boolean[], opcodes: OpCode[], stepIndex: number, opcodesIndex: number): OpCode | undefined {
@@ -311,9 +339,9 @@ export class AbstractContract {
   }
 
   get codePart(): Script {
-    const codeASM = this.scriptedConstructor.toASM();
+    const codeHex = this.scriptedConstructor.toHex();
     // note: do not trim the trailing space
-    return bsv.Script.fromASM(codeASM + ' OP_RETURN');
+    return bsv.Script.fromHex(codeHex + '6a');
   }
 
   get codeHash(): string {
@@ -324,23 +352,9 @@ export class AbstractContract {
     }
   }
 
-  static getAsmVars(contractAsm, instAsm): AsmVarValues | null {
-    const regex = /(\$\S+)/g;
-    const vars = contractAsm.match(regex);
-    if (vars === null) {
-      return null;
-    }
-    const asmArray = contractAsm.split(/\s/g);
-    const lsASMArray = instAsm.split(/\s/g);
-    const result = {};
-    for (let i = 0; i < asmArray.length; i++) {
-      for (let j = 0; j < vars.length; j++) {
-        if (vars[j] === asmArray[i]) {
-          result[vars[j].replace('$', '')] = lsASMArray[i];
-        }
-      }
-    }
-    return result;
+  static getAsmVars(lockingScriptHex: string): AsmVarValues {
+    const instance = this.fromHex(lockingScriptHex);
+    return instance.asmArgs;
   }
 
   public arguments(pubFuncName: string): Arguments {
@@ -402,8 +416,8 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
     throw new Error('missing field `abi` in description');
   }
 
-  if (!desc.asm) {
-    throw new Error('missing field `asm` in description');
+  if (!desc.hex) {
+    throw new Error('missing field `hex` in description');
   }
 
   if (!desc['errors']) {
@@ -418,7 +432,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
     constructor(...ctorParams: SupportedParamType[]) {
       super();
       if (!Contract.asmContract) {
-        this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.asm, ...ctorParams);
+        this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.hexTemplate, ...ctorParams);
       }
     }
 
@@ -441,7 +455,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
       Contract.asmContract = true;
       const obj = new this();
       Contract.asmContract = false;
-      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromRawHex(obj, Contract.asm, hex);
+      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromRawHex(obj, Contract.hexTemplate, hex);
       return obj;
     }
 
@@ -460,7 +474,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
      * all values is hex string, need convert it to number or bytes on using
      */
     get asmVars(): AsmVarValues | null {
-      return AbstractContract.getAsmVars(Contract.asm, this.scriptedConstructor.toASM());
+      return ContractClass.getAsmVars(this.scriptedConstructor.toHex());
     }
 
     get asmArguments(): AsmVarValues | null {
@@ -477,7 +491,7 @@ export function buildContractClass(desc: CompileResult | ContractDescription): t
 
   ContractClass.contractName = desc.contract;
   ContractClass.abi = desc.abi;
-  ContractClass.asm = desc.asm.map(item => item['opcode'].trim()).join(' ');
+  ContractClass.hexTemplate = desc.hex;
   ContractClass.abiCoder = new ABICoder(desc.abi, ContractClass.resolver);
   ContractClass.opcodes = desc.asm;
   ContractClass.file = desc.file;
