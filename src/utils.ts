@@ -1492,7 +1492,7 @@ function resolveArrayType(contract: string, type: string, statics: StaticEntity[
         const size_ = (size.indexOf('.') > 0) ? size : `${contract}.${size}`;
         const value = findConstStatic(statics, size_);
         if (!value) {
-          console.warn(`resolve array sub ${size} fail`);
+          // Unable to solve when the subscript of the array is a function parameter, [CTC](https://scryptdoc.readthedocs.io/en/latest/ctc.html)
           return size;
         }
         return value.value;
