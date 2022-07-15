@@ -368,10 +368,10 @@ describe('Alias type check', () => {
 
   describe('VarAsSub check', () => {
 
-    const result = compileContract(getContractFilePath('varassub.scrypt'));
-    it('should succeeding when call buildTypeResolver', () => {
 
-      const resolver = buildTypeResolver(result.contract, result.alias, result.structs, result.library, result.contracts, result.statics)
+    it('should succeeding when call buildTypeResolver', () => {
+      const result = compileContract(getContractFilePath('varassub.scrypt'));
+      const resolver = buildTypeResolver(result.contract || '', result.alias || [], result.structs || [], result.library || [], result.contracts, result.statics)
       expect(resolver("int[1][SUB]")).deep.equal({
         finalType: 'int[1][3]',
         symbolType: SymbolType.BaseType

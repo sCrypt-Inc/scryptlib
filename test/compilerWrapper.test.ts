@@ -91,11 +91,18 @@ describe('compile()', () => {
 
   describe('test compilerVersion', () => {
 
-    let scryptc = findCompiler();
 
-    const version = compilerVersion(scryptc);
-    console.log('compilerVersion', version)
-    expect(/^(\d)+\.(\d)+\.(\d)+\+commit\./.test(version)).to.be.true
+    it('test compilerVersion', () => {
+      let scryptc = findCompiler();
+
+      assert.isDefined(scryptc)
+
+      const version = compilerVersion(scryptc);
+      console.log('compilerVersion', version)
+      expect(/^(\d)+\.(\d)+\.(\d)+\+commit\./.test(version)).to.be.true
+
+    })
+
   })
 
 
@@ -307,9 +314,9 @@ describe('compile()', () => {
 
 
   describe('compile result with autoTypedVars', () => {
-    const result = compileContract(getContractFilePath('autoTyped.scrypt'));
 
     it('autoTypedVars', () => {
+      const result = compileContract(getContractFilePath('autoTyped.scrypt'));
 
       let autoVars = result.autoTypedVars?.map(v => Object.assign({}, { name: v.name, type: v.type }));
 
