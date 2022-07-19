@@ -35,3 +35,13 @@
 * add `library` field
 * add `statics` field
 * remove `generics` field
+
+
+## version = 9
+
+
+* add `sourceMapFile` field
+* remove `sourceMap` field
+* remove `sources` field
+
+The minimum version number currently supported: `8`
