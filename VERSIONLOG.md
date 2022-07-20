@@ -33,9 +33,7 @@
 ## version = 8
 
 * add `library` field
-* add `statics` field
 * remove `generics` field
-
 
 ## version = 9
 
