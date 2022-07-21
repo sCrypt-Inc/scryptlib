@@ -8,7 +8,6 @@ var BN = require('../crypto/bn')
 var Hash = require('../crypto/hash')
 var Signature = require('../crypto/signature')
 var PublicKey = require('../publickey')
-var cloneDeep = require('clone-deep')
 var Stack = require('./stack')
 /**
  * Bitcoin transactions contain scripts. Each input has a script called the
@@ -20,7 +19,7 @@ var Stack = require('./stack')
  * The primary way to use this class is via the verify function.
  * e.g., Interpreter().verify( ... );
  */
-var Interpreter = function Interpreter (obj) {
+var Interpreter = function Interpreter(obj) {
   if (!(this instanceof Interpreter)) {
     return new Interpreter(obj)
   }
@@ -201,6 +200,7 @@ Interpreter.prototype.initialize = function (obj) {
   // if OP_RETURN is found in executed branches after genesis is activated,
   // we still have to check if the rest of the script is valid
   this.nonTopLevelReturnAfterGenesis = false
+  this.returned = false
 }
 
 Interpreter.prototype.set = function (obj) {
@@ -517,7 +517,7 @@ Interpreter.prototype.evaluate = function (scriptType) {
   }
 
   try {
-    while (this.pc < this.script.chunks.length) {
+    while (!this.returned && this.pc < this.script.chunks.length) {
       // fExec: if the opcode will be executed, i.e., not in a false branch
       let thisStep = { pc: this.pc, fExec: (this.vfExec.indexOf(false) === -1), opcode: Opcode.fromNumber(this.script.chunks[this.pc].opcodenum) }
 
@@ -675,7 +675,7 @@ Interpreter.prototype.checkSequence = function (nSequence) {
   return true
 }
 
-function padBufferToSize (buf, len) {
+function padBufferToSize(buf, len) {
   let b = buf
   while (b.length < len) {
     b = Buffer.concat([Buffer.from([0x00]), b])
@@ -690,15 +690,15 @@ function padBufferToSize (buf, len) {
 Interpreter.prototype.step = function (scriptType) {
   var self = this
 
-  function stacktop (i) {
+  function stacktop(i) {
     return self.stack.stacktop(i)
   }
 
-  function vartop (i) {
+  function vartop(i) {
     return self.stack.vartop(i)
   }
 
-  function isOpcodeDisabled (opcode) {
+  function isOpcodeDisabled(opcode) {
     switch (opcode) {
       case Opcode.OP_2MUL:
       case Opcode.OP_2DIV:
@@ -997,7 +997,7 @@ Interpreter.prototype.step = function (scriptType) {
           if (this.vfExec.length === 0) {
             // Terminate the execution as successful. The remaining of the script does not affect the validity (even in
             // presence of unbalanced IFs, invalid opcodes etc)
-            this.pc = this.script.chunks.length
+            this.returned = true
             return true
           }
           // op_return encountered inside if statement after genesis --> check for invalid grammar

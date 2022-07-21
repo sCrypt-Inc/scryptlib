@@ -1,7 +1,6 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
-import { DebugLaunch } from '../src/abi';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { buildContractClass, buildTypeClasses } from '../src/contract';
 import { bsv, toHex, signTx, num2bin, getPreimage, readLaunchJson } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage } from '../src/scryptTypes';
 
@@ -73,7 +72,7 @@ describe('VerifyError', () => {
       let sig: Sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
       let pubkey: PubKey = new PubKey(toHex(publicKey));
       result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx });
-      expect(result.error).to.equal("VerifyError: SCRIPT_ERR_VERIFY");
+      expect(result.error).to.equal("VerifyError: SCRIPT_ERR_VERIFY, fails at OP_VERIFY\n");
     });
   });
 

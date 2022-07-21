@@ -20,7 +20,9 @@ function compileAllContracts() {
   contracts.forEach(filePath => {
 
     const result = compileContract(filePath, {
-      out: out
+      out: out,
+      desc: true,
+      sourceMap: true,
     });
 
     if (result.errors.length > 0) {

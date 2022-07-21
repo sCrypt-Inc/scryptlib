@@ -72,7 +72,7 @@ describe('buildContractClass()', () => {
   it('should return a reflected contract class object', () => {
     assert.typeOf(DemoP2PKH, 'function');
     assert.deepEqual(DemoP2PKH.abi, jsonDescr.abi);
-    assert.deepEqual(DemoP2PKH.hexTemplate, jsonDescr.hex);
+    assert.deepEqual(DemoP2PKH.hex, jsonDescr.hex);
   })
 
   describe('instance of the returned contract class', () => {
@@ -186,8 +186,10 @@ describe('buildContractClass()', () => {
 
       it('should fail if param `txContext` is incorrect', () => {
         // emtpy txContext
-        result = instance.run_verify(unlockingScriptASM);
-        assert.isFalse(result.success, result.error);
+
+        expect(() => {
+          instance.run_verify(unlockingScriptASM);
+        }).to.throw(/should provide txContext.tx when verify/)
 
         // incorrect inputSatoshis
         result = instance.run_verify(unlockingScriptASM, Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 }));

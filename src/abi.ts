@@ -115,8 +115,8 @@ export class FunctionCall {
     const constructorArgs: SupportedParamType[] = this.contract.ctorArgs().map(p => p.value);
     const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
-    const name = `Debug ${Object.getPrototypeOf(this.contract).constructor.contractName}`;
-    const program = `${Object.getPrototypeOf(this.contract).constructor.file}`;
+    const name = `Debug ${this.contract.contractName}`;
+    const program = `${this.contract.file}`;
 
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
 
@@ -132,7 +132,7 @@ export class FunctionCall {
   }
 
   verify(txContext?: TxContext): VerifyResult {
-    const result = this.contract.run_verify(this.unlockingScript.toASM() || '', txContext, this.args);
+    const result = this.contract.run_verify(this.unlockingScript.toASM() || '', txContext);
 
     if (!result.success) {
       const debugUrl = this.genLaunchConfig(txContext);
@@ -166,8 +166,7 @@ export class ABICoder {
 
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
-    const contractName = Object.getPrototypeOf(contract).constructor.contractName as string;
-    this.checkArgs(contractName, 'constructor', cParams, ...args);
+    this.checkArgs(contract.contractName, 'constructor', cParams, ...args);
 
     // handle array type
     const flatteredArgs = flatternCtorArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
@@ -219,8 +218,7 @@ export class ABICoder {
 
     const stateTemplateArgs: Map<string, string> = new Map();
 
-    const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
-    const flatternparams = flatternParams(stateProps, contract.resolver);
+    const flatternparams = flatternParams(contract.stateProps, contract.resolver);
 
 
     flatternparams.forEach((param) => {
@@ -237,7 +235,7 @@ export class ABICoder {
       }
     });
 
-    return stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
+    return contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
       value: undefined
     }), stateTemplateArgs));
   }
@@ -367,10 +365,9 @@ export class ABICoder {
   }
 
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
-    const contractName = Object.getPrototypeOf(contract).constructor.contractName as string;
     for (const entity of this.abi) {
       if (entity.name === name) {
-        this.checkArgs(contractName, name, entity.params, ...args);
+        this.checkArgs(contract.contractName, name, entity.params, ...args);
         let hex = this.encodeParams(args, entity.params.map(p => ({
           name: p.name,
           type: this.resolver.resolverType(p.type).finalType
@@ -390,7 +387,7 @@ export class ABICoder {
       }
     }
 
-    throw new Error(`no public function named '${name}' found in contract '${contractName}'`);
+    throw new Error(`no public function named '${name}' found in contract '${contract.contractName}'`);
   }
 
   /**
@@ -403,9 +400,8 @@ export class ABICoder {
   encodePubFunctionCallFromHex(contract: AbstractContract, name: string, hex: string): FunctionCall {
     const script = bsv.Script.fromHex(hex);
     const entity = this.abi.filter(entity => entity.type === 'function' && entity.name === name)[0];
-    const contractName = Object.getPrototypeOf(contract).constructor.contractName;
     if (!entity) {
-      throw new Error(`no public function named '${name}' found in contract '${contractName}'`);
+      throw new Error(`no public function named '${name}' found in contract '${contract.contractName}'`);
     }
     const cParams = entity?.params || [];
 
@@ -421,7 +417,7 @@ export class ABICoder {
     const asmOpcodes = usASM.split(' ');
 
     if (fArgsLen != asmOpcodes.length) {
-      throw new Error(`the raw unlockingScript cannot match the arguments of public function ${name} of contract ${contractName}`);
+      throw new Error(`the raw unlockingScript cannot match the arguments of public function ${name} of contract ${contract.contractName}`);
     }
 
     const hexTemplateArgs: Map<string, string> = new Map();

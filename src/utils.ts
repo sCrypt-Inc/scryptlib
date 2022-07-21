@@ -6,8 +6,8 @@ import { join, sep } from 'path';
 import { tmpdir } from 'os';
 export { bsv };
 export { ECIES };
-
-
+import { stringifyStream, parseChunked } from '@discoveryjs/json-ext';
+import { decode } from 'sourcemap-codec';
 
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
@@ -16,7 +16,7 @@ import {
   Arguments, Argument,
   Script, ParamEntity, SingletonParamType
 } from './internal';
-import { compileAsync, StaticEntity } from './compilerWrapper';
+import { compileAsync, OpCode, StaticEntity } from './compilerWrapper';
 import { BasicScryptType, HashedMap, HashedSet, Library, ScryptTypeResolver, String, SymbolType, TypeInfo } from './scryptTypes';
 import { VerifyError } from './contract';
 import { ABIEntity, handleCompilerOutput, LibraryEntity } from '.';
@@ -872,8 +872,7 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
       return checkArray(a as SupportedParamType[], {
         name: param.name,
         type: subArrayType(finalType)
-      },
-        expectedType, resolver);
+      }, expectedType, resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1307,12 +1306,14 @@ export function isEmpty(obj: unknown): boolean {
 
 export function compileContract(file: string, options?: {
   out?: string,
-  sourceMap?: boolean
+  sourceMap?: boolean,
+  desc?: boolean,
 }): CompileResult {
   console.log(`Compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '../out'),
-    sourceMap: true
+    sourceMap: false,
+    desc: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -1326,8 +1327,8 @@ export function compileContract(file: string, options?: {
   const result = compile(
     { path: file },
     {
-      desc: true, debug: options.sourceMap, outputDir: options.out,
-      hex: true,
+      desc: options.desc, outputDir: options.out,
+      sourceMap: options.sourceMap,
       cmdPrefix: findCompiler()
     }
   );
@@ -1338,12 +1339,14 @@ export function compileContract(file: string, options?: {
 
 export function compileContractAsync(file: string, options?: {
   out?: string,
+  desc?: boolean,
   sourceMap?: boolean
 }): Promise<CompileResult> {
   console.log(`compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '..', 'out'),
-    sourceMap: true
+    sourceMap: false,
+    desc: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -1354,7 +1357,7 @@ export function compileContractAsync(file: string, options?: {
   }
 
   return compileAsync({ path: file }, {
-    desc: true, debug: options.sourceMap, outputDir: options.out,
+    desc: options.desc, outputDir: options.out,
     hex: true,
     cmdPrefix: findCompiler()
   });
@@ -1455,9 +1458,7 @@ export function resolveConstValue(node: any): string | undefined {
   } if (node.expr.nodeType === 'BytesLiteral') {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
-    if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-    VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-    VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+    if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH, VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE, VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -1906,9 +1907,7 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
 
 export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
-  const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
-
-  const flatternparams = flatternParams(stateProps, contract.resolver);
+  const flatternparams = flatternParams(contract.stateProps, contract.resolver);
 
   const hexTemplateMap: Map<string, string> = new Map();
 
@@ -1934,7 +1933,7 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
   });
 
-  return stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
+  return contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
     value: undefined
   }), hexTemplateMap));
 }
@@ -2327,8 +2326,7 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
   const entity = abis.find(entity => entity.index === pubFuncIndex);
 
   if (!entity) {
-    const contractName = Object.getPrototypeOf(contract).constructor.contractName;
-    throw new Error(`the raw unlocking script cannot match the contract ${contractName}`);
+    throw new Error(`the raw unlocking script cannot match the contract ${contract.contractName}`);
   }
 
   return entity;
@@ -2537,3 +2535,67 @@ export function invert(a: Int): Int {
 
 }
 
+
+export async function JSONParser(file: string): Promise<boolean> {
+
+  return new Promise((resolve, reject) => {
+
+    parseChunked(fs.createReadStream(file))
+      .then(data => {
+        resolve(data);
+      })
+      .catch(e => {
+        reject(e);
+      });
+
+  });
+}
+
+export function JSONParserSync(file: string): any {
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+
+export async function JSONStringify(file: string, data: unknown): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    stringifyStream(data)
+      .pipe(fs.createWriteStream(file))
+      .on('finish', () => {
+        resolve(true);
+      })
+      .on('error', (e) => {
+        reject(e);
+      });
+  });
+}
+
+
+
+export function findSrcInfoV2(pc: number, sourceMap: unknown): number[] | undefined {
+
+  const decoded = decode(sourceMap['mappings']);
+
+  for (let index = 0; index < decoded[0].length; index++) {
+    const element = decoded[0][index];
+
+    if (element[0] <= pc) {
+      continue;
+    }
+    return decoded[0][index - 1];
+  }
+
+  return decoded[0][decoded[0].length - 1];
+}
+
+
+/**
+ * @deprecated use findSrcInfoV2
+ * @param opcodes OpCode[] from sourceMap
+ */
+export function findSrcInfoV1(opcodes: OpCode[], opcodesIndex: number): OpCode | undefined {
+  while (--opcodesIndex > 0) {
+    if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0) {
+      return opcodes[opcodesIndex];
+    }
+  }
+}
