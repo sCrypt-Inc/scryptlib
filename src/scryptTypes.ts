@@ -87,7 +87,7 @@ export class ScryptType {
   }
 
   toHex(): string {
-    return this.serialize();
+    return bsv.Script.fromASM(this._asm).toHex();
   }
 
   toString(format: string): string {
@@ -124,8 +124,6 @@ export class ScryptType {
   public serialize(): string {
     return '';
   }
-
-
 
   clone(): ScryptType {
     return Object.assign(Object.create(this), {
@@ -531,6 +529,17 @@ export class Struct extends ScryptType {
 
   flatten(varName: string) {
     return flatternStruct(this, varName);
+  }
+
+  toHex(): string {
+
+    if (!this.sorted) {
+      throw 'unbinded Struct can\'t call toHex';
+    }
+
+    return flatternStruct(this, '').map(v => {
+      return (v.value as ScryptType).toHex();
+    }).join('');
   }
 
   protected init(): void {

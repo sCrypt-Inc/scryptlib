@@ -1,5 +1,5 @@
 {
-    "version": 2,
+    "version": 8,
     "compilerVersion": "0.2.12+commit.ce592f4",
     "contract": "DemoP2PKH",
     "md5": "35bbeee99481c17c95f580e8b86d117f",
@@ -34,7 +34,8 @@
         }
     ],
     "file": "",
-    "asm": "OP_NOP OP_0 $pubKeyHash OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP",
+    "asm": "OP_0 $pubKeyHash OP_NOP OP_0 OP_PICK OP_2 OP_ROLL OP_DROP OP_1 OP_ROLL OP_DROP OP_NOP OP_1 OP_PICK OP_HASH160 OP_1 OP_PICK OP_EQUAL OP_VERIFY OP_2 OP_PICK OP_2 OP_PICK OP_CHECKSIG OP_NIP OP_NIP OP_NIP",
+    "hex": "00<pubKeyHash>610079527a75517a75615179a95179876952795279ac777777",
     "sources": [],
     "sourceMap": []
 }

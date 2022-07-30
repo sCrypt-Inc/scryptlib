@@ -43,7 +43,7 @@ describe('FunctionCall', () => {
 
     before(() => {
       target = new FunctionCall('constructor', {
-        contract: p2pkh, lockingScriptASM: p2pkh.lockingScript.toASM(), args: [{
+        contract: p2pkh, lockingScript: p2pkh.lockingScript, args: [{
           name: 'pubKeyHash',
           type: 'Ripemd160',
           value: new Ripemd160(toHex(pubKeyHash))
@@ -74,7 +74,7 @@ describe('FunctionCall', () => {
       sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
       pubkey = new PubKey(toHex(publicKey));
       target = new FunctionCall('unlock', {
-        contract: p2pkh, unlockingScriptASM: [sig.toASM(), pubkey.toASM()].join(' '), args: [{
+        contract: p2pkh, unlockingScript: bsv.Script.fromASM([sig.toASM(), pubkey.toASM()].join(' ')), args: [{
           name: 'sig',
           type: 'Sig',
           value: sig
@@ -152,7 +152,7 @@ describe('FunctionCall', () => {
 
     before(() => {
       target = new FunctionCall('constructor', {
-        contract: person, lockingScriptASM: person.lockingScript.toASM(), args: [{
+        contract: person, lockingScript: person.lockingScript, args: [{
           name: 'some',
           type: 'Person',
           value: new Person({

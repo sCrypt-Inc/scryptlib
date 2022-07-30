@@ -5,13 +5,15 @@ import {
   num2bin, bin2num, bsv, parseLiteral, literal2ScryptType, int2Asm, arrayTypeAndSize, checkSupportedParamType,
   flatternArray, subscript, flattenSha256, findKeyIndex, parseGenericType,
   flatternParams, flatternStruct, isArrayType, compileContract,
-  toLiteral, asm2int, isGenericType, sha256, hash256, hash160, 
+  toLiteral, asm2int, isGenericType, sha256, hash256, hash160,
   buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript,
   inferrType,
   and,
   or,
   xor,
-  invert
+  invert,
+  toHashedMap,
+  toData
 } from '../src/utils'
 import { getContractFilePath, getRandomInt, loadDescription, newTx } from './helper';
 import { tmpdir } from 'os'
@@ -1192,6 +1194,17 @@ describe('utils', () => {
 
       expect(flattenSha256([person, person]))
         .to.be.equal("3a51045a7c808a07675b298a383e6d2dbf1c26416b53443dee0941ea4eddca45");
+
+      let map = new Map<number, any>();
+
+      map.set(22, new Bytes("f1"))
+      map.set(3, new Bytes("99"))
+      map.set(1234, new Bytes("f1ff"))
+
+      expect(toData(map).toHex())
+        .to.be.equal("4cc0084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5fd9528b920d6d3956e9e16114523e1889c751e8c1e040182116d4c906b43f5587cb7c4547cf2653590d7a9ace60cc623d25148adfbc88a89aeb0ef88da7839bad4f09e5c5af99a24c7e304ca7997d26cb00901697de08a49be0d46ab5839b614806505393e046db3163e748c7c7ee1763d242f1f7815a0aaa32c211916df6f0438999152af10c421ddd26ea0baa3ad39ac02d45108d0bd2a6689321273293632");
+
+
     })
 
   })
@@ -1240,7 +1253,7 @@ describe('utils', () => {
       expect(isGenericType("ST1<ST0<int>>"))
         .to.be.true;
 
-      
+
       expect(isGenericType("ST1<ST0<int>[3],ST0<int, [3]>[3]>"))
         .to.be.true;
 

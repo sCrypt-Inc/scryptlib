@@ -6,8 +6,8 @@ import { join, sep } from 'path';
 import { tmpdir } from 'os';
 export { bsv };
 export { ECIES };
-
-
+import { stringifyStream, parseChunked } from '@discoveryjs/json-ext';
+import { decode } from 'sourcemap-codec';
 
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
@@ -16,7 +16,7 @@ import {
   Arguments, Argument,
   Script, ParamEntity, SingletonParamType
 } from './internal';
-import { compileAsync, StaticEntity } from './compilerWrapper';
+import { compileAsync, OpCode, StaticEntity } from './compilerWrapper';
 import { BasicScryptType, HashedMap, HashedSet, Library, ScryptTypeResolver, String, SymbolType, TypeInfo } from './scryptTypes';
 import { VerifyError } from './contract';
 import { ABIEntity, handleCompilerOutput, LibraryEntity } from '.';
@@ -100,6 +100,53 @@ export function asm2int(str: string): number | string {
       return parseInt(str.replace('OP_', ''));
     default: {
       const value = getValidatedHexString(str);
+      const bn = BN.fromHex(value, {
+        endian: 'little'
+      });
+
+      if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
+        return bn.toNumber();
+      } else {
+        return bn.toString();
+      }
+    }
+  }
+}
+
+
+/**
+ * convert asm string to number or bigint
+ */
+export function hex2int(str: string): number | string {
+
+  const b = bsv.Script.fromHex(str);
+  const chuck = b.chunks[0];
+
+
+  switch (chuck.opcodenum) {
+    case 0:
+      return 0;
+    case 79:
+      return -1;
+    case 81:
+    case 82:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
+    case 90:
+    case 91:
+    case 92:
+    case 93:
+    case 94:
+    case 95:
+    case 96:
+      return chuck.opcodenum - 80;
+    default: {
+      const value = chuck.buf.toString('hex');
       const bn = BN.fromHex(value, {
         endian: 'little'
       });
@@ -365,6 +412,43 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
 }
 
 
+export function hex2ScryptType(type: string, hex: string): ScryptType {
+
+  const b = bsv.Script.fromHex(hex);
+  const chuck = b.chunks[0];
+
+  switch (type) {
+    case VariableType.BOOL:
+      return new Bool(chuck.opcodenum == 0x51 ? true : false);
+    case VariableType.INT:
+      return new Int(hex2int(hex));
+    case VariableType.BYTES:
+      return new Bytes(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.PRIVKEY:
+      return new PrivKey(hex2int(hex));
+    case VariableType.PUBKEY:
+      return new PubKey(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SIG:
+      return new Sig(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.RIPEMD160:
+      return new Ripemd160(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SHA1:
+      return new Sha1(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SHA256:
+      return new Sha256(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.SIGHASHTYPE:
+      return new SigHashType(hex2int(hex) as number);
+    case VariableType.SIGHASHPREIMAGE:
+      return new SigHashPreimage(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    case VariableType.OPCODETYPE:
+      return new OpCodeType(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
+    default:
+      throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
+  }
+
+}
+
+
 
 export function bytes2Literal(bytearray: number[], type: string): string {
 
@@ -455,6 +539,9 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
 }
 
 export function toHex(x: { toString(format: 'hex'): string }): string {
+  if (x instanceof ScryptType) {
+    return x.serialize();
+  }
   return x.toString('hex');
 }
 
@@ -785,8 +872,7 @@ function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType
       return checkArray(a as SupportedParamType[], {
         name: param.name,
         type: subArrayType(finalType)
-      },
-      expectedType, resolver);
+      }, expectedType, resolver);
     }).filter(e => e)[0];
   }
 }
@@ -1220,12 +1306,14 @@ export function isEmpty(obj: unknown): boolean {
 
 export function compileContract(file: string, options?: {
   out?: string,
-  sourceMap?: boolean
+  sourceMap?: boolean,
+  desc?: boolean,
 }): CompileResult {
   console.log(`Compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '../out'),
-    sourceMap: true
+    sourceMap: false,
+    desc: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -1239,8 +1327,8 @@ export function compileContract(file: string, options?: {
   const result = compile(
     { path: file },
     {
-      desc: true, debug: options.sourceMap, outputDir: options.out,
-      hex: true,
+      desc: options.desc, outputDir: options.out,
+      sourceMap: options.sourceMap,
       cmdPrefix: findCompiler()
     }
   );
@@ -1251,12 +1339,14 @@ export function compileContract(file: string, options?: {
 
 export function compileContractAsync(file: string, options?: {
   out?: string,
+  desc?: boolean,
   sourceMap?: boolean
 }): Promise<CompileResult> {
   console.log(`compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '..', 'out'),
-    sourceMap: true
+    sourceMap: false,
+    desc: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -1267,7 +1357,7 @@ export function compileContractAsync(file: string, options?: {
   }
 
   return compileAsync({ path: file }, {
-    desc: true, debug: options.sourceMap, outputDir: options.out,
+    desc: options.desc, outputDir: options.out,
     hex: true,
     cmdPrefix: findCompiler()
   });
@@ -1368,9 +1458,7 @@ export function resolveConstValue(node: any): string | undefined {
   } if (node.expr.nodeType === 'BytesLiteral') {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
-    if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH,
-      VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE,
-      VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
+    if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH, VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE, VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
       value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
     } else if (node.expr.name === VariableType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
@@ -1405,7 +1493,7 @@ function resolveArrayType(contract: string, type: string, statics: StaticEntity[
         const size_ = (size.indexOf('.') > 0) ? size : `${contract}.${size}`;
         const value = findConstStatic(statics, size_);
         if (!value) {
-          console.warn(`resolve array sub ${size} fail`);
+          // Unable to solve when the subscript of the array is a function parameter, [CTC](https://scryptdoc.readthedocs.io/en/latest/ctc.html)
           return size;
         }
         return value.value;
@@ -1519,7 +1607,7 @@ export function createStruct(resolver: ScryptTypeResolver, param: ParamEntity, o
     } else {
 
       Object.assign(obj, {
-        [p.name]: asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`))
+        [p.name]: hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
       });
 
     }
@@ -1554,7 +1642,7 @@ export function createLibrary(resolver: ScryptTypeResolver, param: ParamEntity, 
       return createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
 
     } else {
-      return asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`));
+      return hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`));
     }
   });
 
@@ -1598,7 +1686,7 @@ export function createLibraryProperties(resolver: ScryptTypeResolver, param: Par
 
     } else {
       Object.assign(properties, {
-        [p.name]: asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${param.name}.${p.name}`))
+        [p.name]: hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
       });
     }
   });
@@ -1613,14 +1701,14 @@ export function createDefaultLibrary(resolver: ScryptTypeResolver, param: ParamE
 
   const flatternparams = flatternLibraryParam(param, resolver, false);
 
-  const asmTemplate: Map<string, string> = new Map();
+  const hexTemplateMap: Map<string, string> = new Map();
 
   flatternparams.forEach(p => {
 
     if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
-      asmTemplate.set(`$${p.name}`, 'OP_0');
+      hexTemplateMap.set(`<${p.name}>`, '00');
     } else if (p.type === VariableType.BOOL) {
-      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+      hexTemplateMap.set(`<${p.name}>`, '51');
     } else if (p.type === VariableType.BYTES
       || p.type === VariableType.PUBKEY
       || p.type === VariableType.SIG
@@ -1630,12 +1718,12 @@ export function createDefaultLibrary(resolver: ScryptTypeResolver, param: ParamE
       || p.type === VariableType.SIGHASHTYPE
       || p.type === VariableType.SIGHASHPREIMAGE
       || p.type === VariableType.OPCODETYPE) {
-      asmTemplate.set(`$${p.name}`, '00');
+      hexTemplateMap.set(`<${p.name}>`, '0100');
     } else {
       throw new Error(`param ${p.name} has unknown type ${p.type}`);
     }
   });
-  return createLibrary(resolver, param, asmTemplate);
+  return createLibrary(resolver, param, hexTemplateMap);
 }
 
 
@@ -1664,7 +1752,7 @@ export function createArray(resolver: ScryptTypeResolver, type: string, name: st
         }, opcodesMap));
       }
       else {
-        arrays.push(asm2ScryptType(typeInfo.finalType, opcodesMap.get(`$${name}[${index}]`)));
+        arrays.push(hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${name}[${index}]>`)));
       }
 
     }
@@ -1743,18 +1831,25 @@ function escapeRegExp(stringToGoIntoTheRegex) {
 // state version
 const CURRENT_STATE_VERSION = 0;
 
-export function buildContractCodeASM(asmTemplateArgs: Map<string, string>, asmTemplate: string): string {
+export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTemplateInlineASM: Map<string, string>, hexTemplate: string): bsv.Script {
 
 
-  let lsASM = asmTemplate;
-  for (const entry of asmTemplateArgs.entries()) {
+  let lsHex = hexTemplate;
+
+  for (const entry of hexTemplateArgs.entries()) {
     const name = entry[0];
     const value = entry[1];
-    const re = name.endsWith(']') ? new RegExp(`\\B${escapeRegExp(name)}\\B`, 'g') : new RegExp(`\\B${escapeRegExp(name)}\\b`, 'g');
-    lsASM = lsASM.replace(re, value);
+    lsHex = lsHex.replace(name, value);
   }
 
-  return lsASM;
+
+  for (const entry of hexTemplateInlineASM.entries()) {
+    const name = entry[0];
+    const value = entry[1];
+    lsHex = lsHex.replace(new RegExp(`${escapeRegExp(name)}`, 'g'), value);
+  }
+
+  return bsv.Script.fromHex(lsHex);
 
 }
 
@@ -1812,18 +1907,16 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
 
 export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
-  const stateProps = Object.getPrototypeOf(contract).constructor.stateProps as Array<ParamEntity>;
+  const flatternparams = flatternParams(contract.stateProps, contract.resolver);
 
-  const flatternparams = flatternParams(stateProps, contract.resolver);
-
-  const asmTemplate: Map<string, string> = new Map();
+  const hexTemplateMap: Map<string, string> = new Map();
 
   flatternparams.forEach(p => {
 
     if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
-      asmTemplate.set(`$${p.name}`, 'OP_0');
+      hexTemplateMap.set(`<${p.name}>`, '00');
     } else if (p.type === VariableType.BOOL) {
-      asmTemplate.set(`$${p.name}`, 'OP_TRUE');
+      hexTemplateMap.set(`<${p.name}>`, '51');
     } else if (p.type === VariableType.BYTES
       || p.type === VariableType.PUBKEY
       || p.type === VariableType.SIG
@@ -1833,16 +1926,16 @@ export function buildDefaultStateProps(contract: AbstractContract): Arguments {
       || p.type === VariableType.SIGHASHTYPE
       || p.type === VariableType.SIGHASHPREIMAGE
       || p.type === VariableType.OPCODETYPE) {
-      asmTemplate.set(`$${p.name}`, '00');
+      hexTemplateMap.set(`<${p.name}>`, '0100');
     } else {
       throw new Error(`param ${p.name} has unknown type ${p.type}`);
     }
 
   });
 
-  return stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
+  return contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
     value: undefined
-  }), asmTemplate));
+  }), hexTemplateMap));
 }
 
 
@@ -1886,7 +1979,7 @@ export function readBytes(br: bsv.encoding.BufferReader): {
 
 
 
-export function deserializeArgfromASM(resolver: ScryptTypeResolver, arg: Argument, opcodesMap: Map<string, string>): Argument {
+export function deserializeArgfromHex(resolver: ScryptTypeResolver, arg: Argument, opcodesMap: Map<string, string>): Argument {
 
   let value;
 
@@ -1899,7 +1992,7 @@ export function deserializeArgfromASM(resolver: ScryptTypeResolver, arg: Argumen
   } else if (typeInfo.symbolType === SymbolType.Library) {
     value = createLibrary(resolver, arg, opcodesMap);
   } else {
-    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+    value = hex2ScryptType(arg.type, opcodesMap.get(`<${arg.name}>`));
   }
 
   arg.value = value;
@@ -1921,7 +2014,7 @@ export function deserializeArgfromState(resolver: ScryptTypeResolver, arg: Argum
     const properties = createLibraryProperties(resolver, arg, opcodesMap);
     value.setProperties(properties);
   } else {
-    value = asm2ScryptType(arg.type, opcodesMap.get(`$${arg.name}`));
+    value = hex2ScryptType(arg.type, opcodesMap.get(`<${arg.name}>`));
   }
 
   arg.value = value;
@@ -1963,7 +2056,7 @@ function flattenData(data: SupportedParamType): ScryptType[] {
 export function flattenSha256(data: SupportedParamType): string {
   const flattened = flattenData(data);
   if (flattened.length === 1) {
-    let hex = flattened[0].toHex();
+    let hex = flattened[0].serialize();
     if ((flattened[0] instanceof Bool || flattened[0] instanceof Int) && hex === '00'
     ) {
       hex = '';
@@ -1971,7 +2064,7 @@ export function flattenSha256(data: SupportedParamType): string {
     return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
   } else {
     const jointbytes = flattened.map(item => {
-      let hex = item.toHex();
+      let hex = item.serialize();
       if ((item instanceof Bool || item instanceof Int) && hex === '00'
       ) {
         hex = '';
@@ -2233,8 +2326,7 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
   const entity = abis.find(entity => entity.index === pubFuncIndex);
 
   if (!entity) {
-    const contractName = Object.getPrototypeOf(contract).constructor.contractName;
-    throw new Error(`the raw unlocking script cannot match the contract ${contractName}`);
+    throw new Error(`the raw unlocking script cannot match the contract ${contract.contractName}`);
   }
 
   return entity;
@@ -2380,8 +2472,8 @@ export function int2Number(value: ValueType): number | bigint {
 
 
 export function and(a: Int, b: Int): Int {
-  const size1 = a.toHex().length / 2;
-  const size2 = b.toHex().length / 2;
+  const size1 = a.serialize().length / 2;
+  const size2 = b.serialize().length / 2;
   const maxSize = Math.max(size1, size2);
 
   const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
@@ -2396,8 +2488,8 @@ export function and(a: Int, b: Int): Int {
 }
 
 export function or(a: Int, b: Int): Int {
-  const size1 = a.toHex().length / 2;
-  const size2 = b.toHex().length / 2;
+  const size1 = a.serialize().length / 2;
+  const size2 = b.serialize().length / 2;
   const maxSize = Math.max(size1, size2);
 
   const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
@@ -2412,8 +2504,8 @@ export function or(a: Int, b: Int): Int {
 }
 
 export function xor(a: Int, b: Int): Int {
-  const size1 = a.toHex().length / 2;
-  const size2 = b.toHex().length / 2;
+  const size1 = a.serialize().length / 2;
+  const size2 = b.serialize().length / 2;
   const maxSize = Math.max(size1, size2);
 
   const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
@@ -2431,7 +2523,7 @@ export function invert(a: Int): Int {
   if (a.toNumber() === 0) {
     return a;
   }
-  const size = a.toHex().length / 2;
+  const size = a.serialize().length / 2;
 
   const buffer = Buffer.from(num2bin(a.toNumber(), size), 'hex');
 
@@ -2443,3 +2535,67 @@ export function invert(a: Int): Int {
 
 }
 
+
+export async function JSONParser(file: string): Promise<boolean> {
+
+  return new Promise((resolve, reject) => {
+
+    parseChunked(fs.createReadStream(file))
+      .then(data => {
+        resolve(data);
+      })
+      .catch(e => {
+        reject(e);
+      });
+
+  });
+}
+
+export function JSONParserSync(file: string): any {
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+
+export async function JSONStringify(file: string, data: unknown): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    stringifyStream(data)
+      .pipe(fs.createWriteStream(file))
+      .on('finish', () => {
+        resolve(true);
+      })
+      .on('error', (e) => {
+        reject(e);
+      });
+  });
+}
+
+
+
+export function findSrcInfoV2(pc: number, sourceMap: unknown): number[] | undefined {
+
+  const decoded = decode(sourceMap['mappings']);
+
+  for (let index = 0; index < decoded[0].length; index++) {
+    const element = decoded[0][index];
+
+    if (element[0] <= pc) {
+      continue;
+    }
+    return decoded[0][index - 1];
+  }
+
+  return decoded[0][decoded[0].length - 1];
+}
+
+
+/**
+ * @deprecated use findSrcInfoV2
+ * @param opcodes OpCode[] from sourceMap
+ */
+export function findSrcInfoV1(opcodes: OpCode[], opcodesIndex: number): OpCode | undefined {
+  while (--opcodesIndex > 0) {
+    if (opcodes[opcodesIndex].pos && opcodes[opcodesIndex].pos.file !== 'std' && opcodes[opcodesIndex].pos.line > 0) {
+      return opcodes[opcodesIndex];
+    }
+  }
+}

@@ -6,9 +6,8 @@ import {
   AbstractContract,
   VerifyResult
 } from '../src/contract'
-import { FunctionCall } from '../src/abi'
 import { bsv, signTx, toHex, toLiteral } from '../src/utils'
-import { Sig, PubKey, Ripemd160, Bytes, Int, ScryptType } from '../src/scryptTypes'
+import { Ripemd160, Bytes, Int, ScryptType } from '../src/scryptTypes'
 
 const privateKey = new bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
@@ -143,18 +142,14 @@ describe('buildContractClass and create instance from script', () => {
     })
 
     it('static getAsmVars method', () => {
-      let lockingScriptAsm = instance.lockingScript.toASM()
-      let asmVars = DemoP2PKH.getAsmVars(jsonDescr.asm, lockingScriptAsm)
+      let lockingScriptHex = instance.lockingScript.toHex()
+      let asmVars = DemoP2PKH.getAsmVars(lockingScriptHex)
 
-      expect(asmVars).is.not.null
-      expect(asmVars).have.key('pubKeyHash')
-      expect(asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+      expect(asmVars).is.empty
     })
 
     it('should have an asm var', () => {
-      expect(instance.asmVars).is.not.null
-      expect(instance.asmVars).have.key('pubKeyHash')
-      expect(instance.asmVars['pubKeyHash']).is.eql(toHex(pubKeyHash))
+      expect(instance.asmVars).empty
     })
 
     it('should be an instance of AbstractContract', () => {
@@ -257,82 +252,6 @@ describe('buildContractClass and create instance from script', () => {
       })
     })
 
-    describe('run_verify()', () => {
-      it('should return true if all arguments are correct', () => {
-        // use param txContext as the context
-        result = instance.run_verify(unlockingScriptASM, txContext)
-        assert.isTrue(result.success, result.error)
-
-        // use instance.txContxt as the context
-        instance.txContext = txContext
-        result = instance.run_verify(unlockingScriptASM)
-        assert.isTrue(result.success, result.error)
-        instance.txContext = undefined
-      })
-
-      it('should fail if param `unlockingScript` is incorrect', () => {
-        result = instance.run_verify(unlockingScriptASM + '00', txContext)
-        assert.isFalse(result.success, result.error)
-      })
-
-      it('should fail if param `txContext` is incorrect', () => {
-        // emtpy txContext
-        result = instance.run_verify(unlockingScriptASM)
-        assert.isFalse(result.success, result.error)
-
-        // incorrect inputSatoshis
-        result = instance.run_verify(
-          unlockingScriptASM,
-          Object.assign({}, txContext, { inputSatoshis: inputSatoshis + 1 })
-        )
-        assert.isFalse(result.success, result.error)
-      })
-    })
-
-    it("should have all public functions of the contract mapped to instance's methods", () => {
-      assert.typeOf(instance.unlock, 'function')
-    })
-
-    describe('when the mapped-method being invoked', () => {
-      it('should return FunctionCall type object which could be transformed to unlocking script', () => {
-        const functionCall = instance.unlock(
-          new Sig(toHex(sig)),
-          new PubKey(toHex(publicKey))
-        )
-        assert.instanceOf(functionCall, FunctionCall)
-        assert.equal(functionCall.toASM(), unlockingScriptASM)
-        assert.equal(
-          functionCall.toHex(),
-          bsv.Script.fromASM(unlockingScriptASM).toHex()
-        )
-      })
-
-      it('the returned object can be verified whether it could unlock the contract', () => {
-        // can unlock contract if params are correct
-        const validSig = toHex(sig)
-        const validPubkey = toHex(publicKey)
-        result = instance
-          .unlock(new Sig(validSig), new PubKey(validPubkey))
-          .verify({ inputSatoshis, tx })
-        assert.isTrue(result.success, result.error)
-        instance
-          .unlock(new Sig(validSig), new PubKey(validPubkey))
-          .verify({ inputSatoshis, tx })
-        assert.isTrue(result.success, result.error)
-
-        // can not unlock contract if any param is incorrect
-        const invalidSig = validSig.replace('1', '0')
-        const invalidPubKey = validPubkey.replace('0', '1')
-        result = instance
-          .unlock(new Sig(invalidSig), new PubKey(validPubkey))
-          .verify({ inputSatoshis, tx })
-        assert.isFalse(result.success, result.error)
-        result = instance
-          .unlock(new Sig(validSig), new PubKey(invalidPubKey))
-          .verify({ inputSatoshis, tx })
-        assert.isFalse(result.success, result.error)
-      })
-    })
 
 
 

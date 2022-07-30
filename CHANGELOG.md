@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+
+## 1.0.0
+
+- Update contract description file version, remove `sources`, `sourceMap`, `asm` fields, add `sourceMapFile` fields.
+- Support the source map format [described here](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit).
+
+
+
+
 ## 0.16.2
 
 - Fix out of memery when generating contract description file for large contract
