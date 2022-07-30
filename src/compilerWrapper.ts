@@ -362,7 +362,6 @@ export function compile(
   const maxBuffer = settings.stdout ? 1024 * 1024 * 100 : 1024 * 1024;
   settings = Object.assign({}, defaultCompilingSettings, settings);
   const cmd = settings2cmd(sourcePath, settings);
-  console.log('cmd', cmd);
   const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout: settings.timeout, maxBuffer: maxBuffer }).toString();
   return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
 }
@@ -442,7 +441,15 @@ export function handleCompilerOutput(
       if (settings.desc) {
         const outputFilePath = getOutputFilePath(descDir, 'desc');
         const description = generateDescFile(result, settings, descDir, outputFiles);
-        writeFileSync(outputFilePath, JSON.stringify(description, null, 4));
+
+
+        writeFileSync(outputFilePath, JSON.stringify(description, (key, value) => {
+          //ignore deprecated fields
+          if (key == 'sources' || key == 'sourceMap' || key === 'asm')
+            return undefined;
+          else
+            return value;
+        }, 4));
       }
     }
 

@@ -41,5 +41,6 @@
 * add `sourceMapFile` field
 * remove `sourceMap` field
 * remove `sources` field
+* remove `asm` field
 
 The minimum version number currently supported: `8`
