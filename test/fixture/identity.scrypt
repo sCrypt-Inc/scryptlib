@@ -1,0 +1,92 @@
+
+contract Test {
+
+    public function bitwiseAlgebra(int x, int y, int z) {
+
+        require(-(-x) == x);
+        require(x * 1 == x);
+        require(x / 1 == x);
+
+        // AND
+        require((x & 0) == 0);
+        require((x & y) == (y & x));
+        require((x & (y & z)) == ((x & y) & z));
+        require((x & getFF(x)) == x);
+        require((x & x) == x);
+
+        // OR
+        require((x | 0) == x);
+        require((x | y) == (y | x));
+        require((x | (y | z)) == ((x | y) | z));
+        require((x | getFF(x)) == getFF(x));
+        require((x | x) == x);
+
+        //NOT
+        require(~(-2142284617) == 5199030);
+        // bin2num will compress bytes, and the inversion operation will result in unexpected results, causing the equation to fail
+        //require(~(~2146777862) == 2146777862);
+        //require(~(~x) == x);
+
+        // XOR
+        require((x ^ y) == (y ^ x));
+        require((x ^ (y ^ z)) == ((x ^ y) ^ z));
+        require((x ^ 0) == x);
+        require((x ^ x) == 0);
+        require((x ^ y ^ y) == x);
+
+        require((x ^ getFF(x)) == ~x);
+        //require((x ^ y) == ((x | y) & (~x | ~y)));
+        //require((x ^ y) == ((x & ~y) | (~x & y)));
+
+        // Others
+
+        //require(~(x & y) == (~x | ~y));
+        //require(x + y == (x ^ y) + ((x & y) << 1));
+        //require(~(x | y) == (~x & ~y));
+        //require(x - y == ~(~x + y));
+
+        // If the sign bit of the result of the bitwise operation is 1, and the other bits are all 0, then bin2num got empty, which will cause some equations to fail
+        //require((x | (y & z)) == ((x | y) & (x | z)));
+        //require((x & (y | z)) == ((x & y) | (x & z)));
+        //require((x & (y ^ z)) == ((x & y) ^ (x & z)));
+        require((x | (x & y)) == x);
+        require((x & (x | y)) == x);
+
+    }
+
+
+    public function boolAlgebra(bool x, bool y, bool z) {
+        require((x || (y || z)) == ((x || y) || z));
+        require((x && (y && z)) == ((x && y) && z));
+        require((x || y) == (y || x));
+        require((x && y) == (y && x));
+        require((x && (y || z)) == (x && y || x && z));
+    }
+
+    public function mathAlgebra(int x, int y, int z) {
+        require(x * -1 == -x);
+        require(x * 0 == 0);
+        require(x / 1 == x);
+        require(x*(y+z) == x*y+x*z);
+        require((x + 1) * (x + 4) == (x + 2) * (x + 3) - 2);
+        require((x+y)*(x+y) == x*x + 2*x*y + y*y);
+        require(x*x - y*y == (x-y)*(x+y));
+        require((x+y)*(x+y)*(x+y) == x*x*x + 3*x*x*y + 3*x*y*y + y*y*y);
+    }
+
+
+    public function shiftAlgebra(int x, int y) {
+        require((x << y) >> y == x);
+    }
+
+
+    static function getFF(int x): int {
+        bytes b = pack(x);
+        int len = len(b);
+        const bytes ff = b'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        bytes r =  ff[:len];
+        return unpack(r);
+    }
+
+
+}
