@@ -216,7 +216,7 @@ export class AbstractContract {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
     const us = unlockingScriptASM.trim() ? bsv.Script.fromASM(unlockingScriptASM.trim()) : new bsv.Script();
-    const ls = this.lockingScript;
+    const ls = bsv.Script.fromHex(this.lockingScript.toHex());
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
