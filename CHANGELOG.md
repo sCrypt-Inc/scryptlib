@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 1.0.1
+
+- Fix lockingScript changed after verify.
+
+*Release Date: 2022/08/03*
+
 
 ## 1.0.0
 
