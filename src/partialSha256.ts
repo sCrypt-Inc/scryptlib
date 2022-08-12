@@ -52,11 +52,10 @@ export function partialSha256(message: Buffer, index: number) {
 
 
   let hi = h0;
-  const W = [];
 
   for (let i = 0; i < broken.length; i++) {
     const chunk = broken[i];
-    hi = g(hi, chunk, W);
+    hi = g(hi, chunk);
     if (bytesHashed > 64 && i == index) {
       break;
     }
@@ -105,7 +104,7 @@ export function sha256ByPartialHash(partialHash: string, partialPreimage: string
   const W = [];
   for (let i = 0; i < broken.length; i++) {
     const chunk = broken[i];
-    hi = g(hi, chunk, W);
+    hi = g(hi, chunk);
   }
   return toHash(hi);
 }
@@ -127,7 +126,7 @@ function ToUint32(x: number) {
 }
 
 //sha256 compression function
-function g(hprev: number[], chunk: Buffer, W: number[]): number[] {
+function g(hprev: number[], chunk: Buffer): number[] {
   let a = hprev[0];
   let b = hprev[1];
   let c = hprev[2];
@@ -136,7 +135,7 @@ function g(hprev: number[], chunk: Buffer, W: number[]): number[] {
   let f = hprev[5];
   let g = hprev[6];
   let h = hprev[7];
-
+  const W = [];
   // Computation
   for (let i = 0; i < 64; i++) {
     if (i < 16) {
