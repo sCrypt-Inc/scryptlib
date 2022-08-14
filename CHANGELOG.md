@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 1.0.2
+
+- Fix `getLowSPreimage` for new compiler which further optimize optimalpushtx
+
+*Release Date: 2022/08/14*
+
 ## 1.0.1
 
 - Fix lockingScript changed after verify.
