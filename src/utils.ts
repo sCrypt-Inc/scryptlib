@@ -552,13 +552,20 @@ export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmo
 
 const MSB_THRESHOLD = 0x7e;
 
+
+export function hashIsPositiveNumber(sighash: Buffer): boolean {
+  const highByte = sighash.readUInt8(31);
+  return highByte < MSB_THRESHOLD;
+}
+
+
 export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
     const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType, flags);
     const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(toHex(preimage), 'hex'));
     const msb = sighash.readUInt8();
-    if (msb < MSB_THRESHOLD) {
+    if (msb < MSB_THRESHOLD && hashIsPositiveNumber(sighash)) {
       return preimage;
     }
     tx.inputs[inputIndex].sequenceNumber--;
