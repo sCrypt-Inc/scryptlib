@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 1.0.3
+
+- Optimize memory usage
+
+*Release Date: 2022/08/26*
+
+
 ## 1.0.2
 
 - Fix `getLowSPreimage` for new compiler which further optimize optimalpushtx
