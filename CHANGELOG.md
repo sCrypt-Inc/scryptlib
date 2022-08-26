@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 1.0.4
+
+- Update transaction fee rate, now `50` satoshis per kilobyte.
+
+*Release Date: 2022/08/26*
+
 ## 1.0.3
 
 - Optimize memory usage
