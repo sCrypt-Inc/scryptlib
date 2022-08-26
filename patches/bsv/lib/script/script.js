@@ -107,29 +107,60 @@ Script.fromBuffer = function (buffer) {
 }
 
 Script.prototype.toBuffer = function () {
-  var bw = new BufferWriter()
 
+  let size = 0;
   for (var i = 0; i < this.chunks.length; i++) {
+
     var chunk = this.chunks[i]
-    var opcodenum = chunk.opcodenum
-    bw.writeUInt8(chunk.opcodenum)
+    var opcodenum = chunk.opcodenum;
+    size += 1;
     if (chunk.buf) {
       if (opcodenum < Opcode.OP_PUSHDATA1) {
-        bw.write(chunk.buf)
+        size += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA1) {
-        bw.writeUInt8(chunk.len)
-        bw.write(chunk.buf)
+        size += 1;
+        size += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA2) {
-        bw.writeUInt16LE(chunk.len)
-        bw.write(chunk.buf)
+        size += 2;
+        size += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA4) {
-        bw.writeUInt32LE(chunk.len)
-        bw.write(chunk.buf)
+        size += 4;
+        size += chunk.buf.length;
       }
     }
   }
 
-  return bw.concat()
+  var bw = Buffer.alloc(size)
+
+  let pos = 0;
+  for (var i = 0; i < this.chunks.length; i++) {
+    var chunk = this.chunks[i]
+    var opcodenum = chunk.opcodenum
+    bw.writeUInt8(chunk.opcodenum, pos++)
+    if (chunk.buf) {
+      if (opcodenum < Opcode.OP_PUSHDATA1) {
+        chunk.buf.copy(bw, pos)
+        pos += chunk.buf.length;
+      } else if (opcodenum === Opcode.OP_PUSHDATA1) {
+        bw.writeUInt8(chunk.len, pos)
+        pos += 1;
+        chunk.buf.copy(bw, pos)
+        pos += chunk.buf.length;
+      } else if (opcodenum === Opcode.OP_PUSHDATA2) {
+        bw.writeUInt16LE(chunk.len, pos)
+        pos += 2
+        chunk.buf.copy(bw, pos)
+        pos += chunk.buf.length;
+      } else if (opcodenum === Opcode.OP_PUSHDATA4) {
+        bw.writeUInt32LE(chunk.len, pos)
+        pos += 4
+        chunk.buf.copy(bw, pos)
+        pos += chunk.buf.length
+      }
+    }
+  }
+
+  return bw
 }
 
 Script.fromASM = function (str) {
@@ -743,7 +774,7 @@ Script.prototype.removeCodeseparators = function () {
  *
  * @returns {Script} Subset of script starting at the {n}th codeseparator
  */
- Script.prototype.subScript = function (n) {
+Script.prototype.subScript = function (n) {
 
   var idx = 0;
 
