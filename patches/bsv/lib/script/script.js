@@ -116,16 +116,16 @@ Script.prototype.toBuffer = function () {
     size += 1;
     if (chunk.buf) {
       if (opcodenum < Opcode.OP_PUSHDATA1) {
-        size += chunk.len;
+        size += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA1) {
         size += 1;
-        size += chunk.len;
+        size += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA2) {
         size += 2;
-        size += chunk.len;
+        size += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA4) {
         size += 4;
-        size += chunk.len;
+        size += chunk.buf.length;
       }
     }
   }
@@ -140,22 +140,22 @@ Script.prototype.toBuffer = function () {
     if (chunk.buf) {
       if (opcodenum < Opcode.OP_PUSHDATA1) {
         chunk.buf.copy(bw, pos)
-        pos += chunk.len;
+        pos += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA1) {
         bw.writeUInt8(chunk.len, pos)
         pos += 1;
         chunk.buf.copy(bw, pos)
-        pos += chunk.len;
+        pos += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA2) {
         bw.writeUInt16LE(chunk.len, pos)
         pos += 2
         chunk.buf.copy(bw, pos)
-        pos += chunk.len;
+        pos += chunk.buf.length;
       } else if (opcodenum === Opcode.OP_PUSHDATA4) {
         bw.writeUInt32LE(chunk.len, pos)
         pos += 4
         chunk.buf.copy(bw, pos)
-        pos += chunk.len
+        pos += chunk.buf.length
       }
     }
   }
