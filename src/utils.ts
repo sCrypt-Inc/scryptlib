@@ -2606,3 +2606,42 @@ export function findSrcInfoV1(opcodes: OpCode[], opcodesIndex: number): OpCode |
     }
   }
 }
+
+export function parseStateHex(contract: AbstractContract, scriptHex: string): [boolean, Arguments] {
+
+  const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
+  const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
+  const stateLen = bin2num(metaScript.substr(0, 8)) as number;
+
+
+  const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
+
+  const br = new bsv.encoding.BufferReader(stateHex);
+
+  const opcodenum = br.readUInt8();
+
+  const firstCall = opcodenum == 1;
+
+  const stateTemplateArgs: Map<string, string> = new Map();
+
+  const flatternparams = flatternParams(contract.stateProps, contract.resolver);
+
+
+  flatternparams.forEach((param) => {
+    if (param.type === VariableType.BOOL) {
+      const opcodenum = br.readUInt8();
+      stateTemplateArgs.set(`<${param.name}>`, opcodenum === 1 ? '51' : '00');
+    } else {
+      const { data } = readBytes(br);
+      if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
+        stateTemplateArgs.set(`<${param.name}>`, new Int(bin2num(data)).toHex());
+      } else {
+        stateTemplateArgs.set(`<${param.name}>`, bsv.Script.fromASM(data).toHex());
+      }
+    }
+  });
+
+  return [firstCall, contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
+    value: undefined
+  }), stateTemplateArgs))];
+}

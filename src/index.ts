@@ -13,7 +13,7 @@ export {
   librarySign, structSign, resolveGenericType, createDefaultLibrary, createLibraryProperties, canAssignProperty, arrayToLiteral, cloneArray, arrayToScryptType,
   buildStructsClass, buildTypeResolver, buildScryptTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg, buildContractState,
   compilerVersion, flatternLibrary, flatternLibraryState, flatternCtorArgs, flatternStruct, flatternArray, flatternParams, flatternStateArgs,
-  isEmpty, isStringLiteral, and, or, xor, invert, JSONParser, getFullFilePath, path2uri, uri2path
+  isEmpty, isStringLiteral, and, or, xor, invert, JSONParser, getFullFilePath, path2uri, uri2path, parseStateHex
 } from './internal';
 
 export {

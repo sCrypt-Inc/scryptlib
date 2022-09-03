@@ -1,4 +1,4 @@
-import { LibraryEntity, ParamEntity } from '.';
+import { LibraryEntity, ParamEntity, parseStateHex } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromDesc, OpCode, StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
@@ -319,7 +319,6 @@ export class AbstractContract {
     };
   }
 
-  private _dataPartInASM: string;
   private _dataPartInHex: string;
 
   set dataPart(dataInScript: Script | undefined) {
@@ -331,11 +330,6 @@ export class AbstractContract {
     if (AbstractContract.isStateful(this)) {
       const state = buildContractState(this.statePropsArgs, this.firstCall, this.resolver.resolverType);
       return bsv.Script.fromHex(state);
-    }
-
-
-    if (this._dataPartInASM) {
-      return bsv.Script.fromASM(this._dataPartInASM);
     }
 
     if (this._dataPartInHex) {
@@ -355,18 +349,19 @@ export class AbstractContract {
   }
 
   setDataPartInASM(state: State | string): void {
-    if (typeof state === 'string') {
-      this._dataPartInASM = state.trim();
-    } else {
-      this._dataPartInASM = serializeState(state);
+    if (AbstractContract.isStateful(this)) {
+      throw new Error('should not use `setDataPartInASM` for a stateful contract, using `setDataPartInHex`');
     }
+    const dataPartInASM = typeof state === 'string' ? state.trim() : serializeState(state);
+    this.setDataPartInHex(bsv.Script.fromASM(dataPartInASM).toHex());
   }
 
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
     if (AbstractContract.isStateful(this)) {
-      const abiCoder = Object.getPrototypeOf(this).constructor.abiCoder as ABICoder;
-      this.statePropsArgs = abiCoder.parseStateHex(this, this._dataPartInHex);
+      const [firstCall, args] = parseStateHex(this, this._dataPartInHex);
+      this.statePropsArgs = args;
+      this.firstCall = firstCall;
     }
   }
 
