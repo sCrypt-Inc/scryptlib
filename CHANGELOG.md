@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## 1.0.5
+
+- export `parseStateHex` function
+- remove `_dataPartInASM`
+
+*Release Date: 2022/09/03*
+
+
 ## 1.0.4
 
 - Update transaction fee rate, now `50` satoshis per kilobyte.
