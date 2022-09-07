@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'path';
 import { execSync, exec, ChildProcess } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import md5 = require('md5');
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
@@ -409,9 +409,10 @@ export function handleCompilerOutput(
       if (settings.ast || settings.desc) {
 
         const outputFilePath = getOutputFilePath(outputDir, 'ast');
-        outputFiles['ast'] = outputFilePath;
-        const ast = JSONbigAlways.parse(readFileSync(outputFilePath, 'utf8'));
-
+        const astFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        renameSync(outputFilePath, astFile);
+        outputFiles['ast'] = astFile;
+        const ast = JSONbigAlways.parse(readFileSync(astFile, 'utf8'));
         parserAst(result, ast, srcDir, sourceFileName, sourcePath);
       }
 
@@ -419,15 +420,25 @@ export function handleCompilerOutput(
       if (settings.hex || settings.desc) {
 
         const outputFilePath = getOutputFilePath(outputDir, 'hex');
-        outputFiles['hex'] = outputFilePath;
-        result.hex = readFileSync(outputFilePath, 'utf8');
+        const hexFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        renameSync(outputFilePath, hexFile);
+        outputFiles['hex'] = hexFile;
+        result.hex = readFileSync(hexFile, 'utf8');
       }
 
       if (settings.sourceMap) {
         const outputFilePath = getOutputFilePath(outputDir, 'map');
-        const sourceMapFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
-        renameSync(outputFilePath, sourceMapFile);
-        result.sourceMapFile = path2uri(sourceMapFile);
+        if (settings.desc) {
+          const dist = getOutputFilePath(descDir, 'map');
+          const sourceMapFile = dist.replace('stdin', basename(sourcePath, '.scrypt'));
+          renameSync(outputFilePath, sourceMapFile);
+          result.sourceMapFile = path2uri(sourceMapFile);
+        } else {
+          const sourceMapFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+          renameSync(outputFilePath, sourceMapFile);
+          outputFiles['map'] = sourceMapFile;
+          result.sourceMapFile = path2uri(sourceMapFile);
+        }
       }
 
 
@@ -440,10 +451,10 @@ export function handleCompilerOutput(
 
       if (settings.desc) {
         const outputFilePath = getOutputFilePath(descDir, 'desc');
-        const description = generateDescFile(result, settings, descDir, outputFiles);
+        const descFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        const description = result.toDesc();
 
-
-        writeFileSync(outputFilePath, JSON.stringify(description, (key, value) => {
+        writeFileSync(descFile, JSON.stringify(description, (key, value) => {
           //ignore deprecated fields
           if (key == 'sources' || key == 'sourceMap' || key === 'asm')
             return undefined;
@@ -1060,50 +1071,27 @@ function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettin
   }
 }
 
-function generateDescFile(result: CompileResult, settings: CompilingSettings, descDir: string, outputFiles: Record<string, string>): ContractDescription {
-  settings.outputToFiles = true;
-  const outputFilePath = getOutputFilePath(descDir, 'desc');
-  outputFiles['desc'] = outputFilePath;
-  return result.toDesc();
-}
-
 
 
 
 
 function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
 
+  if (settings.stdout || settings.outputToFiles) {
+    return;
+  }
+
   try {
-    if (settings.stdout) {
-      return;
-    }
-    if (settings.outputToFiles) {
-      Object.keys(outputFiles).forEach(outputType => {
-        const file = outputFiles[outputType];
-        if (existsSync(file)) {
-          if (settings[outputType]) {
-            // rename all output files
-            renameSync(file, file.replace('stdin', basename(sourcePath, '.scrypt')));
-          } else {
-            unlinkSync(file);
-          }
-        }
-      });
-    } else {
-      // cleanup all output files
-      Object.values<string>(outputFiles).forEach(file => {
-        if (existsSync(file)) {
-          unlinkSync(file);
-        }
-      });
-    }
+    Object.keys(outputFiles).forEach(outputType => {
+      const file = outputFiles[outputType];
+      if (existsSync(file)) {
+        unlinkSync(file);
+      }
+    });
 
-    if (readdirSync(outputDir).length === 0) {
-      rimraf.sync(outputDir);
-    }
-
+    rimraf.sync(outputDir);
   } catch (error) {
-    console.error('doClean fail', error);
+    console.error('clean compiler output files failed!');
   }
 
 

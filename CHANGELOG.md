@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 1.0.6
+
+- fix clean compiler output files
+
+*Release Date: 2022/09/07*
+
 ## 1.0.5
 
 - export `parseStateHex` function
