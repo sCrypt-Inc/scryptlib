@@ -209,7 +209,7 @@ export class AbstractContract {
       }
     });
 
-    return bsv.Script.fromHex(this.codePart.toHex() + buildContractState(newState, false, this.resolver.resolverType));
+    return this.codePart.add(bsv.Script.fromHex(buildContractState(newState, false, this.resolver.resolverType)));
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {

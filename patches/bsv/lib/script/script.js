@@ -108,59 +108,29 @@ Script.fromBuffer = function (buffer) {
 
 Script.prototype.toBuffer = function () {
 
-  let size = 0;
-  for (var i = 0; i < this.chunks.length; i++) {
+  var bw = new BufferWriter()
 
-    var chunk = this.chunks[i]
-    var opcodenum = chunk.opcodenum;
-    size += 1;
-    if (chunk.buf) {
-      if (opcodenum < Opcode.OP_PUSHDATA1) {
-        size += chunk.buf.length;
-      } else if (opcodenum === Opcode.OP_PUSHDATA1) {
-        size += 1;
-        size += chunk.buf.length;
-      } else if (opcodenum === Opcode.OP_PUSHDATA2) {
-        size += 2;
-        size += chunk.buf.length;
-      } else if (opcodenum === Opcode.OP_PUSHDATA4) {
-        size += 4;
-        size += chunk.buf.length;
-      }
-    }
-  }
-
-  var bw = Buffer.alloc(size)
-
-  let pos = 0;
   for (var i = 0; i < this.chunks.length; i++) {
     var chunk = this.chunks[i]
     var opcodenum = chunk.opcodenum
-    bw.writeUInt8(chunk.opcodenum, pos++)
+    bw.writeUInt8(chunk.opcodenum)
     if (chunk.buf) {
       if (opcodenum < Opcode.OP_PUSHDATA1) {
-        chunk.buf.copy(bw, pos)
-        pos += chunk.buf.length;
+        bw.write(chunk.buf)
       } else if (opcodenum === Opcode.OP_PUSHDATA1) {
-        bw.writeUInt8(chunk.len, pos)
-        pos += 1;
-        chunk.buf.copy(bw, pos)
-        pos += chunk.buf.length;
+        bw.writeUInt8(chunk.len)
+        bw.write(chunk.buf)
       } else if (opcodenum === Opcode.OP_PUSHDATA2) {
-        bw.writeUInt16LE(chunk.len, pos)
-        pos += 2
-        chunk.buf.copy(bw, pos)
-        pos += chunk.buf.length;
+        bw.writeUInt16LE(chunk.len)
+        bw.write(chunk.buf)
       } else if (opcodenum === Opcode.OP_PUSHDATA4) {
-        bw.writeUInt32LE(chunk.len, pos)
-        pos += 4
-        chunk.buf.copy(bw, pos)
-        pos += chunk.buf.length
+        bw.writeUInt32LE(chunk.len)
+        bw.write(chunk.buf)
       }
     }
   }
 
-  return bw
+  return bw.toBuffer()
 }
 
 Script.fromASM = function (str) {
