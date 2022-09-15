@@ -5,11 +5,11 @@ var assert = require('assert')
 var BufferWriter = function BufferWriter(obj) {
   if (!(this instanceof BufferWriter)) { return new BufferWriter(obj) }
   this.bufLen = 0
-  if (obj) { this.set(obj) } else { this.buf = Buffer.alloc(512) }
+  if (obj) { this.set(obj) } else { this.buf = Buffer.alloc(2) }
 }
 
 BufferWriter.prototype.set = function (obj) {
-  this.buf = obj.buf || this.buf || Buffer.alloc(512)
+  this.buf = obj.buf || this.buf || Buffer.alloc(2)
   this.bufLen = obj.bufLen || this.buf.length
   return this
 }
