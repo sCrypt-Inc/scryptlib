@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 1.0.7
+
+- Optimize memory usage when building tx
+
+*Release Date: 2022/09/15*
+
 ## 1.0.6
 
 - fix clean compiler output files
