@@ -368,7 +368,7 @@ export class AbstractContract {
   get codePart(): Script {
     const lockingScript = this.scriptedConstructor.toScript();
     // note: do not trim the trailing space
-    return new bsv.Script({ chunks: lockingScript.chunks.slice() }).add(bsv.Script.fromHex('6a'));
+    return lockingScript.clone().add(bsv.Script.fromHex('6a'));
   }
 
   get codeHash(): string {

@@ -31,7 +31,7 @@ var BN = require('../crypto/bn')
  * @param {*} serialized
  * @constructor
  */
-function Transaction (serialized) {
+function Transaction(serialized) {
   if (!(this instanceof Transaction)) {
     return new Transaction(serialized)
   }
@@ -271,7 +271,7 @@ Transaction.prototype.toBuffer = function () {
 }
 
 Transaction.prototype.toBufferWriter = function (writer) {
-  writer.writeInt32LE(this.version)
+  writer.writeUInt32LE(this.version)
   writer.writeVarintNum(this.inputs.length)
   _.each(this.inputs, function (input) {
     input.toBufferWriter(writer)
@@ -307,7 +307,7 @@ Transaction.prototype.fromBufferReader = function (reader) {
   return this
 }
 
-Transaction.prototype.toObject = Transaction.prototype.toJSON = function toObject () {
+Transaction.prototype.toObject = Transaction.prototype.toJSON = function toObject() {
   var inputs = []
   this.inputs.forEach(function (input) {
     inputs.push(input.toObject())
@@ -335,7 +335,7 @@ Transaction.prototype.toObject = Transaction.prototype.toJSON = function toObjec
   return obj
 }
 
-Transaction.prototype.fromObject = function fromObject (arg) {
+Transaction.prototype.fromObject = function fromObject(arg) {
   $.checkArgument(_.isObject(arg) || arg instanceof Transaction)
   var self = this
   var transaction
@@ -841,7 +841,7 @@ Transaction.prototype._getInputAmount = function () {
 
 Transaction.prototype._updateChangeOutput = function () {
 
-  if(this.isSeal) {
+  if (this.isSeal) {
     throw new errors.Transaction.TransactionAlreadySealed()
   }
 
@@ -1022,7 +1022,7 @@ Transaction.prototype.sortInputs = function (sortingFunction) {
 
 Transaction.prototype._newOutputOrder = function (newOutputs) {
   var isInvalidSorting = (this.outputs.length !== newOutputs.length ||
-                          _.difference(this.outputs, newOutputs).length !== 0)
+    _.difference(this.outputs, newOutputs).length !== 0)
   if (isInvalidSorting) {
     throw new errors.Transaction.InvalidSorting()
   }
@@ -1091,7 +1091,7 @@ Transaction.prototype.getSignatures = function (privKey, sigtype) {
   var transaction = this
   var results = []
   var hashData = Hash.sha256ripemd160(privKey.publicKey.toBuffer())
-  _.each(this.inputs, function forEachInput (input, index) {
+  _.each(this.inputs, function forEachInput(input, index) {
     _.each(input.getSignatures(transaction, privKey, index, sigtype, hashData), function (signature) {
       results.push(signature)
     })
@@ -1233,7 +1233,7 @@ Transaction.prototype.setInputScript = function (inputIndex, unlockScriptOrCallb
   } else {
     this.inputs[inputIndex].setScript(unlockScriptOrCallback)
   }
-  
+
   this._updateChangeOutput()
   return this;
 }
@@ -1258,7 +1258,7 @@ Transaction.prototype.setOutput = function (outputIndex, outputOrcb) {
   } else {
     this.outputs[outputIndex] = outputOrcb;
   }
-  
+
   this._updateChangeOutput()
   return this;
 }
@@ -1272,16 +1272,16 @@ Transaction.prototype.seal = function () {
 
   const self = this;
 
-  this.outputCallbackMap.forEach(function(outputCallback, key) {
+  this.outputCallbackMap.forEach(function (outputCallback, key) {
     self.outputs[key] = outputCallback(self)
   })
 
 
-  this.unlockScriptCallbackMap.forEach(function(unlockScriptCallback, key) {
+  this.unlockScriptCallbackMap.forEach(function (unlockScriptCallback, key) {
     self.inputs[key].setScript(unlockScriptCallback(self, self.inputs[key].output))
   })
 
-  if(this._privateKey) {
+  if (this._privateKey) {
     this.sign(this._privateKey, this._sigType)
   }
 

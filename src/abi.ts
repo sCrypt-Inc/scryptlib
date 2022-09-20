@@ -214,9 +214,7 @@ export class ABICoder {
 
       if (offset >= hexTemplate.length && chunk.opcodenum == 106/*OP_RETURN*/) {
 
-        const b = new bsv.Script().set({
-          chunks: script.chunks.slice(index + 1)
-        });
+        const b = bsv.Script.fromChunks(script.chunks.slice(index + 1));
 
         dataPartInHex = b.toHex();
         break;
@@ -262,9 +260,9 @@ export class ABICoder {
 
 
         if (name.startsWith(`<${contract.contractName}.`)) { //inline asm
-          contract.hexTemplateInlineASM.set(name, bw.concat().toString('hex'));
+          contract.hexTemplateInlineASM.set(name, bw.toBuffer().toString('hex'));
         } else {
-          contract.hexTemplateArgs.set(name, bw.concat().toString('hex'));
+          contract.hexTemplateArgs.set(name, bw.toBuffer().toString('hex'));
         }
 
       } else {

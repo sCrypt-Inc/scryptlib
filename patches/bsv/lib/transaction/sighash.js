@@ -90,7 +90,7 @@ var sighashPreimageForForkId = function (transaction, sighashType, inputNumber, 
 
   var writer = new BufferWriter()
   // Version
-  writer.writeInt32LE(transaction.version)
+  writer.writeUInt32LE(transaction.version)
 
   // Input prevouts/nSequence (none/all, depending on flags)
   writer.write(hashPrevouts)

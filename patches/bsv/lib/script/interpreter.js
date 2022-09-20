@@ -221,15 +221,11 @@ Interpreter.prototype.set = function (obj) {
 
 Interpreter.prototype.subscript = function () {
   if (this.sighashScript) {
-    return new Script().set({
-      chunks: this.sighashScript.chunks
-    })
+    return this.sighashScript.clone()
   } else {
     // Subset of script starting at the most recent codeseparator
     // CScript scriptCode(pbegincodehash, pend);
-    return new Script().set({
-      chunks: this.script.chunks.slice(this.pbegincodehash)
-    })
+    return Script.fromChunks(this.script.chunks.slice(this.pbegincodehash))
   }
 }
 
