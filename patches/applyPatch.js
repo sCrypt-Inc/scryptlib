@@ -48,6 +48,7 @@ const patches = [
     'bsv/lib/encoding/decode-script-chunks.js',
     'bsv/lib/encoding/encode-hex.js',
     'bsv/lib/encoding/is-hex.js',
+    'bsv/lib/encoding/varint.js',
     'bsv/lib/script/index.js',
     'bsv/lib/script/interpreter.js',
     'bsv/lib/script/script.js',

@@ -67,6 +67,23 @@ class BufferWriter {
     writeVarint(this, n)
     return this
   }
+
+  writeVarintBN(bn) {
+    var n = bn.toNumber()
+    if (n < 253) {
+      writeU8LE(this, n)
+    } else if (n < 0x10000) {
+      writeU8LE(this, 253)
+      writeU16LE(this, n)
+    } else if (n < 0x100000000) {
+      writeU8LE(this, 254)
+      writeU32LE(this, n)
+    } else {
+      writeU8LE(this, 255)
+      writeU64LE(this, n)
+    }
+    return this
+  }
 }
 
 module.exports = BufferWriter
