@@ -61,14 +61,15 @@ Stack.prototype.copy = function () {
   return new Stack(this.stack.slice() || [], this.varStack.slice() || [])
 }
 
-
-function bytesToHexString(bytearray ) {
-  return bytearray.reduce(function (o, c) { return o += ('0' + (c & 0xFF).toString(16)).slice(-2); }, '');
+function bytesToHexString (bytearray) {
+  return bytearray.reduce(function (o, c) {
+    o += ('0' + (c & 0xFF).toString(16)).slice(-2)
+    return o
+  }, '')
 }
 
 Stack.prototype.printVarStack = function () {
-
-  let array = this.varStack.map((v,i) => ({
+  let array = this.varStack.map((v, i) => ({
     name: v,
     value: bytesToHexString(this.rawstack[i].data)
   }))

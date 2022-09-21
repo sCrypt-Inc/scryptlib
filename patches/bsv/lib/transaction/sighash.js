@@ -27,7 +27,7 @@ var sighashPreimageForForkId = function (transaction, sighashType, inputNumber, 
     'For ForkId=0 signatures, satoshis or complete input must be provided'
   )
 
-  function GetPrevoutHash(tx) {
+  function GetPrevoutHash (tx) {
     var writer = new BufferWriter()
 
     _.each(tx.inputs, function (input) {
@@ -40,7 +40,7 @@ var sighashPreimageForForkId = function (transaction, sighashType, inputNumber, 
     return ret
   }
 
-  function GetSequenceHash(tx) {
+  function GetSequenceHash (tx) {
     var writer = new BufferWriter()
 
     _.each(tx.inputs, function (input) {
@@ -52,7 +52,7 @@ var sighashPreimageForForkId = function (transaction, sighashType, inputNumber, 
     return ret
   }
 
-  function GetOutputsHash(tx, n) {
+  function GetOutputsHash (tx, n) {
     var writer = new BufferWriter()
 
     if (_.isUndefined(n)) {
@@ -136,14 +136,13 @@ var sighashPreimageForForkId = function (transaction, sighashType, inputNumber, 
  * @param {satoshisBN} input's amount (for  ForkId signatures)
  *
  */
-var sighashPreimage = function sighashPreimage(transaction, sighashType, inputNumber, subscript, satoshisBN, flags) {
+var sighashPreimage = function sighashPreimage (transaction, sighashType, inputNumber, subscript, satoshisBN, flags) {
   var Transaction = require('./transaction')
   var Input = require('./input')
 
   if (_.isUndefined(flags)) {
     flags = DEFAULT_SIGN_FLAGS
   }
-
 
   if (flags & Interpreter.SCRIPT_ENABLE_REPLAY_PROTECTION) {
     // Legacy chain's value for fork id must be of the form 0xffxxxx.
@@ -228,7 +227,7 @@ var sighashPreimage = function sighashPreimage(transaction, sighashType, inputNu
  * @param {satoshisBN} input's amount (for  ForkId signatures)
  *
  */
-var sighash = function sighash(transaction, sighashType, inputNumber, subscript, satoshisBN, flags) {
+var sighash = function sighash (transaction, sighashType, inputNumber, subscript, satoshisBN, flags) {
   var preimage = sighashPreimage(transaction, sighashType, inputNumber, subscript, satoshisBN, flags)
   if (preimage.compare(SIGHASH_SINGLE_BUG) === 0) return preimage
   var ret = Hash.sha256sha256(preimage)
@@ -248,7 +247,7 @@ var sighash = function sighash(transaction, sighashType, inputNumber, subscript,
  * @param {satoshisBN} input's amount
  * @return {Signature}
  */
-function sign(transaction, privateKey, sighashType, inputIndex, subscript, satoshisBN, flags) {
+function sign (transaction, privateKey, sighashType, inputIndex, subscript, satoshisBN, flags) {
   var hashbuf = sighash(transaction, sighashType, inputIndex, subscript, satoshisBN, flags)
 
   var sig = ECDSA.sign(hashbuf, privateKey, 'little').set({
@@ -270,7 +269,7 @@ function sign(transaction, privateKey, sighashType, inputIndex, subscript, satos
  * @param {flags} verification flags
  * @return {boolean}
  */
-function verify(transaction, signature, publicKey, inputIndex, subscript, satoshisBN, flags) {
+function verify (transaction, signature, publicKey, inputIndex, subscript, satoshisBN, flags) {
   $.checkArgument(!_.isUndefined(transaction))
   $.checkArgument(!_.isUndefined(signature) && !_.isUndefined(signature.nhashtype))
   var hashbuf = sighash(transaction, signature.nhashtype, inputIndex, subscript, satoshisBN, flags)

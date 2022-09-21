@@ -3,7 +3,7 @@ const opcodes = require('../opcode')
 const BufferWriter = require('./bufferwriter')
 const writePushData = require('../script/write-push-data')
 
-function decodeASM(script) {
+function decodeASM (script) {
   const parts = script.split(' ')
   const writer = new BufferWriter()
   parts.forEach(part => {

@@ -1,5 +1,4 @@
-function decodeScriptChunks(script) {
-
+function decodeScriptChunks (script) {
   const chunks = []
   let i = 0
   let len = 0
@@ -32,7 +31,7 @@ function decodeScriptChunks(script) {
       chunks.push({ opcodenum: opcodenum })
     }
   }
-  //if (i !== script.length) throw new Error('bad script')
+  // if (i !== script.length) throw new Error('bad script')
   return chunks
 }
 

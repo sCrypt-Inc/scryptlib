@@ -15,7 +15,7 @@ var DEFAULT_RBF_SEQNUMBER = MAXINT - 2
 var DEFAULT_SEQNUMBER = MAXINT
 var DEFAULT_LOCKTIME_SEQNUMBER = MAXINT - 1
 
-function Input(params) {
+function Input (params) {
   if (!(this instanceof Input)) {
     return new Input(params)
   }
@@ -72,7 +72,7 @@ Input.prototype._fromObject = function (params) {
   return this
 }
 
-Input.prototype.toObject = Input.prototype.toJSON = function toObject() {
+Input.prototype.toObject = Input.prototype.toJSON = function toObject () {
   var obj = {
     prevTxId: this.prevTxId.toString('hex'),
     outputIndex: this.outputIndex,

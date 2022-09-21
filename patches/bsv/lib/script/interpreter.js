@@ -19,7 +19,7 @@ var Stack = require('./stack')
  * The primary way to use this class is via the verify function.
  * e.g., Interpreter().verify( ... );
  */
-var Interpreter = function Interpreter(obj) {
+var Interpreter = function Interpreter (obj) {
   if (!(this instanceof Interpreter)) {
     return new Interpreter(obj)
   }
@@ -671,7 +671,7 @@ Interpreter.prototype.checkSequence = function (nSequence) {
   return true
 }
 
-function padBufferToSize(buf, len) {
+function padBufferToSize (buf, len) {
   let b = buf
   while (b.length < len) {
     b = Buffer.concat([Buffer.from([0x00]), b])
@@ -686,15 +686,15 @@ function padBufferToSize(buf, len) {
 Interpreter.prototype.step = function (scriptType) {
   var self = this
 
-  function stacktop(i) {
+  function stacktop (i) {
     return self.stack.stacktop(i)
   }
 
-  function vartop(i) {
+  function vartop (i) {
     return self.stack.vartop(i)
   }
 
-  function isOpcodeDisabled(opcode) {
+  function isOpcodeDisabled (opcode) {
     switch (opcode) {
       case Opcode.OP_2MUL:
       case Opcode.OP_2DIV:

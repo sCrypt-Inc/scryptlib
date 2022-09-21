@@ -28,11 +28,11 @@ const SCRIPT_TO_CHUNKS_CACHE = new WeakMap()
  * @constructor
  * @param {Object|string|Buffer=} from optional data to populate script
  */
-var Script = function Script(from) {
+var Script = function Script (from) {
   if (!(this instanceof Script)) {
     return new Script(from)
   }
-  this.buffer = []
+  this.buffer = Buffer.from([])
 
   if (Buffer.isBuffer(from)) {
     return Script.fromBuffer(from)
@@ -43,12 +43,20 @@ var Script = function Script(from) {
   } else if (_.isString(from)) {
     return Script.fromString(from)
   } else if (_.isObject(from) && _.isArray(from.chunks)) {
-    this.set(from)
+    return Script.fromChunks(from.chunks)
+  } else if (_.isObject(from) && Buffer.isBuffer(from.buffer)) {
+    return Script.fromBuffer(from.buffer)
   }
 }
 
 Script.prototype.set = function (obj) {
   $.checkArgument(_.isObject(obj))
+  if (obj.chunks && _.isArray(obj.chunks)) {
+    var s = Script.fromChunks(obj.chunks)
+    this.buffer = s.buffer
+    return this
+  }
+
   $.checkArgument(Buffer.isBuffer(obj.buffer))
   this.buffer = obj.buffer
   return this
@@ -57,41 +65,40 @@ Script.prototype.set = function (obj) {
 Script.fromBuffer = function (buffer) {
   $.checkArgument(Buffer.isBuffer(buffer))
   var script = new Script()
-  script.buffer = buffer;
+  script.buffer = buffer
   return script
 }
-
 
 Script.fromChunks = function (chunks) {
   var script = new Script()
 
-  const bw = new BufferWriter();
+  const bw = new BufferWriter()
 
   for (let index = 0; index < chunks.length; index++) {
-    const chunk = chunks[index];
-    bw.writeUInt8(chunk.opcodenum);
+    const chunk = chunks[index]
+    bw.writeUInt8(chunk.opcodenum)
     if (chunk.buf) {
       if (chunk.opcodenum < Opcode.OP_PUSHDATA1) {
-        bw.write(chunk.buf);
+        bw.write(chunk.buf)
       } else if (chunk.opcodenum === Opcode.OP_PUSHDATA1) {
-        bw.writeUInt8(chunk.len);
-        bw.write(chunk.buf);
+        bw.writeUInt8(chunk.len)
+        bw.write(chunk.buf)
       } else if (chunk.opcodenum === Opcode.OP_PUSHDATA2) {
-        bw.writeUInt16LE(chunk.len);
-        bw.write(chunk.buf);
+        bw.writeUInt16LE(chunk.len)
+        bw.write(chunk.buf)
       } else if (chunk.opcodenum === Opcode.OP_PUSHDATA4) {
-        bw.writeUInt32LE(chunk.len);
-        bw.write(chunk.buf);
+        bw.writeUInt32LE(chunk.len)
+        bw.write(chunk.buf)
       }
     }
   }
 
-  script.buffer = bw.toBuffer();
+  script.buffer = bw.toBuffer()
   return script
 }
 
 Script.prototype.toBuffer = function () {
-  return this.buffer;
+  return this.buffer
 }
 
 Script.fromASM = function (str) {
@@ -106,32 +113,72 @@ Script.fromString = function (str) {
   if (JSUtil.isHexa(str) || str.length === 0) {
     return new Script(buffer.Buffer.from(str, 'hex'))
   }
-  return Script.fromASM(str)
-}
 
+  var chunks = []
+
+  var tokens = str.split(' ')
+  var i = 0
+  while (i < tokens.length) {
+    var token = tokens[i]
+    var opcode = Opcode(token)
+    var opcodenum = opcode.toNumber()
+
+    if (_.isUndefined(opcodenum)) {
+      opcodenum = parseInt(token)
+      if (opcodenum > 0 && opcodenum < Opcode.OP_PUSHDATA1) {
+        var buf = Buffer.from(tokens[i + 1].slice(2), 'hex')
+        if (buf.length !== opcodenum) {
+          throw new Error('Invalid script buf len: ' + JSON.stringify(str))
+        }
+        chunks.push({
+          buf: Buffer.from(tokens[i + 1].slice(2), 'hex'),
+          len: opcodenum,
+          opcodenum: opcodenum
+        })
+        i = i + 2
+      } else {
+        throw new Error('Invalid script: ' + JSON.stringify(str))
+      }
+    } else if (opcodenum === Opcode.OP_PUSHDATA1 ||
+      opcodenum === Opcode.OP_PUSHDATA2 ||
+      opcodenum === Opcode.OP_PUSHDATA4) {
+      if (tokens[i + 2].slice(0, 2) !== '0x') {
+        throw new Error('Pushdata data must start with 0x')
+      }
+      chunks.push({
+        buf: Buffer.from(tokens[i + 2].slice(2), 'hex'),
+        len: parseInt(tokens[i + 1]),
+        opcodenum: opcodenum
+      })
+      i = i + 3
+    } else {
+      chunks.push({
+        opcodenum: opcodenum
+      })
+      i = i + 1
+    }
+  }
+  return Script.fromChunks(chunks)
+}
 
 Script.prototype.slice = function (start, end) {
   return this.buffer.slice(start, end)
 }
 
-
 Object.defineProperty(Script.prototype, 'chunks', {
-  get() {
+  get () {
     if (SCRIPT_TO_CHUNKS_CACHE.has(this)) return SCRIPT_TO_CHUNKS_CACHE.get(this)
     const chunks = decodeScriptChunks(this.buffer)
     SCRIPT_TO_CHUNKS_CACHE.set(this, chunks)
-    return chunks;
-  },
-});
-
+    return chunks
+  }
+})
 
 Object.defineProperty(Script.prototype, 'length', {
-  get() {
+  get () {
     return this.buffer.length
-  },
-});
-
-
+  }
+})
 
 Script.prototype._chunkToString = function (chunk, type) {
   var opcodenum = chunk.opcodenum
@@ -186,7 +233,7 @@ Script.prototype._chunkToString = function (chunk, type) {
 
 Script.prototype.toASM = function () {
   var str = ''
-  var chunks = this.chunks;
+  var chunks = this.chunks
   for (var i = 0; i < chunks.length; i++) {
     var chunk = this.chunks[i]
     str += this._chunkToString(chunk, 'asm')
@@ -372,23 +419,23 @@ Script.prototype.isMultisigIn = function () {
  * @returns {boolean} true if this is a valid standard OP_RETURN output
  */
 Script.prototype.isDataOut = function () {
-  var step1 = this.chunks.length >= 1 &&
-    this.chunks[0].opcodenum === Opcode.OP_RETURN
+  var step1 = this.buffer.length >= 1 &&
+    this.buffer[0] === Opcode.OP_RETURN
   if (!step1) return false
-  var chunks = this.chunks.slice(1)
-  var script2 = new Script({ chunks: chunks })
+  var buffer = this.buffer.slice(1)
+  var script2 = new Script({ buffer: buffer })
   return script2.isPushOnly()
 }
 
 Script.prototype.isSafeDataOut = function () {
-  if (this.chunks.length < 2) {
+  if (this.buffer.length < 2) {
     return false
   }
-  if (this.chunks[0].opcodenum !== Opcode.OP_FALSE) {
+  if (this.buffer[0] !== Opcode.OP_FALSE) {
     return false
   }
-  var chunks = this.chunks.slice(1)
-  var script2 = new Script({ chunks })
+  var buffer = this.buffer.slice(1)
+  var script2 = new Script({ buffer })
   return script2.isDataOut()
 }
 
@@ -561,6 +608,9 @@ Script.prototype._addByType = function (obj, prepend) {
     this._addBuffer(obj, prepend)
   } else if (obj instanceof Script) {
     this._insertAtPosition(obj.buffer, prepend)
+  } else if (typeof obj === 'object') {
+    var s = Script.fromChunks([obj])
+    this._insertAtPosition(s.toBuffer(), prepend)
   } else {
     throw new Error('Invalid script chunk')
   }
@@ -573,7 +623,6 @@ Script.prototype._insertAtPosition = function (buf, prepend) {
     bw.write(buf)
     bw.write(this.buffer)
   } else {
-
     bw.write(this.buffer)
     bw.write(buf)
   }
@@ -589,7 +638,14 @@ Script.prototype._addOpcode = function (opcode, prepend) {
   } else {
     op = Opcode(opcode).toNumber()
   }
-  this._insertAtPosition(Buffer.from([op]), prepend)
+
+  // OP_INVALIDOPCODE
+  if (op > 255) {
+    throw new errors.Script.InvalidOpcode(op)
+  }
+  this._insertAtPosition(Script.fromChunks([{
+    opcodenum: op
+  }]).toBuffer(), prepend)
   return this
 }
 
@@ -597,7 +653,10 @@ Script.prototype._addBuffer = function (buf, prepend) {
   var bw = new BufferWriter()
   var opcodenum
   var len = buf.length
-  if (len >= 0 && len < Opcode.OP_PUSHDATA1) {
+  if (len === 0) {
+    opcodenum = 0
+    bw.writeUInt8(opcodenum)
+  } else if (len > 0 && len < Opcode.OP_PUSHDATA1) {
     opcodenum = len
     bw.writeUInt8(opcodenum)
     bw.write(buf)
@@ -635,11 +694,11 @@ Script.prototype.removeCodeseparators = function () {
       chunks.push(this.chunks[i])
     }
   }
+  SCRIPT_TO_CHUNKS_CACHE.delete(this)
 
   this.buffer = Script.fromChunks(chunks).toBuffer()
   return this
 }
-
 
 /**
  * If the script does not contain any OP_CODESEPARATOR, Return all scripts
@@ -649,8 +708,7 @@ Script.prototype.removeCodeseparators = function () {
  * @returns {Script} Subset of script starting at the {n}th codeseparator
  */
 Script.prototype.subScript = function (n) {
-
-  var idx = 0;
+  var idx = 0
 
   for (var i = 0; i < this.chunks.length; i++) {
     if (this.chunks[i].opcodenum === Opcode.OP_CODESEPARATOR) {
@@ -664,7 +722,6 @@ Script.prototype.subScript = function (n) {
 
   return this
 }
-
 
 // high level script builder methods
 
@@ -994,14 +1051,14 @@ Script.prototype.toAddress = function (network) {
 Script.prototype.findAndDelete = function (script) {
   var buf = script.toBuffer()
   var hex = buf.toString('hex')
-  var chunks = this.chunks;
+  var chunks = this.chunks
   for (var i = 0; i < chunks.length; i++) {
     var script2 = Script.fromChunks([chunks[i]])
     var buf2 = script2.toBuffer()
     var hex2 = buf2.toString('hex')
     if (hex === hex2) {
       chunks.splice(i, 1)
-      return Script.fromChunks(chunks)
+      this.buffer = Script.fromChunks(chunks).toBuffer()
     }
   }
   return this
@@ -1065,7 +1122,7 @@ Script.prototype.getSignatureOperationsCount = function (accurate) {
   var self = this
   var n = 0
   var lastOpcode = Opcode.OP_INVALIDOPCODE
-  _.each(self.chunks, function getChunk(chunk) {
+  _.each(self.chunks, function getChunk (chunk) {
     var opcode = chunk.opcodenum
     if (opcode === Opcode.OP_CHECKSIG || opcode === Opcode.OP_CHECKSIGVERIFY) {
       n++

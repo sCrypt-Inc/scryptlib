@@ -8,9 +8,11 @@ const isHex = require('./is-hex')
 function decodeHex (hex) {
   if (typeof hex !== 'string') throw new Error('not a string')
 
+  if (hex.startsWith('0x')) hex = hex.slice(2)
+
   if (hex.length % 2 === 1) hex = '0' + hex
 
-  if (!isHex(hex)) throw new Error('bad hex char')
+  if (!isHex(hex)) throw new Error('invalid hex string in script')
 
   if (typeof VARIANT === 'undefined' || VARIANT === 'browser') {
     const length = hex.length / 2

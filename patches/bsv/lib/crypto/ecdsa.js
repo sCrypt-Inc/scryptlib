@@ -9,7 +9,7 @@ var Hash = require('./hash')
 var _ = require('../util/_')
 var $ = require('../util/preconditions')
 
-var ECDSA = function ECDSA(obj) {
+var ECDSA = function ECDSA (obj) {
   if (!(this instanceof ECDSA)) {
     return new ECDSA(obj)
   }
@@ -205,7 +205,7 @@ ECDSA.prototype._findSignature = function (d, e) {
     badrs++
     k = this.k
     Q = G.mul(k)
-    r = new BN(1).mul(Q.x.umod(N))
+    r = Q.x.umod(N)
     s = k.invm(N).mul(e.add(d.mul(r))).umod(N)
   } while (r.cmp(BN.Zero) <= 0 || s.cmp(BN.Zero) <= 0)
 

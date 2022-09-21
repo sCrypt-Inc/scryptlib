@@ -12,7 +12,7 @@ var errors = require('../errors')
 
 var MAX_SAFE_INTEGER = 0x1fffffffffffff
 
-function Output(args) {
+function Output (args) {
   if (!(this instanceof Output)) {
     return new Output(args)
   }
@@ -99,7 +99,7 @@ Object.defineProperty(Output.prototype, 'satoshisBN', {
   }
 })
 
-Output.prototype.toObject = Output.prototype.toJSON = function toObject() {
+Output.prototype.toObject = Output.prototype.toJSON = function toObject () {
   var obj = {
     satoshis: this.satoshis
   }
@@ -143,8 +143,6 @@ Output.prototype.inspect = function () {
   var scriptStr
   if (this.script) {
     scriptStr = this.script.inspect()
-  } else {
-    scriptStr = this._script.toBuffer().toString('hex')
   }
   return '<Output (' + this.satoshis + ' sats) ' + scriptStr + '>'
 }
