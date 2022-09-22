@@ -205,7 +205,7 @@ ECDSA.prototype._findSignature = function (d, e) {
     badrs++
     k = this.k
     Q = G.mul(k)
-    r = Q.x.umod(N)
+    r = new BN(1).mul(Q.x.umod(N))
     s = k.invm(N).mul(e.add(d.mul(r))).umod(N)
   } while (r.cmp(BN.Zero) <= 0 || s.cmp(BN.Zero) <= 0)
 
