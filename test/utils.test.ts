@@ -1554,7 +1554,7 @@ describe('utils', () => {
 
       expect(bitwise.invert(bigL, invert(bigL)).verify().success).to.be.true
       expect(bitwise.invert(bigR, invert(bigR)).verify().success).to.be.true
-      let counter = 10000;
+      let counter = 100;
 
       while (--counter > 0) {
         let l = new Int(getRandomInt(-100000000000, 100000000000));

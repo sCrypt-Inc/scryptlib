@@ -185,8 +185,7 @@ BN.prototype.toSM = function (opts) {
  * @param {number} size The maximum size.
  */
 BN.fromScriptNumBuffer = function (buf, fRequireMinimal, size) {
-  // don't limit numSize default
-  var nMaxNumSize = size || Number.MAX_SAFE_INTEGER;
+  var nMaxNumSize = size || Number.MAX_SAFE_INTEGER
   $.checkArgument(buf.length <= nMaxNumSize, new Error('script number overflow'))
   if (fRequireMinimal && buf.length > 0) {
     // Check that the number is encoded with the minimum possible

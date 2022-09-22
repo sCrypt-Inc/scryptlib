@@ -17,7 +17,7 @@ describe('Test sCrypt contract identity In Javascript', () => {
 
   it('bitwiseAlgebra should return true', () => {
 
-    let counter = 10000;
+    let counter = 100;
 
     while (--counter > 0) {
       let x = new Int(getRandomInt(-100000000000, 100000000000));

@@ -132,6 +132,9 @@ module.exports = [{
   }, {
     name: 'InvalidBuffer',
     message: 'Invalid script buffer: can\'t parse valid script from given buffer {0}'
+  }, {
+    name: 'InvalidOpcode',
+    message: 'Invalid Opcode: got "{0}"'
   }]
 }, {
   name: 'HDPrivateKey',

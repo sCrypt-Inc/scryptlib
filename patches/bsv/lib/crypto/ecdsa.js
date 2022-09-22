@@ -9,7 +9,7 @@ var Hash = require('./hash')
 var _ = require('../util/_')
 var $ = require('../util/preconditions')
 
-var ECDSA = function ECDSA(obj) {
+var ECDSA = function ECDSA (obj) {
   if (!(this instanceof ECDSA)) {
     return new ECDSA(obj)
   }

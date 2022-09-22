@@ -4,6 +4,7 @@ const { exit } = require("process");
 const { join } = require("path");
 const { copyFileSync, existsSync } = require("fs");
 const chalk = require("chalk");
+var glob = require('glob');
 
 function isDev() {
     const cwd = process.cwd();
@@ -39,22 +40,14 @@ function printFinish() {
 ${chalk.grey("•")}`, `If you want to use sCrypt compiler binary, run ${chalk.yellow.bold("npx scryptlib download")} to download the compiler binary.`)
 }
 
-const patches = [
-    'bsv/lib/crypto/bn.js',
-    'bsv/lib/crypto/ecdsa.js',
-    'bsv/lib/script/index.js',
-    'bsv/lib/script/interpreter.js',
-    'bsv/lib/script/script.js',
-    'bsv/lib/script/stack.js',
-    'bsv/lib/transaction/input/input.js',
-    'bsv/lib/transaction/transaction.js',
-    'bsv/lib/errors/spec.js',
-    'json-bigint/lib/parse.js',
-]
 
 try {
-    apply(patches);
-    printFinish();
+
+    glob('**/*.js', { cwd: "./patches" }, function (err, patches) {
+        apply(patches.slice(1));
+        printFinish();
+    });
+
 } catch (error) {
 
     console.error(error)

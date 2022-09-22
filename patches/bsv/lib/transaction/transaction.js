@@ -39,11 +39,11 @@ function Transaction (serialized) {
   this.outputs = []
   this._inputAmount = undefined
   this._outputAmount = undefined
-  this.unlockScriptCallbackMap = new Map();
-  this.outputCallbackMap = new Map();
-  this._privateKey = undefined;
-  this._sigType = undefined;
-  this.isSeal = false;
+  this.unlockScriptCallbackMap = new Map()
+  this.outputCallbackMap = new Map()
+  this._privateKey = undefined
+  this._sigType = undefined
+  this.isSeal = false
   if (serialized) {
     if (serialized instanceof Transaction) {
       return Transaction.shallowCopy(serialized)
@@ -271,7 +271,7 @@ Transaction.prototype.toBuffer = function () {
 }
 
 Transaction.prototype.toBufferWriter = function (writer) {
-  writer.writeInt32LE(this.version)
+  writer.writeUInt32LE(this.version)
   writer.writeVarintNum(this.inputs.length)
   _.each(this.inputs, function (input) {
     input.toBufferWriter(writer)
@@ -840,11 +840,9 @@ Transaction.prototype._getInputAmount = function () {
 }
 
 Transaction.prototype._updateChangeOutput = function () {
-
-  if(this.isSeal) {
+  if (this.isSeal) {
     throw new errors.Transaction.TransactionAlreadySealed()
   }
-
 
   if (!this._changeScript) {
     return
@@ -1022,7 +1020,7 @@ Transaction.prototype.sortInputs = function (sortingFunction) {
 
 Transaction.prototype._newOutputOrder = function (newOutputs) {
   var isInvalidSorting = (this.outputs.length !== newOutputs.length ||
-                          _.difference(this.outputs, newOutputs).length !== 0)
+    _.difference(this.outputs, newOutputs).length !== 0)
   if (isInvalidSorting) {
     throw new errors.Transaction.InvalidSorting()
   }
@@ -1219,84 +1217,77 @@ Transaction.prototype.isCoinbase = function () {
 }
 
 /**
- * 
- * @param {number} inputIndex 
+ *
+ * @param {number} inputIndex
  * @param {Script|(tx, output) => Script} unlockScriptOrCallback  unlockScript or a callback returns unlockScript
  * @returns unlockScript of the special input
  */
 Transaction.prototype.setInputScript = function (inputIndex, unlockScriptOrCallback) {
-
   if (unlockScriptOrCallback instanceof Function) {
-    this.unlockScriptCallbackMap.set(inputIndex, unlockScriptOrCallback);
+    this.unlockScriptCallbackMap.set(inputIndex, unlockScriptOrCallback)
     this.inputs[inputIndex].setScript(unlockScriptOrCallback(this, this.inputs[inputIndex].output))
-
   } else {
     this.inputs[inputIndex].setScript(unlockScriptOrCallback)
   }
-  
+
   this._updateChangeOutput()
-  return this;
+  return this
 }
 
 Transaction.prototype.setInputSequence = function (inputIndex, sequence) {
-  this.inputs[inputIndex].sequenceNumber = sequence;
-  return this;
+  this.inputs[inputIndex].sequenceNumber = sequence
+  return this
 }
 
 /**
- * 
- * @param {number} outputIndex 
+ *
+ * @param {number} outputIndex
  * @param {Output|(tx) => Output} outputOrcb  output or a callback returns output
  * @returns output
  */
 Transaction.prototype.setOutput = function (outputIndex, outputOrcb) {
-
   if (outputOrcb instanceof Function) {
-    this.outputCallbackMap.set(outputIndex, outputOrcb);
-    this.outputs[outputIndex] = outputOrcb(this);
-
+    this.outputCallbackMap.set(outputIndex, outputOrcb)
+    this.outputs[outputIndex] = outputOrcb(this)
   } else {
-    this.outputs[outputIndex] = outputOrcb;
+    this.outputs[outputIndex] = outputOrcb
   }
-  
+
   this._updateChangeOutput()
-  return this;
+  return this
 }
 
-
 /**
- * Seal a transaction. After the transaction is sealed, except for the unlock script entered, 
+ * Seal a transaction. After the transaction is sealed, except for the unlock script entered,
  * other attributes of the transaction cannot be modified
  */
 Transaction.prototype.seal = function () {
+  const self = this
 
-  const self = this;
-
-  this.outputCallbackMap.forEach(function(outputCallback, key) {
+  this.outputCallbackMap.forEach(function (outputCallback, key) {
     self.outputs[key] = outputCallback(self)
   })
 
-
-  this.unlockScriptCallbackMap.forEach(function(unlockScriptCallback, key) {
+  this.unlockScriptCallbackMap.forEach(function (unlockScriptCallback, key) {
     self.inputs[key].setScript(unlockScriptCallback(self, self.inputs[key].output))
   })
 
-  if(this._privateKey) {
+  if (this._privateKey) {
     this.sign(this._privateKey, this._sigType)
   }
 
-  this.isSeal = true;
+  this.isSeal = true
 
-  return this;
+  return this
 }
 
 Transaction.prototype.setLockTime = function (nLockTime) {
-  this.nLockTime = nLockTime;
-  return this;
+  this.nLockTime = nLockTime
+  return this
 }
 
 /**
- * 
+ *
  * @returns satoshis of change output
  */
 Transaction.prototype.getChangeAmount = function () {
@@ -1308,36 +1299,32 @@ Transaction.prototype.getChangeAmount = function () {
 }
 
 /**
- * 
+ *
  * @returns estimate fee by transaction size
  */
 Transaction.prototype.getEstimateFee = function () {
-  return this._estimateFee();
+  return this._estimateFee()
 }
 
-
 /**
- * 
- * @param {number} feePerKb the fee per KB for this transaction 
+ *
+ * @param {number} feePerKb the fee per KB for this transaction
  * @returns true or false
  */
 Transaction.prototype.checkFeeRate = function (feePerKb) {
-
   const fee = this._getUnspentValue()
 
   var estimatedSize = this._estimateSize()
   var expectedRate = (feePerKb || this._feePerKb || Transaction.FEE_PER_KB) / 1000
-  var realFeeRate = fee / estimatedSize;
+  var realFeeRate = fee / estimatedSize
   return realFeeRate >= expectedRate
 }
 
-
 /**
- * 
+ *
  * @returns the serialization of all input outpoints
  */
 Transaction.prototype.prevouts = function () {
-
   var writer = new BufferWriter()
 
   _.each(this.inputs, function (input) {
@@ -1345,9 +1332,8 @@ Transaction.prototype.prevouts = function () {
     writer.writeUInt32LE(input.outputIndex)
   })
 
-  var buf = writer.toBuffer();
-  return buf.toString('hex');
+  var buf = writer.toBuffer()
+  return buf.toString('hex')
 }
-
 
 module.exports = Transaction
