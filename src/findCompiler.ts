@@ -91,6 +91,10 @@ export function findCompiler(): string | undefined {
 
   let scryptc = argv.scryptc;
 
+  if (scryptc && scryptc.startsWith('"') && scryptc.endsWith('"')) {
+    scryptc = scryptc.substring(1, scryptc.length - 1);
+  }
+
   // If a special compiler is specified on the command line, the specified compiler is used
   if (scryptc && existsSync(scryptc)) {
     return scryptc;

@@ -1,6 +1,11 @@
 # CHANGELOG
 
 
+## 1.0.8
+
+- Fix `findCompiler` fails in docker container
+
+
 ## 1.0.7
 
 - Optimize memory usage when building tx
