@@ -1,6 +1,6 @@
 'use strict'
 
-var BN = require('bn.js')
+var BN = require('../bn')
 var $ = require('../util/preconditions')
 var _ = require('../util/_')
 
