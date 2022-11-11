@@ -4,6 +4,10 @@
 ## 1.0.8
 
 - Fix `findCompiler` fails in docker container
+- Fix big int issue [#206](https://github.com/sCrypt-Inc/scryptlib/issues/206)
+
+*Release Date: 2022/11/11*
+
 
 
 ## 1.0.7
