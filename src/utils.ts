@@ -1367,7 +1367,6 @@ export function compileContractAsync(file: string, options?: {
     desc: options.desc, outputDir: options.out,
     sourceMap: options.sourceMap,
     hex: true,
-    sourceMap: options.sourceMap,
     cmdPrefix: findCompiler()
   });
 }
