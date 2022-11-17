@@ -20,7 +20,7 @@ export interface DebugConfiguration {
   pubFunc: string;
   pubFuncArgs: SupportedParamType[];
   asmArgs?: AsmVarValues;
-  txContext?: any;
+  txContext?: TxContext;
 }
 
 export interface DebugLaunch {

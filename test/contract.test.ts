@@ -5,8 +5,8 @@ import { FunctionCall } from '../src/abi';
 import { bsv, signTx, toHex } from '../src/utils';
 import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes';
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet');
-const publicKey = privateKey.publicKey;
+const privateKey = bsv.PrivateKey.fromRandom('testnet');
+const publicKey = privateKey.toPublicKey();
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
@@ -147,8 +147,8 @@ describe('buildContractClass()', () => {
       describe('when dataPart is set', () => {
         it('should return the partial locking script (the part before op_return) of the contract', () => {
           instance.setDataPart('aa');
-          assert.equal(instance.dataPart.toASM(), 'aa');
-          assert.equal(instance.dataPart.toHex(), '01aa');
+          assert.equal(instance.dataPart?.toASM(), 'aa');
+          assert.equal(instance.dataPart?.toHex(), '01aa');
         })
       })
     })
@@ -161,8 +161,8 @@ describe('buildContractClass()', () => {
 
         // when op_return is exist
         instance.setDataPart('aa');
-        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' ' + instance.dataPart.toASM());
-        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + instance.dataPart.toHex());
+        assert.equal(instance.lockingScript.toASM(), instance.codePart.toASM() + ' ' + instance.dataPart?.toASM());
+        assert.equal(instance.lockingScript.toHex(), instance.codePart.toHex() + instance.dataPart?.toHex());
       })
     })
 

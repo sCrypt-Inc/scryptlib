@@ -209,13 +209,13 @@ export class String extends Bytes {
     super(String.toUtf8Hex(val));
   }
 
-  static toUtf8Hex(val: string) {
+  static toUtf8Hex(val: string): string {
     const encoder = new TextEncoder();
     const uint8array = encoder.encode(val);
     return toHex(Buffer.from(uint8array));
   }
 
-  static fromUtf8Hex(hex: string) {
+  static fromUtf8Hex(hex: string): string {
     const utf8decoder = new TextDecoder();
     return utf8decoder.decode(Buffer.from(hex, 'hex'));
   }

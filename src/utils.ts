@@ -1,5 +1,5 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import bsv = require('bsv');
+import * as bsv from 'bsv';
 import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
 import { join, sep } from 'path';
@@ -11,15 +11,15 @@ import { decode } from 'sourcemap-codec';
 
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
-  ValueType, Struct, SupportedParamType, VariableType, BasicType, TypeResolver, StructEntity, compile,
+  ValueType, Struct, SupportedParamType, VariableType, TypeResolver, StructEntity, compile,
   findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
   Arguments, Argument,
-  Script, ParamEntity, SingletonParamType
+  Script, ParamEntity
 } from './internal';
 import { compileAsync, OpCode, StaticEntity } from './compilerWrapper';
 import { BasicScryptType, HashedMap, HashedSet, Library, ScryptTypeResolver, String, SymbolType, TypeInfo } from './scryptTypes';
 import { VerifyError } from './contract';
-import { ABIEntity, handleCompilerOutput, LibraryEntity } from '.';
+import { ABIEntity, LibraryEntity } from '.';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -382,7 +382,7 @@ export function asm2ScryptType(type: string, asm: string): ScryptType {
 
   switch (type) {
     case VariableType.BOOL:
-      return new Bool(BN.fromString(asm) > 0 ? true : false);
+      return new Bool(BN.fromString(asm).gt(0) ? true : false);
     case VariableType.INT:
       return new Int(asm2int(asm));
     case VariableType.BYTES:
@@ -450,11 +450,11 @@ export function hex2ScryptType(type: string, hex: string): ScryptType {
 
 
 
-export function bytes2Literal(bytearray: number[], type: string): string {
+export function bytes2Literal(bytearray: Buffer, type: string): string {
 
   switch (type) {
     case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
+      return BN.fromBuffer(bytearray, { endian: 'little' }).gt(0) ? 'true' : 'false';
 
     case 'int':
     case 'PrivKey':
@@ -469,7 +469,7 @@ export function bytes2Literal(bytearray: number[], type: string): string {
 
 }
 
-export function bytesToHexString(bytearray: number[]): string {
+export function bytesToHexString(bytearray: Buffer): string {
   return bytearray.reduce(function (o, c) { return o += ('0' + (c & 0xFF).toString(16)).slice(-2); }, '');
 }
 
@@ -531,7 +531,7 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
     throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
   }
 
-  const buf = toHex(bsv.Transaction.sighash.sign(
+  const buf = toHex(bsv.Transaction.Sighash.sign(
     tx, privateKey, sighashType, inputIndex,
     lockingScript, new bsv.crypto.BN(inputAmount), flags
   ).toTxFormat());
@@ -546,7 +546,7 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
 }
 
 export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
+  const preimageBuf = bsv.Transaction.Sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
@@ -577,7 +577,7 @@ export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inpu
 // Throws if the number cannot be accommodated
 // Often used to append numbers to OP_RETURN, which are read in contracts
 // Support Bigint
-export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): string {
+export function num2bin(n: number | bigint | string | bsv.crypto.BN, dataLen: number): string {
   const num = new BN(n);
   if (num.eqn(0)) {
     return '00'.repeat(dataLen);
@@ -2618,7 +2618,7 @@ export function parseStateHex(contract: AbstractContract, scriptHex: string): [b
 
   const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
 
-  const br = new bsv.encoding.BufferReader(stateHex);
+  const br = new bsv.encoding.BufferReader(Buffer.from(stateHex, 'hex'));
 
   const opcodenum = br.readUInt8();
 

@@ -9,7 +9,7 @@ import {
 import { bsv, signTx, toHex, toLiteral } from '../src/utils'
 import { Ripemd160, Bytes, Int, ScryptType } from '../src/scryptTypes'
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet')
+const privateKey = bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 const inputSatoshis = 100000
@@ -83,7 +83,7 @@ describe('create instance from UTXO Hex', () => {
     simple.replaceAsmVars(asmVars)
     expect(() => {
       const asm = [simple.lockingScript.toASM(), '11'].join(' ');
-      Simple.fromHex(new bsv.Script.fromASM(asm).toHex())
+      Simple.fromHex(bsv.Script.fromASM(asm).toHex())
     }).to.be.throw(/the raw script cannot match the ASM template of contract Simple/);
 
 

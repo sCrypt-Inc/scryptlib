@@ -1,11 +1,12 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { bsv, toHex, signTx, num2bin, getPreimage, readLaunchJson } from '../src/utils';
+import { toHex, signTx, num2bin, getPreimage, readLaunchJson, bsv } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage } from '../src/scryptTypes';
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet');
-const publicKey = privateKey.publicKey;
+
+const privateKey = bsv.PrivateKey.fromRandom('testnet');
+const publicKey = privateKey.toPublicKey();
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 
@@ -60,8 +61,8 @@ describe('VerifyError', () => {
     let p2pkh, result;
 
     before(() => {
-      const privateKey = new bsv.PrivateKey.fromRandom('testnet');
-      const publicKey = privateKey.publicKey;
+      const privateKey = bsv.PrivateKey.fromRandom('testnet');
+      const publicKey = privateKey.toPublicKey();
       const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
       const jsonDescr = loadDescription('p2pkh_desc_without_sourceMap.json');
       const DemoP2PKH = buildContractClass(jsonDescr);
@@ -80,12 +81,12 @@ describe('VerifyError', () => {
   describe('check VerifyError tokenUtxo.scrypt', () => {
     let token, lockingScriptCodePart, result
 
-    const privateKey1 = new bsv.PrivateKey.fromWIF('cMwKrDrzN5YPRHvPAAn9SfbQcXvARzpdtuufFQZZTBvBaqDETPhP')
+    const privateKey1 = bsv.PrivateKey.fromWIF('cMwKrDrzN5YPRHvPAAn9SfbQcXvARzpdtuufFQZZTBvBaqDETPhP')
     const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1)
     const pkh1 = bsv.crypto.Hash.sha256ripemd160(publicKey1.toBuffer())
-    const privateKey2 = new bsv.PrivateKey.fromRandom('testnet')
+    const privateKey2 = bsv.PrivateKey.fromRandom('testnet')
     const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2)
-    const privateKey3 = new bsv.PrivateKey.fromRandom('testnet')
+    const privateKey3 = bsv.PrivateKey.fromRandom('testnet')
     const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3)
 
     before(() => {
@@ -97,7 +98,7 @@ describe('VerifyError', () => {
     });
 
 
-    const testSplit = (privKey, balance0, balance1, balanceInput0 = balance0, balanceInput1 = balance1, inputlockingScriptASM = undefined, inputAmount = 0) => {
+    const testSplit = (privKey: bsv.PrivateKey, balance0: number, balance1: number, balanceInput0: number = balance0, balanceInput1: number = balance1, inputlockingScriptASM: string | undefined = undefined, inputAmount = 0) => {
       let tx = new bsv.Transaction()
 
       tx.addInput(new bsv.Transaction.Input({
@@ -146,7 +147,7 @@ describe('VerifyError', () => {
       expect(result.error).to.contains("tokenUtxo.scrypt#43");
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
-      expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
+      expect(launch?.configurations[0].program).to.contains("tokenUtxo.scrypt");
     });
 
 
@@ -162,7 +163,7 @@ describe('VerifyError', () => {
 
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
-      expect(launch.configurations[0].program).to.contains("tokenUtxo.scrypt");
+      expect(launch?.configurations[0].program).to.contains("tokenUtxo.scrypt");
     });
 
     //TODO: add exit(true| false) test
@@ -241,7 +242,7 @@ describe('VerifyError', () => {
 
       const launch = readLaunchJson(result.error);
 
-      assert.deepEqual(launch.configurations[0].asmArgs, {
+      assert.deepEqual(launch?.configurations[0].asmArgs, {
         'ASM.equalImpl.x': 'OP_5'
       }
       )
@@ -273,7 +274,7 @@ describe('VerifyError', () => {
 
       const launch = readLaunchJson(result.error);
       expect(result.error).to.contains("mdarray.scrypt#40");
-      assert.deepEqual(launch.configurations[0].pubFuncArgs, [[[3, 1, 2], [4, 5, 5]], [1, 32]])
+      assert.deepEqual(launch?.configurations[0].pubFuncArgs, [[[3, 1, 2], [4, 5, 5]], [1, 32]])
     });
 
     it('LaunchJson should be right with mixed struct', () => {
@@ -299,7 +300,7 @@ describe('VerifyError', () => {
       const launch = readLaunchJson(result.error);
       expect(result.error).to.contains("mdarray.scrypt#90");
 
-      assert.deepEqual(launch.configurations[0].pubFuncArgs as object, [
+      assert.deepEqual(launch?.configurations[0].pubFuncArgs as object, [
         [
           {
             "x": false,
@@ -329,7 +330,7 @@ describe('VerifyError', () => {
       ])
 
 
-      assert.deepEqual(launch.configurations[0].constructorArgs as object, [
+      assert.deepEqual(launch?.configurations[0].constructorArgs as object, [
         [
           [
             [
@@ -415,7 +416,7 @@ describe('VerifyError', () => {
 
       const launch = readLaunchJson(result.error);
 
-      expect(launch.configurations[0].txContext).to.deep.equal(
+      expect(launch?.configurations[0].txContext).to.deep.equal(
         {
           hex: '01000000015884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a40000000000ffffffff010e64030000000000fdde045101402097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c567961007954795479210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce081056795b795b7985615679aa0079610079517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e81517a75615779567956795679567961537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff00517951796151795179970079009f63007952799367007968517a75517a75517a7561527a75517a517951795296a0630079527994527a75517a6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f7754537993527993013051797e527e54797e58797e527e53797e52797e57797e0079517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a756100795779ac517a75517a75517a75517a75517a75517a75517a75517a75517a7561517a756169567961007901687f776100005279517f75007f77007901fd87635379537f75517f7761007901007e81517a7561537a75527a527a5379535479937f75537f77527a75517a67007901fe87635379557f75517f7761007901007e81517a7561537a75527a527a5379555479937f75557f77527a75517a67007901ff87635379597f75517f7761007901007e81517a7561537a75527a527a5379595479937f75597f77527a75517a675379517f75007f7761007901007e81517a7561537a75527a527a5379515479937f75517f77527a75517a6868685179517a75517a75517a75517a7561517a7561007982775179517951947f77815279527951947f755179519351807e00795a7961007958805279610079827700517902fd009f63517951615179517951938000795179827751947f75007f77517a75517a75517a7561517a75675179030000019f6301fd527952615179517951938000795179827751947f75007f77517a75517a75517a75617e517a756751790500000000019f6301fe527954615179517951938000795179827751947f75007f77517a75517a75517a75617e517a75675179090000000000000000019f6301ff527958615179517951938000795179827751947f75007f77517a75517a75517a75617e517a7568686868007953797e517a75517a75517a75617e517a75517a75610079aa5c7961007982775179517958947f7551790128947f77517a75517a7561877777777777777777777777776a010100000000',
           inputIndex: 0,
@@ -448,7 +449,7 @@ describe('VerifyError', () => {
 
       const launch = readLaunchJson(result.error);
 
-      expect(launch.configurations[0].txContext).to.deep.equal(
+      expect(launch?.configurations[0].txContext).to.deep.equal(
         {
           hex: '01000000015884e5db9de218238671572340b207ee85b628074e7e467096c267266baf77a40000000000ffffffff010e64030000000000fdde045101402097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c567961007954795479210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce081056795b795b7985615679aa0079610079517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e81517a75615779567956795679567961537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff00517951796151795179970079009f63007952799367007968517a75517a75517a7561527a75517a517951795296a0630079527994527a75517a6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f7754537993527993013051797e527e54797e58797e527e53797e52797e57797e0079517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a756100795779ac517a75517a75517a75517a75517a75517a75517a75517a75517a7561517a756169567961007901687f776100005279517f75007f77007901fd87635379537f75517f7761007901007e81517a7561537a75527a527a5379535479937f75537f77527a75517a67007901fe87635379557f75517f7761007901007e81517a7561537a75527a527a5379555479937f75557f77527a75517a67007901ff87635379597f75517f7761007901007e81517a7561537a75527a527a5379595479937f75597f77527a75517a675379517f75007f7761007901007e81517a7561537a75527a527a5379515479937f75517f77527a75517a6868685179517a75517a75517a75517a7561517a7561007982775179517951947f77815279527951947f755179519351807e00795a7961007958805279610079827700517902fd009f63517951615179517951938000795179827751947f75007f77517a75517a75517a7561517a75675179030000019f6301fd527952615179517951938000795179827751947f75007f77517a75517a75517a75617e517a756751790500000000019f6301fe527954615179517951938000795179827751947f75007f77517a75517a75517a75617e517a75675179090000000000000000019f6301ff527958615179517951938000795179827751947f75007f77517a75517a75517a75617e517a7568686868007953797e517a75517a75517a75617e517a75517a75610079aa5c7961007982775179517958947f7551790128947f77517a75517a7561877777777777777777777777776a010100000000',
           inputIndex: 0,
@@ -487,7 +488,7 @@ describe('VerifyError', () => {
       expect(result.error).to.contains("statecounter.scrypt#24");
       const launch = readLaunchJson(result.error);
       expect(launch).not.undefined;
-      expect(launch.configurations[0].program).to.contains("statecounter.scrypt");
+      expect(launch?.configurations[0].program).to.contains("statecounter.scrypt");
 
     });
 

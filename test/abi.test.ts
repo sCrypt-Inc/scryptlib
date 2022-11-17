@@ -5,7 +5,7 @@ import { buildContractClass, buildTypeClasses, VerifyResult } from '../src/contr
 import { bsv, toHex, signTx } from '../src/utils';
 import { Bytes, PubKey, Sig, Ripemd160, Sha256, Int } from '../src/scryptTypes';
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+const privateKey = bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
@@ -84,6 +84,7 @@ describe('FunctionCall', () => {
           value: pubkey
         }]
       });
+      console.log("ffff", target.toASM())
     })
 
     describe('toHex() / toString()', () => {

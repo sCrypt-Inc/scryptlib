@@ -72,6 +72,7 @@
     "md5": "^2.2.1",
     "node-fetch": "^3.0.0",
     "patch-package": "^6.4.7",
-    "sourcemap-codec": "^1.4.8"
+    "sourcemap-codec": "^1.4.8",
+    "@types/bsv": "github:sCrypt-Inc/bsv-types"
   }
 }

@@ -43,7 +43,7 @@ function Transaction (serialized) {
   this.outputCallbackMap = new Map()
   this._privateKey = undefined
   this._sigType = undefined
-  this.isSeal = false
+  this.sealed = false
   if (serialized) {
     if (serialized instanceof Transaction) {
       return Transaction.shallowCopy(serialized)
@@ -840,7 +840,7 @@ Transaction.prototype._getInputAmount = function () {
 }
 
 Transaction.prototype._updateChangeOutput = function () {
-  if (this.isSeal) {
+  if (this.sealed) {
     throw new errors.Transaction.TransactionAlreadySealed()
   }
 
@@ -1276,7 +1276,7 @@ Transaction.prototype.seal = function () {
     this.sign(this._privateKey, this._sigType)
   }
 
-  this.isSeal = true
+  this.sealed = true
 
   return this
 }
@@ -1334,6 +1334,10 @@ Transaction.prototype.prevouts = function () {
 
   var buf = writer.toBuffer()
   return buf.toString('hex')
+}
+
+Transaction.prototype.isSealed = function () {
+  return this.sealed
 }
 
 module.exports = Transaction

@@ -7,15 +7,15 @@ const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet')
+const privateKey = bsv.PrivateKey.fromRandom('testnet')
 const publicKey = new PubKey(toHex(privateKey.publicKey))
 const pkh = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKey.publicKey.toBuffer())))
 
-const privateKeyReceiver = new bsv.PrivateKey.fromRandom('testnet')
+const privateKeyReceiver = bsv.PrivateKey.fromRandom('testnet')
 const publicKeyReceiver = new PubKey(toHex(privateKeyReceiver.publicKey))
 const pkhReceiver = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver.publicKey.toBuffer())))
 
-const privateKeyReceiver1 = new bsv.PrivateKey.fromRandom('testnet')
+const privateKeyReceiver1 = bsv.PrivateKey.fromRandom('testnet')
 const publicKeyReceiver1 = new PubKey(toHex(privateKeyReceiver1.publicKey))
 const pkhReceiver1 = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver1.publicKey.toBuffer())))
 
@@ -141,7 +141,7 @@ describe('Coin.test', () => {
 
         it('should fail when sender have not coin', () => {
 
-            const privateKeyFake = new bsv.PrivateKey.fromRandom('testnet')
+            const privateKeyFake = bsv.PrivateKey.fromRandom('testnet')
             const publicKeyFake = new PubKey(toHex(privateKeyFake.publicKey))
             const pkhFake = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyFake.publicKey.toBuffer())))
 
