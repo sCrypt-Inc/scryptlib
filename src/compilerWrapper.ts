@@ -252,7 +252,7 @@ export function doCompileAsync(source: {
   const childProcess = exec(cmd, { cwd: curWorkingDir, timeout, killSignal: 'SIGKILL' },
     (error: Error | null, stdout: string) => {
       if (error) {
-        console.error(`exec error: ${error}`);
+        console.error(`exec error: ${error} stdout: ${stdout}`);
         callback(error, null);
         return;
       }

@@ -1365,6 +1365,7 @@ export function compileContractAsync(file: string, options?: {
 
   return compileAsync({ path: file }, {
     desc: options.desc, outputDir: options.out,
+    sourceMap: options.sourceMap,
     hex: true,
     sourceMap: options.sourceMap,
     cmdPrefix: findCompiler()
