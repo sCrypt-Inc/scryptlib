@@ -467,7 +467,7 @@ export function handleCompilerOutput(
 
     return result;
   } finally {
-    doClean(settings, outputFiles, outputDir, sourcePath);
+    doClean(settings, outputFiles, outputDir);
   }
 }
 
@@ -1075,9 +1075,9 @@ function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettin
 
 
 
-function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
+function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string) {
 
-  if (settings.stdout || settings.outputToFiles) {
+  if (settings.stdout || settings.outputToFiles || settings.sourceMap) {
     return;
   }
 
