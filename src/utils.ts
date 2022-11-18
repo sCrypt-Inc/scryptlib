@@ -1864,11 +1864,11 @@ export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTempl
 /**
  * only used for state contract
  * @param args 
- * @param firstCall 
+ * @param isGenesis 
  * @param finalTypeResolver 
  * @returns 
  */
-export function buildContractState(args: Arguments, firstCall: boolean, finalTypeResolver: TypeResolver): string {
+export function buildContractState(args: Arguments, isGenesis: boolean, finalTypeResolver: TypeResolver): string {
 
   let state_hex = '';
   let state_len = 0;
@@ -1878,8 +1878,8 @@ export function buildContractState(args: Arguments, firstCall: boolean, finalTyp
     throw new Error('no state property found, buildContractState only used for state contract');
   }
 
-  // append firstCall which is a hidden built-in state
-  state_hex += `${serializeSupportedParamType(firstCall)}`;
+  // append isGenesis which is a hidden built-in state
+  state_hex += `${serializeSupportedParamType(isGenesis)}`;
 
   for (const arg of args_) {
     if (arg.type == VariableType.BOOL) { //fixed length
@@ -2621,7 +2621,7 @@ export function parseStateHex(contract: AbstractContract, scriptHex: string): [b
 
   const opcodenum = br.readUInt8();
 
-  const firstCall = opcodenum == 1;
+  const isGenesis = opcodenum == 1;
 
   const stateTemplateArgs: Map<string, string> = new Map();
 
@@ -2642,7 +2642,7 @@ export function parseStateHex(contract: AbstractContract, scriptHex: string): [b
     }
   });
 
-  return [firstCall, contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
+  return [isGenesis, contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
     value: undefined
   }), stateTemplateArgs))];
 }

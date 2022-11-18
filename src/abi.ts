@@ -308,9 +308,9 @@ export class ABICoder {
       switch (version) {
         case 0:
           {
-            const [firstCall, args] = parseStateHex(contract, scriptHex);
+            const [isGenesis, args] = parseStateHex(contract, scriptHex);
             contract.statePropsArgs = args;
-            contract.firstCall = firstCall;
+            contract.isGenesis = isGenesis;
           }
           break;
       }

@@ -76,7 +76,7 @@ export class AbstractContract {
   statePropsArgs: Arguments = [];
   // If true, the contract will read the state from property, if false, the contract will read the state from preimage
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
-  firstCall = true;
+  isGenesis = true;
 
   get lockingScript(): Script {
 
@@ -328,7 +328,7 @@ export class AbstractContract {
   get dataPart(): Script | undefined {
 
     if (AbstractContract.isStateful(this)) {
-      const state = buildContractState(this.statePropsArgs, this.firstCall, this.resolver.resolverType);
+      const state = buildContractState(this.statePropsArgs, this.isGenesis, this.resolver.resolverType);
       return bsv.Script.fromHex(state);
     }
 
@@ -359,9 +359,9 @@ export class AbstractContract {
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
     if (AbstractContract.isStateful(this)) {
-      const [firstCall, args] = parseStateHex(this, this._dataPartInHex);
+      const [isGenesis, args] = parseStateHex(this, this._dataPartInHex);
       this.statePropsArgs = args;
-      this.firstCall = firstCall;
+      this.isGenesis = isGenesis;
     }
   }
 
@@ -566,7 +566,7 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
 
         if (arg) {
           arg.value = value;
-          this.firstCall = false;
+          this.isGenesis = false;
         } else {
           throw new Error(`property ${p.name} does not exists`);
         }
