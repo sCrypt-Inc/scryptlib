@@ -37,7 +37,7 @@ function getLowSPreimage (tx, sigtype, inputIndex, inputLockingScript, inputAmou
       return preimage
     }
 
-    tx.inputs[inputIndex].nLockTime++
+    tx.nLockTime++
   } while (i < Number.MAX_SAFE_INTEGER)
 }
 
@@ -1328,14 +1328,14 @@ Transaction.prototype.seal = function () {
       : Sighash.sighashPreimage(self, options.sigtype, key, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
 
     var sig
-    if (options.priviteKey instanceof PrivateKey) {
+    if (options.privateKey instanceof PrivateKey) {
       sig = Sighash.sign(
         self, options.privateKey, options.sigtype, key,
         inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
       ).toTxFormat().toString('hex')
     }
 
-    var unlockScript = options.callback(self, this.inputs[key].output, preimage, sig)
+    var unlockScript = options.callback(self, self.inputs[key].output, preimage, sig)
 
     self.inputs[key].setScript(unlockScript)
   })
