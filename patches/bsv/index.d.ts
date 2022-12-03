@@ -489,9 +489,9 @@ declare module 'bsv' {
             privateKey?: PrivateKey,
             sigtype?: number,
             isLowS?: boolean
-        }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output, preimage: string, signature: string) => Script)): Transaction;
-        setInputSequence(inputIndex: number, sequence: number): Transaction;
-        setOutput(outputIndex: number, output: Transaction.Output | ((tx: Transaction) => Transaction.Output));
+        }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output, preimage: string, signature: string) => Script)): this;
+        setInputSequence(inputIndex: number, sequence: number): this;
+        setOutput(outputIndex: number, output: Transaction.Output | ((tx: Transaction) => Transaction.Output)): this;
         seal(): void;
         isSealed(): boolean;
         getChangeAmount(): number;
