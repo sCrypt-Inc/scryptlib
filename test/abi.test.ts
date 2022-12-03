@@ -84,7 +84,6 @@ describe('FunctionCall', () => {
           value: pubkey
         }]
       });
-      console.log("ffff", target.toASM())
     })
 
     describe('toHex() / toString()', () => {
