@@ -19,6 +19,7 @@ const _isDev = isDev();
 
 
 function apply(patches) {
+    console.log('patches', patches)
     patches.map(patch => {
         const dest = _isDev ? join(__dirname, '..', 'node_modules', patch) : join(__dirname, '..', '..', patch);
         if (!existsSync(dest)) {
@@ -45,9 +46,10 @@ try {
 
     glob('**/*.js', { cwd: "./patches" }, function (err, patches) {
         apply(patches.slice(1));
-        printFinish();
     });
 
+    apply(["bsv/index.d.ts"]);
+    printFinish();
 } catch (error) {
 
     console.error(error)

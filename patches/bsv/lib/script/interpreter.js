@@ -349,6 +349,16 @@ Interpreter.MAX_SCRIPT_SIZE = Number.MAX_SAFE_INTEGER
 
 Interpreter.MAX_OPCODE_COUNT = Number.MAX_SAFE_INTEGER
 
+Interpreter.DEFAULT_FLAGS =
+  // Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CLEANSTACK | // no longer applies now p2sh is deprecated: cleanstack only applies to p2sh
+  Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES | Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES | // TODO: to be removed after upgrade to bsv 2.0
+  Interpreter.SCRIPT_VERIFY_STRICTENC |
+  Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID | Interpreter.SCRIPT_VERIFY_LOW_S | Interpreter.SCRIPT_VERIFY_NULLFAIL |
+  Interpreter.SCRIPT_VERIFY_DERSIG |
+  Interpreter.SCRIPT_VERIFY_MINIMALDATA | Interpreter.SCRIPT_VERIFY_NULLDUMMY |
+  Interpreter.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
+  Interpreter.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interpreter.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY | Interpreter.SCRIPT_VERIFY_CLEANSTACK
+
 Interpreter.castToBool = function (buf) {
   for (var i = 0; i < buf.length; i++) {
     if (buf[i] !== 0) {

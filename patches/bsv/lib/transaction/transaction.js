@@ -24,6 +24,22 @@ var Output = require('./output')
 var Script = require('../script')
 var PrivateKey = require('../privatekey')
 var BN = require('../crypto/bn')
+var Interpreter = require('../script/interpreter')
+
+function getLowSPreimage (tx, sigtype, inputIndex, inputLockingScript, inputAmount) {
+  var i = 0
+  do {
+    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
+
+    var sighash = Hash.sha256sha256(Buffer.from(preimage, 'hex'))
+
+    if (_.isPositiveNumber(sighash.readUInt8()) && _.isPositiveNumber(sighash.readUInt8(31))) {
+      return preimage
+    }
+
+    tx.inputs[inputIndex].nLockTime++
+  } while (i < Number.MAX_SAFE_INTEGER)
+}
 
 /**
  * Represents a transaction, a set of inputs and outputs to change ownership of tokens
@@ -39,8 +55,8 @@ function Transaction (serialized) {
   this.outputs = []
   this._inputAmount = undefined
   this._outputAmount = undefined
-  this.unlockScriptCallbackMap = new Map()
-  this.outputCallbackMap = new Map()
+  this._inputsMap = new Map()
+  this._outputsMap = new Map()
   this._privateKey = undefined
   this._sigType = undefined
   this.sealed = false
@@ -1218,14 +1234,50 @@ Transaction.prototype.isCoinbase = function () {
 
 /**
  *
- * @param {number} inputIndex
+ * @param {number | object} inputIndex or option
  * @param {Script|(tx, output) => Script} unlockScriptOrCallback  unlockScript or a callback returns unlockScript
  * @returns unlockScript of the special input
  */
-Transaction.prototype.setInputScript = function (inputIndex, unlockScriptOrCallback) {
+Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback) {
+  var inputIndex = 0
+  var privateKey
+  var sigtype
+  var sig
+  var isLowS = false
+  if (typeof options === 'number') {
+    inputIndex = options
+    sigtype = Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
+  } else {
+    inputIndex = options.inputIndex || 0
+    privateKey = options.privateKey
+    sigtype = options.sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+    isLowS = options.isLowS || false
+  }
+
   if (unlockScriptOrCallback instanceof Function) {
-    this.unlockScriptCallbackMap.set(inputIndex, unlockScriptOrCallback)
-    this.inputs[inputIndex].setScript(unlockScriptOrCallback(this, this.inputs[inputIndex].output))
+    var inputLockingScript = this.inputs[inputIndex].output.script
+    var inputAmount = this.inputs[inputIndex].output.satoshis
+    var preimage = isLowS
+      ? getLowSPreimage(this, sigtype, inputIndex, inputLockingScript, inputAmount)
+      : Sighash.sighashPreimage(this, sigtype, inputIndex, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
+
+    if (privateKey instanceof PrivateKey) {
+      sig = Sighash.sign(
+        this, privateKey, sigtype, inputIndex,
+        inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
+      ).toTxFormat().toString('hex')
+    }
+
+    var unlockScript = unlockScriptOrCallback(this, this.inputs[inputIndex].output, preimage, sig)
+
+    this._inputsMap.set(inputIndex, {
+      sigtype,
+      privateKey,
+      isLowS,
+      callback: unlockScriptOrCallback
+    })
+
+    this.inputs[inputIndex].setScript(unlockScript)
   } else {
     this.inputs[inputIndex].setScript(unlockScriptOrCallback)
   }
@@ -1247,7 +1299,7 @@ Transaction.prototype.setInputSequence = function (inputIndex, sequence) {
  */
 Transaction.prototype.setOutput = function (outputIndex, outputOrcb) {
   if (outputOrcb instanceof Function) {
-    this.outputCallbackMap.set(outputIndex, outputOrcb)
+    this._outputsMap.set(outputIndex, outputOrcb)
     this.outputs[outputIndex] = outputOrcb(this)
   } else {
     this.outputs[outputIndex] = outputOrcb
@@ -1262,14 +1314,30 @@ Transaction.prototype.setOutput = function (outputIndex, outputOrcb) {
  * other attributes of the transaction cannot be modified
  */
 Transaction.prototype.seal = function () {
-  const self = this
+  var self = this
 
-  this.outputCallbackMap.forEach(function (outputCallback, key) {
-    self.outputs[key] = outputCallback(self)
+  this._outputsMap.forEach(function (callback, key) {
+    self.outputs[key] = callback(self)
   })
 
-  this.unlockScriptCallbackMap.forEach(function (unlockScriptCallback, key) {
-    self.inputs[key].setScript(unlockScriptCallback(self, self.inputs[key].output))
+  this._inputsMap.forEach(function (options, key) {
+    var inputLockingScript = self.inputs[key].output.script
+    var inputAmount = self.inputs[key].output.satoshis
+    var preimage = options.isLowS
+      ? getLowSPreimage(self, options.sigtype, key, inputLockingScript, inputAmount)
+      : Sighash.sighashPreimage(self, options.sigtype, key, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
+
+    var sig
+    if (options.priviteKey instanceof PrivateKey) {
+      sig = Sighash.sign(
+        self, options.privateKey, options.sigtype, key,
+        inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
+      ).toTxFormat().toString('hex')
+    }
+
+    var unlockScript = options.callback(self, this.inputs[key].output, preimage, sig)
+
+    self.inputs[key].setScript(unlockScript)
   })
 
   if (this._privateKey) {
@@ -1312,7 +1380,7 @@ Transaction.prototype.getEstimateFee = function () {
  * @returns true or false
  */
 Transaction.prototype.checkFeeRate = function (feePerKb) {
-  const fee = this._getUnspentValue()
+  var fee = this._getUnspentValue()
 
   var estimatedSize = this._estimateSize()
   var expectedRate = (feePerKb || this._feePerKb || Transaction.FEE_PER_KB) / 1000
