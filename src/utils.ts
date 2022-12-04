@@ -1406,8 +1406,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
 
     const tx = txContext.tx || '';
     const inputIndex = txContext.inputIndex || 0;
-    const inputSatoshis = txContext.inputSatoshis || 0;
+
     if (tx) {
+      const inputSatoshis = txContext.inputSatoshis || tx.getInputAmount(inputIndex);
       Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
     }
     if (txContext.opReturn) {

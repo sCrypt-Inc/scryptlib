@@ -344,7 +344,10 @@ declare module 'bsv' {
             readonly satoshis: number;
             readonly satoshisBN: crypto.BN;
             spentTxId: string | null;
-            constructor(data: object);
+            constructor(data: {
+                script: Script,
+                satoshis: number
+            });
 
             setScript(script: Script | string | Buffer): this;
             inspect(): string;
@@ -362,12 +365,14 @@ declare module 'bsv' {
             constructor(params: object);
             isValidSignature(tx: Transaction, sig: any): boolean;
             setScript(script: Script): this;
+            getSignatures(tx: Transaction, privateKey: PrivateKey, inputIndex: number, sigtype?: number): any;
+            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean): any;
         }
 
 
         namespace Input {
             class PublicKeyHash extends Input {
-            
+
             }
         }
 
@@ -464,7 +469,7 @@ declare module 'bsv' {
         getLockTime(): Date | number;
         setLockTime(t: number): void;
 
-        verify(): string | boolean;
+        verify(): string | true;
         isCoinbase(): boolean;
 
         enableRBF(): this;
@@ -489,15 +494,30 @@ declare module 'bsv' {
             privateKey?: PrivateKey,
             sigtype?: number,
             isLowS?: boolean
-        }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output, preimage: string, signature: string) => Script)): this;
+        }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output) => Script)): this;
         setInputSequence(inputIndex: number, sequence: number): this;
         setOutput(outputIndex: number, output: Transaction.Output | ((tx: Transaction) => Transaction.Output)): this;
-        seal(): void;
+        seal(): this;
         isSealed(): boolean;
         getChangeAmount(): number;
         getEstimateFee(): number;
         checkFeeRate(feePerKb?: number): boolean;
         prevouts(): string;
+        getSignature(inputIndex: number, privateKey?: PrivateKey, sigtype?: number): string;
+        getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): string;
+        addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
+        addDummyInput(script: Script, satoshis: number): this;
+        verifyInput(inputIndex: number, cb?: (execution: {
+            success: boolean,
+            error: string,
+            failedAt: any
+        }) => string): {
+            success: boolean,
+            error: string,
+            failedAt: any
+        };
+        getInputAmount(inputIndex: number): number;
+        getOutputAmount(outputIndex: number): number;
     }
 
     export class ECIES {

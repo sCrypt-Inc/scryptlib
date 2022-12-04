@@ -131,7 +131,7 @@ export class FunctionCall {
   }
 
   verify(txContext?: TxContext): VerifyResult {
-    const result = this.contract.run_verify(this.unlockingScript.toASM() || '', txContext);
+    const result = this.contract.run_verify(this.unlockingScript, txContext);
 
     if (!result.success) {
       const debugUrl = this.genLaunchConfig(txContext);

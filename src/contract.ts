@@ -3,15 +3,18 @@ import { ContractEntity, getFullFilePath, loadSourceMapfromDesc, OpCode, StaticE
 import {
   ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
   Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver,
-  StructEntity, ABIEntity, CompileResult, AliasEntity, buildContractState, checkSupportedParamType, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1,
+  StructEntity, ABIEntity, CompileResult, AliasEntity, buildContractState, checkSupportedParamType, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1
 } from './internal';
 import { HashedMap, HashedSet, Library, ScryptTypeResolver, SymbolType, TypeInfo } from './scryptTypes';
 import { basename, dirname } from 'path';
 
 
 export interface TxContext {
-  tx?: any;
+  tx?: bsv.Transaction;
   inputIndex?: number;
+  /**
+   * @deprecated no need any more
+   */
   inputSatoshis?: number;
   opReturn?: string;
   opReturnHex?: string;
@@ -70,7 +73,7 @@ export class AbstractContract {
   [key: string]: any;
 
   scriptedConstructor: FunctionCall;
-  calls: Map<string, FunctionCall> = new Map();
+  private calledPubFunctions: Array<FunctionCall> = [];
   hexTemplateInlineASM: Map<string, string> = new Map();
   hexTemplateArgs: Map<string, string> = new Map();
   statePropsArgs: Arguments = [];
@@ -212,14 +215,19 @@ export class AbstractContract {
     return this.codePart.add(bsv.Script.fromHex(buildContractState(newState, false, this.resolver.resolverType)));
   }
 
-  run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
+  run_verify(unlockingScript: bsv.Script | string, txContext?: TxContext): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
+    let us;
+    if (typeof unlockingScript === 'string') {
+      us = unlockingScript.trim() ? bsv.Script.fromASM(unlockingScript.trim()) : new bsv.Script('');
+    } else {
+      us = unlockingScript ? unlockingScript : new bsv.Script('');
+    }
 
-    const us = unlockingScriptASM.trim() ? bsv.Script.fromASM(unlockingScriptASM.trim()) : new bsv.Script('');
     const ls = bsv.Script.fromHex(this.lockingScript.toHex());
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
-    const inputSatoshis = txCtx.inputSatoshis || 0;
+    const inputSatoshis = txCtx.inputSatoshis || (tx ? tx.getInputAmount(inputIndex) : 0);
 
 
     bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
@@ -228,14 +236,14 @@ export class AbstractContract {
 
     const bsi = new bsv.Script.Interpreter();
 
-    let lastfExecs: any = {};
+    let failedAt: any = {};
 
     bsi.stepListener = function (step: any) {
       if (step.fExec || (bsv.Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= bsv.Opcode.OP_ENDIF)) {
         if ((bsv.Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= bsv.Opcode.OP_ENDIF) || step.opcode.toNumber() === bsv.Opcode.OP_RETURN) /**Opreturn */ {
-          lastfExecs.opcode = step.opcode;
+          failedAt.opcode = step.opcode;
         } else {
-          lastfExecs = step;
+          failedAt = step;
         }
       }
     };
@@ -248,11 +256,7 @@ export class AbstractContract {
       };
     }
 
-
-
-    const failedOpCode: number = lastfExecs.opcode.toNumber();
-
-    if ([bsv.Opcode.OP_CHECKSIG, bsv.Opcode.OP_CHECKSIGVERIFY, bsv.Opcode.OP_CHECKMULTISIG, bsv.Opcode.OP_CHECKMULTISIGVERIFY].includes(failedOpCode)) {
+    if (bsi.errstr.indexOf('SCRIPT_ERR_NULLFAIL') > -1) {
       if (!txCtx) {
         throw new Error('should provide txContext when verify');
       } if (!tx) {
@@ -261,7 +265,24 @@ export class AbstractContract {
     }
 
 
-    let error = `VerifyError: ${bsi.errstr}, fails at ${new bsv.Opcode(failedOpCode)}\n`;
+    failedAt.opcode = failedAt.opcode.toNumber();
+
+    return {
+      success: result,
+      error: this.fmtError({
+        error: bsi.errstr,
+        failedAt
+      })
+    };
+  }
+
+  private fmtError(err: {
+    error: string,
+    failedAt: any,
+  }): string {
+    const failedOpCode: number = err.failedAt.opcode;
+
+    let error = `VerifyError: ${err.error}, fails at ${new bsv.Opcode(failedOpCode)}\n`;
 
     if (this.sourceMapFile) {
       const sourceMapFilePath = uri2path(this.sourceMapFile);
@@ -274,12 +295,12 @@ export class AbstractContract {
 
       const sources = sourceMap.sources.map(source => getFullFilePath(source, srcDir, sourceFileName));
 
-      const pos = findSrcInfoV2(lastfExecs.pc, sourceMap);
+      const pos = findSrcInfoV2(err.failedAt.pc, sourceMap);
 
       if (pos && sources[pos[1]]) {
-        error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(sources[pos[1]])}#${pos[2]})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
+        error = `VerifyError: ${err.error} \n\t[Go to Source](${path2uri(sources[pos[1]])}#${pos[2]})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
       }
-    } else if (this.version === 8) {
+    } else if (this.version <= 8) {
 
       const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
 
@@ -289,7 +310,7 @@ export class AbstractContract {
       if (sourceMap.length > 0) {
         // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
 
-        const opcodeIndex = lastfExecs.pc;
+        const opcodeIndex = err.failedAt.pc;
 
 
         if (sourceMap[opcodeIndex]) {
@@ -307,17 +328,39 @@ export class AbstractContract {
 
           // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
           if (opcode && opcode.pos) {
-            error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
+            error = `VerifyError: ${err.error} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
           }
         }
       }
     }
-
-    return {
-      success: result,
-      error: error
-    };
+    return error;
   }
+
+
+  public genLaunchConfig(err: {
+    error: string,
+    failedAt: any,
+  }, tx: bsv.Transaction, index?: number): string {
+
+    let error = this.fmtError(err);
+
+    const lastCalledPubFunction = this.lastCalledPubFunction();
+
+    const inputIndex = index || 0;
+
+    if (lastCalledPubFunction) {
+      const debugUrl = lastCalledPubFunction.genLaunchConfig({
+        tx,
+        inputIndex
+      });
+      error = error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
+    }
+
+    return error;
+
+  }
+
+
 
   private _dataPartInHex: string;
 
@@ -389,11 +432,25 @@ export class AbstractContract {
       return this.scriptedConstructor.args;
     }
 
-    if (this.calls.has(pubFuncName)) {
-      return this.calls.get(pubFuncName).args;
+    for (let i = this.calledPubFunctions.length - 1; i >= 0; i--) {
+      const called = this.calledPubFunctions[i];
+      if (called.methodName === pubFuncName) {
+        return called.args;
+      }
     }
 
     return [];
+  }
+
+  private lastCalledPubFunction(): FunctionCall | undefined {
+
+    const index = this.calledPubFunctions.length - 1;
+
+    if (index < 0) {
+      return undefined;
+    }
+
+    return this.calledPubFunctions[index];
   }
 
   public ctorArgs(): Arguments {
@@ -540,7 +597,7 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
     }
     ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
       const call = ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
-      this.calls.set(entity.name, call);
+      this.calledPubFunctions.push(call);
       return call;
     };
   });

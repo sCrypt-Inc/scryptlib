@@ -24,23 +24,6 @@ var Output = require('./output')
 var Script = require('../script')
 var PrivateKey = require('../privatekey')
 var BN = require('../crypto/bn')
-var Interpreter = require('../script/interpreter')
-
-function getLowSPreimage (tx, sigtype, inputIndex, inputLockingScript, inputAmount) {
-  var i = 0
-  do {
-    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
-
-    var sighash = Hash.sha256sha256(Buffer.from(preimage, 'hex'))
-
-    if (_.isPositiveNumber(sighash.readUInt8()) && _.isPositiveNumber(sighash.readUInt8(31))) {
-      return preimage
-    }
-
-    tx.nLockTime++
-  } while (i < Number.MAX_SAFE_INTEGER)
-}
-
 /**
  * Represents a transaction, a set of inputs and outputs to change ownership of tokens
  *
@@ -57,6 +40,8 @@ function Transaction (serialized) {
   this._outputAmount = undefined
   this._inputsMap = new Map()
   this._outputsMap = new Map()
+  this._preimagesMap = new Map()
+  this._signaturesMap = new Map()
   this._privateKey = undefined
   this._sigType = undefined
   this.sealed = false
@@ -1165,7 +1150,7 @@ Transaction.prototype.verifySignature = function (sig, pubkey, nin, subscript, s
  * describing the error. This function contains the same logic as
  * CheckTransaction in bitcoin core.
  */
-Transaction.prototype.verify = function () {
+Transaction.prototype.verify = function (notVerifyInput) {
   // Basic checks that don't depend on any context
   if (this.inputs.length === 0) {
     return 'transaction txins empty'
@@ -1220,6 +1205,13 @@ Transaction.prototype.verify = function () {
       if (this.inputs[i].isNull()) {
         return 'transaction input ' + i + ' has null input'
       }
+
+      if (!notVerifyInput) {
+        var res = this.inputs[i].verify(this, i)
+        if (!res.success) {
+          return 'transaction input ' + i + ' VerifyError: ' + res.error
+        }
+      }
     }
   }
   return true
@@ -1242,7 +1234,6 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
   var inputIndex = 0
   var privateKey
   var sigtype
-  var sig
   var isLowS = false
   if (typeof options === 'number') {
     inputIndex = options
@@ -1255,20 +1246,17 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
   }
 
   if (unlockScriptOrCallback instanceof Function) {
-    var inputLockingScript = this.inputs[inputIndex].output.script
-    var inputAmount = this.inputs[inputIndex].output.satoshis
-    var preimage = isLowS
-      ? getLowSPreimage(this, sigtype, inputIndex, inputLockingScript, inputAmount)
-      : Sighash.sighashPreimage(this, sigtype, inputIndex, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
+    var outputInPrevTx = this.inputs[inputIndex].output
+
+    var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, options.sigtype, isLowS)
+    this._preimagesMap.set(inputIndex, preimage)
 
     if (privateKey instanceof PrivateKey) {
-      sig = Sighash.sign(
-        this, privateKey, sigtype, inputIndex,
-        inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
-      ).toTxFormat().toString('hex')
+      var sig = this.inputs[inputIndex].getSignatures(this, privateKey, inputIndex, options.sigtype)[0]
+      this._signaturesMap.set(inputIndex, sig)
     }
 
-    var unlockScript = unlockScriptOrCallback(this, this.inputs[inputIndex].output, preimage, sig)
+    var unlockScript = unlockScriptOrCallback(this, outputInPrevTx)
 
     this._inputsMap.set(inputIndex, {
       sigtype,
@@ -1321,21 +1309,23 @@ Transaction.prototype.seal = function () {
   })
 
   this._inputsMap.forEach(function (options, key) {
-    var inputLockingScript = self.inputs[key].output.script
-    var inputAmount = self.inputs[key].output.satoshis
-    var preimage = options.isLowS
-      ? getLowSPreimage(self, options.sigtype, key, inputLockingScript, inputAmount)
-      : Sighash.sighashPreimage(self, options.sigtype, key, inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS).toString('hex')
+    var outputInPrevTx = self.inputs[key].output
 
-    var sig
+    var preimage = self.inputs[key].getPreimage(self, key, options.sigtype, options.isLowS)
+    self._preimagesMap.set(key, preimage)
+
     if (options.privateKey instanceof PrivateKey) {
-      sig = Sighash.sign(
-        self, options.privateKey, options.sigtype, key,
-        inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
-      ).toTxFormat().toString('hex')
+      // var sig = Sighash.sign(
+      //   self, options.privateKey, options.sigtype, key,
+      //   inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
+      // ).toTxFormat().toString('hex')
+
+      var sig = self.inputs[key].getSignatures(self, options.privateKey, key, options.sigtype)[0]
+
+      self._signaturesMap.set(key, sig)
     }
 
-    var unlockScript = options.callback(self, self.inputs[key].output, preimage, sig)
+    var unlockScript = options.callback(self, outputInPrevTx)
 
     self.inputs[key].setScript(unlockScript)
   })
@@ -1404,8 +1394,126 @@ Transaction.prototype.prevouts = function () {
   return buf.toString('hex')
 }
 
+/**
+ *
+ * @returns if the transaction is sealed
+ */
 Transaction.prototype.isSealed = function () {
   return this.sealed
+}
+
+Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
+  $.checkArgumentType(inputIndex, 'number', 'inputIndex')
+  var cached = this._preimagesMap.get(inputIndex || 0)
+
+  if (cached) {
+    return cached.toString('hex')
+  }
+
+  sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+
+  isLowS = isLowS || false
+
+  inputIndex = inputIndex || 0
+
+  var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS)
+
+  this._preimagesMap.set(inputIndex, preimage)
+
+  return preimage.toString('hex')
+}
+
+Transaction.prototype.getSignature = function (inputIndex, privateKey, sigtype) {
+  $.checkArgumentType(inputIndex, 'number', 'inputIndex')
+  var cached = this._signaturesMap.get(inputIndex || 0)
+
+  if (cached) {
+    return cached.signature.toTxFormat().toString('hex')
+  }
+
+  sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+  var sig = this.inputs[inputIndex].getSignatures(this, privateKey, inputIndex, sigtype)[0]
+
+  return sig.signature.toTxFormat().toString('hex')
+}
+
+Transaction.prototype.addInputFromPrevTx = function (prevTx, outputIndex) {
+  $.checkArgumentType(prevTx, Transaction, 'prevTx')
+
+  var outputIdx = outputIndex || 0
+
+  const output = prevTx.outputs[outputIdx]
+
+  if (output.script.isPublicKeyHashOut()) {
+    return this.addInput(new PublicKeyHashInput({
+      prevTxId: prevTx.id,
+      outputIndex: outputIdx,
+      script: new Script(''), // placeholder
+      output: output
+    }))
+  } else {
+    return this.addInput(new Input({
+      prevTxId: prevTx.id,
+      outputIndex: outputIdx,
+      script: new Script(''), // placeholder
+      output: output
+    }))
+  }
+}
+
+Transaction.prototype.addDummyInput = function (script, satoshis) {
+  $.checkArgumentType(script, Script, 'script')
+  $.checkArgumentType(satoshis, 'number', 'satoshis')
+
+  return this.addInput(new Input({
+    prevTxId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
+    outputIndex: 0,
+    script: new Script(''), // placeholder
+    output: new Output({
+      script: script,
+      satoshis: satoshis
+    })
+  }))
+}
+
+Transaction.prototype.verifyInput = function (inputIndex, cb) {
+  $.checkArgumentType(inputIndex, 'number', 'inputIndex')
+
+  if (!this.inputs[inputIndex]) {
+    throw new errors.Transaction.Input.MissingInput()
+  }
+
+  var res = this.inputs[inputIndex].verify(this, inputIndex)
+
+  if (cb) {
+    res.error = cb(res) || res.error
+    return {
+      success: res.success,
+      error: res.error
+    }
+  }
+
+  return res
+}
+
+Transaction.prototype.getInputAmount = function (inputIndex) {
+  $.checkArgumentType(inputIndex, 'number', 'inputIndex')
+
+  if (!this.inputs[inputIndex]) {
+    throw new errors.Transaction.Input.MissingInput()
+  }
+
+  return this.inputs[inputIndex].output.satoshis
+}
+
+Transaction.prototype.getOutputAmount = function (outputIndex) {
+  $.checkArgumentType(outputIndex, 'number', 'outputIndex')
+
+  if (!this.outputs[outputIndex]) {
+    throw new errors.Transaction.MissingOutput()
+  }
+
+  return this.outputs[outputIndex].satoshis
 }
 
 module.exports = Transaction
