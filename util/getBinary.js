@@ -21,9 +21,9 @@ function safeCompilerVersion(cmd) {
 const getBinary = async (version) => {
   let FILENAME = "Windows.exe";
 
-  version = version || ''
+  version = version || DEFAULT_COMPILER_VERSION
 
-  if (version.length === 0) {
+  if (version === "latest") {
     const fromAPI = await fetch('https://api.github.com/repos/scrypt-inc/compiler_dist/releases');
     const res = await fromAPI.json();
 

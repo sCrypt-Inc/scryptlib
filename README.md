@@ -64,6 +64,8 @@ There are three ways to generate this file (named as `xxx_desc.json`):
 ```sh
   # install compiler binary
   npx scryptlib download
+  # the latest compiler may be incompatible with the current scryptlib
+  npx scryptlib download latest
   # compiling contract
   npx scryptlib your_directory/your_scrypt.scrypt
 ```
