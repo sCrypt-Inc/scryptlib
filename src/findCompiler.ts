@@ -128,5 +128,4 @@ export function findCompiler(): string | undefined {
 
   console.info(`${chalk.grey('•')}`, `Install ${chalk.bold('sCrypt IDE')} at vscode extension marketplace: ${chalk.blue.bold('https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt')}`);
 
-  exit(-1);
 }
