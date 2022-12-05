@@ -4,51 +4,36 @@ const fs = require('fs');
 const stream = require('stream');
 const util = require('util');
 const path = require('path');
-var child_process_1 = require("child_process");
 const chalk = require("chalk");
-const { exit } = require('process');
+const { findCompiler, compilerVersion, getPlatformScryptc } = require('../dist');
 
-const DEFAULT_COMPILER_VERSION = '1.17.3';
+const DEFAULT_COMPILER_VERSION = '1.19.0';
 
-function getPlatformScryptc() {
-  switch (os.platform()) {
-    case 'win32':
-      return 'compiler/scryptc/win32/scryptc.exe';
-    case 'linux':
-      return 'compiler/scryptc/linux/scryptc';
-    case 'darwin':
-      return 'compiler/scryptc/mac/scryptc';
-    default:
-      throw "sCrypt doesn't support " + os.platform();
-  }
-}
-
-function compilerVersion(cwd) {
+function safeCompilerVersion(cmd) {
   try {
-    var text = child_process_1.execSync(cwd + " version").toString();
-    return /Version:\s*([^\s]+)\s*/.exec(text)[1];
-  }
-  catch (e) {
-    throw new Error("compilerVersion fail when run: " + cwd + " version");
+    return compilerVersion(cmd)
+  } catch (error) {
+    return '0.0.0';
   }
 }
 
 
-const getBinary = async () => {
+const getBinary = async (version) => {
   let FILENAME = "Windows.exe";
-  let VERSION = process.argv.slice(3);
 
-  if (VERSION.length === 0) {
+  version = version || ''
+
+  if (version.length === 0) {
     const fromAPI = await fetch('https://api.github.com/repos/scrypt-inc/compiler_dist/releases');
     const res = await fromAPI.json();
 
     if (res && res[0] && res[0].tag_name) {
-      VERSION = res[0].tag_name.substring(1);
+      version = res[0].tag_name.substring(1);
     } else {
-      console.error(`fetch latest compiler version failed, using default compiler version: ${DEFAULT_COMPILER_VERSION}`, res);
-      VERSION = DEFAULT_COMPILER_VERSION
+      console.info(`${chalk.green.bold(`
+${chalk.grey.bold("x")}`)}`, `fetch latest compiler version failed, using default compiler version: ${DEFAULT_COMPILER_VERSION}`);
+      version = DEFAULT_COMPILER_VERSION
     }
-
   }
 
   if (os.platform() === 'linux') {
@@ -57,8 +42,17 @@ const getBinary = async () => {
     FILENAME = "macOS";
   }
 
+  const compilerPath = findCompiler();
+
+  if (compilerPath && safeCompilerVersion(compilerPath).startsWith(version)) {
+    console.log(`${chalk.green.bold(`
+${chalk.green.bold("✔")}`)}`, `${chalk.green.bold(`A latest scryptc compiler found at: ${compilerPath}`)}`);
+    return
+  }
+
+
   const streamPipeline = util.promisify(stream.pipeline);
-  const urlCompiler = `https://github.com/sCrypt-Inc/compiler_dist/releases/download/v${VERSION}/scryptc-${VERSION}-${FILENAME}`
+  const urlCompiler = `https://github.com/sCrypt-Inc/compiler_dist/releases/download/v${version}/scryptc-${version}-${FILENAME}`
   const filePathCompiler = path.join(__dirname, '..', getPlatformScryptc());
   const dirCompiler = path.dirname(filePathCompiler);
 
@@ -66,17 +60,26 @@ const getBinary = async () => {
     fs.mkdirSync(dirCompiler, { recursive: true });
   }
 
-  console.log(`${chalk.yellow(`Downloading compiler ${urlCompiler} ...`)}`);
+  console.info(`${chalk.yellow.bold(`
+${chalk.grey("•")}`, `Downloading scrypt compiler ${urlCompiler} ...`)}`);
 
   const fromRelease = await fetch(urlCompiler);
 
   if (!fromRelease.ok) {
-    console.log(`⛔️ ${chalk.red('Download Unsuccesful:')} ${fromRelease.statusText}`);
+    console.log(`⛔️ ${chalk.bgRed('Download Unsuccesful:')} ${fromRelease.statusText}`);
   } else {
     await streamPipeline(fromRelease.body, fs.createWriteStream(filePathCompiler));
     fs.chmodSync(filePathCompiler, '755');
-    console.log(`Download Successful, path: ${filePathCompiler}`);
-    console.log(`Compiler vesion: ${chalk.green.bold(compilerVersion(filePathCompiler))} ${chalk.green("✔")}`);
+    console.info(`${chalk.green.bold(`
+${chalk.green("✔")}`)}`, chalk.green.bold(`Download Successful.`));
+
+
+    console.info(`${chalk.yellow.bold(`
+${chalk.grey("•")}`, `Compiler file path: ${filePathCompiler}`)}`);
+
+    console.info(`${chalk.yellow.bold(`
+${chalk.grey("•")}`, `Compiler vesion: ${safeCompilerVersion(filePathCompiler)}`)}`);
+
   }
 }
 
@@ -84,4 +87,4 @@ if (require.main === module) {
   getBinary();
 }
 
-module.exports = getBinary;
+module.exports = { getBinary, safeCompilerVersion };

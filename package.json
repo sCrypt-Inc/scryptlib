@@ -22,8 +22,7 @@
     "td": "mocha -r ts-node/register 'test/**/*.test.ts' --timeout 600000 -g '' ",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "husky install && npm run compile",
-    "postinstall": "npm run patch",
-    "patch": "node patches/applyPatch.js",
+    "postinstall": "node ./postinstall.js",
     "publishcheck": "sh ./publishcheck.sh",
     "prepublishOnly": "npm run publishcheck && npm run lint && npm run compile",
     "getBinary": "node ./util/getBinary.js",
@@ -73,6 +72,7 @@
     "node-fetch": "^3.0.0",
     "patch-package": "^6.4.7",
     "rimraf": "^3.0.2",
-    "sourcemap-codec": "^1.4.8"
+    "sourcemap-codec": "^1.4.8",
+    "yargs": "^17.6.2"
   }
 }
