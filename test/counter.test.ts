@@ -32,7 +32,7 @@ describe('test.Counter', () => {
         expect(callTx.verify()).to.be.true
 
         // just verify the contract inputs
-        expect(callTx.verifyInput(0).success).to.true
+        expect(callTx.verifyInputScript(0).success).to.true
 
 
         let callTx1 = new bsv.Transaction()
@@ -53,7 +53,7 @@ describe('test.Counter', () => {
         expect(callTx1.verify()).to.be.true
 
         // just verify the contract inputs
-        expect(callTx1.verifyInput(0).success).to.true
+        expect(callTx1.verifyInputScript(0).success).to.true
 
 
     })
@@ -87,7 +87,7 @@ describe('test.Counter', () => {
         expect(callTx.verify()).to.be.eq('transaction input 0 VerifyError: SCRIPT_ERR_EVAL_FALSE_IN_STACK')
 
         // just verify the contract inputs
-        const result = callTx.verifyInput(0)
+        const result = callTx.verifyInputScript(0)
         expect(result).to.deep.eq({
             success: false,
             error: "SCRIPT_ERR_EVAL_FALSE_IN_STACK",
