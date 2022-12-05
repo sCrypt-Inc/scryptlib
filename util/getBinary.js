@@ -31,7 +31,7 @@ const getBinary = async (version) => {
       version = res[0].tag_name.substring(1);
     } else {
       console.info(`${chalk.green.bold(`
-${chalk.grey.bold("x")}`)}`, `fetch latest compiler version failed, using default compiler version: ${DEFAULT_COMPILER_VERSION}`);
+${chalk.grey.bold("x")}`)}`, `fetch latest sCrypt compiler version failed, using default version: ${DEFAULT_COMPILER_VERSION}`);
       version = DEFAULT_COMPILER_VERSION
     }
   }
@@ -46,7 +46,7 @@ ${chalk.grey.bold("x")}`)}`, `fetch latest compiler version failed, using defaul
 
   if (compilerPath && safeCompilerVersion(compilerPath).startsWith(version)) {
     console.log(`${chalk.green.bold(`
-${chalk.green.bold("✔")}`)}`, `${chalk.green.bold(`A latest scryptc compiler found at: ${compilerPath}`)}`);
+${chalk.green.bold("✔")}`)}`, `${chalk.green.bold(`A latest sCrypt compiler found at: ${compilerPath}`)}`);
     return
   }
 
@@ -61,7 +61,7 @@ ${chalk.green.bold("✔")}`)}`, `${chalk.green.bold(`A latest scryptc compiler f
   }
 
   console.info(`${chalk.yellow.bold(`
-${chalk.grey("•")}`, `Downloading scrypt compiler ${urlCompiler} ...`)}`);
+${chalk.grey("•")}`, `Downloading sCrypt compiler ${urlCompiler} ...`)}`);
 
   const fromRelease = await fetch(urlCompiler);
 
