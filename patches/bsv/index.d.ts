@@ -507,11 +507,7 @@ declare module 'bsv' {
         getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): string;
         addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
         addDummyInput(script: Script, satoshis: number): this;
-        verifyInput(inputIndex: number, cb?: (execution: {
-            success: boolean,
-            error: string,
-            failedAt: any
-        }) => string): {
+        verifyInput(inputIndex: number): {
             success: boolean,
             error: string,
             failedAt: any

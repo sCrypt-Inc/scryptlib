@@ -1476,24 +1476,14 @@ Transaction.prototype.addDummyInput = function (script, satoshis) {
   }))
 }
 
-Transaction.prototype.verifyInput = function (inputIndex, cb) {
+Transaction.prototype.verifyInput = function (inputIndex) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
 
   if (!this.inputs[inputIndex]) {
     throw new errors.Transaction.Input.MissingInput()
   }
 
-  var res = this.inputs[inputIndex].verify(this, inputIndex)
-
-  if (cb) {
-    res.error = cb(res) || res.error
-    return {
-      success: res.success,
-      error: res.error
-    }
-  }
-
-  return res
+  return this.inputs[inputIndex].verify(this, inputIndex)
 }
 
 Transaction.prototype.getInputAmount = function (inputIndex) {
