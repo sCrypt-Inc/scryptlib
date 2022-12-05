@@ -1476,7 +1476,7 @@ Transaction.prototype.addDummyInput = function (script, satoshis) {
   }))
 }
 
-Transaction.prototype.verifyInput = function (inputIndex) {
+Transaction.prototype.verifyInputScript = function (inputIndex) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
 
   if (!this.inputs[inputIndex]) {
