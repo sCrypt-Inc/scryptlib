@@ -384,6 +384,7 @@ export function handleCompilerOutput(
     const result: CompileResult = new CompileResult([], []);
     result.compilerVersion = compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler());
     result.md5 = md5;
+    result.buildType = settings.buildType || BuildType.Debug;
     if (output.startsWith('Error:') || output.startsWith('Warning:')) {
       Object.assign(result, getErrorsAndWarnings(output, srcDir, sourceFileName));
 
