@@ -14,6 +14,7 @@ var TransactionSignature = require('../signature')
 var Hash = require('../../crypto/hash')
 var Interpreter = require('../../script/interpreter')
 var Opcode = require('../../opcode')
+const PrivateKey = require('../../privatekey')
 
 var MAXINT = 0xffffffff // Math.pow(2, 32) - 1;
 var DEFAULT_RBF_SEQNUMBER = MAXINT - 2
@@ -164,22 +165,43 @@ Input.prototype.setScript = function (script) {
  * Retrieve signatures for the provided PrivateKey.
  *
  * @param {Transaction} transaction - the transaction to be signed
- * @param {PrivateKey} privateKey - the private key to use when signing
+ * @param {PrivateKey | Array} privateKeys - the private key to use when signing
  * @param {number} inputIndex - the index of this input in the provided transaction
  * @param {number} sigType - defaults to Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
  * @abstract
  */
-Input.prototype.getSignatures = function (transaction, privateKey, inputIndex, sigtype) {
+Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, sigtype) {
   $.checkState(this.output instanceof Output)
   sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
-  return [new TransactionSignature({
-    publicKey: privateKey.publicKey,
-    prevTxId: this.prevTxId,
-    outputIndex: this.outputIndex,
-    inputIndex: inputIndex,
-    signature: Sighash.sign(transaction, privateKey, sigtype, inputIndex, this.output.script, this.output.satoshisBN),
-    sigtype: sigtype
-  })]
+  var results = []
+  if (privateKeys instanceof PrivateKey) {
+    results.push(new TransactionSignature({
+      publicKey: privateKeys.publicKey,
+      prevTxId: this.prevTxId,
+      outputIndex: this.outputIndex,
+      inputIndex: inputIndex,
+      signature: Sighash.sign(transaction, privateKeys, sigtype, inputIndex, this.output.script, this.output.satoshisBN),
+      sigtype: sigtype
+    }))
+  } else if (_.isArray(privateKeys)) {
+    var self = this
+
+    _.each(privateKeys, function (privateKey, index) {
+      var sigtype_ = sigtype
+      if (_.isArray(sigtype)) {
+        sigtype_ = sigtype[index] || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+      }
+      results.push(new TransactionSignature({
+        publicKey: privateKey.publicKey,
+        prevTxId: self.prevTxId,
+        outputIndex: self.outputIndex,
+        inputIndex: inputIndex,
+        signature: Sighash.sign(transaction, privateKey, sigtype_, inputIndex, self.output.script, self.output.satoshisBN),
+        sigtype: sigtype_
+      }))
+    })
+  }
+  return results
 }
 
 /**

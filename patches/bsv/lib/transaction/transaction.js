@@ -87,6 +87,11 @@ Transaction.FEE_PER_KB = 50
 // Safe upper bound for change address script size in bytes
 Transaction.CHANGE_OUTPUT_MAX_SIZE = 20 + 4 + 34 + 4
 
+/**
+ * a dummy privatekey
+ */
+Transaction.DUMMY_PRIVATEKEY = PrivateKey.fromWIF('cQ3nCBQB9RsFSyjNQM15NQLVpXXMtWh9PUyeFz5KxLJCHsuRH2Su')
+
 /* Constructors and Serialization */
 
 /**
@@ -1251,9 +1256,9 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
     var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, options.sigtype, isLowS)
     this._preimagesMap.set(inputIndex, preimage)
 
-    if (privateKey instanceof PrivateKey) {
-      var sig = this.inputs[inputIndex].getSignatures(this, privateKey, inputIndex, options.sigtype)[0]
-      this._signaturesMap.set(inputIndex, sig)
+    if (privateKey instanceof PrivateKey || _.isArray(privateKey)) {
+      var sigs = this.inputs[inputIndex].getSignatures(this, privateKey, inputIndex, options.sigtype)
+      this._signaturesMap.set(inputIndex, sigs)
     }
 
     var unlockScript = unlockScriptOrCallback(this, outputInPrevTx)
@@ -1314,15 +1319,9 @@ Transaction.prototype.seal = function () {
     var preimage = self.inputs[key].getPreimage(self, key, options.sigtype, options.isLowS)
     self._preimagesMap.set(key, preimage)
 
-    if (options.privateKey instanceof PrivateKey) {
-      // var sig = Sighash.sign(
-      //   self, options.privateKey, options.sigtype, key,
-      //   inputLockingScript, new BN(inputAmount), Interpreter.DEFAULT_FLAGS
-      // ).toTxFormat().toString('hex')
-
-      var sig = self.inputs[key].getSignatures(self, options.privateKey, key, options.sigtype)[0]
-
-      self._signaturesMap.set(key, sig)
+    if (options.privateKey instanceof PrivateKey || _.isArray(options.privateKey)) {
+      var sigs = self.inputs[key].getSignatures(self, options.privateKey, key, options.sigtype)
+      self._signaturesMap.set(key, sigs)
     }
 
     var unlockScript = options.callback(self, outputInPrevTx)
@@ -1423,18 +1422,37 @@ Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
   return preimage.toString('hex')
 }
 
-Transaction.prototype.getSignature = function (inputIndex, privateKey, sigtype) {
+Transaction.prototype.getSignature = function (inputIndex, privateKeys, sigtypes) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
   var cached = this._signaturesMap.get(inputIndex || 0)
-
+  var results = []
   if (cached) {
-    return cached.signature.toTxFormat().toString('hex')
+    _.each(cached, function (sig) {
+      results.push(sig.signature.toTxFormat().toString('hex'))
+    })
+
+    if (results.length === 1) {
+      return results[0]
+    }
+    return results
   }
 
-  sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
-  var sig = this.inputs[inputIndex].getSignatures(this, privateKey, inputIndex, sigtype)[0]
+  if (privateKeys) {
+    sigtypes = sigtypes || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+    var sigs = this.inputs[inputIndex].getSignatures(this, privateKeys, inputIndex, sigtypes)
 
-  return sig.signature.toTxFormat().toString('hex')
+    _.each(sigs, function (sig) {
+      results.push(sig.signature.toTxFormat().toString('hex'))
+    })
+
+    if (results.length === 1) {
+      return results[0]
+    }
+
+    return results
+  }
+
+  return []
 }
 
 Transaction.prototype.addInputFromPrevTx = function (prevTx, outputIndex) {
@@ -1474,6 +1492,18 @@ Transaction.prototype.addDummyInput = function (script, satoshis) {
       satoshis: satoshis
     })
   }))
+}
+
+/**
+ * Same as change(addresss), but using the address of Transaction.DUMMY_PRIVATEKEY as default change address
+ *
+ * Beware that this resets all the signatures for inputs (in further versions,
+ * SIGHASH_SINGLE or SIGHASH_NONE signatures will not be reset).
+ *
+ * @return {Transaction} this, for chaining
+ */
+Transaction.prototype.dummyChange = function () {
+  return this.change(Transaction.DUMMY_PRIVATEKEY.toAddress())
 }
 
 Transaction.prototype.verifyInputScript = function (inputIndex) {

@@ -429,6 +429,7 @@ declare module 'bsv' {
     }
 
     export class Transaction {
+        static DUMMY_PRIVATEKEY: PrivateKey;
         inputs: Transaction.Input[];
         outputs: Transaction.Output[];
         readonly id: string;
@@ -491,7 +492,7 @@ declare module 'bsv' {
         _estimateSize: number;
         setInputScript(inputIndex: number | {
             inputIndex: number,
-            privateKey?: PrivateKey,
+            privateKey?: PrivateKey | Array<PrivateKey>,
             sigtype?: number,
             isLowS?: boolean
         }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output) => Script)): this;
@@ -503,10 +504,11 @@ declare module 'bsv' {
         getEstimateFee(): number;
         checkFeeRate(feePerKb?: number): boolean;
         prevouts(): string;
-        getSignature(inputIndex: number, privateKey?: PrivateKey, sigtype?: number): string;
+        getSignature(inputIndex: number, privateKey?: PrivateKey | Array<PrivateKey>, sigtype?: number): string;
         getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): string;
         addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
         addDummyInput(script: Script, satoshis: number): this;
+        dummyChange(): this;
         verifyInputScript(inputIndex: number): {
             success: boolean,
             error: string,
