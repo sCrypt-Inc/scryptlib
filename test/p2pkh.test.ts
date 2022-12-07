@@ -23,7 +23,7 @@ describe('test.P2PKH', () => {
                 inputIndex,
                 privateKey
             }, (tx) => {
-                return p2pkh.unlock(new Sig(tx.getSignature(0)), new PubKey(toHex(publicKey))).toScript();
+                return p2pkh.unlock(new Sig(tx.getSignature(0) as string), new PubKey(toHex(publicKey))).toScript();
             })
             .seal();
 

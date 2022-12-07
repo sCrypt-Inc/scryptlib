@@ -381,6 +381,12 @@ export class AbstractContract {
 
   }
 
+  /**
+   * @deprecated use setDataPartInASM setDataPartInHex 
+   * set the data part of the contract
+   * @param state 
+   * @param isStateHex 
+   */
   setDataPart(state: State | string, isStateHex = false): void {
     if (isStateHex == false) {
       console.warn('deprecated, using setDataPartInASM');
@@ -391,6 +397,11 @@ export class AbstractContract {
     }
   }
 
+  /**
+   * set the data part of the contract in ASM format
+   * @param state 
+   * @param  
+   */
   setDataPartInASM(state: State | string): void {
     if (AbstractContract.isStateful(this)) {
       throw new Error('should not use `setDataPartInASM` for a stateful contract, using `setDataPartInHex`');
@@ -399,6 +410,10 @@ export class AbstractContract {
     this.setDataPartInHex(bsv.Script.fromASM(dataPartInASM).toHex());
   }
 
+  /**
+   * set the data part of the contract in hex format
+   * @param hex 
+   */
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
     if (AbstractContract.isStateful(this)) {

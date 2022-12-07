@@ -323,6 +323,10 @@ export class Sha256 extends ScryptType {
   }
 }
 
+/**
+ * @deprecated use SigHashType
+ * a enum of SigHash Type
+ */
 export enum SigHash {
   ALL = 0x01,
   NONE = 0x02,
@@ -337,7 +341,15 @@ export enum SigHash {
   ANYONECANPAY_NONE_FORKID = ANYONECANPAY | NONE | FORKID,
 }
 
+
+
 export class SigHashType extends ScryptType {
+  static readonly ALL = 0x41;
+  static readonly NONE = 0x42;
+  static readonly SINGLE = 0x43;
+  static readonly ANYONECANPAY_ALL = 0xc1;
+  static readonly ANYONECANPAY_NONE = 0xc2;
+  static readonly ANYONECANPAY_SINGLE = 0xc3;
 
   constructor(intVal: number) {
     super(intVal);
@@ -356,36 +368,16 @@ export class SigHashType extends ScryptType {
   }
 
   toString(): string {
-    const types: string[] = [];
-    let value = this._value as number;
 
-    if ((value & SigHash.ANYONECANPAY) === SigHash.ANYONECANPAY) {
-      types.push('SigHash.ANYONECANPAY');
-      value = value - SigHash.ANYONECANPAY;
-    }
+    const value = this._value as number;
 
-    if ((value & SigHash.SINGLE) === SigHash.SINGLE) {
-      types.push('SigHash.SINGLE');
-      value = value - SigHash.SINGLE;
-    }
-
-    if ((value & SigHash.NONE) === SigHash.NONE) {
-      types.push('SigHash.NONE');
-      value = value - SigHash.NONE;
-    }
-
-    if ((value & SigHash.ALL) === SigHash.ALL) {
-      types.push('SigHash.ALL');
-      value = value - SigHash.ALL;
-    }
-
-    if ((value & SigHash.FORKID) === SigHash.FORKID) {
-      types.push('SigHash.FORKID');
-      value = value - SigHash.FORKID;
-    }
-
-    if (value === 0) {
-      return types.join(' | ');
+    if (value === bsv.crypto.Signature.ALL
+      || value === bsv.crypto.Signature.NONE
+      || value === bsv.crypto.Signature.SINGLE
+      || value === bsv.crypto.Signature.ANYONECANPAY_ALL
+      || value === bsv.crypto.Signature.ANYONECANPAY_NONE
+      || value === bsv.crypto.Signature.ANYONECANPAY_SINGLE) {
+      return value.toString(16);
     }
 
     throw new Error(`unknown sighash type value: ${this._value}`);
