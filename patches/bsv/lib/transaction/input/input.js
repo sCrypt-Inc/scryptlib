@@ -266,6 +266,7 @@ Input.prototype._estimateSize = function () {
 Input.prototype.verify = function (transaction, inputIndex) {
   $.checkState(this.output instanceof Output)
   $.checkState(this.script instanceof Script)
+  $.checkState(this.output.script instanceof Script)
 
   var us = this.script
   var ls = this.output.script
@@ -290,7 +291,10 @@ Input.prototype.verify = function (transaction, inputIndex) {
 
   var success = bsi.verify(us, ls, transaction, inputIndex, Interpreter.DEFAULT_FLAGS, inputSatoshis)
 
-  failedAt.opcode = failedAt.opcode.toNumber()
+  if (failedAt.opcode) {
+    failedAt.opcode = failedAt.opcode.toNumber()
+  }
+
   return { success, error: bsi.errstr, failedAt: success ? {} : failedAt }
 }
 

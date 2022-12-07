@@ -312,6 +312,14 @@ declare module 'bsv' {
             static SIGHASH_SINGLE: number;
             static SIGHASH_FORKID: number;
             static SIGHASH_ANYONECANPAY: number;
+
+            static ALL: number;
+            static NONE: number;
+            static SINGLE: number;
+            static ANYONECANPAY_ALL: number;
+            static ANYONECANPAY_NONE: number;
+            static ANYONECANPAY_SINGLE: number;
+
             nhashtype: number;
             toString(): string;
             toBuffer(): Buffer;
@@ -504,7 +512,7 @@ declare module 'bsv' {
         getEstimateFee(): number;
         checkFeeRate(feePerKb?: number): boolean;
         prevouts(): string;
-        getSignature(inputIndex: number, privateKey?: PrivateKey | Array<PrivateKey>, sigtype?: number): string;
+        getSignature(inputIndex: number, privateKey?: PrivateKey | Array<PrivateKey>, sigtype?: number): string | Array<string>;
         getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): string;
         addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
         addDummyInput(script: Script, satoshis: number): this;
