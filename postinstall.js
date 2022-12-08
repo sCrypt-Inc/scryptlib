@@ -1,6 +1,10 @@
+
+var fs = require("fs")
 var autoPatch = require("./patches/applyPatch")
-var { getBinary } = require("./util/getBinary")
 
 autoPatch();
 
-getBinary()
+if (fs.existsSync('./dist')) {
+    var { getBinary } = require("./util/getBinary")
+    getBinary()
+}
