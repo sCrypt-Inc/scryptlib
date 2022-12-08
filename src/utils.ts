@@ -8,6 +8,7 @@ export { bsv };
 export { ECIES };
 import { stringifyStream, parseChunked } from '@discoveryjs/json-ext';
 import { decode } from 'sourcemap-codec';
+import * as crypto from 'crypto';
 
 import {
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
@@ -2646,4 +2647,12 @@ export function parseStateHex(contract: AbstractContract, scriptHex: string): [b
   return [isGenesis, contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
     value: undefined
   }), stateTemplateArgs))];
+}
+
+
+export function md5(s: string): string {
+
+  const md5 = crypto.createHash('md5');
+
+  return md5.update(s).digest('hex');
 }

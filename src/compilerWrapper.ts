@@ -1,12 +1,11 @@
 import { basename, dirname, join } from 'path';
 import { execSync, exec, ChildProcess } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
-import md5 = require('md5');
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync } from 'fs';
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
 import {
   path2uri, ContractDescription, findCompiler, CURRENT_CONTRACT_DESCRIPTION_VERSION,
-  buildTypeResolver, TypeResolver, resolveConstValue, hash160
+  buildTypeResolver, TypeResolver, resolveConstValue, hash160, md5
 } from './internal';
 
 
