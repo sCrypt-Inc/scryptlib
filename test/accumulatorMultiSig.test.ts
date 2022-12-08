@@ -28,7 +28,7 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
     let accumulatorMultiSig, result
 
     before(() => {
-        const AccumulatorMultiSig = buildContractClass(loadDescription('AccumulatorMultiSig_desc.json'))
+        const AccumulatorMultiSig = buildContractClass(loadDescription('accumulatorMultiSig_desc.json'))
         accumulatorMultiSig = new AccumulatorMultiSig(2n,
             [new Ripemd160(toHex(publicKeyHash1)), new Ripemd160(toHex(publicKeyHash2)), new Ripemd160(toHex(publicKeyHash3))]);
 
