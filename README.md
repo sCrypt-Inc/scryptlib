@@ -162,8 +162,10 @@ woman.addr = new Bytes("")
 
 ```
 
+### 4. HashedMap
+[HashedMap](./docs/hashedmap_en.md) is a hashtable-like data structure.
 
-### 4. Library
+### 5. Library
 
 Library is another composite types. When the constructor parameter of the contract contains library, we need to create library through sdk.
 
