@@ -1,13 +1,13 @@
 import { assert, expect } from 'chai';
 import * as path from "path";
 import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
-import { ABIEntityType, CompileResult, compilerVersion, compile } from '../src/compilerWrapper';
-import { compileContract, compileContractAsync, bsv, toHex, signTx } from '../src/utils';
+import { ABIEntityType, compilerVersion, compile } from '../src/compilerWrapper';
+import { compileContract, compileContractAsync, bsv, signTx } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
-import { basename, join } from 'path';
-import { buildContractClass, buildTypeClasses } from '../src/contract';
+import { join } from 'path';
+import { buildContractClass } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
-import { Ripemd160, PubKey } from '../src';
+import { Ripemd160, PubKey, toHex, Sig } from '../src';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -901,15 +901,13 @@ describe('compile()', () => {
 
     const CTCContract = buildContractClass(result);
 
-    const { St1, St2 } = buildTypeClasses(CTCContract);
+    let st1 = { x: [1n, 3n, 45n] };
 
-    let st1 = new St1({ x: [1, 3, 45] });
+    let st2 = { st1s: [st1, st1] };
 
-    let st2 = new St2({ st1s: [st1, st1] });
+    const ctc = new CTCContract(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1n, 3n, 3n]);
 
-    const ctc = new CTCContract(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1, 3, 3]);
-
-    let verify_result = ctc.unlock(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1, 3, 3]).verify()
+    let verify_result = ctc.unlock(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1n, 3n, 3n]).verify()
 
     assert.isTrue(verify_result.success, "unlock CTCContract failed")
   })
@@ -1040,11 +1038,11 @@ describe('compile()', () => {
 
     const DemoP2PKH = buildContractClass(result);
 
-    const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+    const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
     const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-    const pubkey = new PubKey(toHex(publicKey));
+    const pubkey = PubKey(toHex(publicKey));
     p2pkh.txContext = { inputSatoshis, tx };
-    const verifyresult = p2pkh.unlock(sig, pubkey).verify();
+    const verifyresult = p2pkh.unlock(Sig(sig), pubkey).verify();
     expect(verifyresult.success, verifyresult.error).to.true
   })
 

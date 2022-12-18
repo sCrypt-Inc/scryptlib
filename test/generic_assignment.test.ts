@@ -14,7 +14,7 @@ describe('test.generic_assignment', () => {
 
         it('test unlock', () => {
 
-            const result = testGenericLibray.unlock(1).verify()
+            const result = testGenericLibray.unlock(1n).verify()
 
             expect(result.success, result.error).to.be.true;
 

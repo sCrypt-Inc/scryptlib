@@ -7,11 +7,11 @@ describe('test.demo', () => {
 
     before(() => {
         const Demo = buildContractClass(loadDescription('demo_desc.json'))
-        demo = new Demo(1, 2)
+        demo = new Demo(1n, 2n)
     })
 
     it('test add', () => {
-        const result = demo.add(4).verify()
+        const result = demo.add(4n).verify()
         expect(result.success, result.error).to.be.false;
         expect(result.error).to.be.contains("VerifyError: SCRIPT_ERR_EVAL_FALSE_IN_STACK \n");
         expect(result.error).to.be.contains("demo.scrypt#15");

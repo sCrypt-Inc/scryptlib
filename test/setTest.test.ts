@@ -1,16 +1,14 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, HashedSet, SortedItem, Struct } from '../src/scryptTypes'
-import { findKeyIndex, sortset, toData } from '../src/internal'
-import { bsv, toHex, getPreimage } from '../src/utils';
+import { buildContractClass, Contract, ContractClass } from '../src/contract'
+import { Bytes, StructObject, } from '../src/scryptTypes'
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
 describe('test.setTest', () => {
     describe('setTest', () => {
-        let setTest, SetTest;
+        let setTest: Contract, SetTest: ContractClass;
 
 
 
@@ -23,75 +21,74 @@ describe('test.setTest', () => {
 
 
         it('test testStructAsKey', () => {
-            const { SetST } = buildTypeClasses(SetTest);
-            let set = new Set<Struct>();
-            set.add(new SetST({
-                a: 3,
-                b: new Bytes("003300")
-            }) as Struct);
+            let set = new Set<StructObject>();
+            set.add({
+                a: 3n,
+                b: Bytes("003300")
+            });
 
-            const st = new SetST({
-                a: 44,
-                b: new Bytes("0033001112")
-            }) as Struct;
+            const st = {
+                a: 44n,
+                b: Bytes("0033001112")
+            };
 
             set.add(st);
 
-            const result = setTest.testStructAsKey(new SortedItem({
+            const result = setTest.testStructAsKey({
                 item: st,
-                idx: findKeyIndex(set, st)
-            }), toData(set)).verify()
+                idx: SetTest.findKeyIndex(set, st, "SetST")
+            }, SetTest.toData(set, "HashedSet<SetST>")).verify()
             expect(result.success, result.error).to.be.true;
         })
 
 
         it('test testArrayAsKey', () => {
-            const { SetST } = buildTypeClasses(SetTest);
-            const initData = [new SetST({
-                a: 3,
-                b: new Bytes("01")
-            }), new SetST({
-                a: 5,
-                b: new Bytes("0001")
-            }), new SetST({
-                a: 7,
-                b: new Bytes("010101")
-            })];
 
-            const newElem = [new SetST({
-                a: 13,
-                b: new Bytes("9801")
-            }), new SetST({
-                a: 15,
-                b: new Bytes("660001")
-            }), new SetST({
-                a: 17,
-                b: new Bytes("99010101")
-            })];
+            const initData = [{
+                a: 3n,
+                b: Bytes("01")
+            }, {
+                a: 5n,
+                b: Bytes("0001")
+            }, {
+                a: 7n,
+                b: Bytes("010101")
+            }];
+
+            const newElem = [{
+                a: 13n,
+                b: Bytes("9801")
+            }, {
+                a: 15n,
+                b: Bytes("660001")
+            }, {
+                a: 17n,
+                b: Bytes("99010101")
+            }];
 
 
-            let set = new Set<Struct[]>();
-            set.add(initData as Struct[]);
-            set.add(newElem as Struct[]);
+            let set = new Set<StructObject[]>();
+            set.add(initData);
+            set.add(newElem);
 
-            const result = setTest.testArrayAsKey2(new SortedItem({
+            const result = setTest.testArrayAsKey2({
                 item: newElem,
-                idx: findKeyIndex(set, newElem)
-            }), toData(set)).verify()
+                idx: SetTest.findKeyIndex(set, newElem, "SetST[3]")
+            }, SetTest.toData(set, "HashedSet<SetST[3]>")).verify()
             expect(result.success, result.error).to.be.true;
         })
 
 
         it('test testArrayAsKey2', () => {
-            const newElem = [13, 15, 17];
-            let set = new Set<number[]>();
-            set.add([3, 5, 7]);
+            const newElem = [13n, 15n, 17n];
+            let set = new Set<bigint[]>();
+            set.add([3n, 5n, 7n]);
             set.add(newElem);
 
-            const result = setTest.testArrayAsKey(new SortedItem({
+            const result = setTest.testArrayAsKey({
                 item: newElem,
-                idx: findKeyIndex(set, newElem)
-            }), toData(set)).verify()
+                idx: SetTest.findKeyIndex(set, newElem, "int[3]")
+            }, SetTest.toData(set, "HashedSet<int[3]>")).verify()
             expect(result.success, result.error).to.be.true;
         })
 
@@ -101,69 +98,68 @@ describe('test.setTest', () => {
 
         it('test testDeleteInt', () => {
 
-            const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new SortedItem({
+            const set = SetTest.sortset(new Set([13n, 15n, 17n, 34n, 1n, 4n, 6n, 5n, 6667n, 2n]), "int");
+            const initData = Array.from(set).map(e => ({
                 item: e,
-                idx: findKeyIndex(set, e)
+                idx: SetTest.findKeyIndex(set, e, 'int')
             }))
 
 
             for (const iterator of set) {
-                const result = setTest.testDeleteInt(initData, new SortedItem({
+                const result = setTest.testDeleteInt(initData, {
                     item: iterator,
-                    idx: findKeyIndex(set, iterator)
-                })).verify()
+                    idx: SetTest.findKeyIndex(set, iterator, 'int')
+                }).verify()
                 expect(result.success, result.error).to.be.true;
             }
         })
 
         it('test testDeleteInt: should fail when elem not exist', () => {
 
-            const { Entry } = buildTypeClasses(SetTest);
-            const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new SortedItem({
+            const set = SetTest.sortset(new Set([13n, 15n, 17n, 34n, 1n, 4n, 6n, 5n, 6667n, 2n]), "int");
+            const initData = Array.from(set).map(e => ({
                 item: e,
-                idx: findKeyIndex(set, e)
+                idx: SetTest.findKeyIndex(set, e, "int")
             }))
 
-            const fakeElem = 44667;
+            const fakeElem = 44667n;
             set.add(fakeElem);
-            const result = setTest.testDeleteInt(initData, new SortedItem({
+            const result = setTest.testDeleteInt(initData, {
                 item: fakeElem,
-                idx: findKeyIndex(set, fakeElem)
-            })).verify()
+                idx: SetTest.findKeyIndex(set, fakeElem, "int")
+            }).verify()
             expect(result.success, result.error).to.be.false;
         })
 
 
         it('test testHas', () => {
 
-            const { Entry } = buildTypeClasses(SetTest);
-            const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new SortedItem({
+
+            const set = SetTest.sortset(new Set([13n, 15n, 17n, 34n, 1n, 4n, 6n, 5n, 6667n, 2n]), "int");
+            const initData = Array.from(set).map(e => ({
                 item: e,
-                idx: findKeyIndex(set, e)
+                idx: SetTest.findKeyIndex(set, e, "int")
             }))
-            const result = setTest.testHas(initData, new SortedItem({
-                item: 6667,
-                idx: findKeyIndex(set, 6667)
+            const result = setTest.testHas(initData, ({
+                item: 6667n,
+                idx: SetTest.findKeyIndex(set, 6667n, "int")
             })).verify()
             expect(result.success, result.error).to.be.true;
         })
 
         it('test testHas: should fail when elem not exist', () => {
 
-            const set = sortset(new Set([13, 15, 17, 34, 1, 4, 6, 5, 6667, 2]));
-            const initData = Array.from(set).map(e => new SortedItem({
+            const set = SetTest.sortset(new Set([13n, 15n, 17n, 34n, 1n, 4n, 6n, 5n, 6667n, 2n]), "int");
+            const initData = Array.from(set).map(e => ({
                 item: e,
-                idx: findKeyIndex(set, e)
+                idx: SetTest.findKeyIndex(set, e, "int")
             }))
-            const fakeElem = 5676;
+            const fakeElem = 5676n;
             set.add(fakeElem);
 
-            const result = setTest.testHas(initData, new SortedItem({
+            const result = setTest.testHas(initData, ({
                 item: fakeElem,
-                idx: findKeyIndex(sortset(set), fakeElem)
+                idx: SetTest.findKeyIndex(set, fakeElem, "int")
             })).verify()
             expect(result.success, result.error).to.be.false;
         })

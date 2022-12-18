@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription } from './helper'
 import { buildContractClass } from '../src/contract'
-import { bsv, num2bin, Ripemd160, SigHashPreimage, toHex, Sig, PubKey } from '../src'
+import { bsv, Ripemd160, toHex, Sig, PubKey } from '../src'
 
 describe('test.P2PKH', () => {
 
@@ -12,7 +12,7 @@ describe('test.P2PKH', () => {
     it('should unlock success', () => {
 
         const DemoP2PKH = buildContractClass(loadDescription('p2pkh_desc.json'))
-        let p2pkh = new DemoP2PKH(new Ripemd160(toHex(publicKeyHash)))
+        let p2pkh = new DemoP2PKH(Ripemd160(toHex(publicKeyHash)))
 
         const inputIndex = 0;
 
@@ -23,7 +23,7 @@ describe('test.P2PKH', () => {
                 inputIndex,
                 privateKey
             }, (tx) => {
-                return p2pkh.unlock(new Sig(tx.getSignature(0) as string), new PubKey(toHex(publicKey))).toScript();
+                return p2pkh.unlock(Sig(tx.getSignature(0) as string), PubKey(toHex(publicKey))).toScript();
             })
             .seal();
 

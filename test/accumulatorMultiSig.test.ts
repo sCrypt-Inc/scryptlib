@@ -30,7 +30,7 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
     before(() => {
         const AccumulatorMultiSig = buildContractClass(loadDescription('accumulatorMultiSig_desc.json'))
         accumulatorMultiSig = new AccumulatorMultiSig(2n,
-            [new Ripemd160(toHex(publicKeyHash1)), new Ripemd160(toHex(publicKeyHash2)), new Ripemd160(toHex(publicKeyHash3))]);
+            [Ripemd160(toHex(publicKeyHash1)), Ripemd160(toHex(publicKeyHash2)), Ripemd160(toHex(publicKeyHash3))]);
 
     });
     it('should successfully with all three right.', () => {
@@ -45,8 +45,8 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
         const sig3 = signTx(tx, privateKey3, accumulatorMultiSig.lockingScript, inputSatoshis);
 
         const context = { tx, inputIndex, inputSatoshis }
-        let result = accumulatorMultiSig.main([new PubKey(toHex(publicKey1)), new PubKey(toHex(publicKey2)), new PubKey(toHex(publicKey3))],
-            [new Sig(toHex(sig1)), new Sig(toHex(sig2)), new Sig(toHex(sig3))], [true, true, true]).verify(context);
+        let result = accumulatorMultiSig.main([PubKey(toHex(publicKey1)), PubKey(toHex(publicKey2)), PubKey(toHex(publicKey3))],
+            [Sig(sig1), Sig(sig2), Sig(sig3)], [true, true, true]).verify(context);
 
         expect(result.success, result.error).to.eq(true);
 
@@ -62,8 +62,8 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
                 privateKey: [privateKey1, privateKey2, privateKey3]
             }, (tx: bsv.Transaction) => {
                 const sigs = tx.getSignature(inputIndex);
-                return accumulatorMultiSig.main([new PubKey(toHex(publicKey1)), new PubKey(toHex(publicKey2)), new PubKey(toHex(publicKey3))],
-                    [new Sig(sigs[0]), new Sig(sigs[1]), new Sig(sigs[2])], [true, true, true]).toScript();
+                return accumulatorMultiSig.main([PubKey(toHex(publicKey1)), PubKey(toHex(publicKey2)), PubKey(toHex(publicKey3))],
+                    [Sig(sigs[0]), Sig(sigs[1]), Sig(sigs[2])], [true, true, true]).toScript();
             })
 
             .seal()
@@ -87,8 +87,8 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
                 privateKey: [privateKey1, privateKeyWrong, privateKeyWrong]
             }, (tx: bsv.Transaction) => {
                 const sigs = tx.getSignature(inputIndex);
-                return accumulatorMultiSig.main([new PubKey(toHex(publicKey1)), new PubKey(toHex(publicKey2)), new PubKey(toHex(publicKey3))],
-                    [new Sig(sigs[0]), new Sig(sigs[1]), new Sig(sigs[2])], [true, false, false]).toScript();
+                return accumulatorMultiSig.main([PubKey(toHex(publicKey1)), PubKey(toHex(publicKey2)), PubKey(toHex(publicKey3))],
+                    [Sig(sigs[0]), Sig(sigs[1]), Sig(sigs[2])], [true, false, false]).toScript();
             })
             .seal()
 

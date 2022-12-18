@@ -2,8 +2,9 @@ import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
-import { bsv, signTx, toHex } from '../src/utils';
+import { bsv, signTx } from '../src/utils';
 import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes';
+import { toHex } from '../src';
 
 const privateKey = bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.toPublicKey();
@@ -31,14 +32,14 @@ describe('check explicit  constructor()', () => {
   it('should throw when wrong type of arguments', () => {
 
     expect(() => {
-      new DemoP2PKH(1);
+      new DemoP2PKH(1n);
     }).to.throws(/The type of pubKeyHash is wrong, expected Ripemd160 but got int/);
   })
 
   it('should throw when wrong number of arguments: public function', () => {
 
     expect(() => {
-      let demo = new DemoP2PKH(new Ripemd160('00'));
+      let demo = new DemoP2PKH(Ripemd160('00'));
       demo.unlock(1).verify();
     }).to.throws(/wrong number of arguments for \'DemoP2PKH\.unlock\', expected 2 but got 1/);
   })
@@ -60,7 +61,7 @@ describe('check implicit   constructor()', () => {
   it('should throw when wrong type of arguments', () => {
 
     expect(() => {
-      new Cointoss(1, 1, 1, 1, 1);
+      new Cointoss(1n, 1n, 1n, 1n, 1n);
     }).to.throws(/The type of alice is wrong, expected PubKey but got int/);
   })
 })
@@ -78,21 +79,21 @@ describe('buildContractClass()', () => {
   describe('instance of the returned contract class', () => {
 
     let instance: AbstractContract;
-    let sig: Sig;
     let unlockingScriptASM: string;
     let result: VerifyResult;
+    let sig: string;
 
     beforeEach(() => {
-      instance = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+      instance = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
       sig = signTx(tx, privateKey, instance.lockingScript, inputSatoshis);
-      unlockingScriptASM = [sig.toASM(), toHex(publicKey)].join(' ');
+      unlockingScriptASM = [sig, toHex(publicKey)].join(' ');
     })
 
     it("test arguments", () => {
       expect(instance.ctorArgs()).to.deep.include.members([{
         name: "pubKeyHash",
         type: "Ripemd160",
-        value: new Ripemd160(toHex(pubKeyHash))
+        value: Ripemd160(toHex(pubKeyHash))
       }]);
       expect(instance.arguments('unlock')).to.deep.equal([]);
     })
@@ -204,7 +205,7 @@ describe('buildContractClass()', () => {
     describe("when the mapped-method being invoked", () => {
 
       it("should return FunctionCall type object which could be transformed to unlocking script", () => {
-        const functionCall = instance.unlock(sig, new PubKey(toHex(publicKey)));
+        const functionCall = instance.unlock(Sig(sig), PubKey(toHex(publicKey)));
         assert.instanceOf(functionCall, FunctionCall);
         assert.equal(functionCall.toASM(), unlockingScriptASM);
         assert.equal(functionCall.toHex(), bsv.Script.fromASM(unlockingScriptASM).toHex());
@@ -213,46 +214,46 @@ describe('buildContractClass()', () => {
       it('the returned object can be verified whether it could unlock the contract', () => {
         // can unlock contract if params are correct
         const validPubkey = toHex(publicKey);
-        result = instance.unlock(sig, new PubKey(validPubkey)).verify({ inputSatoshis, tx });
+        result = instance.unlock(Sig(sig), PubKey(validPubkey)).verify({ inputSatoshis, tx });
         assert.isTrue(result.success, result.error);
 
         expect(instance.arguments('unlock')).to.deep.equal([
           {
             name: 'sig',
             type: 'Sig',
-            value: sig
+            value: Sig(sig)
           },
           {
             name: 'pubKey',
             type: 'PubKey',
-            value: new PubKey(validPubkey)
+            value: PubKey(validPubkey)
           }
         ]);
 
-        instance.unlock(sig, new PubKey(validPubkey)).verify({ inputSatoshis, tx })
+        instance.unlock(Sig(sig), PubKey(validPubkey)).verify({ inputSatoshis, tx })
         assert.isTrue(result.success, result.error);
 
         // can not unlock contract if any param is incorrect
-        const invalidSig = sig.toHex().replace('1', '0');
+        const invalidSig = sig.replace('1', '0');
         const invalidPubKey = validPubkey.replace('0', '1');
-        result = instance.unlock(new Sig(invalidSig), new PubKey(validPubkey)).verify({ inputSatoshis, tx })
+        result = instance.unlock(Sig(invalidSig), PubKey(validPubkey)).verify({ inputSatoshis, tx })
 
         // arguments should be corresponding to the lastest call
         expect(instance.arguments('unlock')).to.deep.equal([
           {
             name: 'sig',
             type: 'Sig',
-            value: new Sig(invalidSig)
+            value: Sig(invalidSig)
           },
           {
             name: 'pubKey',
             type: 'PubKey',
-            value: new PubKey(validPubkey)
+            value: PubKey(validPubkey)
           }
         ]);
 
         assert.isFalse(result.success, result.error);
-        result = instance.unlock(sig, new PubKey(invalidPubKey)).verify({ inputSatoshis, tx })
+        result = instance.unlock(Sig(sig), PubKey(invalidPubKey)).verify({ inputSatoshis, tx })
         assert.isFalse(result.success, result.error);
       })
 

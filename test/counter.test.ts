@@ -17,7 +17,7 @@ describe('test.Counter', () => {
         let callTx = new bsv.Transaction()
             .addDummyInput(counter.lockingScript, 1000)
             .setOutput(0, (tx) => {
-                const newLockingScript = [counter.codePart.toASM(), num2bin(1, 1)].join(' ')
+                const newLockingScript = [counter.codePart.toASM(), num2bin(1n, 1)].join(' ')
                 const newAmount = tx.inputAmount - tx.getEstimateFee();
                 return new bsv.Transaction.Output({
                     script: bsv.Script.fromASM(newLockingScript),
@@ -25,7 +25,7 @@ describe('test.Counter', () => {
                 })
             })
             .setInputScript(0, (tx) => {
-                return counter.increment(new SigHashPreimage(tx.getPreimage(0)), tx.getOutputAmount(0)).toScript();
+                return counter.increment(SigHashPreimage(tx.getPreimage(0)), BigInt(tx.getOutputAmount(0))).toScript();
             })
             .seal();
         // verify all tx inputs
@@ -38,7 +38,7 @@ describe('test.Counter', () => {
         let callTx1 = new bsv.Transaction()
             .addInputFromPrevTx(callTx)
             .setOutput(0, (tx) => {
-                const newLockingScript = [counter.codePart.toASM(), num2bin(2, 1)].join(' ')
+                const newLockingScript = [counter.codePart.toASM(), num2bin(2n, 1)].join(' ')
                 const newAmount = tx.inputAmount - tx.getEstimateFee();
                 return new bsv.Transaction.Output({
                     script: bsv.Script.fromASM(newLockingScript),
@@ -46,7 +46,7 @@ describe('test.Counter', () => {
                 })
             })
             .setInputScript(0, (tx) => {
-                return counter.increment(new SigHashPreimage(tx.getPreimage(0)), tx.getOutputAmount(0)).toScript();
+                return counter.increment(SigHashPreimage(tx.getPreimage(0)), BigInt(tx.getOutputAmount(0))).toScript();
             })
             .seal();
         // verify all tx inputs
@@ -70,7 +70,7 @@ describe('test.Counter', () => {
         let callTx = new bsv.Transaction()
             .addDummyInput(counter.lockingScript, 1000)
             .setOutput(0, (tx) => {
-                const newLockingScript = [counter.codePart.toASM(), num2bin(1, 1)].join(' ')
+                const newLockingScript = [counter.codePart.toASM(), num2bin(1n, 1)].join(' ')
                 const newAmount = tx.inputAmount - tx.getEstimateFee();
                 return new bsv.Transaction.Output({
                     script: bsv.Script.fromASM(newLockingScript),
@@ -78,7 +78,7 @@ describe('test.Counter', () => {
                 })
             })
             .setInputScript(0, (tx) => {
-                return counter.increment(new SigHashPreimage(tx.getPreimage(0)), 1).toScript();
+                return counter.increment(SigHashPreimage(tx.getPreimage(0)), 1n).toScript();
             })
             .seal();
 

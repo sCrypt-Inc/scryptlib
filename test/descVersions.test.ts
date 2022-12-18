@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
 import { loadDescription } from './helper';
-import { buildContractClass, buildTypeClasses, AbstractContract } from '../src/contract';
+import { buildContractClass, AbstractContract } from '../src/contract';
 
 
 describe('Contract description old version test', () => {
@@ -22,13 +22,13 @@ describe('Contract description old version test', () => {
 
     const Demo = buildContractClass(loadDescription('version_8.json'));
 
-    const demo = new Demo(1, 3);
+    const demo = new Demo(1n, 3n);
 
-    let result = demo.add(4).verify();
+    let result = demo.add(4n).verify();
 
     assert.isTrue(result.success)
 
-    result = demo.add(3).verify();
+    result = demo.add(3n).verify();
     expect(result.error).to.be.contains("VerifyError: SCRIPT_ERR_EVAL_FALSE_IN_STACK \n");
     expect(result.error).to.be.contains("demo.scrypt#15");
     expect(result.error).to.be.contains("fails at OP_ENDIF\n");
@@ -39,25 +39,6 @@ describe('Contract description old version test', () => {
     const jsonDescr = loadDescription('p2pkh_desc.json');
     const Contract = buildContractClass(jsonDescr)
     expect(typeof Contract === typeof AbstractContract).to.be.true;
-
-    const Classes = buildTypeClasses(jsonDescr);
-
-    expect(Object.keys(Classes)).to.includes.members(["bool", "int", "bytes", "PubKey", "PrivKey", "Sig", "Sha1", "Ripemd160", "Sha256", "SigHashType", "OpCodeType", "SigHashPreimage"])
-
-  });
-
-  it('test user defined type in alias_desc.json', () => {
-    const jsonDescr = loadDescription('alias_desc.json');
-    const Contract = buildContractClass(jsonDescr)
-    expect(typeof Contract === typeof AbstractContract).to.be.true;
-
-    const Classes = buildTypeClasses(jsonDescr);
-    expect(Object.keys(Classes)).to.includes.members(["Age", "Block", "Coinbase", "Person", "Female", "Height", "Integer", "Male", "MaleAAA", "Name", "Time"])
-
-    Object.keys(Classes).forEach(t => {
-      assert.isTrue(Classes[t] instanceof Function)
-    })
-
   });
 
 })

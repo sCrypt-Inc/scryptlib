@@ -1,26 +1,25 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import * as bsv from 'bsv';
-import ECIES = require('bsv/ecies');
 import * as fs from 'fs';
+import * as crypto from 'crypto';
+import * as bsv from 'bsv';
 import { join, sep } from 'path';
 import { tmpdir } from 'os';
-export { bsv };
-export { ECIES };
 import { stringifyStream, parseChunked } from '@discoveryjs/json-ext';
 import { decode } from 'sourcemap-codec';
-import * as crypto from 'crypto';
+
+export { bsv };
 
 import {
-  Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, ScryptType,
-  ValueType, Struct, SupportedParamType, VariableType, TypeResolver, StructEntity, compile,
-  findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri, serializeSupportedParamType,
+  SupportedParamType, TypeResolver, StructEntity, compile,
+  findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri,
   Arguments, Argument,
-  Script, ParamEntity
+  Script, getValidatedHexString, BaseType, stringToBytes
 } from './internal';
 import { compileAsync, OpCode, StaticEntity } from './compilerWrapper';
-import { BasicScryptType, HashedMap, HashedSet, Library, ScryptTypeResolver, String, SymbolType, TypeInfo } from './scryptTypes';
 import { VerifyError } from './contract';
-import { ABIEntity, LibraryEntity } from '.';
+import { ABIEntity, arrayTypeAndSize, bin2num, Bytes, deserializer, LibraryEntity, num2bin, ParamEntity, StructObject, SymbolType, toHex, toLiteralArrayType, TypeInfo } from '.';
+import { arrayTypeAndSizeStr, flatternArg, isBaseType } from './typeCheck';
+import Stateful from './stateful';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -38,17 +37,6 @@ export const DEFAULT_FLAGS =
 export const DEFAULT_SIGHASH_TYPE =
   bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
 
-export function bool2Asm(str: string): string {
-  if (str === 'true') {
-    return 'OP_TRUE';
-  }
-
-  if (str === 'false') {
-    return 'OP_FALSE';
-  }
-
-  throw new Error(`invalid str '${str}' to convert to bool`);
-}
 
 /**
  * decimal or hex int to little-endian signed magnitude
@@ -70,6 +58,7 @@ export function int2Asm(str: string): string {
     throw new Error(`invalid str '${str}' to convert to int`);
   }
 }
+
 
 
 /**
@@ -115,51 +104,6 @@ export function asm2int(str: string): number | string {
 }
 
 
-/**
- * convert asm string to number or bigint
- */
-export function hex2int(str: string): number | string {
-
-  const b = bsv.Script.fromHex(str);
-  const chuck = b.chunks[0];
-
-
-  switch (chuck.opcodenum) {
-    case 0:
-      return 0;
-    case 79:
-      return -1;
-    case 81:
-    case 82:
-    case 83:
-    case 84:
-    case 85:
-    case 86:
-    case 87:
-    case 88:
-    case 89:
-    case 90:
-    case 91:
-    case 92:
-    case 93:
-    case 94:
-    case 95:
-    case 96:
-      return chuck.opcodenum - 80;
-    default: {
-      const value = chuck.buf.toString('hex');
-      const bn = BN.fromHex(value, {
-        endian: 'little'
-      });
-
-      if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
-        return bn.toNumber();
-      } else {
-        return bn.toString();
-      }
-    }
-  }
-}
 
 /**
  * decimal int or hex str to number or bigint
@@ -192,59 +136,92 @@ export function intValue2hex(val: number | bigint): string {
   return hex;
 }
 
-function parseBytesLiteral(hex: string): [string /*asm*/, ValueType, VariableType] {
-  const hexString = getValidatedHexString(hex);
-  if (hexString === '') {
-    return ['OP_0', hexString, VariableType.BYTES];
-  }
-
-  if (hexString.length / 2 > 1) {
-    return [hexString, hexString, VariableType.BYTES];
-  }
 
 
-  const intValue = parseInt(hexString, 16);
-
-  if (intValue >= 1 && intValue <= 16) {
-    return [`OP_${intValue}`, hexString, VariableType.BYTES];
-  }
-
-  return [hexString, hexString, VariableType.BYTES];
+export function utf82Hex(val: string): string {
+  const encoder = new TextEncoder();
+  const uint8array = encoder.encode(val);
+  return toHex(Buffer.from(uint8array));
 }
-export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableType] {
+
+export function toJSON(value: SupportedParamType): any {
+
+  if (Array.isArray(value)) {
+    const v = value as SupportedParamType[];
+    return v.map(i => toJSON(i));
+  } else if (typeof value === 'object') {
+
+    const copy = {};
+
+    for (const key in value) {
+      Object.assign(copy, {
+        [key]: toJSON(value[key])
+      });
+    }
+
+    return copy;
+  } else if (typeof value === 'bigint') {
+    if (value >= BigInt(Number.MIN_SAFE_INTEGER) && value <= BigInt(Number.MAX_SAFE_INTEGER)) {
+      return Number(value);
+    } else {
+      return value.toString();
+    }
+  } else if (typeof value === 'boolean') {
+    return value;
+  } else if (typeof value === 'string') {
+    const [val, type] = parseLiteral(value);
+    if (type === BaseType.BYTES) {
+      return `b'${val}'`;
+    }
+    return value;
+  }
+}
+
+export function parseLiteral(l: string, supportInt = false): [SupportedParamType /*asm*/, BaseType] {
+
 
   // bool
   if (l === 'false') {
-    return ['OP_FALSE', false, VariableType.BOOL];
+    return [false, BaseType.BOOL];
   }
   if (l === 'true') {
-    return ['OP_TRUE', true, VariableType.BOOL];
+    return [true, BaseType.BOOL];
   }
 
-  // hex int
-  let m = /^(0x[0-9a-fA-F]+)$/.exec(l);
-  if (m) {
-    return [int2Asm(m[1]), int2Value(m[1]), VariableType.INT];
+  if (supportInt) {
+    // hex int
+    let m = /^(0x[0-9a-fA-F]+)$/.exec(l);
+    if (m) {
+      return [BigInt(m[1]), BaseType.INT];
+    }
+
+    // decimal int
+    m = /^(-?\d+)$/.exec(l);
+    if (m) {
+      return [BigInt(m[1]), BaseType.INT];
+    }
+  } else {
+    const m = /^([\da-fA-F]*)$/.exec(l);
+    if (m) {
+      return [Bytes(l), BaseType.BYTES];
+    }
   }
 
-  // decimal int
-  m = /^(-?\d+)$/.exec(l);
-  if (m) {
-    return [int2Asm(m[1]), int2Value(m[1]), VariableType.INT];
-  }
+
 
   // bytes
   // note: special handling of empty bytes b''
-  m = /^b'([\da-fA-F]*)'$/.exec(l);
+  let m = /^b'([\da-fA-F]*)'$/.exec(l);
   if (m) {
-    return parseBytesLiteral(m[1]);
+    return [Bytes(m[1]), BaseType.BYTES];
   }
+
+
 
   // String
   m = /^"([\s\S]*)"$/.exec(l);
   if (m) {
-    const value = String.toUtf8Hex(m[1]);
-    return parseBytesLiteral(value);
+    return [stringToBytes(m[1]), BaseType.BYTES];
   }
 
 
@@ -252,202 +229,77 @@ export function parseLiteral(l: string): [string /*asm*/, ValueType, VariableTyp
   // 1) decimal int
   m = /^PrivKey\((-?\d+)\)$/.exec(l);
   if (m) {
-    return [int2Asm(m[1]), int2Value(m[1]), VariableType.PRIVKEY];
+    return [BigInt(m[1]), BaseType.PRIVKEY];
   }
   // 2) hex int
   m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
   if (m) {
-    return [int2Asm(m[1]), int2Value(m[1]), VariableType.PRIVKEY];
+    return [BigInt(m[1]), BaseType.PRIVKEY];
   }
 
   // PubKey
   m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.PUBKEY];
+    return [Bytes(value), BaseType.PUBKEY];
   }
 
   // Sig
   m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.SIG];
+    return [Bytes(value), BaseType.SIG];
   }
 
   // Ripemd160
   m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.RIPEMD160];
+    return [Bytes(value), BaseType.RIPEMD160];
   }
 
   // Sha1
   m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.SHA1];
+    return [Bytes(value), BaseType.SHA1];
   }
 
   // Sha256
   m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.SHA256];
+    return [Bytes(value), BaseType.SHA256];
   }
 
   // SigHashType
   m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
-    const bn = new BN(getValidatedHexString(m[1]), 16);
-    return [bn.toString('hex', 2), bn.toNumber(), VariableType.SIGHASHTYPE];
+    const value = getValidatedHexString(m[1]);
+    return [Bytes(value), BaseType.SIGHASHTYPE];
   }
 
   // SigHashPreimage
   m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.SIGHASHPREIMAGE];
+    return [Bytes(value), BaseType.SIGHASHPREIMAGE];
   }
 
   // OpCodeType
   m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
   if (m) {
     const value = getValidatedHexString(m[1]);
-    return [value, value, VariableType.OPCODETYPE];
+    return [Bytes(value), BaseType.OPCODETYPE];
   }
 
-  // Struct
-  m = /^\{([\s\S]*)\}$/.exec(l);
-  if (m) {
-    // we use object to constructor a struct, no use literal, so here we return empty
-    return ['', '', VariableType.STRUCT];
-  }
-
-  // Library
-  m = /^\[([\s\S]*)\]$/.exec(l);
-  if (m) {
-    // we use array to constructor a library, no use literal, so here we return empty
-    return ['', '', VariableType.LIBRARY];
-  }
 
   throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
 
 }
 
-export function isStringLiteral(l: string) {
-  const m = /^"([\s\S]*)"$/.exec(l.trim());
-  if (m) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * convert literals to Scrypt Type
- */
-export function literal2ScryptType(l: string): ScryptType {
-
-  const [asm, value, type] = parseLiteral(l);
-  switch (type) {
-    case VariableType.BOOL:
-      return new Bool(value as boolean);
-    case VariableType.INT:
-      return new Int(value as number);
-    case VariableType.BYTES:
-      return isStringLiteral(l) ? new String(String.fromUtf8Hex(value as string)) : new Bytes(value as string);
-    case VariableType.PRIVKEY:
-      return new PrivKey(value as bigint);
-    case VariableType.PUBKEY:
-      return new PubKey(value as string);
-    case VariableType.SIG:
-      return new Sig(value as string);
-    case VariableType.RIPEMD160:
-      return new Ripemd160(value as string);
-    case VariableType.SHA1:
-      return new Sha1(value as string);
-    case VariableType.SHA256:
-      return new Sha256(value as string);
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(value as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(value as string);
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(value as string);
-    default:
-      throw new Error(`<${l}> cannot be cast to ScryptType, only sCrypt native types supported`);
-  }
-}
 
 
-export function asm2ScryptType(type: string, asm: string): ScryptType {
-
-  switch (type) {
-    case VariableType.BOOL:
-      return new Bool(BN.fromString(asm).gt(0) ? true : false);
-    case VariableType.INT:
-      return new Int(asm2int(asm));
-    case VariableType.BYTES:
-      return new Bytes((asm == '0' || asm == 'OP_0' || asm == 'OP_FALSE') ? '' : asm);
-    case VariableType.PRIVKEY:
-      return new PrivKey(asm2int(asm));
-    case VariableType.PUBKEY:
-      return new PubKey(asm);
-    case VariableType.SIG:
-      return new Sig(asm);
-    case VariableType.RIPEMD160:
-      return new Ripemd160(asm);
-    case VariableType.SHA1:
-      return new Sha1(asm);
-    case VariableType.SHA256:
-      return new Sha256(asm);
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(asm2int(asm) as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(asm);
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(asm);
-    default:
-      throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
-  }
-
-}
-
-
-export function hex2ScryptType(type: string, hex: string): ScryptType {
-
-  const b = bsv.Script.fromHex(hex);
-  const chuck = b.chunks[0];
-
-  switch (type) {
-    case VariableType.BOOL:
-      return new Bool(chuck.opcodenum == 0x51 ? true : false);
-    case VariableType.INT:
-      return new Int(hex2int(hex));
-    case VariableType.BYTES:
-      return new Bytes(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.PRIVKEY:
-      return new PrivKey(hex2int(hex));
-    case VariableType.PUBKEY:
-      return new PubKey(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.SIG:
-      return new Sig(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.RIPEMD160:
-      return new Ripemd160(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.SHA1:
-      return new Sha1(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.SHA256:
-      return new Sha256(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(hex2int(hex) as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(chuck.opcodenum == 0 ? '' : chuck.buf.toString('hex'));
-    default:
-      throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
-  }
-
-}
 
 
 
@@ -491,26 +343,7 @@ export function hexStringToBytes(hex: string): number[] {
 }
 
 
-export function getValidatedHexString(hex: string, allowEmpty = true): string {
-
-  const ret = hex.trim();
-
-  if (ret.length < 1 && !allowEmpty) {
-    throw new Error('can\'t be empty string');
-  }
-
-  if (ret.length % 2) {
-    throw new Error(`${ret} should have even length`);
-  }
-
-  if (ret.length > 0 && !(/^[\da-f]+$/i.test(ret))) {
-    throw new Error(`${ret} should only contain [0-9] or characters [a-fA-F]`);
-  }
-
-  return ret;
-}
-
-export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): Sig {
+export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
 
   if (!tx) {
     throw new Error('param tx can not be empty');
@@ -532,23 +365,17 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
     throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
   }
 
-  const buf = toHex(bsv.Transaction.Sighash.sign(
+  return toHex(bsv.Transaction.Sighash.sign(
     tx, privateKey, sighashType, inputIndex,
     lockingScript, new bsv.crypto.BN(inputAmount), flags
   ).toTxFormat());
-  return new Sig(buf);
 }
 
-export function toHex(x: { toString(format: 'hex'): string }): string {
-  if (x instanceof ScryptType) {
-    return x.serialize();
-  }
-  return x.toString('hex');
-}
 
-export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+
+export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
   const preimageBuf = bsv.Transaction.Sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
-  return new SigHashPreimage(preimageBuf.toString('hex'));
+  return toHex(preimageBuf);
 }
 
 const MSB_THRESHOLD = 0x7e;
@@ -560,77 +387,16 @@ export function hashIsPositiveNumber(sighash: Buffer): boolean {
 }
 
 
-export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
+export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
 
   for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
     const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType, flags);
-    const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(toHex(preimage), 'hex'));
+    const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(preimage, 'hex'));
     const msb = sighash.readUInt8();
     if (msb < MSB_THRESHOLD && hashIsPositiveNumber(sighash)) {
       return preimage;
     }
     tx.inputs[inputIndex].sequenceNumber--;
-  }
-}
-
-
-// Converts a number into a sign-magnitude representation of certain size as a string
-// Throws if the number cannot be accommodated
-// Often used to append numbers to OP_RETURN, which are read in contracts
-// Support Bigint
-export function num2bin(n: number | bigint | string | bsv.crypto.BN, dataLen: number): string {
-  const num = new BN(n);
-  if (num.eqn(0)) {
-    return '00'.repeat(dataLen);
-  }
-  const s = num.toSM({ endian: 'little' }).toString('hex');
-
-  const byteLen_ = s.length / 2;
-  if (byteLen_ > dataLen) {
-    throw new Error(`${n} cannot fit in ${dataLen} byte[s]`);
-  }
-  if (byteLen_ === dataLen) {
-    return s;
-  }
-
-  const paddingLen = dataLen - byteLen_;
-  const lastByte = s.substring(s.length - 2);
-  const rest = s.substring(0, s.length - 2);
-  let m = parseInt(lastByte, 16);
-  if (num.isNeg) {
-    // reset sign bit
-    m &= 0x7F;
-  }
-  let mHex = m.toString(16);
-  if (mHex.length < 2) {
-    mHex = '0' + mHex;
-  }
-
-  const padding = n > 0 ? '00'.repeat(paddingLen) : '00'.repeat(paddingLen - 1) + '80';
-  return rest + mHex + padding;
-}
-
-//Support Bigint
-export function bin2num(s: string | Buffer): number | string {
-  const hex = s.toString('hex');
-  const lastByte = hex.substring(hex.length - 2);
-  const rest = hex.substring(0, hex.length - 2);
-  const m = parseInt(lastByte, 16);
-  const n = m & 0x7F;
-  let nHex = n.toString(16);
-  if (nHex.length < 2) {
-    nHex = '0' + nHex;
-  }
-  //Support negative number
-  let bn = BN.fromHex(rest + nHex, { endian: 'little' });
-  if (m >> 7) {
-    bn = bn.neg();
-  }
-
-  if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
-    return bn.toNumber();
-  } else {
-    return bn.toString();
   }
 }
 
@@ -660,18 +426,10 @@ export function uri2path(uri: string): string {
 
 }
 
-/**
- * @deprecated
- * convert literals to script ASM format
- */
-export function literal2Asm(l: string): [string, string] {
-  const [asm, _, type] = parseLiteral(l);
-  return [asm, type];
-}
 
 
 
-export function findStructByName(name: string, s: StructEntity[]): StructEntity {
+export function findStructByName(name: string, s: StructEntity[]): StructEntity | undefined {
   return s.find(s => {
     return s.name == name;
   });
@@ -713,581 +471,23 @@ export function findStructByType(type: string, s: StructEntity[]): StructEntity 
 
 
 
-export function checkStructField(s: StructEntity, param: ParamEntity, arg: SupportedParamType, typeResolver: TypeResolver): void {
-
-  const expectedType = typeResolver(param.type).finalType;
-
-  if (isArrayType(expectedType)) {
-    if (checkArray(arg as SupportedParamType[], param, expectedType, typeResolver)) {
-      throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${param.type}`);
-    }
-  } else {
-    const realType = typeOfArg(arg);
-
-    if (expectedType != realType) {
-      throw new Error(`Member ${param.name} of struct ${s.name} is of wrong type, expected ${expectedType} but got ${realType}`);
-    }
-  }
-}
-
-
-
-export function checkStruct(s: StructEntity, arg: Struct): void {
-
-  s.params.forEach(p => {
-    const member = arg.memberByKey(p.name);
-
-    if (!member) {
-      throw new Error(`argument of type struct ${s.name} missing member ${p.name}`);
-    }
-
-  });
-
-  const members = s.params.map(p => p.name);
-  arg.getMembers().forEach(key => {
-    if (!members.includes(key)) {
-      throw new Error(`${key} is not a member of struct ${s.name}`);
-    }
-  });
-}
-
-
-
-export function checkSupportedParamType(arg: SupportedParamType, param: ParamEntity, resolver: TypeResolver): Error | undefined {
-  const typeInfo = resolver(param.type);
-  const finalType = typeInfo.finalType;
-  if (isArrayType(finalType)) {
-    return checkArray(arg as SupportedParamType[], param, finalType, resolver);
-  }
-
-  const error = new Error(`The type of ${param.name} is wrong, expected ${finalType} but got ${typeOfArg(arg)}`);
-  if (isGenericType(finalType)) {
-    if (Library.isLibrary(arg)) {
-      const argL = arg as Library;
-      if (!argL.inferrTypesByAssign(finalType)) {
-        return error;
-      }
-    } else if (Struct.isStruct(arg)) {
-      const argS = arg as Struct;
-      if (!argS.inferrTypesByAssign(finalType)) {
-        return error;
-      }
-    }
-    else {
-      return error;
-    }
-  }
-
-  const t = typeOfArg(arg);
-  return t == finalType ? undefined : error;
-}
-
-
-
-/**
- * return eg. int[N][N][4] => ['int', ["N","N","4"]]
- * @param arrayTypeName 
- */
-export function arrayTypeAndSizeStr(arrayTypeName: string): [string, Array<string>] {
-
-  const arraySizes: Array<string> = [];
-
-
-  if (arrayTypeName.indexOf('>') > -1) {
-    const elemTypeName = arrayTypeName.substring(0, arrayTypeName.lastIndexOf('>') + 1);
-    const sizeParts = arrayTypeName.substring(arrayTypeName.lastIndexOf('>') + 1);
-
-    [...sizeParts.matchAll(/\[([\w.]+)\]+/g)].map(match => {
-      arraySizes.push(match[1]);
-    });
-
-    return [elemTypeName, arraySizes];
-  }
-  [...arrayTypeName.matchAll(/\[([\w.]+)\]+/g)].map(match => {
-    arraySizes.push(match[1]);
-  });
-
-  const group = arrayTypeName.split('[');
-  const elemTypeName = group[0];
-  return [elemTypeName, arraySizes];
-}
-
-
-/**
- * return eg. int[2][3][4] => ['int', [2,3,4]]
- * @param arrayTypeName  eg. int[2][3][4]
- */
-export function arrayTypeAndSize(arrayTypeName: string): [string, Array<number>] {
-  const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(arrayTypeName);
-  return [elemTypeName, arraySizes.map(size => {
-    const n = parseInt(size);
-
-    if (isNaN(n)) {
-      throw new Error(`arrayTypeAndSize error type ${arrayTypeName} with sub isNaN`);
-    }
-
-    return n;
-  })];
-}
-
-export function toLiteralArrayType(elemTypeName: string, sizes: Array<number | string>): string {
-  return [elemTypeName, sizes.map(size => `[${size}]`).join('')].join('');
-}
-
 export function toGenericType(name: string, genericTypes: Array<string>): string {
   return `${name}<${genericTypes.join(',')}>`;
 }
 
 
-/**
- * return eg. int[2][3][4] => int[3][4]
- * @param arrayTypeName  eg. int[2][3][4]
- */
-export function subArrayType(arrayTypeName: string): string {
-  const [elemTypeName, sizes] = arrayTypeAndSize(arrayTypeName);
-  return toLiteralArrayType(elemTypeName, sizes.slice(1));
-}
-
-
-function checkArray(args: SupportedParamType[], param: ParamEntity, expectedType: string, resolver: TypeResolver): Error | undefined {
-  const finalType = resolver(param.type).finalType;
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
-
-  if (!Array.isArray(args)) {
-    return new Error(`The type of ${param.name} is wrong, expected ${expectedType} but got ${typeOfArg(args)}`);
-  }
-
-  const t = typeOfArg(args[0]);
-
-  if (!args.every(arg => typeOfArg(arg) === t)) {
-    return new Error(`The type of ${param.name} is wrong, expected ${expectedType} but not all element types are the same`);
-  }
-
-
-  if (args.length !== arraySizes[0]) {
-    return new Error(`The type of ${param.name} is wrong, should be ${expectedType}`);
-  }
-
-  if (arraySizes.length == 1) {
-    const arg0 = args[0];
-    const scryptType = typeOfArg(arg0);
-    return scryptType === elemTypeName ?
-      undefined :
-      new Error(`The type of ${param.name} is wrong, should be ${expectedType}`);
-
-  } else {
-    return args.map(a => {
-      return checkArray(a as SupportedParamType[], {
-        name: param.name,
-        type: subArrayType(finalType)
-      }, expectedType, resolver);
-    }).filter(e => e)[0];
-  }
-}
 
 export function subscript(index: number, arraySizes: Array<number>): string {
 
   if (arraySizes.length == 1) {
     return `[${index}]`;
-  } else if (arraySizes.length > 1) {
+  } else {
     const subArraySizes = arraySizes.slice(1);
     const offset = subArraySizes.reduce(function (acc, val) { return acc * val; }, 1);
     return `[${Math.floor(index / offset)}]${subscript(index % offset, subArraySizes)}`;
   }
 }
 
-export function flatternArray(arg: SupportedParamType[], name: string, finalType: string): Arguments {
-
-  if (!Array.isArray(arg)) {
-    throw new Error('flatternArray only work on array');
-  }
-
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(finalType);
-
-  return arg.map((item, index) => {
-
-    if (typeof item === 'boolean') {
-      item = new Bool(item as boolean);
-    } else if (typeof item === 'number') {
-      item = new Int(item as number);
-    } else if (typeof item === 'bigint') {
-      item = new Int(item as bigint);
-    } else if (Array.isArray(item)) {
-      return flatternArray(item, `${name}[${index}]`, subArrayType(finalType));
-    } else if (Struct.isStruct(item)) {
-      return flatternStruct(item, `${name}[${index}]`);
-    } else if (Library.isLibrary(item)) {
-      return flatternLibrary(item, `${name}[${index}]`);
-    }
-    else {
-      item = item as ScryptType;
-    }
-
-    return {
-      value: item,
-      name: `${name}${subscript(index, arraySizes)}`,
-      type: elemTypeName
-    };
-  }).flat(Infinity) as Arguments;
-}
-
-export function flatternStruct(arg: SupportedParamType, name: string): Arguments {
-  if (Struct.isStruct(arg)) {
-    const argS = arg as Struct;
-    const keys = argS.getMembers();
-
-    return keys.map(key => {
-      let member = argS.memberByKey(key);
-      if (Struct.isStruct(member)) {
-        return flatternStruct(member as Struct, `${name}.${key}`);
-      } else if (Array.isArray(member)) {
-        const finalType = argS.getMemberAstFinalType(key);
-        return flatternArray(member, `${name}.${key}`, finalType);
-      } else {
-        member = member as ScryptType;
-        return {
-          value: member,
-          name: `${name}.${key}`,
-          type: member.type
-        };
-      }
-    }).flat(Infinity) as Arguments;
-
-  } else {
-    throw new Error(`${arg} should be struct`);
-  }
-}
-
-
-export function flatternLibrary(arg: SupportedParamType, name: string): Arguments {
-
-  if (Library.isLibrary(arg)) {
-    const library = arg as Library;
-
-    const args = library.getCtorArgs();
-
-    return library.getLibraryAst().params.map((param, index) => {
-      const arg = args[index];
-      if (Struct.isStruct(arg)) {
-        return flatternStruct(arg, `${name}.${param.name}`);
-      } else if (Array.isArray(arg)) {
-        return flatternArray(arg, `${name}.${param.name}`, param.type);
-      } else if (Library.isLibrary(arg)) {
-        return flatternLibrary(arg, `${name}.${param.name}`);
-      } else {
-        return {
-          value: arg,
-          name: `${name}.${param.name}`,
-          type: param.type
-        };
-      }
-    }).flat(Infinity) as Arguments;
-
-  } else {
-    throw new Error(`${arg} should be library`);
-  }
-}
-
-
-
-export function flatternLibraryState(arg: SupportedParamType, name: string): Arguments {
-
-  if (Library.isLibrary(arg)) {
-    const library = arg as Library;
-
-    return library.getLibraryAst().properties.map((param, index) => {
-      const property = library.getProperty(param.name);
-      if (Struct.isStruct(property)) {
-        return flatternStruct(property, `${name}.${param.name}`);
-      } else if (Array.isArray(property)) {
-        return flatternArray(property, `${name}.${param.name}`, param.type);
-      } else if (Library.isLibrary(property)) {
-        return flatternLibraryState(property, `${name}.${param.name}`);
-      } else {
-        return {
-          value: property,
-          name: `${name}.${param.name}`,
-          type: param.type
-        };
-      }
-    }).flat(Infinity) as Arguments;
-
-  } else {
-    throw new Error(`${arg} should be library`);
-  }
-}
-
-//using for flattern contract constructor arguments
-export function flatternCtorArgs(args: Arguments, resolver: TypeResolver): Arguments {
-  const args_: Arguments = [];
-  args.forEach((arg) => {
-    const typeInfo = resolver(arg.type);
-    if (isArrayType(typeInfo.finalType)) {
-      flatternArray(arg.value as SupportedParamType[], arg.name, typeInfo.finalType).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: resolver(e.type).finalType,
-          value: e.value
-        });
-      });
-
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-      flatternStruct(arg.value, arg.name).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: resolver(e.type).finalType,
-          value: e.value
-        });
-      });
-    } else if (typeInfo.symbolType === SymbolType.Library) {
-      flatternLibrary(arg.value, arg.name).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: resolver(e.type).finalType,
-          value: e.value
-        });
-      });
-    } else {
-      args_.push({
-        name: arg.name,
-        type: typeInfo.finalType,
-        value: arg.value
-      });
-    }
-  });
-
-  return args_;
-}
-
-//using for flattern stateful contract states
-export function flatternStateArgs(args: Arguments, resolver: TypeResolver): Arguments {
-  const args_: Arguments = [];
-  args.forEach((arg) => {
-    const typeInfo = resolver(arg.type);
-    const finalType = typeInfo.finalType;
-    if (isArrayType(finalType)) {
-      flatternArray(arg.value as SupportedParamType[], arg.name, finalType).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: resolver(e.type).finalType,
-          value: e.value
-        });
-      });
-
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-      flatternStruct(arg.value, arg.name).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: resolver(e.type).finalType,
-          value: e.value
-        });
-      });
-    } else if (typeInfo.symbolType === SymbolType.Library) {
-      flatternLibraryState(arg.value, arg.name).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: resolver(e.type).finalType,
-          value: e.value
-        });
-      });
-    }
-    else {
-      args_.push({
-        name: arg.name,
-        type: finalType,
-        value: arg.value
-      });
-    }
-  });
-
-  return args_;
-}
-
-function flatternLibraryParam(param: ParamEntity, resolver: ScryptTypeResolver, property: boolean): Arguments {
-  const libraryClass = resolver.resolverClass(param.type) as typeof Library;
-  const ast = property ? libraryClass.libraryAst.properties : libraryClass.libraryAst.params;
-  return ast.map(p => {
-    const typeInfo = resolver.resolverType(p.type);
-    p.type = typeInfo.finalType;
-    if (isArrayType(p.type)) {
-      return flatternArrayParam({
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      }, resolver);
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-      return flatternStructParam({
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      }, resolver);
-    } else if (typeInfo.symbolType === SymbolType.Library) {
-      return flatternLibraryParam({
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      }, resolver, property);
-    }
-    else {
-      return {
-        value: undefined,
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      };
-    }
-  }).flat(Infinity) as Arguments;
-}
-
-
-
-
-
-function flatternStructParam(param: ParamEntity, resolver: ScryptTypeResolver): Arguments {
-  const StructClass = resolver.resolverClass(param.type) as typeof Struct;
-  return StructClass.structAst.params.map(p => {
-    const typeInfo = resolver.resolverType(p.type);
-    p.type = typeInfo.finalType;
-    if (isArrayType(p.type)) {
-      return flatternArrayParam({
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      }, resolver);
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-      return flatternStructParam({
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      }, resolver);
-
-    } else {
-      return {
-        value: undefined,
-        name: `${param.name}.${p.name}`,
-        type: p.type
-      };
-    }
-  }).flat(Infinity) as Arguments;
-}
-
-
-function flatternArrayParam(param: ParamEntity, resolver: ScryptTypeResolver): Arguments {
-  const typeInfo = resolver.resolverType(param.type);
-  param.type = typeInfo.finalType;
-  if (!isArrayType(param.type)) {
-    throw new Error(`ParamEntity ${param.name} should be array`);
-  }
-
-  const [elemTypeName, arraySizes] = arrayTypeAndSize(param.type);
-
-  const args: Arguments = [];
-
-  for (let index = 0; index < arraySizes[0]; index++) {
-
-    if (arraySizes.length > 1) {
-      flatternArrayParam({
-        name: `${param.name}[${index}]`,
-        type: subArrayType(param.type)
-      }, resolver).forEach(a => {
-        args.push(a);
-      });
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-      flatternStructParam({
-        name: `${param.name}[${index}]`,
-        type: elemTypeName
-      }, resolver).forEach(a => {
-        args.push(a);
-      });
-    } else if (typeInfo.symbolType === SymbolType.Library) {
-      flatternLibraryParam({
-        name: `${param.name}[${index}]`,
-        type: elemTypeName
-      }, resolver, true).forEach(a => {
-        args.push(a);
-      });
-    } else {
-      args.push({
-        value: undefined,
-        name: `${param.name}${subscript(index, arraySizes)}`,
-        type: elemTypeName
-      });
-    }
-  }
-
-  return args.flat(Infinity) as Arguments;
-}
-
-
-
-
-
-export function flatternParams(params: Array<ParamEntity>, resolver: ScryptTypeResolver): Arguments {
-  const args_: Arguments = [];
-  params.forEach((param) => {
-    const typeInfo = resolver.resolverType(param.type);
-    param.type = typeInfo.finalType;
-    if (isArrayType(param.type)) {
-      flatternArrayParam(param, resolver).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: e.type,
-          value: e.value
-        });
-      });
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-      flatternStructParam(param, resolver).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: e.type,
-          value: e.value
-        });
-      });
-    } else if (typeInfo.symbolType === SymbolType.Library) {
-      flatternLibraryParam(param, resolver, true).forEach(e => {
-        args_.push({
-          name: e.name,
-          type: e.type,
-          value: e.value
-        });
-      });
-    } else {
-      args_.push({
-        name: param.name,
-        type: param.type,
-        value: undefined
-      });
-    }
-  });
-
-  return args_;
-}
-
-
-
-
-export function typeOfArg(arg: SupportedParamType): string {
-
-  if (arg instanceof ScryptType) {
-    const scryptType = (arg as ScryptType).finalType;
-    return scryptType;
-  }
-
-  const typeofArg = typeof arg;
-
-  if (typeofArg === 'boolean') {
-    return 'bool';
-  }
-
-  if (typeofArg === 'number') {
-    return 'int';
-  }
-
-  if (typeofArg === 'bigint') {
-    return 'int';
-  }
-
-  if (typeofArg === 'string') {
-    return new Int(arg as string).finalType;
-  }
-
-  return typeof arg;
-
-}
 
 
 export function readFileByLine(path: string, index: number): string {
@@ -1305,8 +505,8 @@ export function readFileByLine(path: string, index: number): string {
 }
 
 
-export function isEmpty(obj: unknown): boolean {
-  return Object.keys(obj).length === 0 && obj.constructor === Object;
+export function isEmpty(obj: any): boolean {
+  return Object.keys(obj).length === 0;
 }
 
 
@@ -1327,8 +527,8 @@ export function compileContract(file: string, options?: {
     throw (`file ${file} not exists!`);
   }
 
-  if (!fs.existsSync(options.out)) {
-    fs.mkdirSync(options.out);
+  if (!fs.existsSync(options.out as string)) {
+    fs.mkdirSync(options.out as string);
   }
 
 
@@ -1360,8 +560,8 @@ export function compileContractAsync(file: string, options?: {
     throw (`file ${file} not exists!`);
   }
 
-  if (!fs.existsSync(options.out)) {
-    fs.mkdirSync(options.out);
+  if (!fs.existsSync(options.out as string)) {
+    fs.mkdirSync(options.out as string);
   }
 
   return compileAsync({ path: file }, {
@@ -1393,9 +593,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     internalConsoleOptions: 'openOnSessionStart',
     name: name,
     program: program,
-    constructorArgs: constructorArgs,
+    constructorArgs: toJSON(constructorArgs),
     pubFunc: pubFunc,
-    pubFuncArgs: pubFuncArgs
+    pubFuncArgs: toJSON(pubFuncArgs)
   };
 
 
@@ -1436,14 +636,7 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     configurations: [debugConfig]
   };
 
-  const jsonstr = JSON.stringify(launch, (key, value) => {
-
-    if (typeof value === 'bigint') {
-      return value.toString();
-    } else {
-      return value;
-    }
-  }, 2);
+  const jsonstr = JSON.stringify(launch, null, 2);
 
   if (isNode()) {
     const filename = `${name}-launch.json`;
@@ -1468,9 +661,9 @@ export function resolveConstValue(node: any): string | undefined {
   } if (node.expr.nodeType === 'BytesLiteral') {
     value = `b'${node.expr.value.map(a => intValue2hex(a)).join('')}'`;
   } if (node.expr.nodeType === 'FunctionCall') {
-    if ([VariableType.PUBKEY, VariableType.RIPEMD160, VariableType.PUBKEYHASH, VariableType.SIG, VariableType.SIGHASHTYPE, VariableType.OPCODETYPE, VariableType.SIGHASHPREIMAGE, VariableType.SHA1, VariableType.SHA256].includes(node.expr.name)) {
-      value = `b'${node.expr.params[0].value.map(a => intValue2hex(a)).join('')}'`;
-    } else if (node.expr.name === VariableType.PRIVKEY) {
+    if ([BaseType.PUBKEY, BaseType.RIPEMD160, BaseType.SIG, BaseType.SIGHASHTYPE, BaseType.OPCODETYPE, BaseType.SIGHASHPREIMAGE, BaseType.SHA1, BaseType.SHA256].includes(node.expr.name)) {
+      value = `b'${node.expr.params[0].value.map((a: number) => intValue2hex(a)).join('')}'`;
+    } else if (node.expr.name === BaseType.PRIVKEY) {
       value = node.expr.params[0].value.toString(10);
     }
   }
@@ -1526,12 +719,16 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
     if (isArrayType(elemTypeInfo.finalType)) {
       const [elemTypeName_, sizes_] = arrayTypeAndSizeStr(elemTypeInfo.finalType);
       return {
+        info: elemTypeInfo.info,
+        generic: elemTypeInfo.generic,
         finalType: toLiteralArrayType(elemTypeName_, sizes.concat(sizes_)),
         symbolType: elemTypeInfo.symbolType
       };
     }
 
     return {
+      info: elemTypeInfo.info,
+      generic: elemTypeInfo.generic,
       finalType: toLiteralArrayType(elemTypeInfo.finalType, sizes),
       symbolType: elemTypeInfo.symbolType
     };
@@ -1541,6 +738,8 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
     const typeInfo = resolveAliasType(originTypes, alias, name);
     const gts = genericTypes.map(t => resolveAliasType(originTypes, alias, t).finalType);
     return {
+      info: typeInfo.info,
+      generic: true,
       finalType: toGenericType(typeInfo.finalType, gts),
       symbolType: typeInfo.symbolType
     };
@@ -1554,7 +753,7 @@ function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEnt
     return resolveAliasType(originTypes, alias, a.type);
   } else if (originTypes[type]) {
     return originTypes[type];
-  } else if (BasicScryptType[type]) {
+  } else if (isBaseType(type)) {
     return {
       finalType: type,
       symbolType: SymbolType.BaseType
@@ -1587,160 +786,123 @@ export function stripAnsi(string: string): string {
 }
 
 
-export function createStruct(resolver: ScryptTypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): Struct {
+export function createStruct(resolver: TypeResolver, param: ParamEntity, opcodesMap: Map<string, string>, options: DeserializeOption): StructObject {
 
-  const structClass = resolver.resolverClass(param.type) as typeof Struct;
+  const structTypeInfo = resolver(param.type);
+  const entity = structTypeInfo.info as StructEntity;
 
   const obj = Object.create({});
-  structClass.structAst.params.forEach(p => {
+  entity.params.forEach(p => {
 
-    const typeInfo = resolver.resolverType(p.type);
+    const typeInfo = resolver(p.type);
 
     if (isArrayType(typeInfo.finalType)) {
 
       Object.assign(obj, {
-        [p.name]: createArray(resolver, typeInfo.finalType, `${param.name}.${p.name}`, opcodesMap)
+        [p.name]: createArray(resolver, typeInfo.finalType, `${param.name}.${p.name}`, opcodesMap, options)
       });
 
     } else if (typeInfo.symbolType === SymbolType.Struct) {
 
       Object.assign(obj, {
-        [p.name]: createStruct(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
+        [p.name]: createStruct(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap, options)
       });
 
     } else if (typeInfo.symbolType === SymbolType.Library) {
 
       Object.assign(obj, {
-        [p.name]: createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
+        [p.name]: createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap, options)
       });
 
     } else {
 
-      Object.assign(obj, {
-        [p.name]: hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
-      });
-
+      if (options.state) {
+        Object.assign(obj, {
+          [p.name]: Stateful.deserializer(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
+        });
+      } else {
+        Object.assign(obj, {
+          [p.name]: deserializer(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
+        });
+      }
     }
 
   });
 
 
-  return new structClass(obj);
+  return obj;
 }
 
 
 
-export function createLibrary(resolver: ScryptTypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): Library {
+export function createLibrary(resolver: TypeResolver, param: ParamEntity, opcodesMap: Map<string, string>, options: DeserializeOption): Array<SupportedParamType> | Record<string, SupportedParamType> {
+  const libraryTypeInfo = resolver(param.type);
+  const entity = libraryTypeInfo.info as LibraryEntity;
 
+  if (options.state) {
+    const properties: Record<string, SupportedParamType> = {};
 
-  const libraryClass = resolver.resolverClass(param.type) as typeof Library;
+    entity.properties.forEach(p => {
 
-  const args = libraryClass.libraryAst.params.map(p => {
+      const typeInfo = resolver(p.type);
 
-    const typeInfo = resolver.resolverType(p.type);
+      if (isArrayType(typeInfo.finalType)) {
 
-    if (isArrayType(typeInfo.finalType)) {
+        Object.assign(properties, {
+          [p.name]: createArray(resolver, p.type, `${param.name}.${p.name}`, opcodesMap, options)
+        });
 
-      return createArray(resolver, typeInfo.finalType, `${param.name}.${p.name}`, opcodesMap);
+      } else if (typeInfo.symbolType === SymbolType.Struct) {
 
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
+        Object.assign(properties, {
+          [p.name]: createStruct(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap, options)
+        });
 
-      return createStruct(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
+      } else if (typeInfo.symbolType === SymbolType.Library) {
 
-    } else if (typeInfo.symbolType === SymbolType.Library) {
+        Object.assign(properties, {
+          [p.name]: createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap, options)
+        });
 
-      return createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap);
+      } else {
+        Object.assign(properties, {
+          [p.name]: Stateful.deserializer(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
+        });
+      }
+    });
 
-    } else {
-      return hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`));
-    }
-  });
+    return properties;
+  } else {
+    return entity.params.map(p => {
 
-  return new libraryClass(...args);
+      const typeInfo = resolver(p.type);
 
-}
+      if (isArrayType(typeInfo.finalType)) {
 
+        return createArray(resolver, typeInfo.finalType, `${param.name}.${p.name}`, opcodesMap, options);
 
-export function createLibraryProperties(resolver: ScryptTypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): Record<string, SupportedParamType> {
+      } else if (typeInfo.symbolType === SymbolType.Struct) {
 
+        return createStruct(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap, options);
 
-  const libraryClass = resolver.resolverClass(param.type) as typeof Library;
+      } else if (typeInfo.symbolType === SymbolType.Library) {
 
-  const properties: Record<string, SupportedParamType> = {};
+        return createLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap, options);
 
-  libraryClass.libraryAst.properties.forEach(p => {
+      } else {
+        return deserializer(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`));
+      }
+    });
+  }
 
-    const typeInfo = resolver.resolverType(p.type);
-
-    if (isArrayType(typeInfo.finalType)) {
-
-      Object.assign(properties, {
-        [p.name]: createArray(resolver, p.type, `${param.name}.${p.name}`, opcodesMap)
-      });
-
-    } else if (typeInfo.symbolType === SymbolType.Struct) {
-
-      Object.assign(properties, {
-        [p.name]: createStruct(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap)
-      });
-
-    } else if (typeInfo.symbolType === SymbolType.Library) {
-
-      const library = createDefaultLibrary(resolver, { name: `${param.name}.${p.name}`, type: p.type });
-
-      library.setProperties(createLibraryProperties(resolver, { name: `${param.name}.${p.name}`, type: p.type }, opcodesMap));
-
-      Object.assign(properties, {
-        [p.name]: library
-      });
-
-    } else {
-      Object.assign(properties, {
-        [p.name]: hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${param.name}.${p.name}>`))
-      });
-    }
-  });
-
-  return properties;
-
-}
-
-
-
-export function createDefaultLibrary(resolver: ScryptTypeResolver, param: ParamEntity): Library {
-
-  const flatternparams = flatternLibraryParam(param, resolver, false);
-
-  const hexTemplateMap: Map<string, string> = new Map();
-
-  flatternparams.forEach(p => {
-
-    if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
-      hexTemplateMap.set(`<${p.name}>`, '00');
-    } else if (p.type === VariableType.BOOL) {
-      hexTemplateMap.set(`<${p.name}>`, '51');
-    } else if (p.type === VariableType.BYTES
-      || p.type === VariableType.PUBKEY
-      || p.type === VariableType.SIG
-      || p.type === VariableType.RIPEMD160
-      || p.type === VariableType.SHA1
-      || p.type === VariableType.SHA256
-      || p.type === VariableType.SIGHASHTYPE
-      || p.type === VariableType.SIGHASHPREIMAGE
-      || p.type === VariableType.OPCODETYPE) {
-      hexTemplateMap.set(`<${p.name}>`, '0100');
-    } else {
-      throw new Error(`param ${p.name} has unknown type ${p.type}`);
-    }
-  });
-  return createLibrary(resolver, param, hexTemplateMap);
 }
 
 
 
 
 
-export function createArray(resolver: ScryptTypeResolver, type: string, name: string, opcodesMap: Map<string, string>): SupportedParamType {
+
+export function createArray(resolver: TypeResolver, type: string, name: string, opcodesMap: Map<string, string>, options: DeserializeOption): SupportedParamType {
 
   const arrays: SupportedParamType[] = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);
@@ -1748,21 +910,25 @@ export function createArray(resolver: ScryptTypeResolver, type: string, name: st
   const arraylen = sizes[0];
   if (sizes.length === 1) {
     for (let index = 0; index < arraylen; index++) {
-      const typeInfo = resolver.resolverType(elemTypeName);
+      const typeInfo = resolver(elemTypeName);
 
       if (typeInfo.symbolType === SymbolType.Struct) {
         arrays.push(createStruct(resolver, {
           name: `${name}[${index}]`,
           type: typeInfo.finalType
-        }, opcodesMap));
+        }, opcodesMap, options));
       } else if (typeInfo.symbolType === SymbolType.Library) {
         arrays.push(createLibrary(resolver, {
           name: `${name}[${index}]`,
           type: typeInfo.finalType
-        }, opcodesMap));
+        }, opcodesMap, options));
       }
       else {
-        arrays.push(hex2ScryptType(typeInfo.finalType, opcodesMap.get(`<${name}[${index}]>`)));
+        if (options.state) {
+          arrays.push(Stateful.deserializer(typeInfo.finalType, opcodesMap.get(`<${name}[${index}]>`)));
+        } else {
+          arrays.push(deserializer(typeInfo.finalType, opcodesMap.get(`<${name}[${index}]>`)));
+        }
       }
 
     }
@@ -1770,9 +936,9 @@ export function createArray(resolver: ScryptTypeResolver, type: string, name: st
   } else {
 
     for (let index = 0; index < arraylen; index++) {
-      const finalType = resolver.resolverType(elemTypeName).finalType;
+      const finalType = resolver(elemTypeName).finalType;
       const subArrayType = [finalType, sizes.slice(1).map(size => `[${size}]`).join('')].join('');
-      arrays.push(createArray(resolver, subArrayType, `${name}[${index}]`, opcodesMap));
+      arrays.push(createArray(resolver, subArrayType, `${name}[${index}]`, opcodesMap, options));
     }
   }
 
@@ -1780,61 +946,18 @@ export function createArray(resolver: ScryptTypeResolver, type: string, name: st
 }
 
 
-export function toLiteral(value: SupportedParamType): string {
-
-  if (Array.isArray(value)) {
-    const v = value as SupportedParamType[];
-    return `[${v.map(i => toLiteral(i))}]`;
-  } else {
-
-    return value instanceof ScryptType ? value.toLiteral() : value as string;
-  }
-}
-export function isInteger(x: unknown): boolean {
-
-  // check if the passed value is a number
-  if (typeof x == 'number' && !isNaN(x)) {
-
-    // check if it is integer
-    return Number.isInteger(x);
-
-  } else if (typeof x == 'bigint') {
-    return true;
-  } else if (typeof x == 'string') {
-
-    // hex int
-    let m = /^(0x[0-9a-fA-F]+)$/.exec(x);
-    if (m) {
-      return true;
-    }
-
-    // decimal int
-    m = /^(-?\d+)$/.exec(x);
-    if (m) {
-      return true;
-    }
-
-    return false;
-  }
-
-
-  return false;
-}
-
-
-
-export function findConstStatic(statics: StaticEntity[], name: string): StaticEntity {
+export function findConstStatic(statics: StaticEntity[], name: string): StaticEntity | undefined {
   return statics.find(s => {
     return s.const === true && s.name === name;
   });
 }
-export function findStatic(statics: StaticEntity[], name: string): StaticEntity {
+export function findStatic(statics: StaticEntity[], name: string): StaticEntity | undefined {
   return statics.find(s => {
     return s.name === name;
   });
 }
 
-function escapeRegExp(stringToGoIntoTheRegex) {
+function escapeRegExp(stringToGoIntoTheRegex: string) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
@@ -1870,42 +993,25 @@ export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTempl
  * @param finalTypeResolver 
  * @returns 
  */
-export function buildContractState(args: Arguments, isGenesis: boolean, finalTypeResolver: TypeResolver): string {
+export function buildContractState(args: Arguments, isGenesis: boolean, resolver: TypeResolver): string {
 
-  let state_hex = '';
-  let state_len = 0;
-  const args_ = flatternStateArgs(args, finalTypeResolver);
+  const args_ = args.map(arg => {
+    return flatternArg(arg, resolver, { state: true, ignoreValue: false });
+  }).flat(Infinity) as Arguments;
 
   if (args_.length <= 0) {
     throw new Error('no state property found, buildContractState only used for state contract');
   }
 
   // append isGenesis which is a hidden built-in state
-  state_hex += `${serializeSupportedParamType(isGenesis)}`;
+  let state_hex = `${Stateful.toHex(isGenesis)}`;
 
-  for (const arg of args_) {
-    if (arg.type == VariableType.BOOL) { //fixed length
-      state_hex += `${serializeSupportedParamType(arg.value)}`;
-    } else if (arg.type === VariableType.INT
-      || arg.type === VariableType.BYTES
-      || arg.type === VariableType.PUBKEY
-      || arg.type === VariableType.PRIVKEY
-      || arg.type === VariableType.PUBKEY
-      || arg.type === VariableType.SIG
-      || arg.type === VariableType.RIPEMD160
-      || arg.type === VariableType.SHA1
-      || arg.type === VariableType.SHA256
-      || arg.type === VariableType.SIGHASHTYPE
-      || arg.type === VariableType.SIGHASHPREIMAGE
-      || arg.type === VariableType.OPCODETYPE) {
-      state_hex += `${bsv.Script.fromASM(serializeSupportedParamType(arg.value)).toHex()}`;
-    }
-  }
+  state_hex += args_.map(a => Stateful.toHex(a.value)).join('');
 
   //append meta
   if (state_hex) {
-    state_len = state_hex.length / 2;
-    state_hex += num2bin(state_len, 4) + num2bin(CURRENT_STATE_VERSION, 1);
+    const state_len = state_hex.length / 2;
+    state_hex += num2bin(BigInt(state_len), 4) + num2bin(BigInt(CURRENT_STATE_VERSION), 1);
     return state_hex;
   }
 
@@ -1917,35 +1023,39 @@ export function buildContractState(args: Arguments, isGenesis: boolean, finalTyp
 
 export function buildDefaultStateProps(contract: AbstractContract): Arguments {
 
-  const flatternparams = flatternParams(contract.stateProps, contract.resolver);
+  const dummyArgs = contract.stateProps.map(p => {
+    const dummyArg = Object.assign({}, p, { value: false });
+    return flatternArg(dummyArg, contract.resolver, { state: true, ignoreValue: true });
+  }).flat(Infinity) as Arguments;
+
 
   const hexTemplateMap: Map<string, string> = new Map();
 
-  flatternparams.forEach(p => {
+  dummyArgs.forEach(p => {
 
-    if (p.type === VariableType.INT || p.type === VariableType.PRIVKEY) {
-      hexTemplateMap.set(`<${p.name}>`, '00');
-    } else if (p.type === VariableType.BOOL) {
-      hexTemplateMap.set(`<${p.name}>`, '51');
-    } else if (p.type === VariableType.BYTES
-      || p.type === VariableType.PUBKEY
-      || p.type === VariableType.SIG
-      || p.type === VariableType.RIPEMD160
-      || p.type === VariableType.SHA1
-      || p.type === VariableType.SHA256
-      || p.type === VariableType.SIGHASHTYPE
-      || p.type === VariableType.SIGHASHPREIMAGE
-      || p.type === VariableType.OPCODETYPE) {
-      hexTemplateMap.set(`<${p.name}>`, '0100');
+    if (p.type === BaseType.INT || p.type === BaseType.PRIVKEY) {
+      hexTemplateMap.set(`<${p.name}>`, Stateful.int2hex(0n));
+    } else if (p.type === BaseType.BOOL) {
+      hexTemplateMap.set(`<${p.name}>`, Stateful.bool2hex(true));
+    } else if (p.type === BaseType.BYTES
+      || p.type === BaseType.PUBKEY
+      || p.type === BaseType.SIG
+      || p.type === BaseType.RIPEMD160
+      || p.type === BaseType.SHA1
+      || p.type === BaseType.SHA256
+      || p.type === BaseType.SIGHASHTYPE
+      || p.type === BaseType.SIGHASHPREIMAGE
+      || p.type === BaseType.OPCODETYPE) {
+      hexTemplateMap.set(`<${p.name}>`, Stateful.bytes2hex('00'));
     } else {
       throw new Error(`param ${p.name} has unknown type ${p.type}`);
     }
-
   });
 
-  return contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
+  return contract.stateProps.map(param => deserializeArgfromHex(contract.resolver, Object.assign(param, {
     value: undefined
-  }), hexTemplateMap));
+  }), hexTemplateMap, { state: true }));
+
 }
 
 
@@ -1973,7 +1083,7 @@ export function readBytes(br: bsv.encoding.BufferReader): {
       len = br.readUInt32LE();
       data = br.read(len).toString('hex');
     } else {
-      data = num2bin(opcodenum - 80, 1);
+      data = num2bin(BigInt(opcodenum - 80), 1);
     }
 
     return {
@@ -1986,23 +1096,29 @@ export function readBytes(br: bsv.encoding.BufferReader): {
 }
 
 
+export type DeserializeOption = {
+  state: boolean
+}
 
 
-
-export function deserializeArgfromHex(resolver: ScryptTypeResolver, arg: Argument, opcodesMap: Map<string, string>): Argument {
+export function deserializeArgfromHex(resolver: TypeResolver, arg: Argument, opcodesMap: Map<string, string>, options: DeserializeOption): Argument {
 
   let value;
 
-  const typeInfo = resolver.resolverType(arg.type);
+  const typeInfo = resolver(arg.type);
 
   if (isArrayType(typeInfo.finalType)) {
-    value = createArray(resolver, arg.type, arg.name, opcodesMap);
+    value = createArray(resolver, arg.type, arg.name, opcodesMap, options);
   } else if (typeInfo.symbolType === SymbolType.Struct) {
-    value = createStruct(resolver, arg, opcodesMap);
+    value = createStruct(resolver, arg, opcodesMap, options);
   } else if (typeInfo.symbolType === SymbolType.Library) {
-    value = createLibrary(resolver, arg, opcodesMap);
+    value = createLibrary(resolver, arg, opcodesMap, options);
   } else {
-    value = hex2ScryptType(arg.type, opcodesMap.get(`<${arg.name}>`));
+    if (options.state) {
+      value = Stateful.deserializer(arg.type, opcodesMap.get(`<${arg.name}>`));
+    } else {
+      value = deserializer(arg.type, opcodesMap.get(`<${arg.name}>`));
+    }
   }
 
   arg.value = value;
@@ -2011,174 +1127,7 @@ export function deserializeArgfromHex(resolver: ScryptTypeResolver, arg: Argumen
 
 
 
-export function deserializeArgfromState(resolver: ScryptTypeResolver, arg: Argument, opcodesMap: Map<string, string>): Argument {
 
-  let value;
-  const typeInfo = resolver.resolverType(arg.type);
-  if (isArrayType(typeInfo.finalType)) {
-    value = createArray(resolver, arg.type, arg.name, opcodesMap);
-  } else if (typeInfo.symbolType === SymbolType.Struct) {
-    value = createStruct(resolver, arg, opcodesMap);
-  } else if (typeInfo.symbolType === SymbolType.Library) {
-    value = createDefaultLibrary(resolver, arg);
-    const properties = createLibraryProperties(resolver, arg, opcodesMap);
-    value.setProperties(properties);
-  } else {
-    value = hex2ScryptType(arg.type, opcodesMap.get(`<${arg.name}>`));
-  }
-
-  arg.value = value;
-
-  return arg;
-}
-
-/**
- * 
- * @param data 
- * @returns flat ScryptType array
- */
-function flattenData(data: SupportedParamType): ScryptType[] {
-
-  if (Array.isArray(data)) {
-    return data.map((item) => {
-      return flattenData(item);
-    }).flat(Infinity) as ScryptType[];
-  } else if (Struct.isStruct(data)) {
-    const argS = data as Struct;
-    const keys = argS.getMembers();
-
-    return keys.map(key => {
-      const member = argS.memberByKey(key);
-      return flattenData(member);
-    }).flat(Infinity) as ScryptType[];
-
-  } else if (typeof data === 'boolean') {
-    return [new Bool(data as boolean)];
-  } else if (typeof data === 'number' || typeof data === 'bigint' || typeof data === 'string') {
-    return [new Int(data)];
-  } else if (data instanceof ScryptType) {
-    return [data];
-  }
-}
-
-// struct / array: sha256 every single element of the flattened struct / array, and concat the result to a joint byte, and sha256 again 
-// basic type: sha256 every single element
-export function flattenSha256(data: SupportedParamType): string {
-  const flattened = flattenData(data);
-  if (flattened.length === 1) {
-    let hex = flattened[0].serialize();
-    if ((flattened[0] instanceof Bool || flattened[0] instanceof Int) && hex === '00'
-    ) {
-      hex = '';
-    }
-    return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
-  } else {
-    const jointbytes = flattened.map(item => {
-      let hex = item.serialize();
-      if ((item instanceof Bool || item instanceof Int) && hex === '00'
-      ) {
-        hex = '';
-      }
-      return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
-    }).join('');
-
-    return bsv.crypto.Hash.sha256(Buffer.from(jointbytes, 'hex')).toString('hex');
-  }
-}
-
-// sort the map by the result of flattenSha256 of the key
-export function sortmap(map: Map<SupportedParamType, SupportedParamType>): Map<SupportedParamType, SupportedParamType> {
-  return new Map([...map.entries()].sort((a, b) => {
-    return BN.fromSM(Buffer.from(flattenSha256(a[0]), 'hex'), {
-      endian: 'little'
-    }).cmp(BN.fromSM(Buffer.from(flattenSha256(b[0]), 'hex'), {
-      endian: 'little'
-    }));
-  }));
-}
-
-// sort the set by the result of flattenSha256 of the key
-export function sortset(set: Set<SupportedParamType>): Set<SupportedParamType> {
-  return new Set([...set.keys()].sort((a, b) => {
-    return BN.fromSM(Buffer.from(flattenSha256(a), 'hex'), {
-      endian: 'little'
-    }).cmp(BN.fromSM(Buffer.from(flattenSha256(b), 'hex'), {
-      endian: 'little'
-    }));
-  }));
-}
-
-
-// returns index of the HashedMap/HashedSet by the key
-export function findKeyIndex(collection: Map<SupportedParamType, SupportedParamType> | Set<SupportedParamType>, key: SupportedParamType): number {
-
-  if (collection instanceof Map) {
-    const sortedMap = sortmap(collection);
-    const m = [];
-
-    for (const entry of sortedMap.entries()) {
-      m.push(entry);
-    }
-
-    return m.findIndex((entry) => {
-      if (entry[0] === key) {
-        return true;
-      }
-      return false;
-    });
-  } else {
-
-    const sortedSet = sortset(collection);
-    const m = [];
-
-    for (const entry of sortedSet.keys()) {
-      m.push(entry);
-    }
-
-    return m.findIndex((entry) => {
-      if (entry === key) {
-        return true;
-      }
-      return false;
-    });
-  }
-
-}
-
-
-// serialize the HashedMap/HashedSet, but only flattenSha256 of the key and value
-export function toData(collection: Map<SupportedParamType, SupportedParamType> | Set<SupportedParamType>): Bytes {
-
-  let storage = '';
-  if (collection instanceof Map) {
-    const sortedMap = sortmap(collection);
-
-    for (const entry of sortedMap.entries()) {
-      storage += flattenSha256(entry[0]) + flattenSha256(entry[1]);
-    }
-  } else {
-    const sortedSet = sortset(collection);
-    for (const key of sortedSet.keys()) {
-      storage += flattenSha256(key);
-    }
-  }
-
-  return new Bytes(storage);
-}
-
-export function toHashedMap(collection: Map<SupportedParamType, SupportedParamType>): HashedMap {
-  const data = toData(collection);
-  const hashedMap = new HashedMap(data);
-
-  return hashedMap;
-}
-
-export function toHashedSet(collection: Set<SupportedParamType>): HashedSet {
-  const data = toData(collection);
-  const hashedSet = new HashedSet(data);
-
-  return hashedSet;
-}
 
 /**
  * check if a type is generic type
@@ -2261,51 +1210,6 @@ export function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
 
 
 
-// Equivalent to the built-in function `len` in scrypt
-export function len(hexstr: string): number {
-  return hexstr.length / 2;
-}
-
-// convert signed integer `n` to unsigned integer of `l` bytes, in little endian
-export function toLEUnsigned(n: number, l: number): string {
-  // one extra byte to accommodate possible negative sign byte
-  const m = num2bin(n, l + 1);
-  // remove sign byte
-  return m.slice(0, len(m) - 1);
-}
-
-// convert 'b' to a VarInt field, including the preceding length
-export function writeVarint(b: string): string {
-  const n = len(b);
-
-  let header = '';
-
-  if (n < 0xfd) {
-    header = toLEUnsigned(n, 1);
-  }
-  else if (n < 0x10000) {
-    header = 'fd' + toLEUnsigned(n, 2);
-  }
-  else if (n < 0x100000000) {
-    header = 'fe' + toLEUnsigned(n, 4);
-  }
-  else if (n < 0x10000000000000000) {
-    header = 'ff' + toLEUnsigned(n, 8);
-  }
-
-  return header + b;
-}
-
-
-export function buildOpreturnScript(data: string): Script {
-  return bsv.Script.fromASM(['OP_FALSE', 'OP_RETURN', data].join(' '));
-}
-
-
-export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
-  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash.toASM(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
-}
-
 
 /**
  * Parse out which public function is called through unlocking script
@@ -2343,80 +1247,6 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
 }
 
 
-export function toScryptType(a: SupportedParamType): ScryptType {
-  if (typeof a === 'number' || typeof a === 'bigint' || typeof a === 'string') {
-    return new Int(a);
-  } else if (typeof a === 'boolean') {
-    return new Bool(a);
-  } else if (a instanceof ScryptType) {
-    return a;
-  }
-  else {
-    throw `${a} cannot be convert to ScryptType`;
-  }
-}
-
-
-export function arrayToScryptType(a: SupportedParamType[]): ScryptType[] {
-  return a.map(i => {
-    if (Array.isArray(i)) {
-      return arrayToScryptType(i);
-    }
-    return toScryptType(i);
-  }) as ScryptType[];
-}
-
-export function arrayToJson(a: SupportedParamType[]): any[] {
-  return a.map(i => {
-    if (Array.isArray(i)) {
-      return arrayToJson(i);
-    }
-    return toScryptType(i).toJSON();
-  });
-}
-
-export function cloneArray(a: SupportedParamType[]): ScryptType[] {
-  return a.map(i => {
-    if (Array.isArray(i)) {
-      return cloneArray(i);
-    }
-    return toScryptType(i).clone();
-  }) as ScryptType[];
-}
-
-export function inferrType(a: SupportedParamType): string {
-  if (Array.isArray(a)) {
-    if (a.length === 0) {
-      throw new Error('cannot inferr type from empty array');
-    }
-
-    const arg0 = a[0];
-
-    if (Array.isArray(arg0)) {
-
-      if (!a.every(arg => Array.isArray(arg) && arg.length === arg0.length)) {
-        throw new Error(`cannot inferr type from [${a}] , not all length of element are the same`);
-      }
-      const [e, sizes] = arrayTypeAndSize(inferrType(arg0));
-      return toLiteralArrayType(e, [a.length].concat(sizes));
-    }
-    else {
-
-      const t = typeOfArg(arg0);
-
-      if (!a.every(arg => typeOfArg(arg) === t)) {
-        throw new Error(`cannot inferr type from [${a}] , not all element types are the same`);
-      }
-
-      return `${toScryptType(a[0]).finalType}[${a.length}]`;
-    }
-  } else {
-    return toScryptType(a).finalType;
-  }
-}
-
-
-
 export function resolveGenericType(genericTypeMap: Record<string, string>, type: string): string {
   if (Object.keys(genericTypeMap).length > 0) {
     if (isGenericType(type)) {
@@ -2436,27 +1266,16 @@ export function resolveGenericType(genericTypeMap: Record<string, string>, type:
 }
 
 
-export function librarySign(genericEntity: LibraryEntity) {
+export function librarySign(genericEntity: LibraryEntity): string {
   return `[${genericEntity.params.map(p => p.type).join(',')}]`;
 }
 
-export function structSign(structEntity: StructEntity) {
+export function structSign(structEntity: StructEntity): string {
   return `${JSON.stringify(structEntity.params.reduce((p, v) => Object.assign(p, {
     [v.name]: v.type
   }), {}), null, 4)}`;
 }
 
-export function arrayToLiteral(a: SupportedParamType[]): string {
-
-  const al = a.map(i => {
-    if (Array.isArray(i)) {
-      return arrayToLiteral(i);
-    }
-    return toScryptType(i).toLiteral();
-  }).join(',');
-
-  return `[${al}]`;
-}
 
 // If the property is the same as the construction parameter, there may be no constructor, in which case the construction parameter can be assigned to the property. But this does not guarantee that the property is always correct, the user may have modified the value of the property in the constructor
 export function canAssignProperty(libraryAst: LibraryEntity): boolean {
@@ -2466,84 +1285,6 @@ export function canAssignProperty(libraryAst: LibraryEntity): boolean {
 }
 
 
-export function int2Number(value: ValueType): number | bigint {
-  if (typeof value === 'number' || typeof value === 'bigint') {
-    return value;
-  } else if (typeof value === 'string') {
-    if (value.startsWith('0x')) {
-      const bn = new BN(value.substr(2), 16);
-      return bn.toNumber();
-    } else {
-      const bn = new BN(value);
-      return bn.toNumber();
-    }
-  }
-}
-
-
-export function and(a: Int, b: Int): Int {
-  const size1 = a.serialize().length / 2;
-  const size2 = b.serialize().length / 2;
-  const maxSize = Math.max(size1, size2);
-
-  const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
-  const bb = Buffer.from(num2bin(b.toNumber(), maxSize), 'hex');
-
-  for (let i = 0; i < ba.length; i++) {
-    ba[i] &= bb[i];
-  }
-
-  return new Int(bin2num(ba));
-
-}
-
-export function or(a: Int, b: Int): Int {
-  const size1 = a.serialize().length / 2;
-  const size2 = b.serialize().length / 2;
-  const maxSize = Math.max(size1, size2);
-
-  const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
-  const bb = Buffer.from(num2bin(b.toNumber(), maxSize), 'hex');
-
-  for (let i = 0; i < ba.length; i++) {
-    ba[i] |= bb[i];
-  }
-
-  return new Int(bin2num(ba));
-
-}
-
-export function xor(a: Int, b: Int): Int {
-  const size1 = a.serialize().length / 2;
-  const size2 = b.serialize().length / 2;
-  const maxSize = Math.max(size1, size2);
-
-  const ba = Buffer.from(num2bin(a.toNumber(), maxSize), 'hex');
-  const bb = Buffer.from(num2bin(b.toNumber(), maxSize), 'hex');
-
-  for (let i = 0; i < ba.length; i++) {
-    ba[i] ^= bb[i];
-  }
-
-  return new Int(bin2num(ba));
-
-}
-
-export function invert(a: Int): Int {
-  if (a.toNumber() === 0) {
-    return a;
-  }
-  const size = a.serialize().length / 2;
-
-  const buffer = Buffer.from(num2bin(a.toNumber(), size), 'hex');
-
-  for (let i = 0; i < buffer.length; i++) {
-    buffer[i] = ~buffer[i];
-  }
-
-  return new Int(bin2num(buffer));
-
-}
 
 
 export async function JSONParser(file: string): Promise<boolean> {
@@ -2613,8 +1354,8 @@ export function findSrcInfoV1(opcodes: OpCode[], opcodesIndex: number): OpCode |
 export function parseStateHex(contract: AbstractContract, scriptHex: string): [boolean, Arguments] {
 
   const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
-  const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
-  const stateLen = bin2num(metaScript.substr(0, 8)) as number;
+  const version = Number(bin2num(metaScript.substr(metaScript.length - 2, 2)));
+  const stateLen = Number(bin2num(metaScript.substr(0, 8)));
 
 
   const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
@@ -2627,26 +1368,25 @@ export function parseStateHex(contract: AbstractContract, scriptHex: string): [b
 
   const stateTemplateArgs: Map<string, string> = new Map();
 
-  const flatternparams = flatternParams(contract.stateProps, contract.resolver);
 
+  const dummyArgs = contract.stateProps.map(p => {
+    const dummyArg = Object.assign({}, p, { value: false });
+    return flatternArg(dummyArg, contract.resolver, { state: true, ignoreValue: true });
+  }).flat(Infinity) as Arguments;
 
-  flatternparams.forEach((param) => {
-    if (param.type === VariableType.BOOL) {
+  dummyArgs.forEach((param) => {
+    if (param.type === BaseType.BOOL) {
       const opcodenum = br.readUInt8();
-      stateTemplateArgs.set(`<${param.name}>`, opcodenum === 1 ? '51' : '00');
+      stateTemplateArgs.set(`<${param.name}>`, opcodenum === 1 ? '01' : '00');
     } else {
       const { data } = readBytes(br);
-      if (param.type === VariableType.INT || param.type === VariableType.PRIVKEY) {
-        stateTemplateArgs.set(`<${param.name}>`, new Int(bin2num(data)).toHex());
-      } else {
-        stateTemplateArgs.set(`<${param.name}>`, bsv.Script.fromASM(data).toHex());
-      }
+      stateTemplateArgs.set(`<${param.name}>`, data ? bsv.Script.fromASM(data).toHex() : '');
     }
   });
 
-  return [isGenesis, contract.stateProps.map(param => deserializeArgfromState(contract.resolver, Object.assign(param, {
-    value: undefined
-  }), stateTemplateArgs))];
+  return [isGenesis, contract.stateProps.map(param => deserializeArgfromHex(contract.resolver, Object.assign(param, {
+    value: false
+  }), stateTemplateArgs, { state: true }))];
 }
 
 

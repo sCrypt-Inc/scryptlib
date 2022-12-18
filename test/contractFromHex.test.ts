@@ -2,12 +2,12 @@ import { assert, expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import {
   buildContractClass,
-  buildTypeClasses,
   AbstractContract,
   VerifyResult
 } from '../src/contract'
-import { bsv, signTx, toHex, toLiteral } from '../src/utils'
-import { Ripemd160, Bytes, Int, ScryptType } from '../src/scryptTypes'
+import { bsv, signTx } from '../src/utils'
+import { Ripemd160, Bytes, Int } from '../src/scryptTypes'
+import { toHex } from '../src'
 
 const privateKey = bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
@@ -39,15 +39,15 @@ describe('simple scrypt', () => {
 
     it('the returned object can be verified whether it could unlock the contract', () => {
       // can unlock contract if params are correct
-      result = instance.main(2, 4).verify({ inputSatoshis, tx })
+      result = instance.main(2n, 4n).verify({ inputSatoshis, tx })
       assert.isTrue(result.success, result.error)
-      result = instance.main(3, 3).verify({ inputSatoshis, tx })
+      result = instance.main(3n, 3n).verify({ inputSatoshis, tx })
       assert.isTrue(result.success, result.error)
 
       // can not unlock contract if any param is incorrect
-      result = instance.main(2, 3).verify({ inputSatoshis, tx })
+      result = instance.main(2n, 3n).verify({ inputSatoshis, tx })
       assert.isFalse(result.success, result.error)
-      result = instance.main(3, 4).verify({ inputSatoshis, tx })
+      result = instance.main(3n, 4n).verify({ inputSatoshis, tx })
       assert.isFalse(result.success, result.error)
     })
   })
@@ -102,19 +102,19 @@ describe('create instance from UTXO Hex', () => {
 
   it('the returned object can be verified whether it could unlock the contract', () => {
     // can unlock contract if params are correct
-    result = instance.main(2, 4).verify({ inputSatoshis, tx })
+    result = instance.main(2n, 4n).verify({ inputSatoshis, tx })
     assert.isTrue(result.success, result.error)
-    result = instance.main(3, 3).verify({ inputSatoshis, tx })
+    result = instance.main(3n, 3n).verify({ inputSatoshis, tx })
     assert.isTrue(result.success, result.error)
-    result = instance.equal(11).verify()
+    result = instance.equal(11n).verify()
     assert.isTrue(result.success, result.error)
 
     // can not unlock contract if any param is incorrect
-    result = instance.main(2, 3).verify({ inputSatoshis, tx })
+    result = instance.main(2n, 3n).verify({ inputSatoshis, tx })
     assert.isFalse(result.success, result.error)
-    result = instance.main(3, 4).verify({ inputSatoshis, tx })
+    result = instance.main(3n, 4n).verify({ inputSatoshis, tx })
     assert.isFalse(result.success, result.error)
-    result = instance.equal(12).verify()
+    result = instance.equal(12n).verify()
     assert.isFalse(result.success, result.error)
   })
 })
@@ -129,7 +129,7 @@ describe('buildContractClass and create instance from script', () => {
     let result: VerifyResult
 
     beforeEach(() => {
-      const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)))
+      const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)))
       //create instance from an exist script
       instance = DemoP2PKH.fromHex(p2pkh.lockingScript.toHex())
       sig = signTx(
@@ -261,53 +261,52 @@ describe('buildContractClass and create instance from script', () => {
       describe('when build a contract which have Implicit constructor from asm', () => {
 
         const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgs_desc.json'));
-        const { ST2, ST3 } = ConstructorArgsContract.types;
 
         it('should get right constructor args', () => {
 
-          let args = [2, new Int(BigInt(11111111111111111111n)), false, new Bytes('1234567890'),
-            new ST2({
+          let args = [2n, 11111111111111111111n, false, Bytes('1234567890'),
+            {
               x: false,
-              y: new Bytes('12345678901100'),
-              st3: new ST3({
+              y: Bytes('12345678901100'),
+              st3: {
                 x: true,
-                y: [23, 10, 25555555555555555555555555555n]
-              })
-            }),
+                y: [23n, 10n, 25555555555555555555555555555n]
+              }
+            },
             [
-              [new ST2({
+              [{
                 x: false,
-                y: new Bytes('123456789011'),
-                st3: new ST3({
+                y: Bytes('123456789011'),
+                st3: {
                   x: true,
-                  y: [0, 1, 22222222222222222222222222222n]
-                })
-              }), new ST2({
+                  y: [0n, 1n, 22222222222222222222222222222n]
+                }
+              }, {
                 x: false,
-                y: new Bytes('123456789011'),
-                st3: new ST3({
+                y: Bytes('123456789011'),
+                st3: {
                   x: true,
-                  y: [2, 16, 22222222222222222222222222222n]
-                })
-              })],
-              [new ST2({
+                  y: [2n, 16n, 22222222222222222222222222222n]
+                }
+              }],
+              [{
                 x: false,
-                y: new Bytes('123456789011'),
-                st3: new ST3({
+                y: Bytes('123456789011'),
+                st3: {
                   x: true,
-                  y: [2, 16, 22222222222222222222222222222n]
-                })
-              }),
-              new ST2({
+                  y: [2n, 16n, 22222222222222222222222222222n]
+                }
+              },
+              {
                 x: false,
-                y: new Bytes('12345678901100'),
-                st3: new ST3({
+                y: Bytes('12345678901100'),
+                st3: {
                   x: true,
-                  y: [23, 17, 25555555555555555555555555555n]
-                })
-              })]
+                  y: [23n, 17n, 25555555555555555555555555555n]
+                }
+              }]
             ],
-            [[[1, 25555555555555555555555555555n]]]
+            [[[1n, 25555555555555555555555555555n]]]
           ];
 
           let contract = new ConstructorArgsContract(...args);
@@ -318,9 +317,7 @@ describe('buildContractClass and create instance from script', () => {
 
           let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
 
-          assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)),
-            `[2,11111111111111111111,false,b'1234567890',{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}},[[{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}},{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}],[{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}},{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}]],[[[1,25555555555555555555555555555]]]]`
-          )
+          assert.deepEqual(newContract.ctorArgs().map(i => i.value), args)
         })
       })
 
@@ -330,54 +327,52 @@ describe('buildContractClass and create instance from script', () => {
     describe('when build a contract which have explicit constructor from asm', () => {
 
       const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgsExplicit_desc.json'));
-      const { ST2, ST3 } = ConstructorArgsContract.types;
-
 
       it('should get right constructor args', () => {
 
-        let args = [2, new Int(BigInt(11111111111111111111n)), false, new Bytes('1234567890'),
-          new ST2({
+        let args = [2n, 11111111111111111111n, false, Bytes('1234567890'),
+          {
             x: false,
-            y: new Bytes('12345678901100'),
-            st3: new ST3({
+            y: Bytes('12345678901100'),
+            st3: {
               x: true,
-              y: [23, 10, 25555555555555555555555555555n]
-            })
-          }),
+              y: [23n, 10n, 25555555555555555555555555555n]
+            }
+          },
           [
-            [new ST2({
+            [{
               x: false,
-              y: new Bytes('123456789011'),
-              st3: new ST3({
+              y: Bytes('123456789011'),
+              st3: {
                 x: true,
-                y: [0, 1, 22222222222222222222222222222n]
-              })
-            }), new ST2({
+                y: [0n, 1n, 22222222222222222222222222222n]
+              }
+            }, {
               x: false,
-              y: new Bytes('123456789011'),
-              st3: new ST3({
+              y: Bytes('123456789011'),
+              st3: {
                 x: true,
-                y: [2, 16, 22222222222222222222222222222n]
-              })
-            })],
-            [new ST2({
+                y: [2n, 16n, 22222222222222222222222222222n]
+              }
+            }],
+            [{
               x: false,
-              y: new Bytes('123456789011'),
-              st3: new ST3({
+              y: Bytes('123456789011'),
+              st3: {
                 x: true,
-                y: [2, 16, 22222222222222222222222222222n]
-              })
-            }),
-            new ST2({
+                y: [2n, 16n, 22222222222222222222222222222n]
+              }
+            },
+            {
               x: false,
-              y: new Bytes('12345678901100'),
-              st3: new ST3({
+              y: Bytes('12345678901100'),
+              st3: {
                 x: true,
-                y: [23, 17, 25555555555555555555555555555n]
-              })
-            })]
+                y: [23n, 17n, 25555555555555555555555555555n]
+              }
+            }]
           ],
-          [[[1, 25555555555555555555555555555n]]]
+          [[[1n, 25555555555555555555555555555n]]]
         ];
 
         let contract = new ConstructorArgsContract(...args);
@@ -387,9 +382,7 @@ describe('buildContractClass and create instance from script', () => {
         assert.isTrue(result.success)
 
         let newContract = ConstructorArgsContract.fromASM(contract.lockingScript.toASM());
-        assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)),
-          `[2,11111111111111111111,false,b'1234567890',{false,b'12345678901100',{true,[23,10,25555555555555555555555555555]}},[[{false,b'123456789011',{true,[0,1,22222222222222222222222222222]}},{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}}],[{false,b'123456789011',{true,[2,16,22222222222222222222222222222]}},{false,b'12345678901100',{true,[23,17,25555555555555555555555555555]}}]],[[[1,25555555555555555555555555555]]]]`
-        )
+        assert.deepEqual(newContract.ctorArgs().map(i => i.value), args)
       })
     })
   })
@@ -399,21 +392,19 @@ describe('buildContractClass and create instance from script', () => {
   describe('when build a contract which have library param in constructor from asm', () => {
 
     const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
-    const { L, ST } = buildTypeClasses(Test);
-
 
     it('should get right constructor args', () => {
 
-      let l = new L(1, new ST({
-        x: 1,
+      let l = [1n, {
+        x: 1n,
         c: true,
-        aa: [1, 1, 1]
-      }));
+        aa: [1n, 1n, 1n]
+      }];
       let instance = new Test(l);
 
       let newContract = Test.fromHex(instance.lockingScript.toHex());
 
-      assert.deepEqual(toLiteral(newContract.ctorArgs().map(i => i.value)), `[[1,{1,true,[1,1,1]}]]`)
+      assert.deepEqual(newContract.ctorArgs().map(i => i.value), [l])
 
     })
   })

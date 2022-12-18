@@ -1,31 +1,27 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, SortedItem, } from '../src/scryptTypes'
-import { findKeyIndex, toData, toHashedMap } from '../src/internal'
-import { bsv, toHex, getPreimage } from '../src/utils';
+import { bsv, getPreimage, Contract, ContractClass, buildContractClass, SigHashPreimage } from '../src';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
 describe('test.stateMap1', () => {
     describe('test empty hashedmap', () => {
-        let mapTest, StateMapTest, MapEntry;
+        let mapTest: Contract, StateMapTest: ContractClass;
 
-        let map = new Map<number, number>();
+        let map = new Map<bigint, bigint>();
 
         before(() => {
             const jsonDescr = loadDescription('stateMap1_desc.json')
             StateMapTest = buildContractClass(jsonDescr)
-            let hashedmap = toHashedMap(map);
-            mapTest = new StateMapTest(hashedmap)
+            mapTest = new StateMapTest(StateMapTest.toHashedMap(map, "HashedMap<int, int>"))
         })
 
 
         it('test unlock', () => {
 
             let newLockingScript = mapTest.getNewStateScript({
-                map: toHashedMap(map),
+                map: StateMapTest.toHashedMap(map, "HashedMap<int, int>"),
             });
 
             const tx = newTx(inputSatoshis);
@@ -41,9 +37,9 @@ describe('test.stateMap1', () => {
             }
 
             const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-            const result = mapTest.unlock(preimage).verify()
+            const result = mapTest.unlock(SigHashPreimage(preimage)).verify()
             expect(result.success, result.error).to.be.true;
-            mapTest.map = toHashedMap(map)
+            mapTest.map = StateMapTest.toHashedMap(map, "HashedMap<int, int>")
 
         })
 
@@ -51,7 +47,7 @@ describe('test.stateMap1', () => {
         it('test unlock again', () => {
 
             let newLockingScript = mapTest.getNewStateScript({
-                map: toHashedMap(map),
+                map: StateMapTest.toHashedMap(map, "HashedMap<int, int>"),
             });
 
             const tx = newTx(inputSatoshis);
@@ -67,9 +63,9 @@ describe('test.stateMap1', () => {
             }
 
             const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-            const result = mapTest.unlock(preimage).verify()
+            const result = mapTest.unlock(SigHashPreimage(preimage)).verify()
             expect(result.success, result.error).to.be.true;
-            mapTest.map = toHashedMap(map)
+            mapTest.map = StateMapTest.toHashedMap(map, "HashedMap<int, int>")
 
         })
     })

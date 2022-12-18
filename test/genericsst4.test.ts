@@ -1,7 +1,7 @@
 
-import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath, excludeMembers } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { expect } from 'chai';
+import { loadDescription, excludeMembers } from './helper';
+import { buildContractClass, } from '../src/contract';
 import { Bytes } from '../src';
 import { readFileSync } from 'fs';
 import { uri2path } from '../src/internal';
@@ -13,70 +13,69 @@ describe('GenericStruct  test', () => {
         let c, result;
 
         const C = buildContractClass(loadDescription('genericsst4_desc.json'));
-        const { ST0, ST1, L } = buildTypeClasses(C);
         before(() => {
-            const l = new L(
+            const l = [
                 [
-                    [new ST1({
-                        a: new ST0({
+                    [{
+                        a: {
                             x: [true],
-                            y: [1, 1, 1]
-                        }),
-                        b: new ST0({
-                            x: new Bytes('0011'),
+                            y: [1n, 1n, 1n]
+                        },
+                        b: {
+                            x: Bytes('0011'),
                             y: true
-                        })
-                    }), new ST1({
-                        a: new ST0({
+                        }
+                    }, {
+                        a: {
                             x: [true],
-                            y: [2, 2, 2]
-                        }),
-                        b: new ST0({
-                            x: new Bytes('001111'),
+                            y: [2n, 2n, 2n]
+                        },
+                        b: {
+                            x: Bytes('001111'),
                             y: true
-                        })
-                    })],
-                    [new ST1({
-                        a: new ST0({
+                        }
+                    }],
+                    [{
+                        a: {
                             x: [true],
-                            y: [3, 3, 3]
-                        }),
-                        b: new ST0({
-                            x: new Bytes('001111ff'),
+                            y: [3n, 3n, 3n]
+                        },
+                        b: {
+                            x: Bytes('001111ff'),
                             y: true
-                        })
-                    }), new ST1({
-                        a: new ST0({
+                        }
+                    }, {
+                        a: {
                             x: [true],
-                            y: [4, 4, 4]
-                        }),
-                        b: new ST0({
-                            x: new Bytes('02201111ff'),
+                            y: [4n, 4n, 4n]
+                        },
+                        b: {
+                            x: Bytes('02201111ff'),
                             y: true
-                        })
-                    })]
+                        }
+                    }]
                 ],
 
-                new ST0({
-                    x: 11,
-                    y: new ST0({
-                        x: 2,
-                        y: 3
-                    })
-                })
-            );
+                {
+                    x: 11n,
+                    y: {
+                        x: 2n,
+                        y: 3n
+                    }
+                }
+            ];
             c = new C(l);
         });
 
         it('should unlock successfully', () => {
 
-            result = c.unlock(new ST0({
+            result = c.unlock({
                 x: [true],
-                y: [1, 1, 1]
-            }), new ST0({
-                x: new Bytes(''),
+                y: [1n, 1n, 1n]
+            }, {
+                x: Bytes(''),
                 y: false
-            })).verify();
+            }).verify();
 
             expect(result.success, result.error).to.be.true
         })
@@ -85,13 +84,13 @@ describe('GenericStruct  test', () => {
 
         it('test genLaunchConfig', () => {
 
-            const file = c.unlock(new ST0({
+            const file = c.unlock({
                 x: [true],
-                y: [1, 1, 1]
-            }), new ST0({
-                x: new Bytes(''),
+                y: [1n, 1n, 1n]
+            }, {
+                x: Bytes(''),
                 y: false
-            })).genLaunchConfig();
+            }).genLaunchConfig();
 
 
             const config = JSON.parse(readFileSync(uri2path(file)).toString())
@@ -209,13 +208,13 @@ describe('GenericStruct  test', () => {
 
 
         it('should unlock fail', () => {
-            result = c.unlock(new ST0({
+            result = c.unlock({
                 x: [true],
-                y: [1, 1, 2]
-            }), new ST0({
-                x: new Bytes(''),
+                y: [1n, 1n, 2n]
+            }, {
+                x: Bytes(''),
                 y: false
-            })).verify();
+            }).verify();
 
             expect(result.success, result.error).to.be.false
 

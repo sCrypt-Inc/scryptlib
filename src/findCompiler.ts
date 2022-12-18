@@ -1,5 +1,5 @@
 
-import { dirname, join, resolve, sep } from 'path';
+import { join, resolve } from 'path';
 import * as minimist from 'minimist';
 import { existsSync, readdirSync, statSync } from 'fs';
 

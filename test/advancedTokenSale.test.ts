@@ -1,9 +1,10 @@
 
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { assert, expect } from 'chai';
-import { buildContractClass, buildTypeClasses, buildTypeResolver } from '../src/contract';
+import { buildContractClass } from '../src/contract';
 import { Bytes, SigHashPreimage, Ripemd160 } from '../src/scryptTypes';
-import { bsv, getPreimage, toHex, num2bin } from '../src/utils';
+import { bsv, getPreimage } from '../src/utils';
+import { num2bin, toHex } from '../src';
 
 // number of bytes to denote some numeric value
 const DataLen = 1
@@ -18,7 +19,7 @@ const sighashType = Signature.SIGHASH_ANYONECANPAY | Signature.SIGHASH_ALL | Sig
 
 // Token price is 1000 satoshis each
 // NOTE: a price that is too low could run afoul of dust policy
-const SATS_PER_TOKEN = 1000
+const SATS_PER_TOKEN = 1000n
 
 
 const privateKeys = [1, 1, 1, 1, 1].map(k => bsv.PrivateKey.fromRandom())
@@ -49,8 +50,8 @@ describe('Test advancedTokenSale.test', () => {
 
     const newLockingScript = [saler.codePart.toASM(), newState].join(' ')
 
-    const changeAmount = inputSatoshis - numBought * SATS_PER_TOKEN
-    const outputAmount = inputSatoshis + numBought * SATS_PER_TOKEN
+    const changeAmount = inputSatoshis - numBought * Number(SATS_PER_TOKEN)
+    const outputAmount = inputSatoshis + numBought * Number(SATS_PER_TOKEN)
 
     // counter output
     tx.addOutput(new bsv.Transaction.Output({
@@ -68,7 +69,7 @@ describe('Test advancedTokenSale.test', () => {
 
 
     const context = { tx, inputIndex, inputSatoshis }
-    result = saler.buy(new SigHashPreimage(toHex(preimage)), new Ripemd160(toHex(pkh)), changeAmount, new Bytes(toHex(publicKey)), numBought).verify(context)
+    result = saler.buy(SigHashPreimage(preimage), Ripemd160(toHex(pkh)), BigInt(changeAmount), Bytes(toHex(publicKey)), BigInt(numBought)).verify(context)
     expect(result.success, result.error).to.be.true;
     return newState;
   }

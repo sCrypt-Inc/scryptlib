@@ -1,8 +1,9 @@
 import { getContractFilePath, loadDescription, newTx } from './helper';
 import { assert, expect } from 'chai';
-import { buildContractClass, buildTypeClasses, buildTypeResolver } from '../src/contract';
-import { Bytes, Int, PubKeyHash, PubKey, SymbolType } from '../src/scryptTypes';
-import { compileContract, toHex, signTx, bsv } from '../src/utils';
+import { buildContractClass, buildTypeResolver } from '../src/contract';
+import { Bytes, Int, PubKey, PubKeyHash, Sig, SymbolType } from '../src/scryptTypes';
+import { compileContract, signTx, bsv } from '../src/utils';
+import { toHex } from '../src';
 
 
 
@@ -10,49 +11,48 @@ import { compileContract, toHex, signTx, bsv } from '../src/utils';
 describe('Alias type check', () => {
   const AliasContract = buildContractClass(loadDescription('alias_desc.json'));
 
-  const { Male, MaleAAA, Female, Name, Age, Token, Person, Block, Height, Time, Coinbase } = buildTypeClasses(loadDescription('alias_desc.json'));
 
-  let man = new Person({
-    name: new Name("68656c6c6f20776f726c6421"),
-    age: new Age(33),
-    token: new Token(101)
+  let man = {
+    name: "68656c6c6f20776f726c6421",
+    age: 33n,
+    token: 101n
+  };
+
+  const alias = new AliasContract({
+    name: Bytes("68656c6c6f20776f726c6421"),
+    age: 1n,
+    token: 101n
   });
-
-  const alias = new AliasContract(new Female({
-    name: new Name("68656c6c6f20776f726c6421"),
-    age: new Age(1),
-    token: new Token(101)
-  }));
 
   it('should succeeding when using MaleAAA', () => {
 
-    let result = alias.unlock(new MaleAAA({
-      name: new Name("68656c6c6f20776f726c6421"),
-      age: new Age(33),
-      token: new Token(101)
-    })).verify()
+    let result = alias.unlock({
+      name: Bytes("68656c6c6f20776f726c6421"),
+      age: Int(33),
+      token: 101n
+    }).verify()
     assert.isTrue(result.success, result.error);
 
   })
 
   it('should succeeding when using bytes', () => {
 
-    let result = alias.unlock(new MaleAAA({
-      name: new Bytes("68656c6c6f20776f726c6421"),
-      age: new Int(33),
-      token: new Int(101)
-    })).verify()
+    let result = alias.unlock({
+      name: Bytes("68656c6c6f20776f726c6421"),
+      age: Int(33),
+      token: Int(101)
+    }).verify()
     assert.isTrue(result.success, result.error);
 
   })
 
   it('should succeeding when using Male', () => {
 
-    let result = alias.unlock(new Male({
-      name: new Name("68656c6c6f20776f726c6421"),
-      age: new Age(33),
-      token: new Token(101)
-    })).verify()
+    let result = alias.unlock({
+      name: "68656c6c6f20776f726c6421",
+      age: 33n,
+      token: 101n
+    }).verify()
     assert.isTrue(result.success, result.error);
 
   })
@@ -60,62 +60,72 @@ describe('Alias type check', () => {
 
   it('should succeeding when using Person', () => {
 
-    let result = alias.unlock(new Person({
-      name: new Name("68656c6c6f20776f726c6421"),
-      age: 33,
-      token: new Token(101)
-    })).verify()
+    let result = alias.unlock({
+      name: "68656c6c6f20776f726c6421",
+      age: 33n,
+      token: 101n
+    }).verify()
     assert.isTrue(result.success, result.error);
   })
 
   it('should succeeding when using Female', () => {
-    let result = alias.unlock(new Female({
-      name: new Name("68656c6c6f20776f726c6421"),
-      age: new Age(33),
-      token: new Token(101)
-    })).verify()
+    let result = alias.unlock({
+      name: "68656c6c6f20776f726c6421",
+      age: 33n,
+      token: 101n
+    }).verify()
     assert.isTrue(result.success, result.error);
   })
 
 
   it('should throw when using Block', () => {
     expect(() => {
-      alias.unlock(new Block({
-        height: new Height(1),
-        time: new Time(333),
-        coinbase: new Coinbase("68656c6c6f20776f726c6421")
-      }))
-    }).to.throw('The type of bob is wrong, expected Person but got Block');
+      alias.unlock({
+        height: 1n,
+        time: 333n,
+        coinbase: Bytes("68656c6c6f20776f726c6421")
+      })
+    }).to.throw('The type of bob is wrong, expected Person but missing member [age]');
+  })
+
+  it('should throw when using wrong type', () => {
+    expect(() => {
+      alias.unlock([3n, 3n])
+    }).to.throw('The type of bob is wrong, expected Person but got a array');
+
+    expect(() => {
+      alias.unlock(3n)
+    }).to.throw('The type of bob is wrong, expected Person but got a bigint');
   })
 
   it('should succeeding when using Female', () => {
-    let result = alias.unlock(new Male({
-      name: new Coinbase("68656c6c6f20776f726c6421"),
-      age: new Time(33),
-      token: new Age(101)
-    })).verify()
+    let result = alias.unlock({
+      name: Bytes("68656c6c6f20776f726c6421"),
+      age: Int(33),
+      token: Int(101)
+    }).verify()
     assert.isTrue(result.success, result.error);
   })
 
 
 
   it('should succeeding when using number', () => {
-    let result = alias.setToken([10, 3, 3]).verify()
+    let result = alias.setToken([10n, 3n, 3n]).verify()
     assert.isTrue(result.success, result.error);
   })
 
   it('should succeeding when using all int alias', () => {
-    let result = alias.setToken([new Time(10), new Age(3), new Token(3)]).verify()
+    let result = alias.setToken([10n, 3n, 3n]).verify()
     assert.isTrue(result.success, result.error);
   })
 
 
   it('should succeeding when parameter is array struct have member with alias', () => {
-    let result = alias.isPerson([new Female({
-      name: new Name("68656c6c6f20776f726c6421"),
-      age: new Age(1),
-      token: new Token(101)
-    })]).verify()
+    let result = alias.isPerson([{
+      name: Bytes("68656c6c6f20776f726c6421"),
+      age: Int(1),
+      token: Int(101)
+    }]).verify()
     assert.isTrue(result.success, result.error);
   })
 
@@ -148,18 +158,90 @@ describe('Alias type check', () => {
       })
       expect(resolver("MaleAAA")).deep.equal({
         finalType: 'Person',
+        info: {
+          genericTypes: [],
+          name: "Person",
+          params: [
+            {
+              name: "age",
+              type: "int"
+            },
+            {
+              name: "name",
+              type: "bytes"
+            },
+            {
+              name: "token",
+              type: "int"
+            }
+          ]
+        },
         symbolType: SymbolType.Struct
       })
       expect(resolver("Male")).deep.equal({
         finalType: 'Person',
+        info: {
+          genericTypes: [],
+          name: "Person",
+          params: [
+            {
+              name: "age",
+              type: "int"
+            },
+            {
+              name: "name",
+              type: "bytes"
+            },
+            {
+              name: "token",
+              type: "int"
+            }
+          ]
+        },
         symbolType: SymbolType.Struct
       })
       expect(resolver("Female")).deep.equal({
         finalType: 'Person',
+        info: {
+          genericTypes: [],
+          name: "Person",
+          params: [
+            {
+              name: "age",
+              type: "int"
+            },
+            {
+              name: "name",
+              type: "bytes"
+            },
+            {
+              name: "token",
+              type: "int"
+            }
+          ]
+        },
         symbolType: SymbolType.Struct
       })
       expect(resolver("Block")).deep.equal({
         finalType: 'Block',
+        info: {
+          genericTypes: [],
+          name: "Block",
+          params: [
+            {
+              name: "height",
+              type: "int"
+            },
+            {
+              name: "time",
+              type: "int"
+            },
+            {
+              name: "coinbase",
+              type: "bytes"
+            }
+          ]
+        },
         symbolType: SymbolType.Struct
       })
       expect(resolver("Coinbase")).deep.equal({
@@ -253,12 +335,69 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
 
       expect(resolver("LL<int,ST1>")).deep.equal({
-        finalType: 'LL<int,ST1>',
-        symbolType: SymbolType.Library
+        "info": {
+          "name": "LL",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            },
+            {
+              "name": "y",
+              "type": "K"
+            }
+          ],
+          "properties": [
+            {
+              "name": "x",
+              "type": "T"
+            },
+            {
+              "name": "y",
+              "type": "K"
+            }
+          ],
+          "genericTypes": [
+            "T",
+            "K"
+          ]
+        },
+        "generic": true,
+        "finalType": "LL<int,ST1>",
+        "symbolType": "Library"
       })
+
       expect(resolver("LL<bool[2], ST1>")).deep.equal({
-        finalType: 'LL<bool[2],ST1>',
-        symbolType: SymbolType.Library
+        "info": {
+          "name": "LL",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            },
+            {
+              "name": "y",
+              "type": "K"
+            }
+          ],
+          "properties": [
+            {
+              "name": "x",
+              "type": "T"
+            },
+            {
+              "name": "y",
+              "type": "K"
+            }
+          ],
+          "genericTypes": [
+            "T",
+            "K"
+          ]
+        },
+        "generic": true,
+        "finalType": "LL<bool[2],ST1>",
+        "symbolType": "Library"
       })
 
     })
@@ -327,8 +466,6 @@ describe('Alias type check', () => {
 
     const Alias1Contract = buildContractClass(loadDescription('alias1_desc.json'));
 
-    const { Tokens, TokenArray, Token } = buildTypeClasses(loadDescription('alias1_desc.json'));
-
 
     it('should succeeding when call buildTypeResolver', () => {
       const jsondesc = loadDescription('alias1_desc.json');
@@ -356,11 +493,11 @@ describe('Alias type check', () => {
 
     })
 
-    const alias = new Alias1Contract([1, 3, 3], [[2, 1, 3]]);
+    const alias = new Alias1Contract([1n, Int(3), 3n], [[2n, 1n, 3n]]);
 
     it('should succeeding when unlock', () => {
 
-      let result = alias.unlock([1, 3, 3], [[2, 1, 3]]).verify()
+      let result = alias.unlock([1n, 3n, 3n], [[2n, 1n, 3n]]).verify()
       assert.isTrue(result.success, result.error);
     })
   })
@@ -400,7 +537,7 @@ describe('Alias type check', () => {
 
       const jsonDescr = loadDescription('p2pkh_desc.json');
       const DemoP2PKH = buildContractClass(jsonDescr);
-      const p2pkh = new DemoP2PKH(new PubKeyHash(toHex(pubKeyHash)));
+      const p2pkh = new DemoP2PKH(PubKeyHash(toHex(pubKeyHash)));
 
       p2pkh.txContext = {
         tx,
@@ -408,8 +545,8 @@ describe('Alias type check', () => {
         inputSatoshis: inputSatoshis
       }
 
-      const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-      const pubkey = new PubKey(toHex(publicKey));
+      const sig = Sig(signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis));
+      const pubkey = PubKey(toHex(publicKey));
 
       let result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx })
 
@@ -426,55 +563,186 @@ describe('Alias type check', () => {
 
     it('should succeeding when resolver type', () => {
 
-      expect(C.resolver.resolverType("ST0")).deep.equal({
+      expect(C.resolver("ST0")).deep.equal({
         finalType: 'ST0',
+        info: {
+          genericTypes: ["T"],
+          name: "ST0",
+          params: [
+            {
+              name: "x",
+              type: "int"
+            },
+            {
+              name: "y",
+              type: "T"
+            }
+          ]
+        },
         symbolType: SymbolType.Struct
       })
 
-      expect(C.resolver.resolverType("ST2")).deep.equal({
+      expect(C.resolver("ST2")).deep.equal({
         finalType: 'ST2',
+        info: {
+          genericTypes: [],
+          name: "ST2",
+          params: [
+            {
+              name: "x",
+              type: "int"
+            }
+          ]
+        },
         symbolType: SymbolType.Struct
       })
 
-      expect(C.resolver.resolverType("ST1<ST2[2]>")).deep.equal({
-        finalType: 'ST1<ST2[2]>',
-        symbolType: SymbolType.Struct
+
+      expect(C.resolver("ST1<ST2[2]>")).deep.equal({
+        "info": {
+          "name": "ST1",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            }
+          ],
+          "genericTypes": [
+            "T"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST1<ST2[2]>",
+        "symbolType": "Struct"
       })
 
-      expect(C.resolver.resolverType("ST1<ST0<int>>")).deep.equal({
-        finalType: 'ST1<ST0<int>>',
-        symbolType: SymbolType.Struct
+      expect(C.resolver("ST1<ST0<int>>")).deep.equal({
+        "info": {
+          "name": "ST1",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            }
+          ],
+          "genericTypes": [
+            "T"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST1<ST0<int>>",
+        "symbolType": "Struct"
       })
 
 
-      expect(C.resolver.resolverType("ST1<ST0<int[3]>[3][1]>")).deep.equal({
-        finalType: 'ST1<ST0<int[3]>[3][1]>',
-        symbolType: SymbolType.Struct
+      expect(C.resolver("ST1<ST0<int[3]>[3][1]>")).deep.equal({
+        "info": {
+          "name": "ST1",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            }
+          ],
+          "genericTypes": [
+            "T"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST1<ST0<int[3]>[3][1]>",
+        "symbolType": "Struct"
       })
 
-      expect(C.resolver.resolverType("ST0A")).deep.equal({
-        finalType: 'ST0<int>',
-        symbolType: SymbolType.Struct
+      expect(C.resolver("ST0A")).deep.equal({
+        "info": {
+          "name": "ST0",
+          "params": [
+            {
+              "name": "x",
+              "type": "int"
+            },
+            {
+              "name": "y",
+              "type": "T"
+            }
+          ],
+          "genericTypes": [
+            "T"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST0<int>",
+        "symbolType": "Struct"
       })
 
-      expect(C.resolver.resolverType("ST0AA")).deep.equal({
-        finalType: 'ST0<ST0<int>>',
-        symbolType: SymbolType.Struct
+      expect(C.resolver("ST0AA")).deep.equal({
+        "info": {
+          "name": "ST0",
+          "params": [
+            {
+              "name": "x",
+              "type": "int"
+            },
+            {
+              "name": "y",
+              "type": "T"
+            }
+          ],
+          "genericTypes": [
+            "T"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST0<ST0<int>>",
+        "symbolType": "Struct"
       })
 
-      expect(C.resolver.resolverType("INTA")).deep.equal({
+
+      expect(C.resolver("INTA")).deep.equal({
         finalType: 'int[3]',
         symbolType: SymbolType.BaseType
       })
 
-      expect(C.resolver.resolverType("ST1A")).deep.equal({
-        finalType: 'ST1<int[3]>',
-        symbolType: SymbolType.Struct
+
+      expect(C.resolver("ST1A")).deep.equal({
+        "info": {
+          "name": "ST1",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            }
+          ],
+          "genericTypes": [
+            "T"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST1<int[3]>",
+        "symbolType": "Struct"
       })
 
-      expect(C.resolver.resolverType("ST3A")).deep.equal({
-        finalType: 'ST3<ST1<int[3]>,ST0<ST0<int>>>',
-        symbolType: SymbolType.Struct
+      expect(C.resolver("ST3A")).deep.equal({
+        "info": {
+          "name": "ST3",
+          "params": [
+            {
+              "name": "x",
+              "type": "T"
+            },
+            {
+              "name": "y",
+              "type": "K"
+            }
+          ],
+          "genericTypes": [
+            "T",
+            "K"
+          ]
+        },
+        "generic": true,
+        "finalType": "ST3<ST1<int[3]>,ST0<ST0<int>>>",
+        "symbolType": "Struct"
       })
 
     })

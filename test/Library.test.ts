@@ -1,8 +1,8 @@
 
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
-import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { bsv, toHex, getPreimage, toHashedMap } from '../src/utils';
+import { buildContractClass } from '../src/contract';
+import { bsv, getPreimage } from '../src/utils';
 import { Bytes, SigHashPreimage } from '../src';
 
 const inputIndex = 0;
@@ -18,28 +18,27 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibCompare_desc.json'));
-      const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(new L(1, 1, [1, 1, 1], true, 2, 2));
+        instance = new Test([1n, 1n, [1n, 1n, 1n], true, 2n, 2n]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1, 1, [1, 1, 1], true, 2, 2).verify()
+        result = instance.unlock(1n, 1n, [1n, 1n, 1n], true, 2n, 2n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1, 2, [1, 1, 1], true, 2, 2).verify()
+        result = instance.unlock(1n, 2n, [1n, 1n, 1n], true, 2n, 2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1, 1, [1, 1, 1], false, 2, 2).verify()
+        result = instance.unlock(1n, 1n, [1n, 1n, 1n], false, 2n, 2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1, 1, [1, 1, 2], true, 2, 2).verify()
+        result = instance.unlock(1n, 1n, [1n, 1n, 2n], true, 2n, 2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -50,18 +49,17 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsProperty1_desc.json'));
-      const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1, new L(1, 2));
+        instance = new Test(1n, [1n, 2n]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(3).verify()
+        result = instance.unlock(3n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -72,18 +70,17 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsProperty2_desc.json'));
-      const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1, new L(1));
+        instance = new Test(1n, [1n]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(0).verify()
+        result = instance.unlock(0n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(3).verify()
+        result = instance.unlock(3n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -94,18 +91,17 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsProperty3_desc.json'));
-      const { L, L1 } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1, new L1(new L(1)));
+        instance = new Test(1n, [[1n]]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(0).verify()
+        result = instance.unlock(0n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(3).verify()
+        result = instance.unlock(3n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -115,19 +111,18 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty4 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsProperty4_desc.json'));
-      const { L, L1 } = buildTypeClasses(Test);
 
       before(() => {
-        instance = new Test(1, new L1(1, 1));
+        instance = new Test(1n, [1n, 1n]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(3).verify()
+        result = instance.unlock(3n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -138,18 +133,17 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty5 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsProperty5_desc.json'));
-      const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1, [new L(1), new L(2), new L(3)]);
+        instance = new Test(1n, [[1n], [2n], [3n]]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(5).verify()
+        result = instance.unlock(5n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(4).verify()
+        result = instance.unlock(4n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -159,18 +153,17 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty6 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsProperty6_desc.json'));
-      const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1, [new L(1, 1), new L(2, 2), new L(3, 3)]);
+        instance = new Test(1n, [[1n, 1n], [2n, 2n], [3n, 3n]]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(11).verify()
+        result = instance.unlock(11n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(12).verify()
+        result = instance.unlock(12n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -180,21 +173,20 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty7 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsProperty7_desc.json'));
-      const { L, ST } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1, new L(new ST({
-          x: 1,
-          y: 1
-        })));
+        instance = new Test(1n, [{
+          x: 1n,
+          y: 1n
+        }]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -205,27 +197,26 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty7 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsProperty8_desc.json'));
-      const { L, ST } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(2, new L([new ST({
-          x: 1,
-          y: 1
-        }), new ST({
-          x: 2,
-          y: 2
-        }), new ST({
-          x: 3,
-          y: 3
-        })]));
+        instance = new Test(2n, [[{
+          x: 1n,
+          y: 1n
+        }, {
+          x: 2n,
+          y: 2n
+        }, {
+          x: 3n,
+          y: 3n
+        }]]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(10).verify()
+        result = instance.unlock(10n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(12).verify()
+        result = instance.unlock(12n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -235,30 +226,29 @@ describe('library as property or return or param', () => {
       describe('LibGenericAsProperty1 test: can inferr all generic types from constructor', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty1_desc.json'));
-        const { L } = buildTypeClasses(Test);
 
         it('should succeeding when using int to new L', () => {
-          instance = new Test(2, new L(1, 1));
-          result = instance.unlock(2).verify()
+          instance = new Test(2n, [1n, 1n]);
+          result = instance.unlock(2n).verify()
           expect(result.success, result.error).to.be.true
         });
 
         it('should fail when using int to new L', () => {
-          instance = new Test(2, new L(1, 2));
-          result = instance.unlock(2).verify()
+          instance = new Test(2n, [1n, 2n]);
+          result = instance.unlock(2n).verify()
           expect(result.success, result.error).to.be.false
         });
 
         it('should throw when using int and bool to new L', () => {
-          expect(() => new L(1, true)).to.throw('The type of L is wrong, expected [T,T] but got [1,true]');
+          expect(() => new Test(2n, [1n, true])).to.throw('The type of y is wrong, expected int but got bool');
         });
 
         it('should throw when using bool to new L', () => {
-          expect(() => new Test(2, new L(true, true))).to.throw('The type of l is wrong, expected L<int> but got L<bool>');
+          expect(() => new Test(2n, [true, true])).to.throw('The type of x is wrong, expected int but got bool');
         });
 
         it('should throw when using Bytes to new L', () => {
-          expect(() => new Test(2, new L(new Bytes(""), new Bytes("")))).to.throw('The type of l is wrong, expected L<int> but got L<bytes>');
+          expect(() => new Test(2n, [Bytes(""), Bytes("")])).to.throw('The type of x is wrong, expected int but got bytes');
         });
       });
 
@@ -266,17 +256,15 @@ describe('library as property or return or param', () => {
       describe('LibGenericAsProperty2 test: can not inferr all generic types from constructor', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty2_desc.json'));
-        const { L } = buildTypeClasses(Test);
-
         it('should succeeding when using int to new L', () => {
-          instance = new Test(2, new L(1, 1));
-          result = instance.unlock(2).verify()
+          instance = new Test(2n, [1n, 1n]);
+          result = instance.unlock(2n).verify()
           expect(result.success, result.error).to.be.true
         });
 
         it('should fail when using int to new L', () => {
-          instance = new Test(2, new L(1, 1));
-          result = instance.unlock(1).verify()
+          instance = new Test(2n, [1n, 1n]);
+          result = instance.unlock(1n).verify()
           expect(result.success, result.error).to.be.false
         });
 
@@ -285,16 +273,11 @@ describe('library as property or return or param', () => {
       describe('LibGenericAsProperty3 test: can not inferr all generic types from constructor', () => {
         let instance, result;
         const Test = buildContractClass(loadDescription('LibGenericAsProperty3_desc.json'));
-        const { L } = buildTypeClasses(Test);
 
         it('should succeeding when using int to new L', () => {
-          instance = new Test(2, new L(1, 1), new L(new Bytes("0101"), 1));
-          result = instance.unlock(2).verify()
+          instance = new Test(2n, [1n, 1n], [Bytes("0101"), 1n]);
+          result = instance.unlock(2n).verify()
           expect(result.success, result.error).to.be.true
-        });
-
-        it('should throw when using int and bool to new L', () => {
-          expect(() => new L(1, true)).to.throw('The type of L is wrong, expected [int,int] but got [1,true]');
         });
 
       });
@@ -302,23 +285,22 @@ describe('library as property or return or param', () => {
       describe('LibGenericAsProperty4 test: can inferr all generic types in nested library', () => {
         let instance, result;
         const TestGenericLibray = buildContractClass(loadDescription('LibGenericAsProperty4_desc.json'));
-        const { GenericLibray, GenericA, ST } = buildTypeClasses(TestGenericLibray);
 
         it('should succeeding', () => {
-          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11));
-          result = instance.unlock(11).verify()
+          instance = new TestGenericLibray([[{ a: 101n, b: Bytes("0f010f") }], 11n]);
+          result = instance.unlock(11n).verify()
           expect(result.success, result.error).to.be.true
         });
 
         it('should fail ', () => {
-          instance = new TestGenericLibray(new GenericLibray(new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11));
-          result = instance.unlock(10).verify()
+          instance = new TestGenericLibray([[{ a: 101n, b: Bytes("0f010f") }], 11n]);
+          result = instance.unlock(10n).verify()
           expect(result.success, result.error).to.be.false
         });
 
         it('should throw when wrong constructor args ', () => {
-          expect(() => new GenericLibray([new GenericA(new ST({ a: 101, b: new Bytes("0f010f") })), 11]))
-            .to.throw(`can't construct libraryClass from <[{101,b'0f010f'}],11>, The type of GenericLibray is wrong, expected [GenericA<ST>,T] but got [[[{"a":101,"b":"b'0f010f'"}],11]]`);
+          expect(() => new TestGenericLibray([{ a: 101n, b: Bytes("0f010f") }], 11n))
+            .to.throw(`wrong number of arguments for 'TestGenericLibray.constructor', expected 1 but got 2`);
         });
 
       });
@@ -332,18 +314,17 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsReturn1_desc.json'));
-      const { L } = buildTypeClasses(Test);
       before(() => {
-        instance = new Test(1);
+        instance = new Test(1n);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -354,19 +335,18 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsReturn2_desc.json'));
-      const { L } = buildTypeClasses(Test);
 
       before(() => {
-        instance = new Test(1);
+        instance = new Test(1n);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(0).verify()
+        result = instance.unlock(0n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -376,29 +356,28 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsReturn3_desc.json'));
-      const { L } = buildTypeClasses(Test);
 
       before(() => {
-        instance = new Test(1);
+        instance = new Test(1n);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should succeeding when call unlock1', () => {
-        result = instance.unlock2(4).verify()
+        result = instance.unlock2(4n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock2(2).verify()
+        result = instance.unlock2(2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -408,19 +387,18 @@ describe('library as property or return or param', () => {
       let instance, result;
 
       const Test = buildContractClass(loadDescription('LibAsReturn4_desc.json'));
-      const { L } = buildTypeClasses(Test);
 
       before(() => {
-        instance = new Test(1);
+        instance = new Test(1n);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.true
       });
 
@@ -430,20 +408,19 @@ describe('library as property or return or param', () => {
   describe('Library as function param', () => {
     describe('LibAsParam1 test', () => {
       const Test = buildContractClass(loadDescription('LibAsParam1_desc.json'));
-      const { L } = buildTypeClasses(Test);
       let instance, result;
 
       before(() => {
-        instance = new Test(1);
+        instance = new Test(1n);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -451,20 +428,19 @@ describe('library as property or return or param', () => {
 
     describe('LibAsParam2 test', () => {
       const Test = buildContractClass(loadDescription('LibAsParam2_desc.json'));
-      const { L } = buildTypeClasses(Test);
       let instance, result;
 
       before(() => {
-        instance = new Test(1, new L(2));
+        instance = new Test(1n, [2n]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.false
       });
 
@@ -472,20 +448,19 @@ describe('library as property or return or param', () => {
 
     describe('LibAsParam3 test', () => {
       const Test = buildContractClass(loadDescription('LibAsParam3_desc.json'));
-      const { L } = buildTypeClasses(Test);
       let instance, result;
 
       before(() => {
-        instance = new Test(1, new L(1, 1));
+        instance = new Test(1n, [1n, 1n]);
       });
 
       it('should succeeding when call unlock', () => {
-        result = instance.unlock(1).verify()
+        result = instance.unlock(1n).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock', () => {
-        result = instance.unlock(2).verify()
+        result = instance.unlock(2n).verify()
         expect(result.success, result.error).to.be.false
       });
     });
@@ -495,29 +470,27 @@ describe('library as property or return or param', () => {
     describe('LibAsState1 test', () => {
       let instance, result;
       const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
-      const { L, ST } = buildTypeClasses(Test);
-      let l = new L(1, new ST({
-        x: 1,
+      let l = [1n, {
+        x: 1n,
         c: true,
-        aa: [1, 1, 1]
-      }));
+        aa: [1n, 1n, 1n]
+      }];
 
       before(() => {
         instance = new Test(l);
       });
 
       it('should succeeding when call unlock', () => {
-        const cloned = l.clone();
-        cloned.x = 6
-        cloned.st = new ST({
-          x: 1,
-          c: false,
-          aa: [1, 1, 1]
-        }).clone()
-
 
         let newLockingScript = instance.getNewStateScript({
-          l: cloned
+          l: {
+            x: 6n,
+            st: {
+              x: 1n,
+              c: false,
+              aa: [1n, 1n, 1n]
+            }
+          }
         })
 
         const tx = newTx(inputSatoshis);
@@ -534,15 +507,22 @@ describe('library as property or return or param', () => {
           inputSatoshis
         }
 
-        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        result = instance.unlock(1n, SigHashPreimage(preimage)).verify()
         expect(result.success, result.error).to.be.true
 
       });
 
       it('should fail when call unlock with error state', () => {
-        l.x = 5;
+
         let newLockingScript = instance.getNewStateScript({
-          l: l
+          l: {
+            x: 5n,
+            st: {
+              x: 1n,
+              c: false,
+              aa: [1n, 1n, 1n]
+            }
+          }
         })
 
         const tx = newTx(inputSatoshis);
@@ -559,21 +539,21 @@ describe('library as property or return or param', () => {
           inputSatoshis
         }
 
-        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        result = instance.unlock(1n, SigHashPreimage(preimage)).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should fail when call unlock with error state', () => {
 
         let newLockingScript = instance.getNewStateScript({
-          l: l.setProperties({
-            x: 6,
-            st: new ST({
-              x: 1,
+          l: {
+            x: 6n,
+            st: {
+              x: 1n,
               c: true,
-              aa: [1, 1, 1]
-            })
-          }).clone()
+              aa: [1n, 1n, 1n]
+            }
+          }
         })
 
         const tx = newTx(inputSatoshis);
@@ -590,14 +570,21 @@ describe('library as property or return or param', () => {
           inputSatoshis
         }
 
-        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        result = instance.unlock(1n, SigHashPreimage(preimage)).verify()
         expect(result.success, result.error).to.be.false
       });
 
       it('should succeeding when only update one field', () => {
-        l.st.c = false;
+
         let newLockingScript = instance.getNewStateScript({
-          l: l
+          l: {
+            x: 6n,
+            st: {
+              x: 1n,
+              c: false,
+              aa: [1n, 1n, 1n]
+            }
+          }
         })
 
         const tx = newTx(inputSatoshis);
@@ -614,21 +601,21 @@ describe('library as property or return or param', () => {
           inputSatoshis
         }
 
-        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        result = instance.unlock(1n, SigHashPreimage(preimage)).verify()
         expect(result.success, result.error).to.be.true
       });
 
       it('should fail when call unlock with error state', () => {
 
         let newLockingScript = instance.getNewStateScript({
-          l: l.setProperties({
-            x: 5,
-            st: new ST({
-              x: 1,
+          l: {
+            x: 5n,
+            st: {
+              x: 1n,
               c: false,
-              aa: [1, 1, 1]
-            })
-          })
+              aa: [1n, 1n, 1n]
+            }
+          }
         })
 
         const tx = newTx(inputSatoshis);
@@ -645,7 +632,7 @@ describe('library as property or return or param', () => {
           inputSatoshis
         }
 
-        result = instance.unlock(1, new SigHashPreimage(toHex(preimage))).verify()
+        result = instance.unlock(1n, SigHashPreimage(preimage)).verify()
         expect(result.success, result.error).to.be.false
       });
     });

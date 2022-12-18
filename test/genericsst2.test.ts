@@ -1,7 +1,7 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { loadDescription } from './helper';
+import { buildContractClass } from '../src/contract';
 
 
 describe('GenericStruct  test', () => {
@@ -10,24 +10,23 @@ describe('GenericStruct  test', () => {
         let c, result;
 
         const C = buildContractClass(loadDescription('genericsst2_desc.json'));
-        const { ST0, ST1} = buildTypeClasses(C);
         before(() => {
-            
-            c = new C(new ST0({
+
+            c = new C({
                 x: [false],
-                y: [1,2,3]
-            }));
+                y: [1n, 2n, 3n]
+            });
         });
 
         it('should unlock successfully', () => {
 
-            result = c.unlock(new ST0({
+            result = c.unlock({
                 x: true,
-                y: 1
-            }), new ST0({
+                y: 1n
+            }, {
                 x: [false],
-                y: [1,2,3]
-            })).verify();
+                y: [1n, 2n, 3n]
+            }).verify();
 
             expect(result.success, result.error).to.be.true
         })
@@ -35,13 +34,13 @@ describe('GenericStruct  test', () => {
 
         it('should unlock fail', () => {
 
-            result = c.unlock(new ST0({
+            result = c.unlock({
                 x: true,
-                y: 1
-            }), new ST0({
+                y: 1n
+            }, {
                 x: [false],
-                y: [1,2,31]
-            })).verify();
+                y: [1n, 2n, 31n]
+            }).verify();
 
             expect(result.success, result.error).to.be.false
         })

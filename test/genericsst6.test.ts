@@ -1,7 +1,7 @@
 
-import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
+import { expect } from 'chai';
+import { loadDescription } from './helper';
+import { buildContractClass, } from '../src/contract';
 
 describe('GenericStruct  test', () => {
 
@@ -9,52 +9,51 @@ describe('GenericStruct  test', () => {
         let c, result;
 
         const C = buildContractClass(loadDescription('genericsst6_desc.json'));
-        const { ST0, ST1, ST2,L} = buildTypeClasses(C);
         before(() => {
 
-            c = new C(new L(new ST2({
-                x: new ST1({
-                    x: new ST0({
-                        x: 1,
-                        y: [2,3]
-                    }),
-                    y: [4,5]
-                }),
-                y: 100
-            })));
+            c = new C([{
+                x: {
+                    x: {
+                        x: 1n,
+                        y: [2n, 3n]
+                    },
+                    y: [4n, 5n]
+                },
+                y: 100n
+            }]);
         });
 
         it('should unlock successfully', () => {
 
-            result = c.unlock(new ST2({
-                x: new ST1({
-                    x: new ST0({
-                        x: 1,
-                        y: [2,3]
-                    }),
-                    y: [4,5]
-                }),
-                y: 100
-            })).verify();
+            result = c.unlock({
+                x: {
+                    x: {
+                        x: 1n,
+                        y: [2n, 3n]
+                    },
+                    y: [4n, 5n]
+                },
+                y: 100n
+            }).verify();
 
             expect(result.success, result.error).to.be.true
         })
 
 
         it('should unlock fail', () => {
-            result = c.unlock(new ST2({
-                x: new ST1({
-                    x: new ST0({
-                        x: 1,
-                        y: [2,3]
-                    }),
-                    y: [4,5]
-                }),
-                y: 101
-            })).verify();
+            result = c.unlock({
+                x: {
+                    x: {
+                        x: 1n,
+                        y: [2n, 3n]
+                    },
+                    y: [4n, 5n]
+                },
+                y: 101n
+            }).verify();
 
             expect(result.success, result.error).to.be.false
-            
+
         })
 
 

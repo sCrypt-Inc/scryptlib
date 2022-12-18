@@ -11,7 +11,7 @@ describe('test.issue206', () => {
     })
 
     it('test add', () => {
-        const result = demo.add(11).verify()
+        const result = demo.add(11n).verify()
         expect(result.success, result.error).to.be.true;
     })
 })

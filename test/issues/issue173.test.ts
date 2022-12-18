@@ -10,7 +10,7 @@ describe('test.Issue173', () => {
         it('should verify success', () => {
             const jsonDescr = loadDescription('ctc1_desc.json')
             const B = buildContractClass(jsonDescr)
-            let test = new B(11)
+            let test = new B(11n)
             const result = test.unlock().verify()
             expect(result.success, result.error).to.be.true;
         })
@@ -18,7 +18,7 @@ describe('test.Issue173', () => {
         it('should verify fail', () => {
             const jsonDescr = loadDescription('ctc1_desc.json')
             const B = buildContractClass(jsonDescr)
-            let test = new B(12)
+            let test = new B(12n)
             const result = test.unlock().verify()
             expect(result.success, result.error).to.be.false;
         })

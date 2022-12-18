@@ -6,3 +6,5 @@ export * from './compilerWrapper';
 export * from './abi';
 export * from './findCompiler';
 export * from './partialSha256';
+export * from './typeCheck';
+export * from './builtins';

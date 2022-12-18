@@ -1,14 +1,12 @@
 
 import { assert, expect } from 'chai';
 import { newTx, loadDescription, getContractFilePath } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
-import { Bytes, findKeyIndex, Int } from '../src';
-import { HashedMap, SortedItem } from '../src/scryptTypes';
+import { buildContractClass, Contract } from '../src';
 
 
 describe('GenericStruct  set_map_simple.test', () => {
 
-    let c, result;
+    let c: Contract, result;
 
     const C = buildContractClass(loadDescription('set_map_simple_desc.json'));
     before(() => {
@@ -16,24 +14,24 @@ describe('GenericStruct  set_map_simple.test', () => {
     });
 
     it('should add2Set successfully', () => {
-        let set = new Set<number>();
-        const e = 1;
+        let set = new Set<bigint>();
+        const e = 1n;
         set.add(e)
-        result = c.add2Set(new SortedItem({
-            item: 1,
-            idx: findKeyIndex(set, e)
+        result = c.add2Set(({
+            item: 1n,
+            idx: C.findKeyIndex(set, e, "int")
         })).verify();
 
         expect(result.success, result.error).to.be.true
     })
 
     it('should add2Map successfully', () => {
-        let map = new Map<number, number>();
-        const key = 1, val = 2;
+        let map = new Map<bigint, bigint>();
+        const key = 1n, val = 2n;
         map.set(key, val)
-        result = c.add2Map(new SortedItem({
+        result = c.add2Map(({
             item: key,
-            idx: findKeyIndex(map, key)
+            idx: C.findKeyIndex(map, key, "int")
         }), val).verify();
 
         expect(result.success, result.error).to.be.true

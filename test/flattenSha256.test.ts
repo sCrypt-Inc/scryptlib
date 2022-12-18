@@ -14,7 +14,7 @@ describe('test.flattenSha256', () => {
 
         it('test unlock', () => {
 
-            const result = testflattenSha256.unlock(1).verify()
+            const result = testflattenSha256.unlock(1n).verify()
 
             expect(result.success, result.error).to.be.true;
 

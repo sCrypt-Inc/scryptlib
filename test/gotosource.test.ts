@@ -1,8 +1,9 @@
 import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
-import { buildContractClass, buildTypeClasses } from '../src/contract';
-import { toHex, signTx, num2bin, getPreimage, readLaunchJson, bsv } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage } from '../src/scryptTypes';
+import { buildContractClass } from '../src/contract';
+import { signTx, getPreimage, readLaunchJson, bsv } from '../src/utils';
+import { Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage, Int } from '../src/scryptTypes';
+import { num2bin, toHex } from '../src';
 
 
 const privateKey = bsv.PrivateKey.fromRandom('testnet');
@@ -15,28 +16,26 @@ const tx = newTx(inputSatoshis);
 
 const jsonDescr = loadDescription('p2pkh_desc.json');
 const DemoP2PKH = buildContractClass(jsonDescr);
-const p2pkh = new DemoP2PKH(new PubKeyHash(toHex(pubKeyHash)));
+const p2pkh = new DemoP2PKH(PubKeyHash(toHex(pubKeyHash)));
 
 const personDescr = loadDescription('person_desc.json');
 const PersonContract = buildContractClass(personDescr);
-const { Person } = buildTypeClasses(personDescr);
+
 const outputAmount = 22222
 const DataLen = 1
 const dummyTxId = 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458'
 
-let man = new Person({
+let man = {
   isMale: false,
-  age: 33,
-  addr: new Bytes("68656c6c6f20776f726c6421")
-});
+  age: 33n,
+  addr: Bytes("68656c6c6f20776f726c6421")
+};
 
-const person = new PersonContract(man, 18);
+const person = new PersonContract(man, 18n);
 
 
 const mdDescr = loadDescription('mdarray_desc.json');
 const MDArray = buildContractClass(mdDescr);
-const { ST1, AliasST2, ST3 } = buildTypeClasses(mdDescr);
-
 
 
 
@@ -47,11 +46,11 @@ describe('VerifyError', () => {
 
     before(() => {
       const Ackermann = buildContractClass(loadDescription('ackermann_desc.json'));
-      ackermann = new Ackermann(2, 1);
+      ackermann = new Ackermann(2n, 1n);
     });
 
     it('stop at ackermann.scrypt#38', () => {
-      result = ackermann.unlock(15).verify()
+      result = ackermann.unlock(15n).verify()
       expect(result.error).to.contains("ackermann.scrypt#38");
     });
   });
@@ -66,12 +65,12 @@ describe('VerifyError', () => {
       const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
       const jsonDescr = loadDescription('p2pkh_desc_without_sourceMap.json');
       const DemoP2PKH = buildContractClass(jsonDescr);
-      p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+      p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
     });
 
     it('need generate DemoP2PKH-launch.json', () => {
-      let sig: Sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-      let pubkey: PubKey = new PubKey(toHex(publicKey));
+      let sig = Sig(signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis));
+      let pubkey: PubKey = PubKey(toHex(publicKey));
       result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx });
       expect(result.error).to.equal("VerifyError: SCRIPT_ERR_VERIFY, fails at OP_VERIFY\n");
     });
@@ -107,14 +106,14 @@ describe('VerifyError', () => {
         script: ''
       }), bsv.Script.fromASM(token.lockingScript.toASM()), inputSatoshis)
 
-      const newLockingScript0 = [lockingScriptCodePart, toHex(publicKey2) + num2bin(0, DataLen) + num2bin(balance0, DataLen)].join(' ') + " "
+      const newLockingScript0 = [lockingScriptCodePart, toHex(publicKey2) + num2bin(Int(0), DataLen) + num2bin(Int(balance0), DataLen)].join(' ') + " "
       tx.addOutput(new bsv.Transaction.Output({
         script: bsv.Script.fromASM(newLockingScript0),
         satoshis: outputAmount
       }))
 
       if (balance1 > 0) {
-        const newLockingScript1 = [lockingScriptCodePart, toHex(publicKey3) + num2bin(0, DataLen) + num2bin(balance1, DataLen)].join(' ')
+        const newLockingScript1 = [lockingScriptCodePart, toHex(publicKey3) + num2bin(Int(0), DataLen) + num2bin(Int(balance1), DataLen)].join(' ')
         tx.addOutput(new bsv.Transaction.Output({
           script: bsv.Script.fromASM(newLockingScript1),
           satoshis: outputAmount
@@ -126,21 +125,21 @@ describe('VerifyError', () => {
       const preimage = getPreimage(tx, inputlockingScriptASM ? bsv.Script.fromASM(inputlockingScriptASM) : token.lockingScript, inputAmount ? inputAmount : inputSatoshis)
       const sig = signTx(tx, privKey, token.lockingScript, inputSatoshis)
       return token.split(
-        sig,
-        new PubKey(toHex(publicKey2)),
-        balanceInput0,
-        outputAmount,
-        new PubKey(toHex(publicKey3)),
-        balanceInput1,
-        outputAmount,
-        new SigHashPreimage(toHex(preimage))
+        Sig(sig),
+        PubKey(toHex(publicKey2)),
+        Int(balanceInput0),
+        Int(outputAmount),
+        PubKey(toHex(publicKey3)),
+        Int(balanceInput1),
+        Int(outputAmount),
+        SigHashPreimage(preimage)
       )
     }
 
     it('stop tokenUtxo.scrypt#43', () => {
 
       // split 100 tokens
-      token.setDataPart(toHex(publicKey1) + num2bin(10, DataLen) + num2bin(90, DataLen))
+      token.setDataPart(toHex(publicKey1) + num2bin(10n, DataLen) + num2bin(90n, DataLen))
 
       result = testSplit(privateKey1, 60, 40).verify()
       expect(result.error).to.contains("fails at OP_RETURN");
@@ -154,7 +153,7 @@ describe('VerifyError', () => {
     it('stop tokenUtxo.scrypt#14 => require(Tx.checkPreimage(txPreimage))', () => {
 
       // split 100 tokens
-      token.setDataPart(toHex(publicKey1) + num2bin(10, DataLen) + num2bin(90, DataLen))
+      token.setDataPart(toHex(publicKey1) + num2bin(10n, DataLen) + num2bin(90n, DataLen))
 
       result = testSplit(privateKey1, 60, 40, 60, 40, token.lockingScript.toASM() + "00", 111111).verify()
 
@@ -176,7 +175,7 @@ describe('VerifyError', () => {
 
     it('stop at person.scrypt#26', () => {
 
-      let result = person.main(man, 44, false).verify()
+      let result = person.main(man, 44n, false).verify()
 
       expect(result.error).to.contains("person.scrypt#28");
       expect(result.error).to.contains("Main-launch.json");
@@ -185,7 +184,7 @@ describe('VerifyError', () => {
 
     it('stop at person.scrypt#25', () => {
 
-      let result = person.main(man, 10, true).verify()
+      let result = person.main(man, 10n, true).verify()
 
       expect(result.error).to.contains("person.scrypt#27");
       expect(result.error).to.contains("Main-launch.json");
@@ -197,10 +196,10 @@ describe('VerifyError', () => {
     it('stop at p2pkh.scrypt#10', () => {
 
       let sig = signTx(tx, bsv.PrivateKey.fromRandom('testnet'), p2pkh.lockingScript, inputSatoshis);
-      let pubkey = new PubKey(toHex(publicKey));
+      let pubkey = PubKey(toHex(publicKey));
 
       p2pkh.txContext = { inputSatoshis, tx };
-      let result = p2pkh.unlock(sig, pubkey).verify();
+      let result = p2pkh.unlock(Sig(sig), pubkey).verify();
 
       expect(result.error).to.contains("p2pkh.scrypt#10");
       expect(result.error).to.contains("DemoP2PKH-launch.json");
@@ -226,7 +225,7 @@ describe('VerifyError', () => {
 
       assert.deepEqual(asm.lockingScript.toASM(), "0 OP_PICK OP_NOP OP_5 ab12 OP_SIZE OP_NIP OP_MUL OP_1 OP_MUL OP_5 OP_SUB OP_EQUAL OP_NOP OP_NIP")
 
-      result = asm.equal(5).verify()
+      result = asm.equal(5n).verify()
       expect(result.success, result.error).to.be.true;
     });
 
@@ -237,7 +236,7 @@ describe('VerifyError', () => {
         'ASM.equalImpl.x': 'OP_5'
       })
 
-      result = asm.equal(15).verify()
+      result = asm.equal(15n).verify()
       expect(result.success, result.error).to.be.false;
 
       const launch = readLaunchJson(result.error);
@@ -257,43 +256,43 @@ describe('VerifyError', () => {
 
     before(() => {
       mdArray = new MDArray([[
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-        [9, 10, 11, 12]
+        [1n, 2n, 3n, 4n],
+        [5n, 6n, 7n, 8n],
+        [9n, 10n, 11n, 12n]
       ],
       [
-        [13, 14, 15, 16],
-        [17, 18, 19, 20],
-        [21, 22, 23, 24]
+        [13n, 14n, 15n, 16n],
+        [17n, 18n, 19n, 20n],
+        [21n, 22n, 23n, 24n]
       ]]);
     });
 
     it('LaunchJson should be right with Multidimensional Arrays ', () => {
-      result = mdArray.unlock([[3, 1, 2], [4, 5, 5]], [1, 32]).verify()
+      result = mdArray.unlock([[3n, 1n, 2n], [4n, 5n, 5n]], [1n, 32n]).verify()
       expect(result.success, result.error).to.be.false;
 
       const launch = readLaunchJson(result.error);
       expect(result.error).to.contains("mdarray.scrypt#40");
-      assert.deepEqual(launch?.configurations[0].pubFuncArgs, [[[3, 1, 2], [4, 5, 5]], [1, 32]])
+      assert.deepEqual(launch?.configurations[0].pubFuncArgs as any, [[[3, 1, 2], [4, 5, 5]], [1, 32]])
     });
 
     it('LaunchJson should be right with mixed struct', () => {
 
-      result = mdArray.unlockAliasST2([new AliasST2({
+      result = mdArray.unlockAliasST2([{
         x: false,
-        y: new Bytes("68656c6c6f20776f726c6421"),
-        st2: new ST3({
+        y: Bytes("68656c6c6f20776f726c6421"),
+        st2: {
           x: false,
-          y: [1, 2, 3]
-        })
-      }), new AliasST2({
-        y: new Bytes("68656c6c6f20776f726c6420"),
+          y: [1n, 2n, 3n]
+        }
+      }, {
+        y: Bytes("68656c6c6f20776f726c6420"),
         x: true,
-        st2: new ST3({
+        st2: {
           x: true,
-          y: [4, 5, 1]
-        })
-      })]).verify()
+          y: [4n, 5n, 1n]
+        }
+      }]).verify()
 
       expect(result.success, result.error).to.be.false;
 
@@ -399,7 +398,7 @@ describe('VerifyError', () => {
 
       const tx = newTx(inputSatoshis)
       counter.setDataPart('01')
-      const newLockingScript = [counter.codePart.toASM(), num2bin(1, DataLen)].join(' ')
+      const newLockingScript = [counter.codePart.toASM(), num2bin(1n, DataLen)].join(' ')
 
       tx.addOutput(new bsv.Transaction.Output({
         script: bsv.Script.fromASM(newLockingScript),
@@ -408,7 +407,7 @@ describe('VerifyError', () => {
 
       const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
 
-      const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify({
+      const result = counter.increment(SigHashPreimage(preimage), BigInt(outputAmount)).verify({
         tx,
         inputIndex: 0,
         inputSatoshis
@@ -432,7 +431,7 @@ describe('VerifyError', () => {
       counter = new Counter();
 
       const tx = newTx(inputSatoshis)
-      const newLockingScript = [counter.codePart.toASM(), num2bin(1, DataLen)].join(' ')
+      const newLockingScript = [counter.codePart.toASM(), num2bin(1n, DataLen)].join(' ')
 
       tx.addOutput(new bsv.Transaction.Output({
         script: bsv.Script.fromASM(newLockingScript),
@@ -441,7 +440,7 @@ describe('VerifyError', () => {
 
       const preimage = getPreimage(tx, counter.lockingScript, inputSatoshis)
 
-      const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify({
+      const result = counter.increment(SigHashPreimage(preimage), BigInt(outputAmount)).verify({
         tx,
         inputIndex: 0,
         inputSatoshis
@@ -462,10 +461,10 @@ describe('VerifyError', () => {
     it('should stop at statecounter.scrypt#24', () => {
 
       const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
-      let counter = new StateCounter(0, true);
+      let counter = new StateCounter(0n, true);
 
       let newLockingScript = counter.getNewStateScript({
-        counter: 1,
+        counter: 1n,
         done: false
       })
 
@@ -483,7 +482,7 @@ describe('VerifyError', () => {
         inputSatoshis
       }
 
-      const result = counter.increment(new SigHashPreimage(toHex(preimage)), outputAmount).verify()
+      const result = counter.increment(SigHashPreimage(preimage), BigInt(outputAmount)).verify()
       expect(result.error).to.contains("fails at OP_RETURN");
       expect(result.error).to.contains("statecounter.scrypt#24");
       const launch = readLaunchJson(result.error);

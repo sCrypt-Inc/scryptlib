@@ -1,28 +1,27 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, HashedSet, SortedItem, Struct } from '../src/scryptTypes'
-import { findKeyIndex, toData, toHashedSet } from '../src/internal'
-import { bsv, toHex, getPreimage } from '../src/utils';
+import { AbstractContract, buildContractClass } from '../src/contract'
+import { Bytes, HashedSet, Int, SigHashPreimage } from '../src/scryptTypes'
+import { bsv, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
 describe('test.stateSet', () => {
     describe('stateSet', () => {
-        let stateSet, StateSet;
+        let stateSet: AbstractContract, StateSet: typeof AbstractContract;
 
-        let set = new Set<number>();
+        let set = new Set<Int>();
 
         before(() => {
             const jsonDescr = loadDescription('stateSet_desc.json')
             StateSet = buildContractClass(jsonDescr)
-            stateSet = new StateSet(toHashedSet(set)) // empty initial set
+            stateSet = new StateSet(StateSet.toHashedSet(set, 'HashedSet<int>')) // empty initial set
         })
 
-        function buildTx(set: Set<number>) {
+        function buildTx(set: Set<bigint>) {
             let newLockingScript = stateSet.getNewStateScript({
-                set: toHashedSet(set),
+                set: StateSet.toHashedSet(set, 'HashedSet<int>'),
             });
 
             const tx = newTx(inputSatoshis);
@@ -43,23 +42,23 @@ describe('test.stateSet', () => {
 
         it('test insert', () => {
 
-            function testInsert(key: number) {
+            function testInsert(key: bigint) {
 
                 set.add(key);
                 const tx = buildTx(set);
                 const preimage = getPreimage(tx, stateSet.lockingScript, inputSatoshis)
-                const result = stateSet.insert(new SortedItem({
+                const result = stateSet.insert({
                     item: key,
-                    idx: findKeyIndex(set, key)
-                }), preimage).verify()
+                    idx: StateSet.findKeyIndex(set, key, 'int')
+                }, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
-                stateSet.set = toHashedSet(set)
+                stateSet.set = StateSet.toHashedSet(set, 'HashedSet<int>')
             }
 
-            testInsert(3);
-            testInsert(5);
-            testInsert(0);
-            testInsert(1);
+            testInsert(3n);
+            testInsert(5n);
+            testInsert(0n);
+            testInsert(1n);
         })
 
 
@@ -67,32 +66,35 @@ describe('test.stateSet', () => {
         it('test delete', () => {
 
 
-            function testDelete(key: number, expectedResult: boolean = true) {
+            function testDelete(key: bigint, expectedResult: boolean = true) {
 
-                const keyIndex = findKeyIndex(set, key);
+                const keyIndex = StateSet.findKeyIndex(set, key, 'int');
                 set.delete(key);
 
                 const tx = buildTx(set);
                 const preimage = getPreimage(tx, stateSet.lockingScript, inputSatoshis)
 
-                const result = stateSet.delete(key, keyIndex, preimage).verify()
+                const result = stateSet.delete(key, keyIndex, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.eq(expectedResult);
 
-                stateSet.set = toHashedSet(set)
+                stateSet.set = StateSet.toHashedSet(set, 'HashedSet<int>')
             }
 
 
-            testDelete(1)
+            testDelete(1n)
 
-            testDelete(5)
+            testDelete(5n)
 
-            testDelete(5, false)
-            testDelete(3333, false)
 
-            testDelete(3)
+            testDelete(3n)
 
-            testDelete(0)
+            testDelete(0n)
 
+            expect(() => {
+                testDelete(5n, false)
+
+
+            }).to.throw(/findKeyIndex fail, key: 5 not found/)
         })
 
     })
