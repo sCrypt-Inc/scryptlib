@@ -13,7 +13,8 @@
     "src/test/**",
     "**/*.d.ts",
     "**/*.test.ts",
-    "src/index.ts"
+    "src/index.ts",
+    "src/findCompiler.ts"
   ],
   "sourceMap": true,
   "reporter": [
