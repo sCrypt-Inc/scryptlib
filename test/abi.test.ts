@@ -2,9 +2,8 @@ import { assert, expect } from 'chai';
 import { newTx, loadDescription } from './helper';
 import { FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
-import { bsv, signTx } from '../src/utils';
-import { PubKey, Sig, Ripemd160, Sha256 } from '../src/scryptTypes';
-import { toASM, toHex } from '../src/serializer';
+import { bsv, signTx, toHex } from '../src/utils';
+import { PubKey, Sig, Ripemd160, Sha256, toBytes } from '../src/scryptTypes';
 
 const privateKey = bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
@@ -74,7 +73,7 @@ describe('FunctionCall', () => {
       sig = Sig(signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis));
       pubkey = PubKey(toHex(publicKey));
       target = new FunctionCall('unlock', {
-        contract: p2pkh, unlockingScript: bsv.Script.fromASM([toASM(sig), toASM(pubkey)].join(' ')), args: [{
+        contract: p2pkh, unlockingScript: bsv.Script.fromASM([toBytes(sig), toBytes(pubkey)].join(' ')), args: [{
           name: 'sig',
           type: 'Sig',
           value: sig
@@ -108,7 +107,7 @@ describe('FunctionCall', () => {
 
     describe('toASM()', () => {
       it('should return the unlocking script in ASM', () => {
-        assert.equal(target.toASM(), [toASM(sig), toASM(pubkey)].join(' '));
+        assert.equal(target.toASM(), [toBytes(sig), toBytes(pubkey)].join(' '));
       })
     })
 

@@ -138,23 +138,23 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
       expect(resolver("Age")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Time")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Name")).deep.equal({
         finalType: 'bytes',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Token")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("MaleAAA")).deep.equal({
         finalType: 'Person',
@@ -246,15 +246,15 @@ describe('Alias type check', () => {
       })
       expect(resolver("Coinbase")).deep.equal({
         finalType: 'bytes',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Integer")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Height")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Person[3]")).deep.equal({
         finalType: 'Person[3]',
@@ -276,55 +276,55 @@ describe('Alias type check', () => {
 
       expect(resolver("int")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKey")).deep.equal({
         finalType: 'PubKey',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("PrivKey")).deep.equal({
         finalType: 'PrivKey',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashPreimage")).deep.equal({
         finalType: 'SigHashPreimage',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("bool")).deep.equal({
         finalType: 'bool',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("bytes")).deep.equal({
         finalType: 'bytes',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sig")).deep.equal({
         finalType: 'Sig',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Ripemd160")).deep.equal({
         finalType: 'Ripemd160',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKeyHash")).deep.equal({
         finalType: 'Ripemd160',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha1")).deep.equal({
         finalType: 'Sha1',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha256")).deep.equal({
         finalType: 'Sha256',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashType")).deep.equal({
         finalType: 'SigHashType',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("OpCodeType")).deep.equal({
         finalType: 'OpCodeType',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
 
     })
@@ -408,55 +408,55 @@ describe('Alias type check', () => {
 
       expect(resolver("int")).deep.equal({
         finalType: 'int',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKey")).deep.equal({
         finalType: 'PubKey',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("PrivKey")).deep.equal({
         finalType: 'PrivKey',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashPreimage")).deep.equal({
         finalType: 'SigHashPreimage',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("bool")).deep.equal({
         finalType: 'bool',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("bytes")).deep.equal({
         finalType: 'bytes',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sig")).deep.equal({
         finalType: 'Sig',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Ripemd160")).deep.equal({
         finalType: 'Ripemd160',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKeyHash")).deep.equal({
         finalType: 'Ripemd160',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha1")).deep.equal({
         finalType: 'Sha1',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha256")).deep.equal({
         finalType: 'Sha256',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashType")).deep.equal({
         finalType: 'SigHashType',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("OpCodeType")).deep.equal({
         finalType: 'OpCodeType',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
 
     })
@@ -472,23 +472,23 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenArray")).deep.equal({
         finalType: 'int[1][3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenAA")).deep.equal({
         finalType: 'int[4][5][1][3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("Tokens[1]")).deep.equal({
         finalType: 'int[1][3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenArray[4][5]")).deep.equal({
         finalType: 'int[4][5][1][3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
 
     })
@@ -511,11 +511,11 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(result.contract || '', result.alias || [], result.structs || [], result.library || [], result.contracts, result.statics)
       expect(resolver("int[1][SUB]")).deep.equal({
         finalType: 'int[1][3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
       expect(resolver("int[1][VarAsSub.SUB]")).deep.equal({
         finalType: 'int[1][3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
 
     })
@@ -700,7 +700,7 @@ describe('Alias type check', () => {
 
       expect(C.resolver("INTA")).deep.equal({
         finalType: 'int[3]',
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       })
 
 

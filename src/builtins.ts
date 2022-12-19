@@ -1,5 +1,5 @@
 import { Int, bsv, Ripemd160, Bytes } from '.';
-import { toASM } from './serializer';
+import { toScriptASM } from './serializer';
 
 /** 
  * bigint can be converted to string with pack
@@ -183,5 +183,25 @@ export function buildOpreturnScript(data: string): bsv.Script {
 
 
 export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): bsv.Script {
-  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', toASM(pubKeyHash), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
+  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', toScriptASM(pubKeyHash), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
+}
+
+
+
+
+
+// Equivalent to the built-in function `hash160` in scrypt
+export function hash160(hexstr: string, encoding?: BufferEncoding): string {
+  return bsv.crypto.Hash.sha256ripemd160(Buffer.from(hexstr, encoding || 'hex')).toString('hex');
+}
+
+// Equivalent to the built-in function `sha256` in scrypt
+export function sha256(hexstr: string, encoding?: BufferEncoding): string {
+  return bsv.crypto.Hash.sha256(Buffer.from(hexstr, encoding || 'hex')).toString('hex');
+}
+
+
+// Equivalent to the built-in function `hash256` in scrypt
+export function hash256(hexstr: string, encoding?: BufferEncoding): string {
+  return sha256(sha256(hexstr, encoding), encoding);
 }

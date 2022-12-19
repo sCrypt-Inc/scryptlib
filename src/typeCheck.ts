@@ -1,11 +1,8 @@
-import { assert } from 'console';
-import { Argument, Arguments, getNameByType, isArrayType, isGenericType, LibraryEntity, ParamEntity, parseGenericType, StructEntity } from '.';
+import { Argument, Arguments, isArrayType, isGenericType, LibraryEntity, ParamEntity, parseGenericType, StructEntity } from '.';
 import { parseLiteral, subscript, toGenericType } from './internal';
-import { BaseType, StructObject, SupportedParamType, SymbolType, TypeResolver } from './scryptTypes';
+import { StructObject, SupportedParamType, SymbolType, TypeResolver } from './scryptTypes';
 
-export function isBaseType(type: string): boolean {
-  return Object.keys(BaseType).map(key => BaseType[key]).includes(type);
-}
+
 
 export function typeOfArg(a: SupportedParamType): string {
   if (typeof a === 'bigint') {
@@ -228,7 +225,7 @@ export function checkSupportedParamType(arg: SupportedParamType, param: ParamEnt
     return checkStructParamType(arg as StructObject, param, resolver);
   } else if (typeInfo.symbolType === SymbolType.Library) {
     return checkLibraryParamType(arg as SupportedParamType[], param, resolver);
-  } else if (typeInfo.symbolType === SymbolType.BaseType) {
+  } else if (typeInfo.symbolType === SymbolType.ScryptType) {
     const error = new Error(`The type of ${param.name} is wrong, expected ${expectedType} but got ${typeOfArg(arg)}`);
     const t = typeOfArg(arg);
     return t == expectedType ? undefined : error;

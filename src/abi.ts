@@ -1,10 +1,12 @@
-import { int2Asm, bsv, genLaunchConfigFile, deserializeArgfromHex, parseStateHex, buildContractCode, buildDefaultStateProps } from './utils';
+import { int2Asm, bsv, genLaunchConfigFile, buildContractCode } from './utils';
 import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
 import { SupportedParamType, TypeResolver } from './scryptTypes';
-import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
-import { checkSupportedParamType, flatternArg } from './typeCheck';
-import { bin2num, toHex } from '.';
-
+import { ABIEntityType, ABIEntity } from './compilerWrapper';
+import { flatternArg } from './typeCheck';
+import { toScriptHex } from './serializer';
+import { bin2num } from './builtins';
+import Stateful from './stateful';
+import { deserializeArgfromHex } from './deserializer';
 
 export type Script = bsv.Script;
 
@@ -173,12 +175,12 @@ export class ABICoder {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
       }
 
-      contract.hexTemplateArgs.set(`<${arg.name}>`, toHex(arg.value));
+      contract.hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value));
     });
 
     contract.hexTemplateArgs.set('<__codePart__>', '00');
 
-    contract.statePropsArgs = buildDefaultStateProps(contract);
+    contract.statePropsArgs = Stateful.buildDefaultStateArgs(contract);
 
     const lockingScript = buildContractCode(contract.hexTemplateArgs, contract.hexTemplateInlineASM, hexTemplate);
 
@@ -299,7 +301,7 @@ export class ABICoder {
       switch (version) {
         case 0n:
           {
-            const [isGenesis, args] = parseStateHex(contract, scriptHex);
+            const [isGenesis, args] = Stateful.parseStateHex(contract, scriptHex);
             contract.statePropsArgs = args;
             contract.isGenesis = isGenesis;
           }
@@ -328,7 +330,7 @@ export class ABICoder {
           return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
         });
 
-        let hex = flatteredArgs.map(a => toHex(a.value)).join('');
+        let hex = flatteredArgs.map(a => toScriptHex(a.value)).join('');
 
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions

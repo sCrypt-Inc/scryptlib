@@ -11,9 +11,9 @@ export {
   readLaunchJson, getLowSPreimage, readBytes, parseAbiFromUnlockingScript, findConstStatic, findStatic, resolveConstValue,
   arrayTypeAndSizeStr, toLiteralArrayType,
   librarySign, structSign, resolveGenericType, canAssignProperty,
-  buildTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg, buildContractState,
-  compilerVersion, deserializer,
-  isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, parseStateHex, md5, FunctionCall
+  buildTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg,
+  compilerVersion, parseLiteral,
+  isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, md5, FunctionCall
 } from './internal';
 
 export {
@@ -22,11 +22,11 @@ export {
   StructObject, TypeResolver, PrimitiveTypes, AsmVarValues,
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, ContractDescription, VerifyResult, VerifyError, AbstractContract,
-  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType
+  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, toBytes, isScryptType, isSubBytes, toJSON
 } from './internal';
 
 //Equivalent to the built-in functions
-export { hash160, sha256, hash256, num2bin, buildOpreturnScript, len, buildPublicKeyHashScript, writeVarint, toLEUnsigned } from './internal';
+export { hash160, sha256, hash256, and, or, xor, invert, num2bin, buildOpreturnScript, len, buildPublicKeyHashScript, writeVarint, toLEUnsigned } from './internal';
 
 export {
   getPlatformScryptc, findCompiler

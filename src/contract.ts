@@ -1,12 +1,12 @@
-import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType, parseStateHex } from '.';
+import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromDesc, OpCode, StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, bsv, DEFAULT_FLAGS, resolveType, path2uri, TypeResolver,
-  StructEntity, ABIEntity, CompileResult, AliasEntity, buildContractState, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1
+  StructEntity, ABIEntity, CompileResult, AliasEntity, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1
 } from './internal';
-import { SymbolType, TypeInfo, SupportedParamType, HashedMap, HashedSet, Bytes } from './scryptTypes';
+import { SymbolType, TypeInfo, SupportedParamType, HashedMap, HashedSet, Bytes, isScryptType } from './scryptTypes';
 import { basename, dirname } from 'path';
-import { checkSupportedParamType, flatternArg, isBaseType } from './typeCheck';
+import { checkSupportedParamType, flatternArg } from './typeCheck';
 import Stateful from './stateful';
 
 
@@ -217,7 +217,7 @@ export class AbstractContract {
       }
     });
 
-    return this.codePart.add(bsv.Script.fromHex(buildContractState(newState, false, this.resolver)));
+    return this.codePart.add(bsv.Script.fromHex(Stateful.buildState(newState, false, this.resolver)));
   }
 
   run_verify(unlockingScript: bsv.Script | string | undefined, txContext?: TxContext): VerifyResult {
@@ -376,7 +376,7 @@ export class AbstractContract {
   get dataPart(): Script | undefined {
 
     if (AbstractContract.isStateful(this)) {
-      const state = buildContractState(this.statePropsArgs, this.isGenesis, this.resolver);
+      const state = Stateful.buildState(this.statePropsArgs, this.isGenesis, this.resolver);
       return bsv.Script.fromHex(state);
     }
 
@@ -422,7 +422,7 @@ export class AbstractContract {
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
     if (AbstractContract.isStateful(this)) {
-      const [isGenesis, args] = parseStateHex(this, this._dataPartInHex);
+      const [isGenesis, args] = Stateful.parseStateHex(this, this._dataPartInHex);
       this.statePropsArgs = args;
       this.isGenesis = isGenesis;
     }
@@ -902,7 +902,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
   resolvedTypes['PubKeyHash'] = {
     finalType: 'Ripemd160',
-    symbolType: SymbolType.BaseType
+    symbolType: SymbolType.ScryptType
   };
 
   alias.forEach(element => {
@@ -918,10 +918,10 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
       return resolvedTypes[type];
     }
 
-    if (isBaseType(type)) {
+    if (isScryptType(type)) {
       return {
         finalType: type,
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.ScryptType
       };
     }
 
