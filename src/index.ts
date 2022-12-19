@@ -13,7 +13,7 @@ export {
   librarySign, structSign, resolveGenericType, canAssignProperty,
   buildTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg,
   compilerVersion, parseLiteral,
-  isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, md5, FunctionCall
+  isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, md5, FunctionCall, stringToBytes, toBytes, isScryptType, isSubBytes, toJSON
 } from './internal';
 
 export {
@@ -22,7 +22,7 @@ export {
   StructObject, TypeResolver, PrimitiveTypes, AsmVarValues,
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, ContractDescription, VerifyResult, VerifyError, AbstractContract,
-  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, toBytes, isScryptType, isSubBytes, toJSON
+  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, DEFAULT_FLAGS
 } from './internal';
 
 //Equivalent to the built-in functions
