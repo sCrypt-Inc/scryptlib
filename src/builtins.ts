@@ -1,4 +1,5 @@
 import { Int, bsv, Ripemd160, Bytes } from '.';
+import { ScryptType } from './scryptTypes';
 import { toScriptASM } from './serializer';
 
 /** 
@@ -183,7 +184,7 @@ export function buildOpreturnScript(data: string): bsv.Script {
 
 
 export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): bsv.Script {
-  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', toScriptASM(pubKeyHash), 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
+  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash, 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
 }
 
 

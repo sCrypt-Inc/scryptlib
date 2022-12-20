@@ -1,6 +1,6 @@
 import { Argument, Arguments, isArrayType, isGenericType, LibraryEntity, ParamEntity, parseGenericType, StructEntity } from '.';
 import { parseLiteral, subscript, toGenericType } from './internal';
-import { StructObject, SupportedParamType, SymbolType, TypeResolver } from './scryptTypes';
+import { isBytes, ScryptType, StructObject, SupportedParamType, SymbolType, TypeResolver } from './scryptTypes';
 
 
 
@@ -10,8 +10,7 @@ export function typeOfArg(a: SupportedParamType): string {
   } else if (typeof a === 'boolean') {
     return 'bool';
   } else if (typeof a === 'string') {
-    const [_, type] = parseLiteral(a);
-    return type;
+    return 'bytes';
   } else if (Array.isArray(a)) {
     return 'Array';
   } else {
@@ -228,7 +227,14 @@ export function checkSupportedParamType(arg: SupportedParamType, param: ParamEnt
   } else if (typeInfo.symbolType === SymbolType.ScryptType) {
     const error = new Error(`The type of ${param.name} is wrong, expected ${expectedType} but got ${typeOfArg(arg)}`);
     const t = typeOfArg(arg);
-    return t == expectedType ? undefined : error;
+    if (isBytes(expectedType)) {
+      return t === ScryptType.BYTES ? undefined : error;
+    } else if (expectedType === ScryptType.PRIVKEY) {
+      return t === 'int' ? undefined : error;
+    } else {
+      return t == expectedType ? undefined : error;
+    }
+
   } else {
     return new Error(`can't not resolve type: ${param.type}`);
   }

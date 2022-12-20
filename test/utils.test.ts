@@ -585,7 +585,7 @@ describe('utils', () => {
   describe('Literal', () => {
 
     it('Literal should returns right', () => {
-      expect(PrivKey(111111111111111111111111111111111111111111n)).to.be.equal("PrivKey(111111111111111111111111111111111111111111)");
+      expect(PrivKey(111111111111111111111111111111111111111111n)).to.be.equal(111111111111111111111111111111111111111111n);
 
     });
 

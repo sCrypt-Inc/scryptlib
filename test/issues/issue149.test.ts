@@ -18,7 +18,7 @@ describe('test.Issue149', () => {
             const result = test.unlock(PrivKey(11n)).verify()
             expect(result.success, result.error).to.be.false;
             const launch = readLaunchJson(result.error) as DebugLaunch;
-            expect(launch.configurations[0].pubFuncArgs).to.deep.eq(["PrivKey(11)"]);
+            expect(launch.configurations[0].pubFuncArgs).to.deep.eq([11]);
         })
     })
 })

@@ -546,12 +546,12 @@ export class AbstractContract {
       ignoreValue: false
     });
     if (flattened.length === 1) {
-      const hex = Stateful.serialize(flattened[0].value);
+      const hex = Stateful.serialize(flattened[0].value, flattened[0].type);
 
       return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
     } else {
       const jointbytes = flattened.map(item => {
-        const hex = Stateful.serialize(item.value);
+        const hex = Stateful.serialize(item.value, item.type);
         return bsv.crypto.Hash.sha256(Buffer.from(hex, 'hex')).toString('hex');
       }).join('');
 

@@ -175,7 +175,7 @@ export class ABICoder {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
       }
 
-      contract.hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value));
+      contract.hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value, arg.type));
     });
 
     contract.hexTemplateArgs.set('<__codePart__>', '00');
@@ -330,7 +330,7 @@ export class ABICoder {
           return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
         });
 
-        let hex = flatteredArgs.map(a => toScriptHex(a.value)).join('');
+        let hex = flatteredArgs.map(a => toScriptHex(a.value, a.type)).join('');
 
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions

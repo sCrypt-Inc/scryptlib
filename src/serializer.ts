@@ -1,4 +1,4 @@
-import { ScryptType, Bool, Bytes, Int, parseLiteral, SupportedParamType } from './scryptTypes';
+import { Bool, Bytes, Int, SupportedParamType, isBytes, ScryptType } from './scryptTypes';
 import { bsv } from './utils';
 
 
@@ -51,27 +51,21 @@ export function bytes2hex(b: Bytes): string {
 }
 
 
-export function toScriptHex(x: SupportedParamType): string {
+export function toScriptHex(x: SupportedParamType, type: string): string {
 
-  if (typeof x === 'bigint') {
-    return int2hex(x);
-  } else if (typeof x === 'boolean') {
+  if (type === ScryptType.INT || type === ScryptType.PRIVKEY) {
+    return int2hex(x as bigint);
+  } else if (type === ScryptType.BOOL) {
     return bool2hex(x as boolean);
-  } else if (typeof x === 'string') {
-    const [value, type] = parseLiteral(x);
-
-    if (type == ScryptType.PRIVKEY) {
-      return int2hex(value as bigint);
-    }
-
-    return bytes2hex(value as Bytes);
+  } else if (isBytes(type)) {
+    return bytes2hex(x as Bytes);
   }
 
-  throw new Error('unsupport SupportedParamType: x');
+  throw new Error(`unsupport SupportedParamType: ${x}`);
 }
 
 
-export function toScriptASM(a: SupportedParamType): string {
-  const hex = toScriptHex(a);
+export function toScriptASM(a: SupportedParamType, type: string): string {
+  const hex = toScriptHex(a, type);
   return bsv.Script.fromHex(hex).toASM();
 }

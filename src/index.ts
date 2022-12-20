@@ -13,7 +13,7 @@ export {
   librarySign, structSign, resolveGenericType, canAssignProperty,
   buildTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg,
   compilerVersion, parseLiteral,
-  isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, md5, FunctionCall, stringToBytes, toBytes, isScryptType, isSubBytes, toJSON
+  isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, md5, FunctionCall, stringToBytes, isScryptType, isSubBytes, toJSON
 } from './internal';
 
 export {

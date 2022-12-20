@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { AbstractContract, buildContractClass } from '../src/contract'
-import { Bytes, HashedSet, Int, SigHashPreimage } from '../src/scryptTypes'
+import { Int, SigHashPreimage } from '../src/scryptTypes'
 import { bsv, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;

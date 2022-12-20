@@ -1,7 +1,7 @@
 import { AbstractContract, Arguments, bin2num, bsv, num2bin, readBytes } from '.';
 import { deserializeArgfromHex } from './deserializer';
 import { flatternArg, parseLiteral } from './internal';
-import { Int, Bytes, SupportedParamType, ScryptType, Bool, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, TypeResolver } from './scryptTypes';
+import { Int, Bytes, SupportedParamType, ScryptType, Bool, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, TypeResolver, isBytes } from './scryptTypes';
 
 export default class Stateful {
 
@@ -60,50 +60,38 @@ export default class Stateful {
     return chuck.buf.toString('hex');
   }
 
-  static toHex(x: SupportedParamType): string {
+  static toHex(x: SupportedParamType, type: string): string {
 
-    if (typeof x === 'bigint') {
-      return Stateful.int2hex(x);
-    } else if (typeof x === 'boolean') {
+    if (type === ScryptType.INT || type === ScryptType.PRIVKEY) {
+      return Stateful.int2hex(x as bigint);
+    } else if (type === ScryptType.BOOL) {
       return Stateful.bool2hex(x as boolean);
-    } else if (typeof x === 'string') {
-      const [value, type] = parseLiteral(x);
-
-      if (type === ScryptType.PRIVKEY) {
-        return Stateful.int2hex(value as bigint);
-      }
-
-      return Stateful.bytes2hex(value as Bytes);
+    } else if (isBytes(type)) {
+      return Stateful.bytes2hex(x as Bytes);
     }
 
-    return '00';
+    throw new Error(`unsupported type: ${type}`);
   }
 
-  static serialize(x: SupportedParamType): string {
+  static serialize(x: SupportedParamType, type: string): string {
 
-    if (typeof x === 'bigint') {
-      const num = new bsv.crypto.BN(x);
+    if (type === ScryptType.INT || type === ScryptType.PRIVKEY) {
+      const num = new bsv.crypto.BN(x as bigint);
       if (num.eqn(0)) {
         return '';
       } else {
         return num.toSM({ endian: 'little' }).toString('hex');
       }
-    } else if (typeof x === 'boolean') {
+    } else if (type === ScryptType.BOOL) {
       if (x) {
         return '01';
       }
       return '';
-    } else if (typeof x === 'string') {
-      const [value, type] = parseLiteral(x);
-
-      if (type === ScryptType.PRIVKEY) {
-        return Stateful.int2hex(value as bigint);
-      }
-
-      return value as Bytes;
+    } else if (isBytes(type)) {
+      return x as string;
     }
 
-    return '';
+    throw new Error(`unsupported type: ${type}`);
   }
 
 
@@ -125,9 +113,9 @@ export default class Stateful {
     }
 
     // append isGenesis which is a hidden built-in state
-    let state_hex = `${Stateful.toHex(isGenesis)}`;
+    let state_hex = `${Stateful.toHex(isGenesis, ScryptType.BOOL)}`;
 
-    state_hex += args_.map(a => Stateful.toHex(a.value)).join('');
+    state_hex += args_.map(a => Stateful.toHex(a.value, a.type)).join('');
 
     //append meta
     if (state_hex) {

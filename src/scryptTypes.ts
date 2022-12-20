@@ -48,8 +48,8 @@ export type Bool = Flavor<boolean, 'bool'>;
 
 export type Bytes = Flavor<string, 'bytes'>;
 
+export type PrivKey = Int & { __type: 'PrivKey' };
 
-export type PrivKey = Bytes & { __type: 'PrivKey' };
 export type PubKey = Bytes & { __type: 'PubKey' };
 export type Sig = Bytes & { __type: 'Sig' };
 export type Ripemd160 = Bytes & { __type: 'Ripemd160' };
@@ -59,8 +59,8 @@ export type Sha256 = Bytes & { __type: 'Sha256' };
 export type SigHashType = Bytes & { __type: 'SigHashType' };
 export type SigHashPreimage = Bytes & { __type: 'SigHashPreimage' };
 export type OpCodeType = Bytes & { __type: 'OpCodeType' };
-export type HashedSet = Flavor<[string], 'HashedSet'>;
-export type HashedMap = Flavor<[string], 'HashedSet'>;
+export type HashedSet = Flavor<[Bytes], 'HashedSet'>;
+export type HashedMap = Flavor<[Bytes], 'HashedMap'>;
 
 
 export function Int(n: number | bigint): Int {
@@ -82,20 +82,20 @@ export function stringToBytes(str: string): Bytes {
 }
 
 export function PrivKey(n: Int): PrivKey {
-  return `PrivKey(${n.toString()})` as PrivKey;
+  return n as PrivKey;
 }
 
 export function PubKey(b: Bytes): PubKey {
-  return `PubKey(b'${getValidatedHexString(b)}')` as PubKey;
+  return getValidatedHexString(b, false) as PubKey;
 }
 
 
 export function Sig(b: Bytes): Sig {
-  return `Sig(b'${getValidatedHexString(b)}')` as Sig;
+  return getValidatedHexString(b, false) as Sig;
 }
 
 export function Ripemd160(b: Bytes): Ripemd160 {
-  return `Ripemd160(b'${getValidatedHexString(b)}')` as Ripemd160;
+  return getValidatedHexString(b, false) as Ripemd160;
 }
 
 export function PubKeyHash(b: Bytes): PubKeyHash {
@@ -103,11 +103,11 @@ export function PubKeyHash(b: Bytes): PubKeyHash {
 }
 
 export function Sha1(b: Bytes): Sha1 {
-  return `Sha1(b'${getValidatedHexString(b)}')` as Sha1;
+  return getValidatedHexString(b, false) as Sha1;
 }
 
 export function Sha256(b: Bytes): Sha256 {
-  return `Sha256(b'${getValidatedHexString(b)}')` as Sha256;
+  return getValidatedHexString(b, false) as Sha256;
 }
 
 export function HashedSet(b: Bytes): HashedSet {
@@ -129,22 +129,22 @@ export enum SigHash {
 
 export function SigHashType(s: SigHash | 0): SigHashType {
   if (s == 0) {
-    return 'SigHashType(b\'00\')' as SigHashType;
+    return '00' as SigHashType;
   } else if (s === SigHash.ALL || s === SigHash.NONE || s === SigHash.SINGLE
     || s === SigHash.ANYONECANPAY_ALL || s === SigHash.ANYONECANPAY_NONE || s === SigHash.ANYONECANPAY_SINGLE) {
-    return `SigHashType(b'${(s as SigHash).toString(16)}')` as SigHashType;
+    return `${(s as SigHash).toString(16)}` as SigHashType;
   }
   throw new Error(`unsupported SigHashType: ${s}`);
 }
 
 
 export function SigHashPreimage(b: Bytes): SigHashPreimage {
-  return `SigHashPreimage(b'${getValidatedHexString(b)}')` as SigHashPreimage;
+  return getValidatedHexString(b) as SigHashPreimage;
 }
 
 
 export function OpCodeType(b: Bytes): OpCodeType {
-  return `OpCodeType(b'${getValidatedHexString(b)}')` as OpCodeType;
+  return getValidatedHexString(b) as OpCodeType;
 }
 
 
@@ -348,18 +348,6 @@ export function isSubBytes(type: string): boolean {
   ScryptType.SIGHASHPREIMAGE, ScryptType.SIGHASHTYPE].map(t => t.toString()).includes(type);
 }
 
-export function toBytes(x: SubBytes): Bytes {
-  const [val, t] = parseLiteral(x);
-  if (isSubBytes(t)) {
-    return val as Bytes;
-  }
-  throw new Error(`x: ${x} is not SubBytes`);
-}
-
-export function toInt(x: PrivKey): Int {
-  const [val, t] = parseLiteral(x);
-  if (t === ScryptType.PRIVKEY) {
-    return val as Int;
-  }
-  throw new Error(`x: ${x} is not PrivKey`);
+export function isBytes(type: string): boolean {
+  return type === ScryptType.BYTES || isSubBytes(type);
 }
