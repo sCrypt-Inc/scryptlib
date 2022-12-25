@@ -9,6 +9,7 @@
   "main": "dist/index.js",
   "module": "dist/esm/src/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "exports": {
     "abi": {
       "import": "./dist/esm/src/abi.js",
