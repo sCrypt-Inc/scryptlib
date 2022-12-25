@@ -6,6 +6,7 @@ const externals = Array.from(
       ...Object.keys(pkg.dependencies),
       "shallow-clone",
       "buffer",
+      "bsv/ecies",
       "inherits",
       "bs58",
       "clone-deep",
@@ -14,8 +15,10 @@ const externals = Array.from(
       "kind-of",
       "@discoveryjs/json-ext",
       "chalk",
+      // "bsv",
       "path",
       "fs",
+      "elliptic",
       "child_process",
       "os",
       "glob",
@@ -39,16 +42,18 @@ function updatePkgJson(): Plugin {
     "name": "updatePkgJson",
     async "buildEnd"() {
       const files = await fs.readdir("./src");
-      const exp: any = {};
+      const exp: any = {
+        ".": {
+          "import": `./dist/esm/src/index.js`,
+          "require": `./dist/index.js`,
+          "types": `./dist/index.d.ts`,
+        },
+      };
       files.forEach((file) => {
         if (file.endsWith(".ts")) {
           const dir = path.basename(file);
           const rawName = dir.slice(0, dir.length - 3);
-          let modPath = rawName;
-          if (rawName === "index") {
-            modPath = ".";
-          }
-          exp[modPath] = {
+          exp[`./${rawName}`] = {
             "import": `./dist/esm/src/${rawName}.js`,
             "require": `./dist/${rawName}.js`,
             "types": `./dist/${rawName}.d.ts`,

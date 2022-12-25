@@ -25,7 +25,7 @@
             "dom.iterable",
             "esnext"
         ],
-        "module": "esnext",
+        "module": "CommonJS",
         "outDir": "./dist",
         "allowSyntheticDefaultImports": true,
         "alwaysStrict": true,

@@ -1,6 +1,6 @@
 {
   "name": "scryptlib",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
     "node": ">=14.0.0"
@@ -11,52 +11,57 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
-    "abi": {
-      "import": "./dist/esm/src/abi.js",
-      "require": "./dist/abi.js",
-      "types": "./dist/abi.d.ts"
-    },
-    "compilerWrapper": {
-      "import": "./dist/esm/src/compilerWrapper.js",
-      "require": "./dist/compilerWrapper.js",
-      "types": "./dist/compilerWrapper.d.ts"
-    },
-    "contract": {
-      "import": "./dist/esm/src/contract.js",
-      "require": "./dist/contract.js",
-      "types": "./dist/contract.d.ts"
-    },
-    "findCompiler": {
-      "import": "./dist/esm/src/findCompiler.js",
-      "require": "./dist/findCompiler.js",
-      "types": "./dist/findCompiler.d.ts"
-    },
-    "index": {
+    ".": {
       "import": "./dist/esm/src/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "internal": {
+    "./abi": {
+      "import": "./dist/esm/src/abi.js",
+      "require": "./dist/abi.js",
+      "types": "./dist/abi.d.ts"
+    },
+    "./compilerWrapper": {
+      "import": "./dist/esm/src/compilerWrapper.js",
+      "require": "./dist/compilerWrapper.js",
+      "types": "./dist/compilerWrapper.d.ts"
+    },
+    "./contract": {
+      "import": "./dist/esm/src/contract.js",
+      "require": "./dist/contract.js",
+      "types": "./dist/contract.d.ts"
+    },
+    "./findCompiler": {
+      "import": "./dist/esm/src/findCompiler.js",
+      "require": "./dist/findCompiler.js",
+      "types": "./dist/findCompiler.d.ts"
+    },
+    "./index": {
+      "import": "./dist/esm/src/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./internal": {
       "import": "./dist/esm/src/internal.js",
       "require": "./dist/internal.js",
       "types": "./dist/internal.d.ts"
     },
-    "partialSha256": {
+    "./partialSha256": {
       "import": "./dist/esm/src/partialSha256.js",
       "require": "./dist/partialSha256.js",
       "types": "./dist/partialSha256.d.ts"
     },
-    "scryptTypes": {
+    "./scryptTypes": {
       "import": "./dist/esm/src/scryptTypes.js",
       "require": "./dist/scryptTypes.js",
       "types": "./dist/scryptTypes.d.ts"
     },
-    "serializer": {
+    "./serializer": {
       "import": "./dist/esm/src/serializer.js",
       "require": "./dist/serializer.js",
       "types": "./dist/serializer.d.ts"
     },
-    "utils": {
+    "./utils": {
       "import": "./dist/esm/src/utils.js",
       "require": "./dist/utils.js",
       "types": "./dist/utils.d.ts"
@@ -126,6 +131,7 @@
     "compare-versions": "^3.6.0",
     "json-bigint": "^1.0.0",
     "md5": "^2.2.1",
+    "minimist": "^1.2.7",
     "node-fetch": "^3.0.0",
     "patch-package": "^6.4.7",
     "sourcemap-codec": "^1.4.8"
