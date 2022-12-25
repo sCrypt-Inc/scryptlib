@@ -1,9 +1,9 @@
 
 import { dirname, join, resolve, sep } from 'path';
-import * as minimist from 'minimist';
+import minimist from 'minimist';
 import { existsSync, readdirSync, statSync } from 'fs';
 
-import compareVersions = require('compare-versions');
+import compareVersions from 'compare-versions'
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import * as os from 'os';

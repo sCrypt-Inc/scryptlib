@@ -1,6 +1,6 @@
 import { pathToFileURL, fileURLToPath } from 'url';
-import bsv = require('bsv');
-import ECIES = require('bsv/ecies');
+import bsv from 'bsv'
+import ECIES from 'bsv/ecies'
 import * as fs from 'fs';
 import { join, sep } from 'path';
 import { tmpdir } from 'os';

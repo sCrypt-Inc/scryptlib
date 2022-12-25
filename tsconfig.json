@@ -6,6 +6,7 @@
         // Remove if you want ts-node to do typechecking.
         "files": true,
         "compilerOptions": {
+            "module": "esnext",
             // compilerOptions specified here will override those declared below,
             // but *only* in ts-node.  Useful if you want ts-node and tsc to use
             // different options with a single tsconfig.json.
@@ -18,14 +19,15 @@
         }
     },
     "compilerOptions": {
-        "target": "es5",
+        "target": "esnext",
         "lib": [
             "dom",
             "dom.iterable",
             "esnext"
         ],
-        "module": "commonjs",
+        "module": "esnext",
         "outDir": "./dist",
+        "allowSyntheticDefaultImports": true,
         "alwaysStrict": true,
         "sourceMap": true,
         "resolveJsonModule": true,

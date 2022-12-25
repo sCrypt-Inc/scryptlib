@@ -1,6 +1,6 @@
 export {
   buildContractClass, buildTypeClasses, compile, compileAsync, compileContract, doCompileAsync, getPreimage, signTx,
-  handleCompilerOutput, compileContractAsync, CompilingSettings
+  handleCompilerOutput, compileContractAsync
 } from './internal';
 
 export {
@@ -16,7 +16,8 @@ export {
   isEmpty, isStringLiteral, and, or, xor, invert, JSONParser, getFullFilePath, path2uri, uri2path, parseStateHex
 } from './internal';
 
-export {
+export type {
+  CompilingSettings,
   Int, Bool, Bytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, String, SortedItem,
   OpCodeType, SingletonParamType, SupportedParamType, ScryptType, ValueType, PubKeyHash, TxContext,
   Struct, StructObject, VariableType, TypeResolver, PrimitiveTypes, Library, ScryptTypeResolver, AsmVarValues,

@@ -7,13 +7,67 @@
   },
   "bin": "bin/cli.js",
   "main": "dist/index.js",
-  "types": "dist",
+  "module": "dist/esm/src/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "abi": {
+      "import": "./dist/esm/src/abi.js",
+      "require": "./dist/abi.js",
+      "types": "./dist/abi.d.ts"
+    },
+    "compilerWrapper": {
+      "import": "./dist/esm/src/compilerWrapper.js",
+      "require": "./dist/compilerWrapper.js",
+      "types": "./dist/compilerWrapper.d.ts"
+    },
+    "contract": {
+      "import": "./dist/esm/src/contract.js",
+      "require": "./dist/contract.js",
+      "types": "./dist/contract.d.ts"
+    },
+    "findCompiler": {
+      "import": "./dist/esm/src/findCompiler.js",
+      "require": "./dist/findCompiler.js",
+      "types": "./dist/findCompiler.d.ts"
+    },
+    "index": {
+      "import": "./dist/esm/src/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "internal": {
+      "import": "./dist/esm/src/internal.js",
+      "require": "./dist/internal.js",
+      "types": "./dist/internal.d.ts"
+    },
+    "partialSha256": {
+      "import": "./dist/esm/src/partialSha256.js",
+      "require": "./dist/partialSha256.js",
+      "types": "./dist/partialSha256.d.ts"
+    },
+    "scryptTypes": {
+      "import": "./dist/esm/src/scryptTypes.js",
+      "require": "./dist/scryptTypes.js",
+      "types": "./dist/scryptTypes.d.ts"
+    },
+    "serializer": {
+      "import": "./dist/esm/src/serializer.js",
+      "require": "./dist/serializer.js",
+      "types": "./dist/serializer.d.ts"
+    },
+    "utils": {
+      "import": "./dist/esm/src/utils.js",
+      "require": "./dist/utils.js",
+      "types": "./dist/utils.d.ts"
+    }
+  },
   "browser": {
     "child_process": false,
     "fs": false
   },
   "scripts": {
     "compile": "tsc -b",
+    "compile:browser": "vite build",
     "watch": "tsc -b -w",
     "cov": "nyc npm t",
     "lint": "eslint src --ext .ts,.js --cache --fix",
@@ -48,7 +102,7 @@
   "devDependencies": {
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^13.1.2",
+    "@types/node": ">= 14",
     "@types/rimraf": "^2.0.3",
     "@typescript-eslint/eslint-plugin": "^3.3.0",
     "@typescript-eslint/parser": "^3.3.0",
@@ -61,6 +115,7 @@
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
     "typescript": "^3.9.5",
+    "vite": "^4.0.3",
     "webpack": "4.29.5",
     "webpack-cli": "^3.3.11"
   },

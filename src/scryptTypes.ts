@@ -467,7 +467,7 @@ export class SigHashPreimage extends ScryptType {
     return this.getReader(this._buf.slice(this._buf.length - 4, this._buf.length)).readUInt32LE();
   }
 
-  toString(format = 'hex'): string {
+  toString(format = 'hex' as BufferEncoding): string {
     return this._buf.toString(format);
   }
 
