@@ -92,7 +92,7 @@ export default defineConfig({
             return `${a.name}.cjs`;
           },
           "preserveModulesRoot": "strict",
-
+          sourcemap: true,
           "dir": "./dist/cjs",
           "preserveModules": true,
           "esModule": true,
@@ -104,6 +104,7 @@ export default defineConfig({
           },
           "preserveModulesRoot": "strict",
 
+          sourcemap: true,
           "dir": "./dist/esm",
           "preserveModules": true,
           "esModule": true,
