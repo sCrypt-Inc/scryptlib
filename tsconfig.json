@@ -25,14 +25,15 @@
             "dom.iterable",
             "esnext"
         ],
-        "module": "CommonJS",
+        "module": "esnext",
         "outDir": "./dist",
-        "allowSyntheticDefaultImports": true,
+        "allowImportingTsExtensions": true,
+        "emitDeclarationOnly": true,
         "alwaysStrict": true,
         "sourceMap": true,
         "resolveJsonModule": true,
         "downlevelIteration": true,
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "declaration": true,
         "declarationDir": "./dist"
     },

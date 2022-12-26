@@ -1,67 +1,91 @@
-import { basename, dirname, join } from 'path';
-import { execSync, exec, ChildProcess } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
-import md5 from 'md5'
-import rimraf from 'rimraf'
-import JSONbig from 'json-bigint'
+import { basename, dirname, join } from "path";
+import { ChildProcess, exec, execSync } from "child_process";
 import {
-  path2uri, ContractDescription, findCompiler, CURRENT_CONTRACT_DESCRIPTION_VERSION,
-  buildTypeResolver, TypeResolver, resolveConstValue, hash160
-} from './internal';
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "fs";
+import md5 from "md5";
+import rimraf from "rimraf";
+import JSONbig from "json-bigint";
+import {
+  buildTypeResolver,
+  ContractDescription,
+  CURRENT_CONTRACT_DESCRIPTION_VERSION,
+  findCompiler,
+  hash160,
+  path2uri,
+  resolveConstValue,
+  TypeResolver,
+} from "./internal.ts";
 
-
-const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
-const SEMANTIC_ERR_REG = /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
+const SYNTAX_ERR_REG =
+  /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
+const SEMANTIC_ERR_REG =
+  /Error:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
 const INTERNAL_ERR_REG = /Internal error:(?<message>.+)/;
-const WARNING_REG = /Warning:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
-const JSONbigAlways = JSONbig({ alwaysParseAsBig: true, constructorAction: 'preserve' });
-
-
+const WARNING_REG =
+  /Warning:(\s|\n)*(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+):*\n(?<message>[^\n]+)\n/g;
+const JSONbigAlways = JSONbig({
+  alwaysParseAsBig: true,
+  constructorAction: "preserve",
+});
 
 //SOURCE_REG parser src eg: [0:6:3:8:4#Bar.constructor:0]
-export const SOURCE_REG = /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
-const RELATED_INFORMATION_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
+export const SOURCE_REG =
+  /^(?<fileIndex>-?\d+):(?<line>\d+):(?<col>\d+):(?<endLine>\d+):(?<endCol>\d+)(#(?<tagStr>.+))?/;
+const RELATED_INFORMATION_REG =
+  /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):(?<line1>\d+):(?<column1>\d+)/gi;
 
 // see VERSIONLOG.md
 
 export enum CompileErrorType {
-  SyntaxError = 'SyntaxError',
-  SemanticError = 'SemanticError',
-  InternalError = 'InternalError',
-  Warning = 'Warning'
+  SyntaxError = "SyntaxError",
+  SemanticError = "SemanticError",
+  InternalError = "InternalError",
+  Warning = "Warning",
 }
 
-
 export enum BuildType {
-  Debug = 'debug',
-  Release = 'release'
+  Debug = "debug",
+  Release = "release",
 }
 
 export interface RelatedInformation {
   filePath: string;
-  position: [{
-    line: number;
-    column: number;
-  }, {
-    line: number;
-    column: number;
-  }?];
+  position: [
+    {
+      line: number;
+      column: number;
+    },
+    {
+      line: number;
+      column: number;
+    }?,
+  ];
   message: string;
 }
-
 
 export interface CompileErrorBase {
   type: string;
   filePath: string;
-  position: [{
-    line: number;
-    column: number;
-  }, {
-    line: number;
-    column: number;
-  }?];
+  position: [
+    {
+      line: number;
+      column: number;
+    },
+    {
+      line: number;
+      column: number;
+    }?,
+  ];
   message: string;
-  relatedInformation: RelatedInformation[]
+  relatedInformation: RelatedInformation[];
 }
 
 export interface SyntaxError extends CompileErrorBase {
@@ -82,12 +106,14 @@ export interface Warning extends CompileErrorBase {
   type: CompileErrorType.Warning;
 }
 
-export type CompileError = SyntaxError | SemanticError | InternalError | Warning;
+export type CompileError =
+  | SyntaxError
+  | SemanticError
+  | InternalError
+  | Warning;
 
 export class CompileResult {
-
   constructor(public errors: CompileError[], public warnings: Warning[]) {
-
   }
 
   asm?: OpCode[];
@@ -113,35 +139,33 @@ export class CompileResult {
   dbgFile?: string;
 
   toDesc(): ContractDescription {
-
     const description: ContractDescription = {
       version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
-      compilerVersion: this.compilerVersion || '0.0.0',
-      contract: this.contract || '',
-      md5: this.md5 || '',
+      compilerVersion: this.compilerVersion || "0.0.0",
+      contract: this.contract || "",
+      md5: this.md5 || "",
       structs: this.structs || [],
       library: this.library || [],
       alias: this.alias || [],
       abi: this.abi || [],
       stateProps: this.stateProps || [],
       buildType: this.buildType || BuildType.Debug,
-      file: this.file || '',
-      hex: this.hex || '',
-      asm: '',
+      file: this.file || "",
+      hex: this.hex || "",
+      asm: "",
       sourceMap: [],
       sources: [],
-      sourceMapFile: this.sourceMapFile || '',
+      sourceMapFile: this.sourceMapFile || "",
     };
 
     return description;
   }
 }
 
-
 export enum DebugModeTag {
-  FuncStart = 'F0',
-  FuncEnd = 'F1',
-  LoopStart = 'L0'
+  FuncStart = "F0",
+  FuncEnd = "F1",
+  LoopStart = "L0",
 }
 
 export interface DebugInfo {
@@ -174,17 +198,18 @@ export interface AutoTypedVar {
 }
 
 export interface ABI {
-  contract: string, abi: Array<ABIEntity>
+  contract: string;
+  abi: Array<ABIEntity>;
 }
 
 export enum ABIEntityType {
-  FUNCTION = 'function',
-  CONSTRUCTOR = 'constructor'
+  FUNCTION = "function",
+  CONSTRUCTOR = "constructor",
 }
 export type ParamEntity = {
   name: string;
   type: string;
-}
+};
 export interface ABIEntity {
   type: ABIEntityType;
   name?: string;
@@ -205,7 +230,7 @@ export interface AliasEntity {
   type: string;
 }
 
-export type ContractEntity = LibraryEntity
+export type ContractEntity = LibraryEntity;
 
 export interface StaticEntity {
   name: string;
@@ -215,54 +240,69 @@ export interface StaticEntity {
 }
 
 export interface CompilingSettings {
-  ast?: boolean,
-  asm?: boolean,
-  hex?: boolean,
-  debug?: boolean,
-  desc?: boolean,
-  outputDir?: string,
-  outputToFiles?: boolean,
-  cwd?: string,
-  cmdPrefix?: string,
-  cmdArgs?: string,
-  buildType?: string,
-  stdout?: boolean,
-  sourceMap?: boolean,
-  timeout?: number  // in ms
+  ast?: boolean;
+  asm?: boolean;
+  hex?: boolean;
+  debug?: boolean;
+  desc?: boolean;
+  outputDir?: string;
+  outputToFiles?: boolean;
+  cwd?: string;
+  cmdPrefix?: string;
+  cmdArgs?: string;
+  buildType?: string;
+  stdout?: boolean;
+  sourceMap?: boolean;
+  timeout?: number; // in ms
 }
 
 function toOutputDir(descDir: string, sourcePath: string) {
-  return join(descDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf-8').substring(0, 10));
+  return join(
+    descDir,
+    basename(sourcePath) + "-" + hash160(sourcePath, "utf-8").substring(0, 10),
+  );
 }
-export function doCompileAsync(source: {
-  path: string,
-  content?: string,
-}, settings: CompilingSettings, callback?: (error: Error | null, result: {
-  path: string,
-  output: string,
-  md5: string,
-} | null) => void): ChildProcess {
+export function doCompileAsync(
+  source: {
+    path: string;
+    content?: string;
+  },
+  settings: CompilingSettings,
+  callback?: (
+    error: Error | null,
+    result: {
+      path: string;
+      output: string;
+      md5: string;
+    } | null,
+  ) => void,
+): ChildProcess {
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
   const curWorkingDir = settings.cwd || srcDir;
 
   const timeout = settings.timeout || 1200000;
-  const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
+  const sourceContent = source.content !== undefined
+    ? source.content
+    : readFileSync(sourcePath, "utf8");
   const cmd = settings2cmd(sourcePath, settings);
-  const childProcess = exec(cmd, { cwd: curWorkingDir, timeout, killSignal: 'SIGKILL' },
-    (error: Error | null, stdout: string) => {
-      if (error) {
-        console.error(`exec error: ${error}`);
-        callback(error, null);
-        return;
-      }
+  const childProcess = exec(cmd, {
+    cwd: curWorkingDir,
+    timeout,
+    killSignal: "SIGKILL",
+  }, (error: Error | null, stdout: string) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      callback(error, null);
+      return;
+    }
 
-      callback(null, {
-        path: sourcePath,
-        output: stdout,
-        md5: md5(sourceContent),
-      });
+    callback(null, {
+      path: sourcePath,
+      output: stdout,
+      md5: md5(sourceContent),
     });
+  });
 
   childProcess.stdin.write(sourceContent, (error: Error) => {
     if (error) {
@@ -277,10 +317,9 @@ export function doCompileAsync(source: {
 }
 
 export function compileAsync(source: {
-  path: string,
-  content?: string,
+  path: string;
+  content?: string;
 }, settings: CompilingSettings): Promise<CompileResult> {
-
   settings = Object.assign({}, defaultCompilingSettings, settings);
   return new Promise((resolve, reject) => {
     doCompileAsync(
@@ -293,17 +332,20 @@ export function compileAsync(source: {
         }
 
         try {
-
-          const result = handleCompilerOutput(source.path, settings, data.output, data.md5);
+          const result = handleCompilerOutput(
+            source.path,
+            settings,
+            data.output,
+            data.md5,
+          );
           resolve(result);
         } catch (error) {
           reject(error);
         }
-      }
+      },
     );
   });
 }
-
 
 const defaultCompilingSettings = {
   ast: true,
@@ -311,18 +353,21 @@ const defaultCompilingSettings = {
   hex: true,
   debug: false,
   desc: false,
-  outputDir: '',
+  outputDir: "",
   outputToFiles: false,
-  cwd: '',
-  cmdPrefix: '',
-  cmdArgs: '',
+  cwd: "",
+  cmdPrefix: "",
+  cmdArgs: "",
   buildType: BuildType.Debug,
   stdout: false,
   sourceMap: false,
-  timeout: 1200000  // in ms
+  timeout: 1200000, // in ms
 };
 
-export function settings2cmd(sourcePath: string, settings: CompilingSettings): string {
+export function settings2cmd(
+  sourcePath: string,
+  settings: CompilingSettings,
+): string {
   const srcDir = dirname(sourcePath);
   //dir that store desc file
   const descDir = settings.outputDir || srcDir;
@@ -331,23 +376,33 @@ export function settings2cmd(sourcePath: string, settings: CompilingSettings): s
   const cmdPrefix = settings.cmdPrefix || findCompiler();
   let outOption = `-o "${outputDir}"`;
   if (settings.stdout) {
-    outOption = '--stdout';
-    return `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    outOption = "--stdout";
+    return `${cmdPrefix} compile ${
+      settings.asm || settings.desc ? "--asm" : ""
+    } ${settings.hex ? "--hex" : ""} ${
+      settings.ast || settings.desc ? "--ast" : ""
+    } ${settings.debug == true ? "--debug" : ""} -r ${outOption} ${
+      settings.cmdArgs ? settings.cmdArgs : ""
+    }`;
   } else {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir);
     }
   }
 
-  return `${cmdPrefix} compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  return `${cmdPrefix} compile ${settings.hex ? "--hex" : ""} ${
+    settings.ast || settings.desc ? "--ast" : ""
+  } ${settings.debug == true ? "--debug" : ""} ${
+    settings.sourceMap == true ? "--source-map" : ""
+  } -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ""}`;
 }
 
 export function compile(
   source: {
-    path: string,
-    content?: string,
+    path: string;
+    content?: string;
   },
-  settings: CompilingSettings
+  settings: CompilingSettings,
 ): CompileResult {
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
@@ -357,12 +412,19 @@ export function compile(
 
   settings = Object.assign({}, defaultCompilingSettings, settings);
 
-  const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
+  const sourceContent = source.content !== undefined
+    ? source.content
+    : readFileSync(sourcePath, "utf8");
 
   const maxBuffer = settings.stdout ? 1024 * 1024 * 100 : 1024 * 1024;
   settings = Object.assign({}, defaultCompilingSettings, settings);
   const cmd = settings2cmd(sourcePath, settings);
-  const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout: settings.timeout, maxBuffer: maxBuffer }).toString();
+  const output = execSync(cmd, {
+    input: sourceContent,
+    cwd: curWorkingDir,
+    timeout: settings.timeout,
+    maxBuffer: maxBuffer,
+  }).toString();
   return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
 }
 
@@ -372,7 +434,6 @@ export function handleCompilerOutput(
   output: string,
   md5: string,
 ): CompileResult {
-
   const srcDir = dirname(sourcePath);
   const sourceFileName = basename(sourcePath);
   const descDir = settings.outputDir || srcDir;
@@ -380,13 +441,18 @@ export function handleCompilerOutput(
   const outputFiles = {};
   try {
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
-    output = output.split(/\r?\n/g).join('\n');
+    output = output.split(/\r?\n/g).join("\n");
     const result: CompileResult = new CompileResult([], []);
-    result.compilerVersion = compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler());
+    result.compilerVersion = compilerVersion(
+      settings.cmdPrefix ? settings.cmdPrefix : findCompiler(),
+    );
     result.md5 = md5;
     result.buildType = settings.buildType || BuildType.Debug;
-    if (output.startsWith('Error:') || output.startsWith('Warning:')) {
-      Object.assign(result, getErrorsAndWarnings(output, srcDir, sourceFileName));
+    if (output.startsWith("Error:") || output.startsWith("Warning:")) {
+      Object.assign(
+        result,
+        getErrorsAndWarnings(output, srcDir, sourceFileName),
+      );
 
       if (result.errors.length > 0) {
         return result;
@@ -397,74 +463,88 @@ export function handleCompilerOutput(
       }
     }
 
-
     if (settings.stdout) {
       const stdout = JSONbigAlways.parse(output);
 
       parserAst(result, stdout.ast, srcDir, sourceFileName, sourcePath);
 
       parserASM(result, stdout.asm, settings, srcDir, sourceFileName);
-
     } else {
-
       if (settings.ast || settings.desc) {
-
-        const outputFilePath = getOutputFilePath(outputDir, 'ast');
-        const astFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        const outputFilePath = getOutputFilePath(outputDir, "ast");
+        const astFile = outputFilePath.replace(
+          "stdin",
+          basename(sourcePath, ".scrypt"),
+        );
         renameSync(outputFilePath, astFile);
-        outputFiles['ast'] = astFile;
-        const ast = JSONbigAlways.parse(readFileSync(astFile, 'utf8'));
+        outputFiles["ast"] = astFile;
+        const ast = JSONbigAlways.parse(readFileSync(astFile, "utf8"));
         parserAst(result, ast, srcDir, sourceFileName, sourcePath);
       }
 
-
       if (settings.hex || settings.desc) {
-
-        const outputFilePath = getOutputFilePath(outputDir, 'hex');
-        const hexFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        const outputFilePath = getOutputFilePath(outputDir, "hex");
+        const hexFile = outputFilePath.replace(
+          "stdin",
+          basename(sourcePath, ".scrypt"),
+        );
         renameSync(outputFilePath, hexFile);
-        outputFiles['hex'] = hexFile;
-        result.hex = readFileSync(hexFile, 'utf8');
+        outputFiles["hex"] = hexFile;
+        result.hex = readFileSync(hexFile, "utf8");
       }
 
       if (settings.sourceMap) {
-        const outputFilePath = getOutputFilePath(outputDir, 'map');
+        const outputFilePath = getOutputFilePath(outputDir, "map");
         if (settings.desc) {
-          const dist = getOutputFilePath(descDir, 'map');
-          const sourceMapFile = dist.replace('stdin', basename(sourcePath, '.scrypt'));
+          const dist = getOutputFilePath(descDir, "map");
+          const sourceMapFile = dist.replace(
+            "stdin",
+            basename(sourcePath, ".scrypt"),
+          );
           renameSync(outputFilePath, sourceMapFile);
           result.sourceMapFile = path2uri(sourceMapFile);
         } else {
-          const sourceMapFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+          const sourceMapFile = outputFilePath.replace(
+            "stdin",
+            basename(sourcePath, ".scrypt"),
+          );
           renameSync(outputFilePath, sourceMapFile);
-          outputFiles['map'] = sourceMapFile;
+          outputFiles["map"] = sourceMapFile;
           result.sourceMapFile = path2uri(sourceMapFile);
         }
       }
 
-
       if (settings.debug) {
-        const outputFilePath = getOutputFilePath(outputDir, 'dbg');
-        const dbgFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        const outputFilePath = getOutputFilePath(outputDir, "dbg");
+        const dbgFile = outputFilePath.replace(
+          "stdin",
+          basename(sourcePath, ".scrypt"),
+        );
         renameSync(outputFilePath, dbgFile);
         result.dbgFile = path2uri(dbgFile);
       }
 
       if (settings.desc) {
-        const outputFilePath = getOutputFilePath(descDir, 'desc');
-        const descFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        const outputFilePath = getOutputFilePath(descDir, "desc");
+        const descFile = outputFilePath.replace(
+          "stdin",
+          basename(sourcePath, ".scrypt"),
+        );
         const description = result.toDesc();
 
-        writeFileSync(descFile, JSON.stringify(description, (key, value) => {
-          //ignore deprecated fields
-          if (key == 'sources' || key == 'sourceMap' || key === 'asm')
-            return undefined;
-          else
-            return value;
-        }, 4));
+        writeFileSync(
+          descFile,
+          JSON.stringify(description, (key, value) => {
+            //ignore deprecated fields
+            if (key == "sources" || key == "sourceMap" || key === "asm") {
+              return undefined;
+            } else {
+              return value;
+            }
+          }, 4),
+        );
       }
     }
-
 
     return result;
   } finally {
@@ -473,22 +553,20 @@ export function handleCompilerOutput(
 }
 
 export function compilerVersion(cwd: string): string | undefined {
-
   try {
     const text = execSync(`${cwd} version`).toString();
     return /Version:\s*([^\s]+)\s*/.exec(text)[1];
   } catch (e) {
     throw new Error(`compilerVersion fail when run: ${cwd} version`);
   }
-
 }
 
 function addSourceLocation(astRoot, basePath: string, curFileName: string) {
   for (const fileName in astRoot) {
-    if (fileName === 'std') {
-      astRoot['std'] = _addSourceLocationProperty(astRoot['std'], 'std');
+    if (fileName === "std") {
+      astRoot["std"] = _addSourceLocationProperty(astRoot["std"], "std");
     } else {
-      const realFileName = fileName === 'stdin' ? curFileName : fileName;
+      const realFileName = fileName === "stdin" ? curFileName : fileName;
       const uri = path2uri(join(basePath, realFileName));
       astRoot[uri] = _addSourceLocationProperty(astRoot[fileName], uri);
       delete astRoot[fileName];
@@ -498,11 +576,10 @@ function addSourceLocation(astRoot, basePath: string, curFileName: string) {
 }
 
 function _addSourceLocationProperty(astObj, uri: string | null) {
-
-  if (!(typeof astObj === 'object')) { return astObj; }
+  if (!(typeof astObj === "object")) return astObj;
   for (const field in astObj) {
     const value = astObj[field];
-    if (field === 'src') {
+    if (field === "src") {
       const matches = /:(\d+):(\d+):(\d+):(\d+)/.exec(value);
       if (!matches) {
         astObj.loc = null;
@@ -510,11 +587,11 @@ function _addSourceLocationProperty(astObj, uri: string | null) {
         astObj.loc = {
           source: uri,
           start: { line: parseInt(matches[1]), column: parseInt(matches[2]) },
-          end: { line: parseInt(matches[3]), column: parseInt(matches[4]) }
+          end: { line: parseInt(matches[3]), column: parseInt(matches[4]) },
         };
       }
-      delete astObj['src'];
-    } else if (typeof value === 'object') {
+      delete astObj["src"];
+    } else if (typeof value === "object") {
       _addSourceLocationProperty(value, uri);
     }
   }
@@ -522,24 +599,31 @@ function _addSourceLocationProperty(astObj, uri: string | null) {
   return astObj;
 }
 
-function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'hex' | 'desc' | 'map' | 'dbg'): string {
-  if (target == 'hex') {
+function getOutputFilePath(
+  baseDir: string,
+  target: "ast" | "asm" | "hex" | "desc" | "map" | "dbg",
+): string {
+  if (target == "hex") {
     return join(baseDir, `stdin_${target}.txt`);
-  } else if (target === 'map') {
+  } else if (target === "map") {
     return join(baseDir, `stdin.${target}.json`);
-  } else if (target === 'dbg') {
+  } else if (target === "dbg") {
     return join(baseDir, `stdin.${target}.json`);
   }
   return join(baseDir, `stdin_${target}.json`);
 }
 
-export function getFullFilePath(relativePath: string, baseDir: string, curFileName: string): string {
-  if (relativePath.endsWith('stdin')) {
+export function getFullFilePath(
+  relativePath: string,
+  baseDir: string,
+  curFileName: string,
+): string {
+  if (relativePath.endsWith("stdin")) {
     return join(baseDir, curFileName); // replace 'stdin' with real current compiling file name.
   }
 
-  if (relativePath === 'std') {
-    return 'std'; // 
+  if (relativePath === "std") {
+    return "std"; //
   }
 
   return join(baseDir, relativePath);
@@ -547,58 +631,61 @@ export function getFullFilePath(relativePath: string, baseDir: string, curFileNa
 
 function getConstructorDeclaration(mainContract): ABIEntity {
   // explict constructor
-  if (mainContract['constructor']) {
+  if (mainContract["constructor"]) {
     return {
       type: ABIEntityType.CONSTRUCTOR,
-      params: mainContract['constructor']['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
+      params: mainContract["constructor"]["params"].map((p) => {
+        return { name: p["name"], type: p["type"] };
+      }),
     };
   } else {
     // implicit constructor
-    if (mainContract['properties']) {
+    if (mainContract["properties"]) {
       return {
         type: ABIEntityType.CONSTRUCTOR,
-        params: mainContract['properties'].map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; }),
+        params: mainContract["properties"].map((p) => {
+          return { name: p["name"].replace("this.", ""), type: p["type"] };
+        }),
       };
     }
   }
 }
 
 function getStateProps(astRoot): Array<ParamEntity> {
-  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
-  if (mainContract && mainContract['properties']) {
-    return mainContract['properties'].filter(p => p.state).map(p => { return { name: p['name'].replace('this.', ''), type: p['type'] }; });
+  const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
+  if (mainContract && mainContract["properties"]) {
+    return mainContract["properties"].filter((p) => p.state).map((p) => {
+      return { name: p["name"].replace("this.", ""), type: p["type"] };
+    });
   }
   return [];
 }
 
-
 function getPublicFunctionDeclaration(mainContract): ABIEntity[] {
   let pubIndex = 0;
-  const interfaces: ABIEntity[] =
-    mainContract['functions']
-      .filter(f => f['visibility'] === 'Public')
-      .map(f => {
-        const entity: ABIEntity = {
-          type: ABIEntityType.FUNCTION,
-          name: f['name'],
-          index: f['nodeType'] === 'Constructor' ? undefined : pubIndex++,
-          params: f['params'].map(p => { return { name: p['name'], type: p['type'] }; }),
-        };
-        return entity;
-      });
+  const interfaces: ABIEntity[] = mainContract["functions"]
+    .filter((f) => f["visibility"] === "Public")
+    .map((f) => {
+      const entity: ABIEntity = {
+        type: ABIEntityType.FUNCTION,
+        name: f["name"],
+        index: f["nodeType"] === "Constructor" ? undefined : pubIndex++,
+        params: f["params"].map((p) => {
+          return { name: p["name"], type: p["type"] };
+        }),
+      };
+      return entity;
+    });
   return interfaces;
 }
 
-
 export function getContractName(astRoot: unknown): string {
-  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+  const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
   if (!mainContract) {
-    return '';
+    return "";
   }
-  return mainContract['name'] || '';
+  return mainContract["name"] || "";
 }
-
-
 
 function shortGenericType(genericType: string): string {
   const m = genericType.match(/__SCRYPT_(\w+)__/);
@@ -609,17 +696,19 @@ function shortGenericType(genericType: string): string {
 }
 
 /**
- * 
  * @param astRoot AST root node after main contract compilation
  * @param typeResolver a Type Resolver
  * @returns All function ABIs defined by the main contract, including constructors
  */
-export function getABIDeclaration(astRoot: unknown, typeResolver: TypeResolver): ABI {
-  const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
+export function getABIDeclaration(
+  astRoot: unknown,
+  typeResolver: TypeResolver,
+): ABI {
+  const mainContract = astRoot["contracts"][astRoot["contracts"].length - 1];
   if (!mainContract) {
     return {
-      contract: '',
-      abi: []
+      contract: "",
+      abi: [],
     };
   }
 
@@ -628,188 +717,215 @@ export function getABIDeclaration(astRoot: unknown, typeResolver: TypeResolver):
 
   interfaces.push(constructorABI);
 
-  interfaces.forEach(abi => {
-    abi.params = abi.params.map(param => {
+  interfaces.forEach((abi) => {
+    abi.params = abi.params.map((param) => {
       return Object.assign(param, {
-        type: typeResolver(param.type).finalType
+        type: typeResolver(param.type).finalType,
       });
     });
   });
 
   return {
     contract: getContractName(astRoot),
-    abi: interfaces
+    abi: interfaces,
   };
 }
 
 /**
- * 
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined structures of the main contract and dependent contracts
  */
-export function getStructDeclaration(astRoot: unknown, dependencyAsts: unknown): Array<StructEntity> {
-
-
+export function getStructDeclaration(
+  astRoot: unknown,
+  dependencyAsts: unknown,
+): Array<StructEntity> {
   const allAst = [astRoot];
 
-  Object.keys(dependencyAsts).forEach(key => {
+  Object.keys(dependencyAsts).forEach((key) => {
     allAst.push(dependencyAsts[key]);
   });
 
-  return allAst.map(ast => {
-    return (ast['structs'] || []).map(s => ({
-      name: s['name'],
-      params: s['fields'].map(p => { return { name: p['name'], type: p['type'] }; }),
+  return allAst.map((ast) => {
+    return (ast["structs"] || []).map((s) => ({
+      name: s["name"],
+      params: s["fields"].map((p) => {
+        return { name: p["name"], type: p["type"] };
+      }),
       genericTypes: s.genericTypes || [],
     }));
   }).flat(1);
 }
 
-
-
 /**
- * 
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined Library of the main contract and dependent contracts
  */
-export function getLibraryDeclaration(astRoot: unknown, dependencyAsts: unknown): Array<LibraryEntity> {
-
+export function getLibraryDeclaration(
+  astRoot: unknown,
+  dependencyAsts: unknown,
+): Array<LibraryEntity> {
   const allAst = [astRoot];
 
-  Object.keys(dependencyAsts).forEach(key => {
-    if (key !== 'std') {
+  Object.keys(dependencyAsts).forEach((key) => {
+    if (key !== "std") {
       allAst.push(dependencyAsts[key]);
     }
   });
 
-  return allAst.map(ast => {
-    return (ast['contracts'] || []).filter(c => c.nodeType == 'Library').map(c => {
-      if (c['constructor']) {
-        return {
-          name: c.name,
-          params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
-          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
-          genericTypes: c.genericTypes || [],
-        };
-      } else {
-        // implicit constructor
-        if (c['properties']) {
+  return allAst.map((ast) => {
+    return (ast["contracts"] || []).filter((c) => c.nodeType == "Library").map(
+      (c) => {
+        if (c["constructor"]) {
           return {
             name: c.name,
-            params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
-            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            params: c["constructor"]["params"].map((p) => {
+              return { name: `ctor.${p["name"]}`, type: p["type"] };
+            }),
+            properties: c["properties"].map((p) => {
+              return { name: p["name"], type: p["type"] };
+            }),
             genericTypes: c.genericTypes || [],
           };
+        } else {
+          // implicit constructor
+          if (c["properties"]) {
+            return {
+              name: c.name,
+              params: c["properties"].map((p) => {
+                return { name: p["name"], type: p["type"] };
+              }),
+              properties: c["properties"].map((p) => {
+                return { name: p["name"], type: p["type"] };
+              }),
+              genericTypes: c.genericTypes || [],
+            };
+          }
         }
-      }
-    });
+      },
+    );
   }).flat(1);
 }
 
-
-export function getContractDeclaration(astRoot: unknown, dependencyAsts: unknown): Array<ContractEntity> {
-
+export function getContractDeclaration(
+  astRoot: unknown,
+  dependencyAsts: unknown,
+): Array<ContractEntity> {
   const allAst = [astRoot];
 
-  Object.keys(dependencyAsts).forEach(key => {
-    if (key !== 'std') {
+  Object.keys(dependencyAsts).forEach((key) => {
+    if (key !== "std") {
       allAst.push(dependencyAsts[key]);
     }
   });
 
-  return allAst.map(ast => {
-    return (ast['contracts'] || []).filter(c => c.nodeType == 'Contract').map(c => {
-      if (c['constructor']) {
-        return {
-          name: c.name,
-          params: c['constructor']['params'].map(p => { return { name: `ctor.${p['name']}`, type: p['type'] }; }),
-          properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
-          genericTypes: c.genericTypes || []
-        };
-      } else {
-        // implicit constructor
-        if (c['properties']) {
+  return allAst.map((ast) => {
+    return (ast["contracts"] || []).filter((c) => c.nodeType == "Contract").map(
+      (c) => {
+        if (c["constructor"]) {
           return {
             name: c.name,
-            params: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
-            properties: c['properties'].map(p => { return { name: p['name'], type: p['type'] }; }),
+            params: c["constructor"]["params"].map((p) => {
+              return { name: `ctor.${p["name"]}`, type: p["type"] };
+            }),
+            properties: c["properties"].map((p) => {
+              return { name: p["name"], type: p["type"] };
+            }),
             genericTypes: c.genericTypes || [],
           };
+        } else {
+          // implicit constructor
+          if (c["properties"]) {
+            return {
+              name: c.name,
+              params: c["properties"].map((p) => {
+                return { name: p["name"], type: p["type"] };
+              }),
+              properties: c["properties"].map((p) => {
+                return { name: p["name"], type: p["type"] };
+              }),
+              genericTypes: c.genericTypes || [],
+            };
+          }
         }
-      }
-    });
+      },
+    );
   }).flat(1);
 }
-
 
 /**
- * 
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined type aliaes of the main contract and dependent contracts
  */
-export function getAliasDeclaration(astRoot: unknown, dependencyAsts: unknown): Array<AliasEntity> {
-
+export function getAliasDeclaration(
+  astRoot: unknown,
+  dependencyAsts: unknown,
+): Array<AliasEntity> {
   const allAst = [astRoot];
 
-  Object.keys(dependencyAsts).forEach(key => {
-    allAst.push(dependencyAsts[key]);
-  });
-
-  return allAst.map(ast => {
-    return (ast['alias'] || []).map(s => ({
-      name: s['alias'],
-      type: s['type'],
-    }));
-  }).flat(1);
-}
-
-
-
-/**
- * 
- * @param astRoot AST root node after main contract compilation
- * @param dependencyAsts AST root node after all dependency contract compilation
- * @returns all defined static const int literal of the main contract and dependent contracts
- */
-export function getStaticDeclaration(astRoot: unknown, dependencyAsts: unknown): Array<StaticEntity> {
-
-  const allAst = [astRoot];
-  Object.keys(dependencyAsts).forEach(key => {
+  Object.keys(dependencyAsts).forEach((key) => {
     allAst.push(dependencyAsts[key]);
   });
 
   return allAst.map((ast) => {
-    return (ast['contracts'] || []).map(contract => {
-      return (contract.statics || []).map(node => {
+    return (ast["alias"] || []).map((s) => ({
+      name: s["alias"],
+      type: s["type"],
+    }));
+  }).flat(1);
+}
+
+/**
+ * @param astRoot AST root node after main contract compilation
+ * @param dependencyAsts AST root node after all dependency contract compilation
+ * @returns all defined static const int literal of the main contract and dependent contracts
+ */
+export function getStaticDeclaration(
+  astRoot: unknown,
+  dependencyAsts: unknown,
+): Array<StaticEntity> {
+  const allAst = [astRoot];
+  Object.keys(dependencyAsts).forEach((key) => {
+    allAst.push(dependencyAsts[key]);
+  });
+
+  return allAst.map((ast) => {
+    return (ast["contracts"] || []).map((contract) => {
+      return (contract.statics || []).map((node) => {
         return {
           const: node.const,
           name: `${contract.name}.${node.name}`,
           type: node.type,
-          value: resolveConstValue(node)
+          value: resolveConstValue(node),
         };
       });
     });
   }).flat(Infinity).flat(1);
 }
 
-
-function getRelatedInformation(message: string, srcDir: string, sourceFileName: string): {
-  relatedInformation: RelatedInformation[],
-  message: string
+function getRelatedInformation(
+  message: string,
+  srcDir: string,
+  sourceFileName: string,
+): {
+  relatedInformation: RelatedInformation[];
+  message: string;
 } {
   const relatedInformation: RelatedInformation[] = [];
   let result;
 
-
   while ((result = RELATED_INFORMATION_REG.exec(message))) {
     const relatedFilePath = result.groups.filePath;
-    if (relatedFilePath === 'null') continue;
-    const fullFilePath = getFullFilePath(relatedFilePath, srcDir, sourceFileName);
-    const line = parseInt(result.groups?.line || '-1');
-    const column = parseInt(result.groups?.column || '-1');
+    if (relatedFilePath === "null") continue;
+    const fullFilePath = getFullFilePath(
+      relatedFilePath,
+      srcDir,
+      sourceFileName,
+    );
+    const line = parseInt(result.groups?.line || "-1");
+    const column = parseInt(result.groups?.column || "-1");
     relatedInformation.push(
       {
         filePath: fullFilePath,
@@ -817,111 +933,132 @@ function getRelatedInformation(message: string, srcDir: string, sourceFileName: 
           line: line,
           column: column,
         }, {
-          line: parseInt(result.groups?.line1 || '-1'),
-          column: parseInt(result.groups?.column1 || '-1'),
+          line: parseInt(result.groups?.line1 || "-1"),
+          column: parseInt(result.groups?.column1 || "-1"),
         }],
-        message: ''
-      }
+        message: "",
+      },
     );
-    message = message.replace(/([^\s]+):(\d+):(\d+):(\d+):(\d+)/, '');
+    message = message.replace(/([^\s]+):(\d+):(\d+):(\d+):(\d+)/, "");
   }
   return {
     relatedInformation,
-    message
+    message,
   };
 }
 
-function getErrorsAndWarnings(output: string, srcDir: string, sourceFileName: string): CompileResult {
-  const warnings: Warning[] = [...output.matchAll(WARNING_REG)].map(match => {
-    const filePath = match.groups?.filePath || '';
-    const origin_message = match.groups?.message || '';
-    const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
+function getErrorsAndWarnings(
+  output: string,
+  srcDir: string,
+  sourceFileName: string,
+): CompileResult {
+  const warnings: Warning[] = [...output.matchAll(WARNING_REG)].map((match) => {
+    const filePath = match.groups?.filePath || "";
+    const origin_message = match.groups?.message || "";
+    const { message, relatedInformation } = getRelatedInformation(
+      origin_message,
+      srcDir,
+      sourceFileName,
+    );
     return {
       type: CompileErrorType.Warning,
       filePath: getFullFilePath(filePath, srcDir, sourceFileName),
       position: [{
-        line: parseInt(match.groups?.line || '-1'),
-        column: parseInt(match.groups?.column || '-1'),
+        line: parseInt(match.groups?.line || "-1"),
+        column: parseInt(match.groups?.column || "-1"),
       }, {
-        line: parseInt(match.groups?.line1 || '-1'),
-        column: parseInt(match.groups?.column1 || '-1'),
+        line: parseInt(match.groups?.line1 || "-1"),
+        column: parseInt(match.groups?.column1 || "-1"),
       }],
       message: message,
-      relatedInformation: relatedInformation
+      relatedInformation: relatedInformation,
     };
   });
 
-
   if (output.match(INTERNAL_ERR_REG)) {
-
     const errors: CompileError[] = [{
       type: CompileErrorType.InternalError,
-      filePath: getFullFilePath('stdin', srcDir, sourceFileName),
-      message: `Compiler internal error: ${output.match(INTERNAL_ERR_REG).groups?.message || ''}`,
+      filePath: getFullFilePath("stdin", srcDir, sourceFileName),
+      message: `Compiler internal error: ${
+        output.match(INTERNAL_ERR_REG).groups?.message || ""
+      }`,
       position: [{
         line: 1,
-        column: 1
+        column: 1,
       }, {
         line: 1,
-        column: 1
+        column: 1,
       }],
-      relatedInformation: []
+      relatedInformation: [],
     }];
 
     return new CompileResult(errors, warnings);
-
-  } else if (output.includes('Syntax error:')) {
-    const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)].map(match => {
-      const filePath = match.groups?.filePath || '';
-      const unexpected = match.groups?.unexpected || '';
-      const expecting = match.groups?.expecting || '';
-      const origin_message = match.groups?.message || `unexpected ${unexpected}\nexpecting ${expecting}`;
-      const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
-      return {
-        type: CompileErrorType.SyntaxError,
-        filePath: getFullFilePath(filePath, srcDir, sourceFileName),
-        position: [{
-          line: parseInt(match.groups?.line || '-1'),
-          column: parseInt(match.groups?.column || '-1'),
-        }],
-        message: message,
-        unexpected,
-        expecting,
-        relatedInformation: relatedInformation
-      };
-    });
+  } else if (output.includes("Syntax error:")) {
+    const syntaxErrors: CompileError[] = [...output.matchAll(SYNTAX_ERR_REG)]
+      .map((match) => {
+        const filePath = match.groups?.filePath || "";
+        const unexpected = match.groups?.unexpected || "";
+        const expecting = match.groups?.expecting || "";
+        const origin_message = match.groups?.message ||
+          `unexpected ${unexpected}\nexpecting ${expecting}`;
+        const { message, relatedInformation } = getRelatedInformation(
+          origin_message,
+          srcDir,
+          sourceFileName,
+        );
+        return {
+          type: CompileErrorType.SyntaxError,
+          filePath: getFullFilePath(filePath, srcDir, sourceFileName),
+          position: [{
+            line: parseInt(match.groups?.line || "-1"),
+            column: parseInt(match.groups?.column || "-1"),
+          }],
+          message: message,
+          unexpected,
+          expecting,
+          relatedInformation: relatedInformation,
+        };
+      });
 
     return new CompileResult(syntaxErrors, warnings);
-  }
-  else {
-
-    const semanticErrors: CompileError[] = [...output.matchAll(SEMANTIC_ERR_REG)].map(match => {
-      const origin_message = match.groups?.message || '';
-      const filePath = match.groups?.filePath || '';
-      const { message, relatedInformation } = getRelatedInformation(origin_message, srcDir, sourceFileName);
+  } else {
+    const semanticErrors: CompileError[] = [
+      ...output.matchAll(SEMANTIC_ERR_REG),
+    ].map((match) => {
+      const origin_message = match.groups?.message || "";
+      const filePath = match.groups?.filePath || "";
+      const { message, relatedInformation } = getRelatedInformation(
+        origin_message,
+        srcDir,
+        sourceFileName,
+      );
 
       return {
         type: CompileErrorType.SemanticError,
         filePath: getFullFilePath(filePath, srcDir, sourceFileName),
         position: [{
-          line: parseInt(match.groups?.line || '-1'),
-          column: parseInt(match.groups?.column || '-1'),
+          line: parseInt(match.groups?.line || "-1"),
+          column: parseInt(match.groups?.column || "-1"),
         }, {
-          line: parseInt(match.groups?.line1 || '-1'),
-          column: parseInt(match.groups?.column1 || '-1'),
+          line: parseInt(match.groups?.line1 || "-1"),
+          column: parseInt(match.groups?.column1 || "-1"),
         }],
         message: message,
-        relatedInformation: relatedInformation
+        relatedInformation: relatedInformation,
       };
     });
 
     return new CompileResult(semanticErrors, warnings);
-
   }
 }
 
-function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileName: string, sourcePath: string) {
-
+function parserAst(
+  result: CompileResult,
+  ast: any,
+  srcDir: string,
+  sourceFileName: string,
+  sourcePath: string,
+) {
   const allAst = addSourceLocation(ast, srcDir, sourceFileName);
 
   const sourceUri = path2uri(sourcePath);
@@ -938,35 +1075,52 @@ function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileNa
 
   result.contracts = getContractDeclaration(result.ast, allAst);
 
-  const typeResolver = buildTypeResolver(getContractName(result.ast), alias, structs, library, result.contracts, statics);
+  const typeResolver = buildTypeResolver(
+    getContractName(result.ast),
+    alias,
+    structs,
+    library,
+    result.contracts,
+    statics,
+  );
 
-  result.alias = alias.map(a => ({
+  result.alias = alias.map((a) => ({
     name: a.name,
-    type: typeResolver(a.type).finalType
+    type: typeResolver(a.type).finalType,
   }));
 
-  result.structs = structs.map(a => ({
+  result.structs = structs.map((a) => ({
     name: a.name,
-    params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
-    genericTypes: a.genericTypes.map(t => shortGenericType(t))
+    params: a.params.map((p) => ({
+      name: p.name,
+      type: typeResolver(p.type).finalType,
+    })),
+    genericTypes: a.genericTypes.map((t) => shortGenericType(t)),
   }));
 
-  result.library = library.map(a => ({
+  result.library = library.map((a) => ({
     name: a.name,
-    params: a.params.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
-    properties: a.properties.map(p => ({ name: p.name, type: typeResolver(p.type).finalType })),
-    genericTypes: a.genericTypes.map(t => shortGenericType(t))
+    params: a.params.map((p) => ({
+      name: p.name,
+      type: typeResolver(p.type).finalType,
+    })),
+    properties: a.properties.map((p) => ({
+      name: p.name,
+      type: typeResolver(p.type).finalType,
+    })),
+    genericTypes: a.genericTypes.map((t) => shortGenericType(t)),
   }));
 
-  result.statics = statics.map(s => (Object.assign({ ...s }, {
-    type: typeResolver(s.type).finalType
+  result.statics = statics.map((s) => (Object.assign({ ...s }, {
+    type: typeResolver(s.type).finalType,
   })));
-
-
 
   const { contract: name, abi } = getABIDeclaration(result.ast, typeResolver);
 
-  result.stateProps = getStateProps(result.ast).map(p => ({ name: p.name, type: typeResolver(p.type).finalType }));
+  result.stateProps = getStateProps(result.ast).map((p) => ({
+    name: p.name,
+    type: typeResolver(p.type).finalType,
+  }));
 
   result.abi = abi;
   result.contract = name;
@@ -974,31 +1128,39 @@ function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileNa
 
 /**
  * @deprecated use `--hex` when compiling
- * @param result 
- * @param asmObj 
- * @param settings 
- * @param srcDir 
- * @param sourceFileName 
+ * @param result
+ * @param asmObj
+ * @param settings
+ * @param srcDir
+ * @param sourceFileName
  */
-function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettings, srcDir: string, sourceFileName: string) {
-
+function parserASM(
+  result: CompileResult,
+  asmObj: any,
+  settings: CompilingSettings,
+  srcDir: string,
+  sourceFileName: string,
+) {
   const sources = asmObj.sources;
 
   if (settings.debug) {
     Object.assign(result, {
       file: result.file,
-      sources: asmObj.sources.map(source => getFullFilePath(source, srcDir, sourceFileName)),
-      sourceMap: asmObj.output.map(item => item.src),
+      sources: asmObj.sources.map((source) =>
+        getFullFilePath(source, srcDir, sourceFileName)
+      ),
+      sourceMap: asmObj.output.map((item) => item.src),
     });
   }
 
-  result.hex = settings.hex ? asmObj.output.map(item => item.hex).join('') : '';
+  result.hex = settings.hex
+    ? asmObj.output.map((item) => item.hex).join("")
+    : "";
 
-  result.asm = asmObj.output.map(item => {
-
+  result.asm = asmObj.output.map((item) => {
     if (!settings.debug) {
       return {
-        opcode: item.opcode
+        opcode: item.opcode,
       };
     }
 
@@ -1017,73 +1179,88 @@ function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettin
         debugInfo = {
           contract: m[1],
           func: m[2],
-          tag: m[3] == '0' ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
-          context: m.groups.context
+          tag: m[3] == "0" ? DebugModeTag.FuncStart : DebugModeTag.FuncEnd,
+          context: m.groups.context,
         };
       } else if (/loop:0/.test(tagStr)) {
         debugInfo = {
-          contract: '',
-          func: '',
+          contract: "",
+          func: "",
           tag: DebugModeTag.LoopStart,
-          context: ''
+          context: "",
         };
       }
 
-      const pos: Pos | undefined = sources[fileIndex] ? {
-        file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-        line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-        endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-        column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-        endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-      } : undefined;
+      const pos: Pos | undefined = sources[fileIndex]
+        ? {
+          file: sources[fileIndex]
+            ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName)
+            : undefined,
+          line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+          endLine: sources[fileIndex]
+            ? parseInt(match.groups.endLine)
+            : undefined,
+          column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+          endColumn: sources[fileIndex]
+            ? parseInt(match.groups.endCol)
+            : undefined,
+        }
+        : undefined;
 
       return {
         opcode: item.opcode,
         stack: item.stack,
         topVars: item.topVars || [],
         pos: pos,
-        debugInfo
+        debugInfo,
       } as OpCode;
     }
-    throw new Error('Compile Failed: Asm output parsing Error!');
+    throw new Error("Compile Failed: Asm output parsing Error!");
   });
 
-
   if (settings.debug) {
-    result.autoTypedVars = asmObj.autoTypedVars.map(item => {
+    result.autoTypedVars = asmObj.autoTypedVars.map((item) => {
       const match = SOURCE_REG.exec(item.src);
       if (match && match.groups) {
         const fileIndex = parseInt(match.groups.fileIndex);
 
-        const pos: Pos | undefined = sources[fileIndex] ? {
-          file: sources[fileIndex] ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName) : undefined,
-          line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-          endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-          column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-          endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-        } : undefined;
+        const pos: Pos | undefined = sources[fileIndex]
+          ? {
+            file: sources[fileIndex]
+              ? getFullFilePath(sources[fileIndex], srcDir, sourceFileName)
+              : undefined,
+            line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+            endLine: sources[fileIndex]
+              ? parseInt(match.groups.endLine)
+              : undefined,
+            column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+            endColumn: sources[fileIndex]
+              ? parseInt(match.groups.endCol)
+              : undefined,
+          }
+          : undefined;
         return {
           name: item.name,
           type: item.type,
-          pos: pos
+          pos: pos,
         };
       }
     });
   }
 }
 
-
-
-
-
-function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
-
+function doClean(
+  settings: CompilingSettings,
+  outputFiles: Record<string, string>,
+  outputDir: string,
+  sourcePath: string,
+) {
   if (settings.stdout || settings.outputToFiles) {
     return;
   }
 
   try {
-    Object.keys(outputFiles).forEach(outputType => {
+    Object.keys(outputFiles).forEach((outputType) => {
       const file = outputFiles[outputType];
       if (existsSync(file)) {
         unlinkSync(file);
@@ -1092,20 +1269,18 @@ function doClean(settings: CompilingSettings, outputFiles: Record<string, string
 
     rimraf.sync(outputDir);
   } catch (error) {
-    console.error('clean compiler output files failed!');
+    console.error("clean compiler output files failed!");
   }
-
 
   // console.log('compile time spent: ', Date.now() - st)
 }
 
 export function loadSourceMapfromDesc(desc: ContractDescription): Array<{
-  pos: Pos | undefined,
-  opcode: string
+  pos: Pos | undefined;
+  opcode: string;
 }> {
-
   const sources = desc.sources;
-  const asm = desc.asm.split(' ');
+  const asm = desc.asm.split(" ");
 
   if (!desc.sourceMap || desc.sourceMap.length == 0) {
     return [];
@@ -1116,17 +1291,23 @@ export function loadSourceMapfromDesc(desc: ContractDescription): Array<{
     const match = SOURCE_REG.exec(item);
     if (match && match.groups) {
       const fileIndex = parseInt(match.groups.fileIndex);
-      const pos: Pos | undefined = sources[fileIndex] ? {
-        file: sources[fileIndex],
-        line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
-        endLine: sources[fileIndex] ? parseInt(match.groups.endLine) : undefined,
-        column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
-        endColumn: sources[fileIndex] ? parseInt(match.groups.endCol) : undefined,
-      } : undefined;
+      const pos: Pos | undefined = sources[fileIndex]
+        ? {
+          file: sources[fileIndex],
+          line: sources[fileIndex] ? parseInt(match.groups.line) : undefined,
+          endLine: sources[fileIndex]
+            ? parseInt(match.groups.endLine)
+            : undefined,
+          column: sources[fileIndex] ? parseInt(match.groups.col) : undefined,
+          endColumn: sources[fileIndex]
+            ? parseInt(match.groups.endCol)
+            : undefined,
+        }
+        : undefined;
 
       return {
         pos: pos,
-        opcode: opcode
+        opcode: opcode,
       };
     }
   });

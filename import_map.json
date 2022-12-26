@@ -1,0 +1,13 @@
+{
+    "imports": {
+        "url": "npm:url",
+        "bsv": "npm:bsv",
+        "bsv/ecies": "npm:bsv/ecies",
+        "sourcemap-codec": "npm:sourcemap-codec",
+        "@discoveryjs/json-ext": "npm:@discoveryjs/json-ext",
+        "lodash.clonedeep": "npm:lodash.clonedeep",
+        "magic-string": "npm:magic-string",
+        "process": "npm:process"
+       
+    }
+}

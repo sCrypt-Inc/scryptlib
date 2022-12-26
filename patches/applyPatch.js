@@ -3,7 +3,13 @@ import { exit } from "process";
 import { join } from "path";
 import { copyFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
+
+let dirname;
+if (typeof __dirname === "undefined") {
+  dirname = fileURLToPath(new URL(".", import.meta.url));
+} else {
+  dirname = __dirname;
+}
 
 import chalk from "chalk";
 const { green, grey, yellow } = chalk;
@@ -24,12 +30,12 @@ const _isDev = isDev();
 function apply(patches) {
   patches.map((patch) => {
     const dest = _isDev
-      ? join(__dirname, "..", "node_modules", patch)
-      : join(__dirname, "..", "..", patch);
+      ? join(dirname, "..", "node_modules", patch)
+      : join(dirname, "..", "..", patch);
     if (!existsSync(dest)) {
       new Error(`apply patch ${patch} fail, dest file ${dest} not exist`);
     }
-    const src = join(__dirname, patch);
+    const src = join(dirname, patch);
     if (!existsSync(src)) {
       new Error(`apply patch ${patch} fail, src file ${src} not exist`);
     }

@@ -3,8 +3,12 @@
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": true
     },
+    "deno.enable": false,
+    "deno.unstable": true,
+    "deno.config": "./deno.jsonc",
     "eslint.validate": [
         "typescript",
         "javascript"
-    ]
+    ],
+    "typescript.tsdk": "node_modules/typescript/lib"
 }

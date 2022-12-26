@@ -44,8 +44,8 @@ function updatePkgJson(): Plugin {
       const files = await fs.readdir("./src");
       const exp: any = {
         ".": {
-          "import": `./dist/esm/src/index.js`,
-          "require": `./dist/index.js`,
+          "import": `./dist/esm/index.mjs`,
+          "require": `./dist/cjs/index.cjs`,
           "types": `./dist/index.d.ts`,
         },
       };
@@ -54,8 +54,8 @@ function updatePkgJson(): Plugin {
           const dir = path.basename(file);
           const rawName = dir.slice(0, dir.length - 3);
           exp[`./${rawName}`] = {
-            "import": `./dist/esm/src/${rawName}.js`,
-            "require": `./dist/${rawName}.js`,
+            "import": `./dist/esm/${rawName}.mjs`,
+            "require": `./dist/cjs/${rawName}.cjs`,
             "types": `./dist/${rawName}.d.ts`,
           };
         }
@@ -86,16 +86,30 @@ export default defineConfig({
   "root": "./src/",
   build: {
     rollupOptions: {
-      "output": {
-        "entryFileNames": (a) => {
-          return `${a.name}.js`;
+      "output": [
+        {
+          "entryFileNames": (a) => {
+            return `${a.name}.cjs`;
+          },
+          "preserveModulesRoot": "strict",
+
+          "dir": "./dist/cjs",
+          "preserveModules": true,
+          "esModule": true,
+          "format": "cjs",
         },
-        "preserveModulesRoot": "",
-        "dir": "./dist/esm",
-        "preserveModules": true,
-        "esModule": true,
-        "format": "esm",
-      },
+        {
+          "entryFileNames": (a) => {
+            return `${a.name}.mjs`;
+          },
+          "preserveModulesRoot": "strict",
+
+          "dir": "./dist/esm",
+          "preserveModules": true,
+          "esModule": true,
+          "format": "esm",
+        },
+      ],
       "input": "./src/",
       "preserveEntrySignatures": "exports-only",
       "external": externals,
