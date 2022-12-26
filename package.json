@@ -1,20 +1,80 @@
 {
   "name": "scryptlib",
-  "version": "1.0.9",
+  "version": "2.0.0-beta.4",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=16.0.0"
   },
   "bin": "bin/cli.js",
-  "main": "dist/index.js",
-  "types": "dist",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./abi": {
+      "import": "./dist/esm/abi.mjs",
+      "require": "./dist/cjs/abi.cjs",
+      "types": "./dist/abi.d.ts"
+    },
+    "./compilerWrapper": {
+      "import": "./dist/esm/compilerWrapper.mjs",
+      "require": "./dist/cjs/compilerWrapper.cjs",
+      "types": "./dist/compilerWrapper.d.ts"
+    },
+    "./contract": {
+      "import": "./dist/esm/contract.mjs",
+      "require": "./dist/cjs/contract.cjs",
+      "types": "./dist/contract.d.ts"
+    },
+    "./findCompiler": {
+      "import": "./dist/esm/findCompiler.mjs",
+      "require": "./dist/cjs/findCompiler.cjs",
+      "types": "./dist/findCompiler.d.ts"
+    },
+    "./index": {
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./internal": {
+      "import": "./dist/esm/internal.mjs",
+      "require": "./dist/cjs/internal.cjs",
+      "types": "./dist/internal.d.ts"
+    },
+    "./partialSha256": {
+      "import": "./dist/esm/partialSha256.mjs",
+      "require": "./dist/cjs/partialSha256.cjs",
+      "types": "./dist/partialSha256.d.ts"
+    },
+    "./scryptTypes": {
+      "import": "./dist/esm/scryptTypes.mjs",
+      "require": "./dist/cjs/scryptTypes.cjs",
+      "types": "./dist/scryptTypes.d.ts"
+    },
+    "./serializer": {
+      "import": "./dist/esm/serializer.mjs",
+      "require": "./dist/cjs/serializer.cjs",
+      "types": "./dist/serializer.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/esm/utils.mjs",
+      "require": "./dist/cjs/utils.cjs",
+      "types": "./dist/utils.d.ts"
+    }
+  },
   "browser": {
     "child_process": false,
     "fs": false
   },
   "scripts": {
-    "compile": "tsc -b",
+    "compile": "tsc -b && vite build",
     "watch": "tsc -b -w",
+    "check": "tsc -b",
     "cov": "nyc npm t",
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "testlint": "eslint src --ext .ts,.js",
@@ -48,7 +108,7 @@
   "devDependencies": {
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^13.1.2",
+    "@types/node": "^18.11.17",
     "@types/rimraf": "^2.0.3",
     "@typescript-eslint/eslint-plugin": "^3.3.0",
     "@typescript-eslint/parser": "^3.3.0",
@@ -60,7 +120,8 @@
     "nyc": "^15.1.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
-    "typescript": "^3.9.5",
+    "typescript": "^5.0.0-dev.20221226",
+    "vite": "^4.0.3",
     "webpack": "4.29.5",
     "webpack-cli": "^3.3.11"
   },
@@ -70,6 +131,7 @@
     "compare-versions": "^3.6.0",
     "json-bigint": "^1.0.0",
     "md5": "^2.2.1",
+    "minimist": "^1.2.7",
     "node-fetch": "^3.0.0",
     "patch-package": "^6.4.7",
     "sourcemap-codec": "^1.4.8"

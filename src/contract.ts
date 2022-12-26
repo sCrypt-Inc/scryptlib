@@ -1,13 +1,53 @@
-import { LibraryEntity, ParamEntity, parseStateHex } from '.';
-import { ContractEntity, getFullFilePath, loadSourceMapfromDesc, OpCode, StaticEntity } from './compilerWrapper';
+import { LibraryEntity, ParamEntity, parseStateHex } from "./index.ts";
 import {
-  ABICoder, Arguments, FunctionCall, Script, serializeState, State, bsv, DEFAULT_FLAGS, resolveType, path2uri, getNameByType, isArrayType,
-  Struct, SupportedParamType, StructObject, ScryptType, BasicScryptType, ValueType, TypeResolver,
-  StructEntity, ABIEntity, CompileResult, AliasEntity, buildContractState, checkSupportedParamType, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1,
-} from './internal';
-import { HashedMap, HashedSet, Library, ScryptTypeResolver, SymbolType, TypeInfo } from './scryptTypes';
-import { basename, dirname } from 'path';
-
+  ContractEntity,
+  getFullFilePath,
+  loadSourceMapfromDesc,
+  OpCode,
+  StaticEntity,
+} from "./compilerWrapper.ts";
+import {
+  ABICoder,
+  ABIEntity,
+  AliasEntity,
+  Arguments,
+  BasicScryptType,
+  bsv,
+  buildContractCode,
+  buildContractState,
+  checkSupportedParamType,
+  CompileResult,
+  DEFAULT_FLAGS,
+  findSrcInfoV1,
+  findSrcInfoV2,
+  FunctionCall,
+  getNameByType,
+  hash160,
+  isArrayType,
+  JSONParserSync,
+  path2uri,
+  resolveType,
+  Script,
+  ScryptType,
+  serializeState,
+  State,
+  Struct,
+  StructEntity,
+  StructObject,
+  SupportedParamType,
+  TypeResolver,
+  uri2path,
+  ValueType,
+} from "./internal.ts";
+import {
+  HashedMap,
+  HashedSet,
+  Library,
+  ScryptTypeResolver,
+  SymbolType,
+  TypeInfo,
+} from "./scryptTypes.ts";
+import { basename, dirname } from "path";
 
 export interface TxContext {
   tx?: any;
@@ -17,9 +57,7 @@ export interface TxContext {
   opReturnHex?: string;
 }
 
-
 export type VerifyError = string;
-
 
 export interface VerifyResult {
   success: boolean;
@@ -37,7 +75,7 @@ export interface ContractDescription {
   stateProps: Array<ParamEntity>;
   structs: Array<StructEntity>;
   library: Array<LibraryEntity>;
-  alias: Array<AliasEntity>
+  alias: Array<AliasEntity>;
   abi: Array<ABIEntity>;
   asm: string;
   hex: string;
@@ -47,11 +85,10 @@ export interface ContractDescription {
   sourceMapFile: string;
 }
 
-export type AsmVarValues = { [key: string]: string }
+export type AsmVarValues = { [key: string]: string };
 export type StepIndex = number;
 
 export class AbstractContract {
-
   public static desc: ContractDescription;
   public static opcodes?: OpCode[];
   public static hex: string;
@@ -79,7 +116,6 @@ export class AbstractContract {
   firstCall = true;
 
   get lockingScript(): Script {
-
     if (!this.dataPart) {
       return this.scriptedConstructor.lockingScript;
     }
@@ -99,60 +135,69 @@ export class AbstractContract {
   }
 
   get sourceMapFile(): string {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+    const desc = Object.getPrototypeOf(this).constructor
+      .desc as ContractDescription;
     return desc.sourceMapFile;
   }
 
   get file(): string {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+    const desc = Object.getPrototypeOf(this).constructor
+      .desc as ContractDescription;
     return desc.file;
   }
 
   get contractName(): string {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+    const desc = Object.getPrototypeOf(this).constructor
+      .desc as ContractDescription;
     return desc.contract;
   }
 
   get stateProps(): ParamEntity[] {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+    const desc = Object.getPrototypeOf(this).constructor
+      .desc as ContractDescription;
     return desc.stateProps || [];
   }
 
   get version(): number {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+    const desc = Object.getPrototypeOf(this).constructor
+      .desc as ContractDescription;
     return desc.version || 0;
   }
 
-
   get resolver(): ScryptTypeResolver {
-    return Object.getPrototypeOf(this).constructor.resolver as ScryptTypeResolver;
+    return Object.getPrototypeOf(this).constructor
+      .resolver as ScryptTypeResolver;
   }
 
   // replace assembly variables with assembly values
   replaceAsmVars(asmVarValues: AsmVarValues): void {
-
     if (asmVarValues) {
       for (const key in asmVarValues) {
         const val = asmVarValues[key];
-        this.hexTemplateInlineASM.set(`<${key.startsWith('$') ? key.substring(1) : key}>`, bsv.Script.fromASM(val).toHex());
+        this.hexTemplateInlineASM.set(
+          `<${key.startsWith("$") ? key.substring(1) : key}>`,
+          bsv.Script.fromASM(val).toHex(),
+        );
       }
     }
 
     const hexTemplate = Object.getPrototypeOf(this).constructor.hex;
 
-    const lockingScript = buildContractCode(this.hexTemplateArgs, this.hexTemplateInlineASM, hexTemplate);
+    const lockingScript = buildContractCode(
+      this.hexTemplateArgs,
+      this.hexTemplateInlineASM,
+      hexTemplate,
+    );
 
     this.scriptedConstructor.lockingScript = lockingScript;
-
   }
 
   // replace assembly variables with assembly values
   get asmArgs(): AsmVarValues {
-
     const result: AsmVarValues = {};
 
     for (const entry of this.hexTemplateInlineASM.entries()) {
-      const name = entry[0].replace('<', '').replace('>', '');
+      const name = entry[0].replace("<", "").replace(">", "");
       const value = entry[1];
       result[name] = bsv.Script.fromHex(value).toASM();
     }
@@ -160,30 +205,32 @@ export class AbstractContract {
     return result;
   }
 
-
-
   getTypeClassByType(type: string): typeof ScryptType {
     return this.resolver.resolverClass(type);
   }
-
 
   /**
    * @param states an object. Each key of the object is the name of a state property, and each value is the value of the state property.
    * @returns a locking script that includes the new states. If you only provide some but not all state properties, other state properties are not modified when calculating the locking script.
    */
   getNewStateScript(states: Record<string, SupportedParamType>): Script {
-
     const stateArgs = this.statePropsArgs;
     if (stateArgs.length === 0) {
-      throw new Error(`Contract ${this.contractName} does not have any stateful property`);
+      throw new Error(
+        `Contract ${this.contractName} does not have any stateful property`,
+      );
     }
 
     const resolveKeys: string[] = [];
-    const newState: Arguments = stateArgs.map(arg => {
+    const newState: Arguments = stateArgs.map((arg) => {
       if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
         resolveKeys.push(arg.name);
         const state = states[arg.name];
-        const error = checkSupportedParamType(state, arg, this.resolver.resolverType);
+        const error = checkSupportedParamType(
+          state,
+          arg,
+          this.resolver.resolverType,
+        );
 
         if (error) {
           throw error;
@@ -191,77 +238,108 @@ export class AbstractContract {
 
         return Object.assign(
           {
-            ...arg
+            ...arg,
           },
           {
-            value: states[arg.name]
-          }
+            value: states[arg.name],
+          },
         );
       } else {
         return arg;
       }
     });
 
-
-    Object.keys(states).forEach(key => {
+    Object.keys(states).forEach((key) => {
       if (resolveKeys.indexOf(key) === -1) {
-        throw new Error(`Contract ${this.contractName} does not have stateful property ${key}`);
+        throw new Error(
+          `Contract ${this.contractName} does not have stateful property ${key}`,
+        );
       }
     });
 
-    return this.codePart.add(bsv.Script.fromHex(buildContractState(newState, false, this.resolver.resolverType)));
+    return this.codePart.add(
+      bsv.Script.fromHex(
+        buildContractState(newState, false, this.resolver.resolverType),
+      ),
+    );
   }
 
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
-    const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
+    const txCtx: TxContext = Object.assign(
+      {},
+      this._txContext || {},
+      txContext || {},
+    );
 
-    const us = unlockingScriptASM.trim() ? bsv.Script.fromASM(unlockingScriptASM.trim()) : new bsv.Script();
+    const us = unlockingScriptASM.trim()
+      ? bsv.Script.fromASM(unlockingScriptASM.trim())
+      : new bsv.Script();
     const ls = bsv.Script.fromHex(this.lockingScript.toHex());
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
     const inputSatoshis = txCtx.inputSatoshis || 0;
 
-
     bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
     bsv.Script.Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
-
 
     const bsi = bsv.Script.Interpreter();
 
     let lastfExecs: any = {};
 
     bsi.stepListener = function (step: any) {
-      if (step.fExec || (bsv.Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= bsv.Opcode.OP_ENDIF)) {
-        if ((bsv.Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= bsv.Opcode.OP_ENDIF) || step.opcode.toNumber() === bsv.Opcode.OP_RETURN) /**Opreturn */ {
-          lastfExecs.opcode = step.opcode;
+      if (
+        step.fExec ||
+        (bsv.Opcode.OP_IF <= step.opcode.toNumber() &&
+          step.opcode.toNumber() <= bsv.Opcode.OP_ENDIF)
+      ) {
+        if (
+          (bsv.Opcode.OP_IF <= step.opcode.toNumber() &&
+            step.opcode.toNumber() <= bsv.Opcode.OP_ENDIF) ||
+          step.opcode.toNumber() === bsv.Opcode.OP_RETURN
+        ) {
+          /**Opreturn */ lastfExecs.opcode = step.opcode;
         } else {
           lastfExecs = step;
         }
       }
     };
 
-    const result = bsi.verify(us, ls, tx, inputIndex, DEFAULT_FLAGS, new bsv.crypto.BN(inputSatoshis));
+    const result = bsi.verify(
+      us,
+      ls,
+      tx,
+      inputIndex,
+      DEFAULT_FLAGS,
+      new bsv.crypto.BN(inputSatoshis),
+    );
     if (result) {
       return {
         success: true,
-        error: ''
+        error: "",
       };
     }
 
-
-
     const failedOpCode: number = lastfExecs.opcode.toNumber();
 
-    if ([bsv.Opcode.OP_CHECKSIG, bsv.Opcode.OP_CHECKSIGVERIFY, bsv.Opcode.OP_CHECKMULTISIG, bsv.Opcode.OP_CHECKMULTISIGVERIFY].includes(failedOpCode)) {
+    if (
+      [
+        bsv.Opcode.OP_CHECKSIG,
+        bsv.Opcode.OP_CHECKSIGVERIFY,
+        bsv.Opcode.OP_CHECKMULTISIG,
+        bsv.Opcode.OP_CHECKMULTISIGVERIFY,
+      ].includes(failedOpCode)
+    ) {
       if (!txCtx) {
-        throw new Error('should provide txContext when verify');
-      } if (!tx) {
-        throw new Error('should provide txContext.tx when verify');
+        throw new Error("should provide txContext when verify");
+      }
+      if (!tx) {
+        throw new Error("should provide txContext.tx when verify");
       }
     }
 
-
-    let error = `VerifyError: ${bsi.errstr}, fails at ${new bsv.Opcode(failedOpCode)}\n`;
+    let error = `VerifyError: ${bsi.errstr}, fails at ${new bsv.Opcode(
+      failedOpCode,
+    )}\n`;
 
     if (this.sourceMapFile) {
       const sourceMapFilePath = uri2path(this.sourceMapFile);
@@ -272,32 +350,32 @@ export class AbstractContract {
       const srcDir = dirname(sourcePath);
       const sourceFileName = basename(sourcePath);
 
-      const sources = sourceMap.sources.map(source => getFullFilePath(source, srcDir, sourceFileName));
+      const sources = sourceMap.sources.map((source) =>
+        getFullFilePath(source, srcDir, sourceFileName)
+      );
 
       const pos = findSrcInfoV2(lastfExecs.pc, sourceMap);
 
       if (pos && sources[pos[1]]) {
-        error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(sources[pos[1]])}#${pos[2]})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
+        error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${
+          path2uri(sources[pos[1]])
+        }#${pos[2]})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
       }
     } else if (this.version === 8) {
-
-      const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+      const desc = Object.getPrototypeOf(this).constructor
+        .desc as ContractDescription;
 
       const sourceMap = loadSourceMapfromDesc(desc);
-
 
       if (sourceMap.length > 0) {
         // the complete script may have op_return and data, but compiled output does not have it. So we need to make sure the index is in boundary.
 
         const opcodeIndex = lastfExecs.pc;
 
-
         if (sourceMap[opcodeIndex]) {
-
           const opcode = sourceMap[opcodeIndex];
 
-          if (!opcode.pos || opcode.pos.file === 'std') {
-
+          if (!opcode.pos || opcode.pos.file === "std") {
             const srcInfo = findSrcInfoV1(sourceMap, opcodeIndex);
 
             if (srcInfo) {
@@ -307,7 +385,9 @@ export class AbstractContract {
 
           // in vscode termianal need to use [:] to jump to file line, but here need to use [#] to jump to file line in output channel.
           if (opcode && opcode.pos) {
-            error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${path2uri(opcode.pos.file)}#${opcode.pos.line})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
+            error = `VerifyError: ${bsi.errstr} \n\t[Go to Source](${
+              path2uri(opcode.pos.file)
+            }#${opcode.pos.line})  fails at ${new bsv.Opcode(failedOpCode)}\n`;
           }
         }
       }
@@ -315,44 +395,52 @@ export class AbstractContract {
 
     return {
       success: result,
-      error: error
+      error: error,
     };
   }
 
   private _dataPartInHex: string;
 
   set dataPart(dataInScript: Script | undefined) {
-    throw new Error('Setter for dataPart is not available. Please use: setDataPart() instead');
+    throw new Error(
+      "Setter for dataPart is not available. Please use: setDataPart() instead",
+    );
   }
 
   get dataPart(): Script | undefined {
-
     if (AbstractContract.isStateful(this)) {
-      const state = buildContractState(this.statePropsArgs, this.firstCall, this.resolver.resolverType);
+      const state = buildContractState(
+        this.statePropsArgs,
+        this.firstCall,
+        this.resolver.resolverType,
+      );
       return bsv.Script.fromHex(state);
     }
 
     if (this._dataPartInHex) {
       return bsv.Script.fromHex(this._dataPartInHex);
     }
-
   }
 
   setDataPart(state: State | string, isStateHex = false): void {
     if (isStateHex == false) {
-      console.warn('deprecated, using setDataPartInASM');
+      console.warn("deprecated, using setDataPartInASM");
       this.setDataPartInASM(state);
     } else {
-      console.warn('deprecated, using setDataPartInHex');
+      console.warn("deprecated, using setDataPartInHex");
       this.setDataPartInHex(state as string);
     }
   }
 
   setDataPartInASM(state: State | string): void {
     if (AbstractContract.isStateful(this)) {
-      throw new Error('should not use `setDataPartInASM` for a stateful contract, using `setDataPartInHex`');
+      throw new Error(
+        "should not use `setDataPartInASM` for a stateful contract, using `setDataPartInHex`",
+      );
     }
-    const dataPartInASM = typeof state === 'string' ? state.trim() : serializeState(state);
+    const dataPartInASM = typeof state === "string"
+      ? state.trim()
+      : serializeState(state);
     this.setDataPartInHex(bsv.Script.fromASM(dataPartInASM).toHex());
   }
 
@@ -368,7 +456,7 @@ export class AbstractContract {
   get codePart(): Script {
     const lockingScript = this.scriptedConstructor.toScript();
     // note: do not trim the trailing space
-    return lockingScript.clone().add(bsv.Script.fromHex('6a'));
+    return lockingScript.clone().add(bsv.Script.fromHex("6a"));
   }
 
   get codeHash(): string {
@@ -385,7 +473,7 @@ export class AbstractContract {
   }
 
   public arguments(pubFuncName: string): Arguments {
-    if (pubFuncName === 'constructor') {
+    if (pubFuncName === "constructor") {
       return this.scriptedConstructor.args;
     }
 
@@ -397,7 +485,7 @@ export class AbstractContract {
   }
 
   public ctorArgs(): Arguments {
-    return this.arguments('constructor');
+    return this.arguments("constructor");
   }
 
   static fromASM(asm: string): AbstractContract {
@@ -415,72 +503,78 @@ export class AbstractContract {
   }
 }
 
+const invalidMethodName = [
+  "arguments",
+  "setDataPart",
+  "setDataPartInASM",
+  "setDataPartInHex",
+  "version",
+  "stateProps",
+  "sourceMapFile",
+  "file",
+  "contractName",
+  "ctorArgs",
+  "run_verify",
+  "replaceAsmVars",
+  "asmVars",
+  "asmArguments",
+  "dataPart",
+  "lockingScript",
+  "codeHash",
+  "codePart",
+  "resolver",
+  "getTypeClassByType",
+  "getNewStateScript",
+  "txContext",
+];
 
-const invalidMethodName = ['arguments',
-  'setDataPart',
-  'setDataPartInASM',
-  'setDataPartInHex',
-  'version',
-  'stateProps',
-  'sourceMapFile',
-  'file',
-  'contractName',
-  'ctorArgs',
-  'run_verify',
-  'replaceAsmVars',
-  'asmVars',
-  'asmArguments',
-  'dataPart',
-  'lockingScript',
-  'codeHash',
-  'codePart',
-  'resolver',
-  'getTypeClassByType',
-  'getNewStateScript',
-  'txContext'];
-
-export function buildContractClass(desc: ContractDescription | CompileResult): typeof AbstractContract {
-
-
+export function buildContractClass(
+  desc: ContractDescription | CompileResult,
+): typeof AbstractContract {
   if (desc instanceof CompileResult) {
     desc = desc.toDesc();
   }
 
   if (!desc.contract) {
-    throw new Error('missing field `contract` in description');
+    throw new Error("missing field `contract` in description");
   }
 
   if (!desc.version) {
-    throw new Error('missing field `version` in description');
+    throw new Error("missing field `version` in description");
   }
 
   if (desc.version < SUPPORTED_MINIMUM_VERSION) {
-    throw new Error(`Contract description version deprecated, The minimum version number currently supported is ${SUPPORTED_MINIMUM_VERSION}`);
+    throw new Error(
+      `Contract description version deprecated, The minimum version number currently supported is ${SUPPORTED_MINIMUM_VERSION}`,
+    );
   }
 
   if (!desc.abi) {
-    throw new Error('missing field `abi` in description');
+    throw new Error("missing field `abi` in description");
   }
 
   if (!desc.hex) {
-    throw new Error('missing field `hex` in description');
+    throw new Error("missing field `hex` in description");
   }
-
 
   const ContractClass = class Contract extends AbstractContract {
     constructor(...ctorParams: SupportedParamType[]) {
       super();
       if (!Contract.asmContract) {
-        this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(this, Contract.hex, ...ctorParams);
+        this.scriptedConstructor = Contract.abiCoder.encodeConstructorCall(
+          this,
+          Contract.hex,
+          ...ctorParams,
+        );
       }
     }
 
-    //When create a contract instance using UTXO, 
+    //When create a contract instance using UTXO,
     //use fromHex or fromASM because you do not know the parameters of constructor.
 
     /**
      * Create a contract instance using UTXO asm
-     * @param hex 
+     * @param hex
      */
     static fromASM(asm: string) {
       return ContractClass.fromHex(bsv.Script.fromASM(asm).toHex());
@@ -488,20 +582,20 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
 
     /**
      * Create a contract instance using UTXO hex
-     * @param hex 
+     * @param hex
      */
     static fromHex(hex: string) {
       Contract.asmContract = true;
       const obj = new this();
       Contract.asmContract = false;
-      obj.scriptedConstructor = Contract.abiCoder.encodeConstructorCallFromRawHex(obj, Contract.hex, hex);
+      obj.scriptedConstructor = Contract.abiCoder
+        .encodeConstructorCallFromRawHex(obj, Contract.hex, hex);
       return obj;
     }
 
-
     /**
      * Create a contract instance using raw Transaction
-     * @param hex 
+     * @param hex
      */
     static fromTransaction(hex: string, outputIndex = 0) {
       const tx = new bsv.Transaction(hex);
@@ -521,7 +615,6 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
 
       return null;
     }
-
   };
 
   ContractClass.desc = desc;
@@ -532,24 +625,29 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
   ContractClass.types = buildTypeClasses(desc);
   ContractClass.stateProps = desc.stateProps || [];
 
-
-
-  ContractClass.abi.forEach(entity => {
+  ContractClass.abi.forEach((entity) => {
     if (invalidMethodName.indexOf(entity.name) > -1) {
-      throw new Error(`Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`);
+      throw new Error(
+        `Method name [${entity.name}] is used by scryptlib now, Pelease change you contract method name!`,
+      );
     }
-    ContractClass.prototype[entity.name] = function (...args: SupportedParamType[]): FunctionCall {
-      const call = ContractClass.abiCoder.encodePubFunctionCall(this, entity.name, args);
+    ContractClass.prototype[entity.name] = function (
+      ...args: SupportedParamType[]
+    ): FunctionCall {
+      const call = ContractClass.abiCoder.encodePubFunctionCall(
+        this,
+        entity.name,
+        args,
+      );
       this.calls.set(entity.name, call);
       return call;
     };
   });
 
-  ContractClass.stateProps.forEach(p => {
-
+  ContractClass.stateProps.forEach((p) => {
     Object.defineProperty(ContractClass.prototype, p.name, {
       get() {
-        const arg = this.statePropsArgs.find(arg => {
+        const arg = this.statePropsArgs.find((arg) => {
           return arg.name === p.name;
         });
 
@@ -560,7 +658,7 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
         }
       },
       set(value: SupportedParamType) {
-        const arg = this.statePropsArgs.find(arg => {
+        const arg = this.statePropsArgs.find((arg) => {
           return arg.name === p.name;
         });
 
@@ -570,25 +668,24 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
         } else {
           throw new Error(`property ${p.name} does not exists`);
         }
-      }
+      },
     });
   });
 
   return ContractClass;
 }
 
-
-
 /**
  * @deprecated use buildTypeClasses
  * @param desc CompileResult or ContractDescription
  */
-export function buildStructsClass(desc: ContractDescription): Record<string, typeof Struct> {
-
+export function buildStructsClass(
+  desc: ContractDescription,
+): Record<string, typeof Struct> {
   const structTypes: Record<string, typeof Struct> = {};
   const structs: StructEntity[] = desc.structs || [];
   const finalTypeResolver = buildTypeResolverFromDesc(desc);
-  structs.forEach(element => {
+  structs.forEach((element) => {
     const name = element.name;
 
     Object.assign(structTypes, {
@@ -598,7 +695,7 @@ export function buildStructsClass(desc: ContractDescription): Record<string, typ
           this._typeResolver = finalTypeResolver; //we should assign this before bind
           this.bind();
         }
-      }
+      },
     });
 
     structTypes[name].structAst = element;
@@ -607,24 +704,23 @@ export function buildStructsClass(desc: ContractDescription): Record<string, typ
   return structTypes;
 }
 
-
 function buildStdLibraryClass(): Record<string, typeof Library> {
-
   const libraryTypes: Record<string, typeof Library> = {};
 
   Object.assign(libraryTypes, {
-    ['HashedMap']: HashedMap
+    ["HashedMap"]: HashedMap,
   });
 
   Object.assign(libraryTypes, {
-    ['HashedSet']: HashedSet
+    ["HashedSet"]: HashedSet,
   });
 
   return libraryTypes;
 }
 
-export function buildLibraryClass(desc: ContractDescription): Record<string, typeof Library> {
-
+export function buildLibraryClass(
+  desc: ContractDescription,
+): Record<string, typeof Library> {
   const libraryTypes: Record<string, typeof Library> = {};
 
   // map LibraryEntity to StructEntity, as we treat library as struct
@@ -634,9 +730,8 @@ export function buildLibraryClass(desc: ContractDescription): Record<string, typ
 
   Object.assign(libraryTypes, buildStdLibraryClass());
 
-  library.forEach(element => {
+  library.forEach((element) => {
     const name = element.name;
-
 
     const libraryClass = class extends Library {
       constructor(...args: SupportedParamType[]) {
@@ -646,21 +741,20 @@ export function buildLibraryClass(desc: ContractDescription): Record<string, typ
       }
     };
 
-
     libraryClass.libraryAst = element;
 
     Object.assign(libraryTypes, {
-      [name]: libraryClass
+      [name]: libraryClass,
     });
-
   });
 
   return libraryTypes;
 }
 
-export function buildTypeClasses(desc: ContractDescription | typeof AbstractContract): Record<string, typeof ScryptType> {
-
-  if (Object.prototype.hasOwnProperty.call(desc, 'types')) {
+export function buildTypeClasses(
+  desc: ContractDescription | typeof AbstractContract,
+): Record<string, typeof ScryptType> {
+  if (Object.prototype.hasOwnProperty.call(desc, "types")) {
     const CLASS = desc as typeof AbstractContract;
     return CLASS.types;
   }
@@ -674,7 +768,7 @@ export function buildTypeClasses(desc: ContractDescription | typeof AbstractCont
   const alias: AliasEntity[] = desc.alias || [];
 
   const resolver = buildTypeResolverFromDesc(desc);
-  alias.forEach(element => {
+  alias.forEach((element) => {
     const typeInfo = resolver(element.name);
     if (!isArrayType(typeInfo.finalType)) { //not need to build class type for array, we only build class type for array element
       if (typeInfo.symbolType === SymbolType.Struct) {
@@ -686,7 +780,7 @@ export function buildTypeClasses(desc: ContractDescription | typeof AbstractCont
               this._type = element.name;
               this._typeResolver = resolver;
             }
-          }
+          },
         });
       } else {
         const C = BasicScryptType[typeInfo.finalType];
@@ -700,10 +794,12 @@ export function buildTypeClasses(desc: ContractDescription | typeof AbstractCont
           };
 
           Object.assign(allTypeClasses, {
-            [element.name]: aliasClass
+            [element.name]: aliasClass,
           });
         } else {
-          throw new Error(`can not resolve type alias ${element.name} ${element.type}`);
+          throw new Error(
+            `can not resolve type alias ${element.name} ${element.type}`,
+          );
         }
       }
     }
@@ -716,8 +812,9 @@ export function buildTypeClasses(desc: ContractDescription | typeof AbstractCont
   return allTypeClasses;
 }
 
-
-export function buildTypeResolverFromDesc(desc: ContractDescription): TypeResolver {
+export function buildTypeResolverFromDesc(
+  desc: ContractDescription,
+): TypeResolver {
   const alias: AliasEntity[] = desc.alias || [];
   const library: LibraryEntity[] = desc.library || [];
   const structs: StructEntity[] = desc.structs || [];
@@ -725,63 +822,70 @@ export function buildTypeResolverFromDesc(desc: ContractDescription): TypeResolv
   return buildTypeResolver(contract, alias, structs, library);
 }
 
-
 // build a resolver witch can only resolve type
-export function buildTypeResolver(contract: string, alias: AliasEntity[], structs: StructEntity[],
-  library: LibraryEntity[], contracts: ContractEntity[] = [], statics: StaticEntity[] = []): TypeResolver {
-
+export function buildTypeResolver(
+  contract: string,
+  alias: AliasEntity[],
+  structs: StructEntity[],
+  library: LibraryEntity[],
+  contracts: ContractEntity[] = [],
+  statics: StaticEntity[] = [],
+): TypeResolver {
   const resolvedTypes: Record<string, TypeInfo> = {};
-  structs.forEach(element => {
+  structs.forEach((element) => {
     resolvedTypes[element.name] = {
       finalType: element.name,
-      symbolType: SymbolType.Struct
+      symbolType: SymbolType.Struct,
     };
   });
 
-  library.forEach(element => {
+  library.forEach((element) => {
     resolvedTypes[element.name] = {
       finalType: element.name,
-      symbolType: SymbolType.Library
+      symbolType: SymbolType.Library,
     };
   });
 
-  contracts.forEach(element => {
+  contracts.forEach((element) => {
     resolvedTypes[element.name] = {
       finalType: element.name,
-      symbolType: SymbolType.Contract
+      symbolType: SymbolType.Contract,
     };
   });
 
   // add std type
 
-  resolvedTypes['HashedMap'] = {
-    finalType: 'HashedMap',
-    symbolType: SymbolType.Library
+  resolvedTypes["HashedMap"] = {
+    finalType: "HashedMap",
+    symbolType: SymbolType.Library,
   };
-  resolvedTypes['HashedSet'] = {
-    finalType: 'HashedSet',
-    symbolType: SymbolType.Library
-  };
-
-  resolvedTypes['SortedItem'] = {
-    finalType: 'SortedItem',
-    symbolType: SymbolType.Struct
+  resolvedTypes["HashedSet"] = {
+    finalType: "HashedSet",
+    symbolType: SymbolType.Library,
   };
 
-  resolvedTypes['PubKeyHash'] = {
-    finalType: 'Ripemd160',
-    symbolType: SymbolType.BaseType
+  resolvedTypes["SortedItem"] = {
+    finalType: "SortedItem",
+    symbolType: SymbolType.Struct,
   };
 
-  alias.forEach(element => {
-    resolvedTypes[element.name] = resolveType(element.name, resolvedTypes, contract, statics, alias, library);
+  resolvedTypes["PubKeyHash"] = {
+    finalType: "Ripemd160",
+    symbolType: SymbolType.BaseType,
+  };
+
+  alias.forEach((element) => {
+    resolvedTypes[element.name] = resolveType(
+      element.name,
+      resolvedTypes,
+      contract,
+      statics,
+      alias,
+      library,
+    );
   });
 
-
-
-
   const resolver = (type: string) => {
-
     if (resolvedTypes[type]) {
       return resolvedTypes[type];
     }
@@ -789,7 +893,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
     if (BasicScryptType[type]) {
       return {
         finalType: type,
-        symbolType: SymbolType.BaseType
+        symbolType: SymbolType.BaseType,
       };
     }
 
@@ -800,7 +904,9 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 }
 
 // build a resolver which can resolve type and ScryptType class
-export function buildScryptTypeResolver(desc: ContractDescription): ScryptTypeResolver {
+export function buildScryptTypeResolver(
+  desc: ContractDescription,
+): ScryptTypeResolver {
   const resolver = buildTypeResolverFromDesc(desc);
   const allTypes = buildTypeClasses(desc);
 
@@ -808,12 +914,13 @@ export function buildScryptTypeResolver(desc: ContractDescription): ScryptTypeRe
     resolverType: resolver,
     resolverClass: (type: string) => {
       const finalType = resolver(type).finalType;
-      const typeName = getNameByType(finalType) ? getNameByType(finalType) : finalType;
+      const typeName = getNameByType(finalType)
+        ? getNameByType(finalType)
+        : finalType;
       return allTypes[typeName];
     },
     allTypes: () => {
       return allTypes;
-    }
+    },
   };
 }
-
