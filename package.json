@@ -72,7 +72,7 @@
     "fs": false
   },
   "scripts": {
-    "compile": "vite build",
+    "compile": "tsc -b && vite build",
     "watch": "tsc -b -w",
     "check": "tsc -b",
     "cov": "nyc npm t",

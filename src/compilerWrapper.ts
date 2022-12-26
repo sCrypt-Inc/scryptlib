@@ -11,6 +11,7 @@ import {
   writeFileSync,
 } from "fs";
 import md5 from "md5";
+export { md5 };
 import rimraf from "rimraf";
 import JSONbig from "json-bigint";
 import {
