@@ -71,8 +71,34 @@ function updatePkgJson(): Plugin {
   };
 }
 
+const fixDtsFiles = {
+  name: "fixDts",
+  async "buildEnd"() {
+    const files = await fs.readdir("./dist");
+
+    await Promise.all(files.map(async (file) => {
+      if (file.endsWith(".d.ts")) {
+        const p = `./dist/${file}`;
+        const content = await fs.readFile(p, "utf8");
+        const lines = content.split("\n").map((a) => {
+          if (a.startsWith("import") || a.startsWith("export")) {
+            if (a.endsWith(`.ts";`)) {
+              return a.slice(0, a.length - 5) + '"';
+            }
+          }
+          return a;
+        });
+        await fs.writeFile(p, lines.join("\n"));
+      }
+    }));
+  },
+};
+
 export default defineConfig({
-  "plugins": [updatePkgJson()],
+  "plugins": [
+    updatePkgJson(),
+    fixDtsFiles,
+  ],
   "optimizeDeps": {
     "exclude": [...externals],
     "esbuildOptions": {
@@ -83,8 +109,13 @@ export default defineConfig({
       "treeShaking": true,
     },
   },
-  "root": "./src/",
   build: {
+    lib: {
+      "entry": "./src/index.ts",
+      "fileName": "scryptlib",
+      "formats": ["cjs", "es"],
+      "name": "Scryptlib",
+    },
     rollupOptions: {
       "output": [
         {

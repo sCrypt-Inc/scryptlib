@@ -1,13 +1,13 @@
 {
   "name": "scryptlib",
-  "version": "1.0.10",
+  "version": "2.0.0-beta.4",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
     "node": ">=16.0.0"
   },
   "bin": "bin/cli.js",
-  "main": "dist/index.js",
-  "module": "dist/esm/src/index.js",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
   "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
@@ -72,8 +72,9 @@
     "fs": false
   },
   "scripts": {
-    "compile": "tsc -b && vite build",
+    "compile": "vite build",
     "watch": "tsc -b -w",
+    "check": "tsc -b",
     "cov": "nyc npm t",
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "testlint": "eslint src --ext .ts,.js",
