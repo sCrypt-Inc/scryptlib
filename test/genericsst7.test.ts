@@ -15,7 +15,7 @@ describe('GenericStruct  test', () => {
         let map = new Map<bigint, StructObject>();
         let set = new Set<StructObject>();
 
-        const C = buildContractClass(loadDescription('genericsst7_desc.json'));
+        const C = buildContractClass(loadDescription('genericsst7.json'));
 
         before(() => {
 

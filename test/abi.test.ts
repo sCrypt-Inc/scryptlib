@@ -11,11 +11,11 @@ const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 
-const jsonDescr = loadDescription('p2pkh_desc.json');
+const jsonDescr = loadDescription('p2pkh.json');
 const DemoP2PKH = buildContractClass(jsonDescr);
 const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
 
-const personDescr = loadDescription('person_desc.json');
+const personDescr = loadDescription('person.json');
 const PersonContract = buildContractClass(personDescr);
 
 
@@ -268,7 +268,7 @@ describe('ABICoder', () => {
     describe('when contract has explict constructor', () => {
       it('encodeConstructorCall RegExp replace error fix issue #86', () => {
 
-        const DemoCoinToss = buildContractClass(loadDescription('cointoss_desc.json'));
+        const DemoCoinToss = buildContractClass(loadDescription('cointoss.json'));
         let demoCoinToss = new DemoCoinToss(
           PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
           PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
@@ -284,7 +284,7 @@ describe('ABICoder', () => {
 
       it('encodeConstructorCall RegExp replace error fix issue #86', () => {
 
-        const MultiSig = buildContractClass(loadDescription('multiSig_desc.json'));
+        const MultiSig = buildContractClass(loadDescription('multiSig.json'));
         let multiSig = new MultiSig([Ripemd160("2f87fe26049415441f024eb134ce54bbafd78e96"), Ripemd160("9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9"), Ripemd160("58ddca9a92ebf90edf505a172fcef1197b376f5d")]);
 
         expect(multiSig.lockingScript.toASM()).to.be.contain('2f87fe26049415441f024eb134ce54bbafd78e96 9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9 58ddca9a92ebf90edf505a172fcef1197b376f5d')
@@ -312,7 +312,7 @@ describe('string as bigInt', () => {
 
   describe('test DemoCoinToss', () => {
 
-    const DemoCoinToss = buildContractClass(loadDescription('cointoss_desc.json'));
+    const DemoCoinToss = buildContractClass(loadDescription('cointoss.json'));
     it('test lockingScript', () => {
 
       let demoCoinToss = new DemoCoinToss(
@@ -328,7 +328,7 @@ describe('string as bigInt', () => {
     })
 
     describe('test Demo', () => {
-      const Demo = buildContractClass(loadDescription('demo_desc.json'));
+      const Demo = buildContractClass(loadDescription('demo.json'));
       it('test demo', () => {
 
 
@@ -373,7 +373,7 @@ describe('string as bigInt', () => {
 
     describe('test MDArray', () => {
 
-      const jsonDescr = loadDescription('mdarray_desc.json');
+      const jsonDescr = loadDescription('mdarray.json');
       const MDArray = buildContractClass(jsonDescr);
 
 

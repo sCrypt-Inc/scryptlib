@@ -8,7 +8,7 @@ describe('test.Counter', () => {
 
     it('should unlock success', () => {
 
-        const Counter = buildContractClass(loadDescription('counter_desc.json'))
+        const Counter = buildContractClass(loadDescription('counter.json'))
         let counter = new Counter()
 
         counter.setDataPartInASM('00')
@@ -61,7 +61,7 @@ describe('test.Counter', () => {
 
     it('should unlock failed', () => {
 
-        const Counter = buildContractClass(loadDescription('counter_desc.json'))
+        const Counter = buildContractClass(loadDescription('counter.json'))
         let counter = new Counter()
 
         counter.setDataPartInASM('00')

@@ -10,7 +10,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst5', () => {
         let c: Contract, result;
 
-        const C = buildContractClass(loadDescription('genericsst5_desc.json'));
+        const C = buildContractClass(loadDescription('genericsst5.json'));
         before(() => {
             c = new C([1000000n, [Bytes('')]]);
         });

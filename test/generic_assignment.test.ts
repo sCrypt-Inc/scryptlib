@@ -7,7 +7,7 @@ describe('test.generic_assignment', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_assignment_desc.json')
+            const jsonDescr = loadDescription('generic_assignment.json')
             const TestGenericLibray = buildContractClass(jsonDescr)
             testGenericLibray = new TestGenericLibray()
         })

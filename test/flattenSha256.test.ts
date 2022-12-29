@@ -7,7 +7,7 @@ describe('test.flattenSha256', () => {
         let testflattenSha256;
 
         before(() => {
-            const jsonDescr = loadDescription('flattenSha256_desc.json')
+            const jsonDescr = loadDescription('flattenSha256.json')
             const TestflattenSha256 = buildContractClass(jsonDescr)
             testflattenSha256 = new TestflattenSha256()
         })

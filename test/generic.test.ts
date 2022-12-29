@@ -8,7 +8,7 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_desc.json')
+            const jsonDescr = loadDescription('generic.json')
             const TestGenericLibray = buildContractClass(jsonDescr)
             testGenericLibray = new TestGenericLibray(12n)
         })
@@ -24,7 +24,7 @@ describe('test.generic', () => {
 
         it('test generic output', () => {
 
-            const jsonDescr = loadDescription('generic_desc.json')
+            const jsonDescr = loadDescription('generic.json')
 
             expect(jsonDescr.library).to.deep.include.members([
                 {
@@ -54,7 +54,7 @@ describe('test.generic', () => {
 
         it('test generic output', () => {
 
-            const jsonDescr = loadDescription('generic_assignment_desc.json')
+            const jsonDescr = loadDescription('generic_assignment.json')
 
             expect(jsonDescr.library).to.deep.include.members([
                 {
@@ -73,7 +73,7 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_nested_property_desc.json')
+            const jsonDescr = loadDescription('generic_nested_property.json')
             const TestGenericLibray = buildContractClass(jsonDescr)
 
             testGenericLibray = new TestGenericLibray([[{
@@ -97,7 +97,7 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_nested_property1_desc.json')
+            const jsonDescr = loadDescription('generic_nested_property1.json')
             const TestGenericLibray = buildContractClass(jsonDescr)
             testGenericLibray = new TestGenericLibray([[111n]])
         })

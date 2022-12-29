@@ -11,7 +11,7 @@ const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 const inputSatoshis = 100000
 const tx = newTx(inputSatoshis)
 
-const jsonDescr = loadDescription('p2pkh_desc.json')
+const jsonDescr = loadDescription('p2pkh.json')
 const DemoP2PKH = buildContractClass(jsonDescr)
 const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)))
 const inputIndex = 0;
@@ -25,7 +25,7 @@ describe('Preimage', () => {
     let ocsPreimage: AbstractContract;
 
     before(() => {
-      const jsonDescr = loadDescription('OCSPreimage_desc.json')
+      const jsonDescr = loadDescription('OCSPreimage.json')
       const OCSPreimage = buildContractClass(jsonDescr)
       ocsPreimage = new OCSPreimage(1n)
     })

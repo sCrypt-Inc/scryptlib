@@ -41,7 +41,7 @@ describe('test.mapTest', () => {
         let mapTest: Contract, MapTest: ContractClass;
 
         before(() => {
-            const jsonDescr = loadDescription('mapTest_desc.json')
+            const jsonDescr = loadDescription('mapTest.json')
             MapTest = buildContractClass(jsonDescr)
             mapTest = new MapTest(Bytes(''))
         })

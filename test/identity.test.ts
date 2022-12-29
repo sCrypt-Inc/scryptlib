@@ -9,7 +9,7 @@ describe('Test sCrypt contract identity In Javascript', () => {
   let test, result
 
   before(() => {
-    const Test = buildContractClass(loadDescription('identity_desc.json'));
+    const Test = buildContractClass(loadDescription('identity.json'));
     test = new Test();
   });
 

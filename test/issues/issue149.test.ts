@@ -9,7 +9,7 @@ describe('test.Issue149', () => {
         let test;
 
         before(() => {
-            const jsonDescr = loadDescription('issue149_desc.json')
+            const jsonDescr = loadDescription('issue149.json')
             const Issue149 = buildContractClass(jsonDescr)
             test = new Issue149()
         })

@@ -13,7 +13,7 @@ describe('Test sCrypt contract stateProp In Javascript', () => {
 
     before(() => {
 
-        const StateProp = buildContractClass(loadDescription('stateProp_desc.json'));
+        const StateProp = buildContractClass(loadDescription('stateProp.json'));
 
         test = new StateProp([
             { x: 0n, y: true, z: Bytes('00') },

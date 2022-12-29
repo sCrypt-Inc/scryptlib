@@ -14,11 +14,11 @@ const inputSatoshis = 100000;
 const inputIndex = 0;
 const tx = newTx(inputSatoshis);
 
-const jsonDescr = loadDescription('p2pkh_desc.json');
+const jsonDescr = loadDescription('p2pkh.json');
 const DemoP2PKH = buildContractClass(jsonDescr);
 const p2pkh = new DemoP2PKH(PubKeyHash(toHex(pubKeyHash)));
 
-const personDescr = loadDescription('person_desc.json');
+const personDescr = loadDescription('person.json');
 const PersonContract = buildContractClass(personDescr);
 
 const outputAmount = 22222
@@ -34,7 +34,7 @@ let man = {
 const person = new PersonContract(man, 18n);
 
 
-const mdDescr = loadDescription('mdarray_desc.json');
+const mdDescr = loadDescription('mdarray.json');
 const MDArray = buildContractClass(mdDescr);
 
 
@@ -45,7 +45,7 @@ describe('VerifyError', () => {
     let ackermann, result;
 
     before(() => {
-      const Ackermann = buildContractClass(loadDescription('ackermann_desc.json'));
+      const Ackermann = buildContractClass(loadDescription('ackermann.json'));
       ackermann = new Ackermann(2n, 1n);
     });
 
@@ -63,7 +63,7 @@ describe('VerifyError', () => {
       const privateKey = bsv.PrivateKey.fromRandom('testnet');
       const publicKey = privateKey.toPublicKey();
       const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
-      const jsonDescr = loadDescription('p2pkh_desc_without_sourceMap.json');
+      const jsonDescr = loadDescription('p2pkh_without_sourceMap.json');
       const DemoP2PKH = buildContractClass(jsonDescr);
       p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
     });
@@ -89,7 +89,7 @@ describe('VerifyError', () => {
     const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3)
 
     before(() => {
-      const Token = buildContractClass(loadDescription('tokenUtxo_desc.json'))
+      const Token = buildContractClass(loadDescription('tokenUtxo.json'))
       token = new Token()
 
       // code part
@@ -213,7 +213,7 @@ describe('VerifyError', () => {
     let asm, result;
 
     before(() => {
-      const ASM = buildContractClass(loadDescription('asm_desc.json'));
+      const ASM = buildContractClass(loadDescription('asm.json'));
       asm = new ASM();
     });
 
@@ -393,7 +393,7 @@ describe('VerifyError', () => {
     });
 
     it('it should contain opReturn', () => {
-      const Counter = buildContractClass(loadDescription('counter_desc.json'));
+      const Counter = buildContractClass(loadDescription('counter.json'));
       counter = new Counter();
 
       const tx = newTx(inputSatoshis)
@@ -427,7 +427,7 @@ describe('VerifyError', () => {
 
 
     it('it should not contains opReturn', () => {
-      const Counter = buildContractClass(loadDescription('counter_desc.json'));
+      const Counter = buildContractClass(loadDescription('counter.json'));
       counter = new Counter();
 
       const tx = newTx(inputSatoshis)
@@ -460,7 +460,7 @@ describe('VerifyError', () => {
 
     it('should stop at statecounter.scrypt#24', () => {
 
-      const StateCounter = buildContractClass(loadDescription('statecounter_desc.json'));
+      const StateCounter = buildContractClass(loadDescription('statecounter.json'));
       let counter = new StateCounter(0n, true);
 
       let newLockingScript = counter.getNewStateScript({

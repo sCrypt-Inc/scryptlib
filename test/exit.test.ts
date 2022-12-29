@@ -16,7 +16,7 @@ describe('test.Exit', () => {
         let exit;
 
         before(() => {
-            const jsonDescr = loadDescription('exit_desc.json')
+            const jsonDescr = loadDescription('exit.json')
             const Exit = buildContractClass(jsonDescr)
             exit = new Exit(0n)
         })

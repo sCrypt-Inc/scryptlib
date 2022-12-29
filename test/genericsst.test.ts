@@ -10,7 +10,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst_simple', () => {
         let c, result;
 
-        const C = buildContractClass(loadDescription('genericsst_simple_desc.json'));
+        const C = buildContractClass(loadDescription('genericsst_simple.json'));
 
         before(() => {
             c = new C({
@@ -50,7 +50,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst_ctor', () => {
         let c, result;
 
-        const C = buildContractClass(loadDescription('genericsst_ctor_desc.json'));
+        const C = buildContractClass(loadDescription('genericsst_ctor.json'));
         before(() => {
             c = new C({
                 x: 1n
@@ -126,7 +126,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst_alias', () => {
         let c, result;
 
-        const C = buildContractClass(loadDescription('genericsst_alias_desc.json'));
+        const C = buildContractClass(loadDescription('genericsst_alias.json'));
         before(() => {
             c = new C({
                 x: {
@@ -200,7 +200,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst.scrypt', () => {
         let c, result;
 
-        const C = buildContractClass(loadDescription('genericsst_desc.json'));
+        const C = buildContractClass(loadDescription('genericsst.json'));
         before(() => {
             c = new C({
                 x: 1n

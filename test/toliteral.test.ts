@@ -3,7 +3,7 @@ import { loadDescription } from './helper';
 import { buildContractClass, } from '../src/contract';
 import { Bytes } from '../src';
 
-const BytesLiteralContract = buildContractClass(loadDescription('bytesLiteral_desc.json'));
+const BytesLiteralContract = buildContractClass(loadDescription('bytesLiteral.json'));
 
 const bytesLiteral = new BytesLiteralContract();
 

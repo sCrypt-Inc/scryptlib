@@ -14,7 +14,7 @@ describe('test.stateMapTest', () => {
         let map = new Map<bigint, bigint>();
 
         before(() => {
-            const jsonDescr = loadDescription('stateMap_desc.json')
+            const jsonDescr = loadDescription('stateMap.json')
             StateMapTest = buildContractClass(jsonDescr)
             mapTest = new StateMapTest(StateMapTest.toHashedMap(map, "HashedMap<int, int>")) // empty initial map
         })
@@ -134,7 +134,7 @@ describe('test.stateMapTest', () => {
     describe('stateMapTest: library as state', () => {
         let mapTest;
 
-        const jsonDescr = loadDescription('LibAsState2_desc.json')
+        const jsonDescr = loadDescription('LibAsState2.json')
         const Test = buildContractClass(jsonDescr)
         let map = new Map<bigint, bigint>();
 

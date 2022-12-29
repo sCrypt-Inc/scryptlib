@@ -7,7 +7,7 @@ describe('test.issue_compiler_382', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('issue_compiler_382_desc.json')
+            const jsonDescr = loadDescription('issue_compiler_382.json')
             const TestGenericLibray = buildContractClass(jsonDescr)
             testGenericLibray = new TestGenericLibray()
         })

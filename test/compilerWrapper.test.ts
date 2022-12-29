@@ -21,7 +21,7 @@ describe('compile()', () => {
 
   it('should generate description file properly', () => {
 
-    const content = loadDescription('bar_desc.json');
+    const content = loadDescription('bar.json');
 
     assert.deepEqual(content.abi, [
       {
@@ -55,7 +55,7 @@ describe('compile()', () => {
   })
 
   it('should generate structs properly', () => {
-    const result = loadDescription('person_desc.json');
+    const result = loadDescription('person.json');
 
     assert.equal(result.structs.length, 2);
 
@@ -108,7 +108,7 @@ describe('compile()', () => {
   describe('desc should be as expected', () => {
     let desc;
     before(() => {
-      desc = loadDescription('tokenUtxo_desc.json');
+      desc = loadDescription('tokenUtxo.json');
     });
 
 
@@ -362,7 +362,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with const var should be replace with IntLiteral', () => {
-      const result = loadDescription('const_desc.json');
+      const result = loadDescription('const.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",
@@ -401,7 +401,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with alias should be replace with final type', () => {
-      const result = loadDescription('mdarray_desc.json');
+      const result = loadDescription('mdarray.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",

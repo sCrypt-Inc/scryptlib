@@ -5,7 +5,7 @@ import { buildContractClass } from '../src/contract';
 import { Bytes, Int } from '../src/scryptTypes';
 
 
-const jsonDescr = loadDescription('mdarray_desc.json');
+const jsonDescr = loadDescription('mdarray.json');
 const MDArray = buildContractClass(jsonDescr);
 
 describe('MDArray test', () => {

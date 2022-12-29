@@ -6,7 +6,7 @@ describe('test.demo', () => {
     let demo;
 
     before(() => {
-        const Demo = buildContractClass(loadDescription('demo_desc.json'))
+        const Demo = buildContractClass(loadDescription('demo.json'))
         demo = new Demo(1n, 2n)
     })
 

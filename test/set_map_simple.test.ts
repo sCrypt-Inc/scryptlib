@@ -8,7 +8,7 @@ describe('GenericStruct  set_map_simple.test', () => {
 
     let c: Contract, result;
 
-    const C = buildContractClass(loadDescription('set_map_simple_desc.json'));
+    const C = buildContractClass(loadDescription('set_map_simple.json'));
     before(() => {
         c = new C();
     });

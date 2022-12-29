@@ -6,7 +6,7 @@ import { buildContractClass, AbstractContract } from '../src/contract';
 describe('Contract description old version test', () => {
 
   it('should throw when missing version', () => {
-    const jsonDescr = loadDescription('p2pkh_desc_missing_version.json');
+    const jsonDescr = loadDescription('p2pkh_missing_version.json');
     expect(() => { buildContractClass(jsonDescr); }).to.throw('missing field `version` in description');
   });
 
@@ -35,8 +35,8 @@ describe('Contract description old version test', () => {
 
   });
 
-  it('test basic type in p2pkh_desc.json', () => {
-    const jsonDescr = loadDescription('p2pkh_desc.json');
+  it('test basic type in p2pkh.json', () => {
+    const jsonDescr = loadDescription('p2pkh.json');
     const Contract = buildContractClass(jsonDescr)
     expect(typeof Contract === typeof AbstractContract).to.be.true;
   });

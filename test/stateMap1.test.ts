@@ -12,7 +12,7 @@ describe('test.stateMap1', () => {
         let map = new Map<bigint, bigint>();
 
         before(() => {
-            const jsonDescr = loadDescription('stateMap1_desc.json')
+            const jsonDescr = loadDescription('stateMap1.json')
             StateMapTest = buildContractClass(jsonDescr)
             mapTest = new StateMapTest(StateMapTest.toHashedMap(map, "HashedMap<int, int>"))
         })

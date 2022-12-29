@@ -23,7 +23,7 @@ const pkhReceiver1 = PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKey
 
 describe('Coin.test', () => {
 
-    const jsonDescr = loadDescription('Coin_desc.json')
+    const jsonDescr = loadDescription('Coin.json')
     const Coin = buildContractClass(jsonDescr)
 
     describe('Coin.test', () => {

@@ -13,9 +13,9 @@ const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 const txContext = { inputSatoshis, tx };
 
-const jsonDescr = loadDescription('p2pkh_desc.json');
+const jsonDescr = loadDescription('p2pkh.json');
 
-const cointoss_desc = loadDescription('cointoss_desc.json');
+const cointoss_desc = loadDescription('cointoss.json');
 
 describe('check explicit  constructor()', () => {
 

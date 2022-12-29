@@ -13,7 +13,7 @@ describe('test.setTest', () => {
 
 
         before(() => {
-            const jsonDescr = loadDescription('setTest_desc.json')
+            const jsonDescr = loadDescription('setTest.json')
             SetTest = buildContractClass(jsonDescr)
 
             setTest = new SetTest()

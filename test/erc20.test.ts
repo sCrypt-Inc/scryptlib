@@ -25,7 +25,7 @@ const receiver = PubKey(toHex(publicKeyReceiver));
 
 describe('Test sCrypt contract erc20 In Javascript', () => {
   let coin, preimage, result, map
-  const Coin = buildContractClass(loadDescription('erc20_desc.json'))
+  const Coin = buildContractClass(loadDescription('erc20.json'))
   before(() => {
     map = new Map<PubKey, bigint>();
     coin = new Coin(PubKey(toHex(publicKeyMinter)), [0n, Coin.toHashedMap(map, "HashedMap<PubKey, int>")])

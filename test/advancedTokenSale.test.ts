@@ -36,7 +36,7 @@ describe('Test advancedTokenSale.test', () => {
   let saler, preimage, result
 
   before(() => {
-    const AdvancedTokenSale = buildContractClass(loadDescription('advancedTokenSale_desc.json'))
+    const AdvancedTokenSale = buildContractClass(loadDescription('advancedTokenSale.json'))
     saler = new AdvancedTokenSale(SATS_PER_TOKEN);
 
     // append state as passive data

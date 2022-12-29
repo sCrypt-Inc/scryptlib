@@ -14,7 +14,7 @@ describe('test.stateSet', () => {
         let set = new Set<Int>();
 
         before(() => {
-            const jsonDescr = loadDescription('stateSet_desc.json')
+            const jsonDescr = loadDescription('stateSet.json')
             StateSet = buildContractClass(jsonDescr)
             stateSet = new StateSet(StateSet.toHashedSet(set, 'HashedSet<int>')) // empty initial set
         })

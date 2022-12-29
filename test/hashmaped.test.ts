@@ -10,7 +10,7 @@ describe('test.hashedmap', () => {
         let map = new Map<bigint, any>();
 
         before(() => {
-            const jsonDescr = loadDescription('hashedmap_desc.json')
+            const jsonDescr = loadDescription('hashedmap.json')
             C = buildContractClass(jsonDescr)
 
             map.set(22n, Bytes("f1"))

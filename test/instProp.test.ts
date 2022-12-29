@@ -7,7 +7,7 @@ describe('instProp.test', () => {
         let c;
 
         before(() => {
-            const jsonDescr = loadDescription('instProp_desc.json')
+            const jsonDescr = loadDescription('instProp.json')
             const C = buildContractClass(jsonDescr)
             c = new C()
         })

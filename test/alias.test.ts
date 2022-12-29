@@ -9,7 +9,7 @@ import { toHex } from '../src';
 
 
 describe('Alias type check', () => {
-  const AliasContract = buildContractClass(loadDescription('alias_desc.json'));
+  const AliasContract = buildContractClass(loadDescription('alias.json'));
 
 
   let man = {
@@ -134,7 +134,7 @@ describe('Alias type check', () => {
 
 
     it('should succeeding when call buildTypeResolver', () => {
-      const jsondesc = loadDescription('alias_desc.json');
+      const jsondesc = loadDescription('alias.json');
       const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
       expect(resolver("Age")).deep.equal({
         finalType: 'int',
@@ -330,7 +330,7 @@ describe('Alias type check', () => {
     })
 
     it('should succeeding when resolver generic type', () => {
-      const jsondesc = loadDescription('autoTyped_desc.json');
+      const jsondesc = loadDescription('autoTyped.json');
 
       const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
 
@@ -464,11 +464,11 @@ describe('Alias type check', () => {
 
   describe('Alias1Contract check', () => {
 
-    const Alias1Contract = buildContractClass(loadDescription('alias1_desc.json'));
+    const Alias1Contract = buildContractClass(loadDescription('alias1.json'));
 
 
     it('should succeeding when call buildTypeResolver', () => {
-      const jsondesc = loadDescription('alias1_desc.json');
+      const jsondesc = loadDescription('alias1.json');
       const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
@@ -535,7 +535,7 @@ describe('Alias type check', () => {
       const inputSatoshis = 100000;
       const tx = newTx(inputSatoshis);
 
-      const jsonDescr = loadDescription('p2pkh_desc.json');
+      const jsonDescr = loadDescription('p2pkh.json');
       const DemoP2PKH = buildContractClass(jsonDescr);
       const p2pkh = new DemoP2PKH(PubKeyHash(toHex(pubKeyHash)));
 
@@ -559,7 +559,7 @@ describe('Alias type check', () => {
 
 
   describe('test resolver_generic', () => {
-    const C = buildContractClass(loadDescription('genericsst_alias_desc.json'));
+    const C = buildContractClass(loadDescription('genericsst_alias.json'));
 
     it('should succeeding when resolver type', () => {
 

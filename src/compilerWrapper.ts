@@ -528,6 +528,8 @@ function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'hex' | 'des
     return join(baseDir, `stdin.${target}.json`);
   } else if (target === 'dbg') {
     return join(baseDir, `stdin.${target}.json`);
+  } else if (target === 'desc') {
+    return join(baseDir, `stdin.json`);
   }
   return join(baseDir, `stdin_${target}.json`);
 }

@@ -17,7 +17,7 @@ describe('library as property or return or param', () => {
     describe('LibCompare test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibCompare_desc.json'));
+      const Test = buildContractClass(loadDescription('LibCompare.json'));
       before(() => {
         instance = new Test([1n, 1n, [1n, 1n, 1n], true, 2n, 2n]);
       });
@@ -48,7 +48,7 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty1 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsProperty1_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty1.json'));
       before(() => {
         instance = new Test(1n, [1n, 2n]);
       });
@@ -69,7 +69,7 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty2 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsProperty2_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty2.json'));
       before(() => {
         instance = new Test(1n, [1n]);
       });
@@ -90,7 +90,7 @@ describe('library as property or return or param', () => {
     describe('LibAsProperty3 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsProperty3_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty3.json'));
       before(() => {
         instance = new Test(1n, [[1n]]);
       });
@@ -110,7 +110,7 @@ describe('library as property or return or param', () => {
 
     describe('LibAsProperty4 test', () => {
       let instance, result;
-      const Test = buildContractClass(loadDescription('LibAsProperty4_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty4.json'));
 
       before(() => {
         instance = new Test(1n, [1n, 1n]);
@@ -132,7 +132,7 @@ describe('library as property or return or param', () => {
 
     describe('LibAsProperty5 test', () => {
       let instance, result;
-      const Test = buildContractClass(loadDescription('LibAsProperty5_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty5.json'));
       before(() => {
         instance = new Test(1n, [[1n], [2n], [3n]]);
       });
@@ -152,7 +152,7 @@ describe('library as property or return or param', () => {
 
     describe('LibAsProperty6 test', () => {
       let instance, result;
-      const Test = buildContractClass(loadDescription('LibAsProperty6_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty6.json'));
       before(() => {
         instance = new Test(1n, [[1n, 1n], [2n, 2n], [3n, 3n]]);
       });
@@ -172,7 +172,7 @@ describe('library as property or return or param', () => {
 
     describe('LibAsProperty7 test', () => {
       let instance, result;
-      const Test = buildContractClass(loadDescription('LibAsProperty7_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty7.json'));
       before(() => {
         instance = new Test(1n, [{
           x: 1n,
@@ -196,7 +196,7 @@ describe('library as property or return or param', () => {
 
     describe('LibAsProperty7 test', () => {
       let instance, result;
-      const Test = buildContractClass(loadDescription('LibAsProperty8_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsProperty8.json'));
       before(() => {
         instance = new Test(2n, [[{
           x: 1n,
@@ -225,7 +225,7 @@ describe('library as property or return or param', () => {
     describe('Library with generic', () => {
       describe('LibGenericAsProperty1 test: can inferr all generic types from constructor', () => {
         let instance, result;
-        const Test = buildContractClass(loadDescription('LibGenericAsProperty1_desc.json'));
+        const Test = buildContractClass(loadDescription('LibGenericAsProperty1.json'));
 
         it('should succeeding when using int to new L', () => {
           instance = new Test(2n, [1n, 1n]);
@@ -255,7 +255,7 @@ describe('library as property or return or param', () => {
 
       describe('LibGenericAsProperty2 test: can not inferr all generic types from constructor', () => {
         let instance, result;
-        const Test = buildContractClass(loadDescription('LibGenericAsProperty2_desc.json'));
+        const Test = buildContractClass(loadDescription('LibGenericAsProperty2.json'));
         it('should succeeding when using int to new L', () => {
           instance = new Test(2n, [1n, 1n]);
           result = instance.unlock(2n).verify()
@@ -272,7 +272,7 @@ describe('library as property or return or param', () => {
 
       describe('LibGenericAsProperty3 test: can not inferr all generic types from constructor', () => {
         let instance, result;
-        const Test = buildContractClass(loadDescription('LibGenericAsProperty3_desc.json'));
+        const Test = buildContractClass(loadDescription('LibGenericAsProperty3.json'));
 
         it('should succeeding when using int to new L', () => {
           instance = new Test(2n, [1n, 1n], [Bytes("0101"), 1n]);
@@ -284,7 +284,7 @@ describe('library as property or return or param', () => {
 
       describe('LibGenericAsProperty4 test: can inferr all generic types in nested library', () => {
         let instance, result;
-        const TestGenericLibray = buildContractClass(loadDescription('LibGenericAsProperty4_desc.json'));
+        const TestGenericLibray = buildContractClass(loadDescription('LibGenericAsProperty4.json'));
 
         it('should succeeding', () => {
           instance = new TestGenericLibray([[{ a: 101n, b: Bytes("0f010f") }], 11n]);
@@ -313,7 +313,7 @@ describe('library as property or return or param', () => {
     describe('LibAsReturn1 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsReturn1_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsReturn1.json'));
       before(() => {
         instance = new Test(1n);
       });
@@ -334,7 +334,7 @@ describe('library as property or return or param', () => {
     describe('LibAsReturn2 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsReturn2_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsReturn2.json'));
 
       before(() => {
         instance = new Test(1n);
@@ -355,7 +355,7 @@ describe('library as property or return or param', () => {
     describe('LibAsReturn3 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsReturn3_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsReturn3.json'));
 
       before(() => {
         instance = new Test(1n);
@@ -386,7 +386,7 @@ describe('library as property or return or param', () => {
     describe('LibAsReturn4 test', () => {
       let instance, result;
 
-      const Test = buildContractClass(loadDescription('LibAsReturn4_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsReturn4.json'));
 
       before(() => {
         instance = new Test(1n);
@@ -407,7 +407,7 @@ describe('library as property or return or param', () => {
 
   describe('Library as function param', () => {
     describe('LibAsParam1 test', () => {
-      const Test = buildContractClass(loadDescription('LibAsParam1_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsParam1.json'));
       let instance, result;
 
       before(() => {
@@ -427,7 +427,7 @@ describe('library as property or return or param', () => {
     });
 
     describe('LibAsParam2 test', () => {
-      const Test = buildContractClass(loadDescription('LibAsParam2_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsParam2.json'));
       let instance, result;
 
       before(() => {
@@ -447,7 +447,7 @@ describe('library as property or return or param', () => {
     });
 
     describe('LibAsParam3 test', () => {
-      const Test = buildContractClass(loadDescription('LibAsParam3_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsParam3.json'));
       let instance, result;
 
       before(() => {
@@ -469,7 +469,7 @@ describe('library as property or return or param', () => {
   describe('Library as state property', () => {
     describe('LibAsState1 test', () => {
       let instance, result;
-      const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
+      const Test = buildContractClass(loadDescription('LibAsState1.json'));
       let l = [1n, {
         x: 1n,
         c: true,

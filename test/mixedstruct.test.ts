@@ -5,10 +5,10 @@ import { buildContractClass } from '../src/contract';
 import { Bytes, } from '../src/scryptTypes';
 
 
-const jsonDescr = loadDescription('mixedstruct_desc.json');
+const jsonDescr = loadDescription('mixedstruct.json');
 const MixedStruct = buildContractClass(jsonDescr);
 
-const mixedDescr = loadDescription('mixed_desc.json');
+const mixedDescr = loadDescription('mixed.json');
 
 const MixedArrayAndStruct = buildContractClass(mixedDescr);
 

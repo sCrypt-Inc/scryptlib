@@ -7,7 +7,7 @@ describe('test.issue146', () => {
         let test;
 
         before(() => {
-            const jsonDescr = loadDescription('issue146_desc.json')
+            const jsonDescr = loadDescription('issue146.json')
             const OpIfDup = buildContractClass(jsonDescr)
             test = new OpIfDup()
         })
