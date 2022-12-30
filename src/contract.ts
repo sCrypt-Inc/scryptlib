@@ -1,5 +1,5 @@
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
-import { ContractEntity, getFullFilePath, loadSourceMapfromDesc, OpCode, StaticEntity } from './compilerWrapper';
+import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
   ABICoder, Arguments, FunctionCall, Script, bsv, DEFAULT_FLAGS, resolveType, path2uri, TypeResolver,
   StructEntity, ABIEntity, CompileResult, AliasEntity, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1
@@ -33,10 +33,10 @@ export interface VerifyResult {
   success: boolean;
   error?: VerifyError;
 }
-export const CURRENT_CONTRACT_DESCRIPTION_VERSION = 9;
+export const CURRENT_CONTRACT_ARTIFACT_VERSION = 9;
 
 export const SUPPORTED_MINIMUM_VERSION = 8;
-export interface ContractDescription {
+export interface ContractArtifact {
   version: number;
   compilerVersion: string;
   buildType: string;
@@ -61,7 +61,7 @@ export type StepIndex = number;
 
 export class AbstractContract {
 
-  public static desc: ContractDescription;
+  public static artifact: ContractArtifact;
   public static opcodes?: OpCode[];
   public static hex: string;
   public static abi: ABIEntity[];
@@ -108,28 +108,28 @@ export class AbstractContract {
   }
 
   get sourceMapFile(): string {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
-    return desc.sourceMapFile;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    return artifact.sourceMapFile;
   }
 
   get file(): string {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
-    return desc.file;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    return artifact.file;
   }
 
   get contractName(): string {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
-    return desc.contract;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    return artifact.contract;
   }
 
   get stateProps(): ParamEntity[] {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
-    return desc.stateProps || [];
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    return artifact.stateProps || [];
   }
 
   get version(): number {
-    const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
-    return desc.version || 0;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    return artifact.version || 0;
   }
 
   addFunctionCall(f: FunctionCall): void {
@@ -307,9 +307,9 @@ export class AbstractContract {
       }
     } else if (this.version <= 8) {
 
-      const desc = Object.getPrototypeOf(this).constructor.desc as ContractDescription;
+      const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
 
-      const sourceMap = loadSourceMapfromDesc(desc);
+      const sourceMap = loadSourceMapfromArtifact(artifact);
 
 
       if (sourceMap.length > 0) {
@@ -692,31 +692,31 @@ const invalidMethodName = ['arguments',
 
 
 
-export function buildContractClass(desc: ContractDescription | CompileResult): typeof AbstractContract {
+export function buildContractClass(artifact: ContractArtifact | CompileResult): typeof AbstractContract {
 
 
-  if (desc instanceof CompileResult) {
-    desc = desc.toDesc();
+  if (artifact instanceof CompileResult) {
+    artifact = artifact.toArtifact();
   }
 
-  if (!desc.contract) {
-    throw new Error('missing field `contract` in description');
+  if (!artifact.contract) {
+    throw new Error('Missing field `contract` in artifact');
   }
 
-  if (!desc.version) {
-    throw new Error('missing field `version` in description');
+  if (!artifact.version) {
+    throw new Error('Missing field `version` in artifact');
   }
 
-  if (desc.version < SUPPORTED_MINIMUM_VERSION) {
-    throw new Error(`Contract description version deprecated, The minimum version number currently supported is ${SUPPORTED_MINIMUM_VERSION}`);
+  if (artifact.version < SUPPORTED_MINIMUM_VERSION) {
+    throw new Error(`Contract artifact version deprecated, The minimum version number currently supported is ${SUPPORTED_MINIMUM_VERSION}`);
   }
 
-  if (!desc.abi) {
-    throw new Error('missing field `abi` in description');
+  if (!artifact.abi) {
+    throw new Error('Missing field `abi` in artifact');
   }
 
-  if (!desc.hex) {
-    throw new Error('missing field `hex` in description');
+  if (!artifact.hex) {
+    throw new Error('Missing field `hex` in artifact');
   }
 
 
@@ -730,12 +730,12 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
 
   };
 
-  ContractClass.desc = desc;
-  ContractClass.resolver = buildTypeResolverFromDesc(desc);
-  ContractClass.abi = desc.abi;
-  ContractClass.hex = desc.hex;
-  ContractClass.abiCoder = new ABICoder(desc.abi, ContractClass.resolver);
-  ContractClass.stateProps = desc.stateProps || [];
+  ContractClass.artifact = artifact;
+  ContractClass.resolver = buildTypeResolverFromArtifact(artifact);
+  ContractClass.abi = artifact.abi;
+  ContractClass.hex = artifact.hex;
+  ContractClass.abiCoder = new ABICoder(artifact.abi, ContractClass.resolver);
+  ContractClass.stateProps = artifact.stateProps || [];
 
 
 
@@ -797,11 +797,11 @@ export function buildContractClass(desc: ContractDescription | CompileResult): t
 
 
 
-export function buildTypeResolverFromDesc(desc: ContractDescription): TypeResolver {
-  const alias: AliasEntity[] = desc.alias || [];
-  const library: LibraryEntity[] = desc.library || [];
-  const structs: StructEntity[] = desc.structs || [];
-  const contract = desc.contract;
+export function buildTypeResolverFromArtifact(artifact: ContractArtifact): TypeResolver {
+  const alias: AliasEntity[] = artifact.alias || [];
+  const library: LibraryEntity[] = artifact.library || [];
+  const structs: StructEntity[] = artifact.structs || [];
+  const contract = artifact.contract;
   return buildTypeResolver(contract, alias, structs, library);
 }
 

@@ -27,7 +27,7 @@ function compileScryptFile(sourcePath) {
             },
             {
                 outputDir: out,
-                desc: true,
+                artifact: true,
                 hex: true,
                 optimize: false,
                 sourceMap: true,

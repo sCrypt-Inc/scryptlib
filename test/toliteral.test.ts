@@ -1,9 +1,9 @@
 import { assert, expect } from 'chai';
-import { loadDescription } from './helper';
+import { loadArtifact } from './helper';
 import { buildContractClass, } from '../src/contract';
 import { Bytes } from '../src';
 
-const BytesLiteralContract = buildContractClass(loadDescription('bytesLiteral.json'));
+const BytesLiteralContract = buildContractClass(loadArtifact('bytesLiteral.json'));
 
 const bytesLiteral = new BytesLiteralContract();
 

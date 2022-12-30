@@ -21,7 +21,7 @@ function compileAllContracts() {
 
     const result = compileContract(filePath, {
       out: out,
-      desc: true,
+      artifact: true,
       sourceMap: true,
     });
 
@@ -34,9 +34,9 @@ function compileAllContracts() {
 }
 
 
-function copyDescFiles() {
-  const descs = glob.sync(join(__dirname, 'desc', './*.json'));
-  descs.forEach(filePath => {
+function copyArtifactFiles() {
+  const artifacts = glob.sync(join(__dirname, 'artifacts', './*.json'));
+  artifacts.forEach(filePath => {
     copyFileSync(filePath, join(__dirname, '..', '..', 'out', basename(filePath)))
   })
 }
@@ -44,4 +44,4 @@ function copyDescFiles() {
 
 compileAllContracts();
 
-copyDescFiles();
+copyArtifactFiles();

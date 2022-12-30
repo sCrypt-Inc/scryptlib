@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
 import { Bytes, } from '../src/scryptTypes'
 import { Contract, ContractClass, num2bin } from '../src';
@@ -41,8 +41,8 @@ describe('test.mapTest', () => {
         let mapTest: Contract, MapTest: ContractClass;
 
         before(() => {
-            const jsonDescr = loadDescription('mapTest.json')
-            MapTest = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('mapTest.json')
+            MapTest = buildContractClass(jsonArtifact)
             mapTest = new MapTest(Bytes(''))
         })
 

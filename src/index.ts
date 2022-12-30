@@ -21,7 +21,7 @@ export {
   OpCodeType, SupportedParamType, PubKeyHash, TxContext, ContractClass, Contract,
   StructObject, TypeResolver, PrimitiveTypes, AsmVarValues,
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
-  BuildType, RelatedInformation, ContractDescription, VerifyResult, VerifyError, AbstractContract,
+  BuildType, RelatedInformation, ContractArtifact, VerifyResult, VerifyError, AbstractContract,
   DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, DEFAULT_FLAGS
 } from './internal';
 

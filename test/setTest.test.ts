@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass, Contract, ContractClass } from '../src/contract'
 import { Bytes, StructObject, } from '../src/scryptTypes'
 const inputIndex = 0;
@@ -13,8 +13,8 @@ describe('test.setTest', () => {
 
 
         before(() => {
-            const jsonDescr = loadDescription('setTest.json')
-            SetTest = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('setTest.json')
+            SetTest = buildContractClass(jsonArtifact)
 
             setTest = new SetTest()
         })

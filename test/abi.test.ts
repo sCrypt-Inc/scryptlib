@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
 import { bsv, signTx, toHex } from '../src/utils';
@@ -11,12 +11,12 @@ const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 
-const jsonDescr = loadDescription('p2pkh.json');
-const DemoP2PKH = buildContractClass(jsonDescr);
+const jsonArtifact = loadArtifact('p2pkh.json');
+const DemoP2PKH = buildContractClass(jsonArtifact);
 const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
 
-const personDescr = loadDescription('person.json');
-const PersonContract = buildContractClass(personDescr);
+const personArtifact = loadArtifact('person.json');
+const PersonContract = buildContractClass(personArtifact);
 
 
 let man = {
@@ -268,7 +268,7 @@ describe('ABICoder', () => {
     describe('when contract has explict constructor', () => {
       it('encodeConstructorCall RegExp replace error fix issue #86', () => {
 
-        const DemoCoinToss = buildContractClass(loadDescription('cointoss.json'));
+        const DemoCoinToss = buildContractClass(loadArtifact('cointoss.json'));
         let demoCoinToss = new DemoCoinToss(
           PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
           PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
@@ -284,7 +284,7 @@ describe('ABICoder', () => {
 
       it('encodeConstructorCall RegExp replace error fix issue #86', () => {
 
-        const MultiSig = buildContractClass(loadDescription('multiSig.json'));
+        const MultiSig = buildContractClass(loadArtifact('multiSig.json'));
         let multiSig = new MultiSig([Ripemd160("2f87fe26049415441f024eb134ce54bbafd78e96"), Ripemd160("9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9"), Ripemd160("58ddca9a92ebf90edf505a172fcef1197b376f5d")]);
 
         expect(multiSig.lockingScript.toASM()).to.be.contain('2f87fe26049415441f024eb134ce54bbafd78e96 9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9 58ddca9a92ebf90edf505a172fcef1197b376f5d')
@@ -312,7 +312,7 @@ describe('string as bigInt', () => {
 
   describe('test DemoCoinToss', () => {
 
-    const DemoCoinToss = buildContractClass(loadDescription('cointoss.json'));
+    const DemoCoinToss = buildContractClass(loadArtifact('cointoss.json'));
     it('test lockingScript', () => {
 
       let demoCoinToss = new DemoCoinToss(
@@ -328,7 +328,7 @@ describe('string as bigInt', () => {
     })
 
     describe('test Demo', () => {
-      const Demo = buildContractClass(loadDescription('demo.json'));
+      const Demo = buildContractClass(loadArtifact('demo.json'));
       it('test demo', () => {
 
 
@@ -373,8 +373,8 @@ describe('string as bigInt', () => {
 
     describe('test MDArray', () => {
 
-      const jsonDescr = loadDescription('mdarray.json');
-      const MDArray = buildContractClass(jsonDescr);
+      const jsonArtifact = loadArtifact('mdarray.json');
+      const MDArray = buildContractClass(jsonArtifact);
 
 
       it('test lockingScript', () => {

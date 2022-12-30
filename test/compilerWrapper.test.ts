@@ -1,13 +1,13 @@
 import { assert, expect } from 'chai';
 import * as path from "path";
-import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
+import { loadArtifact, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
 import { ABIEntityType, compilerVersion, compile } from '../src/compilerWrapper';
 import { compileContract, compileContractAsync, bsv, signTx } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { buildContractClass } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
-import { Ripemd160, PubKey, toHex, Sig } from '../src';
+import { Ripemd160, PubKey, toHex, Sig, ContractArtifact } from '../src';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -21,7 +21,7 @@ describe('compile()', () => {
 
   it('should generate description file properly', () => {
 
-    const content = loadDescription('bar.json');
+    const content = loadArtifact('bar.json');
 
     assert.deepEqual(content.abi, [
       {
@@ -55,7 +55,7 @@ describe('compile()', () => {
   })
 
   it('should generate structs properly', () => {
-    const result = loadDescription('person.json');
+    const result = loadArtifact('person.json');
 
     assert.equal(result.structs.length, 2);
 
@@ -105,16 +105,14 @@ describe('compile()', () => {
 
 
 
-  describe('desc should be as expected', () => {
-    let desc;
+  describe('artifact should be as expected', () => {
+    let artifact: ContractArtifact;
     before(() => {
-      desc = loadDescription('tokenUtxo.json');
+      artifact = loadArtifact('tokenUtxo.json');
     });
 
-
-
     it('compileResult file should be main contract', () => {
-      expect(desc.file).to.contains("tokenUtxo.scrypt");
+      expect(artifact.file).to.contains("tokenUtxo.scrypt");
     })
 
   });
@@ -362,7 +360,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with const var should be replace with IntLiteral', () => {
-      const result = loadDescription('const.json');
+      const result = loadArtifact('const.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",
@@ -401,7 +399,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with alias should be replace with final type', () => {
-      const result = loadDescription('mdarray.json');
+      const result = loadArtifact('mdarray.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",
@@ -1020,7 +1018,7 @@ describe('compile()', () => {
     const result = compile(
       { path: getContractFilePath('p2pkh.scrypt') },
       {
-        desc: false,
+        artifact: false,
         asm: true,
         ast: true,
         debug: false,
@@ -1052,7 +1050,7 @@ describe('compile()', () => {
     const result = compile(
       { path: getContractFilePath('erc20.scrypt') },
       {
-        desc: false,
+        artifact: false,
         asm: true,
         ast: true,
         debug: false,
@@ -1071,7 +1069,7 @@ describe('compile()', () => {
     const result = compile(
       { path: getContractFilePath('issue146.scrypt') },
       {
-        desc: false,
+        artifact: false,
         asm: true,
         ast: true,
         debug: false,

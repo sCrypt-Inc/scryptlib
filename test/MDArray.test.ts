@@ -1,12 +1,12 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { Bytes, Int } from '../src/scryptTypes';
 
 
-const jsonDescr = loadDescription('mdarray.json');
-const MDArray = buildContractClass(jsonDescr);
+const jsonArtifact = loadArtifact('mdarray.json');
+const MDArray = buildContractClass(jsonArtifact);
 
 describe('MDArray test', () => {
 

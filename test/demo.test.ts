@@ -1,12 +1,12 @@
 import { expect } from 'chai'
-import { loadDescription } from './helper'
+import { loadArtifact } from './helper'
 import { buildContractClass } from '../src/contract'
 
 describe('test.demo', () => {
     let demo;
 
     before(() => {
-        const Demo = buildContractClass(loadDescription('demo.json'))
+        const Demo = buildContractClass(loadArtifact('demo.json'))
         demo = new Demo(1n, 2n)
     })
 

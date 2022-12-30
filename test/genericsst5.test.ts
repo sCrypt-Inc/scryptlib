@@ -1,6 +1,6 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { Bytes, Contract } from '../src';
 
@@ -10,7 +10,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst5', () => {
         let c: Contract, result;
 
-        const C = buildContractClass(loadDescription('genericsst5.json'));
+        const C = buildContractClass(loadArtifact('genericsst5.json'));
         before(() => {
             c = new C([1000000n, [Bytes('')]]);
         });

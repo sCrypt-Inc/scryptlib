@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { loadDescription, newTx } from './helper';
+import { loadArtifact, newTx } from './helper';
 import { buildContractClass } from '../src/contract';
 import { Bool, Bytes, Int, PrivKey, PubKey, Ripemd160, Sha256, SigHashPreimage, SigHashType, OpCodeType, SigHash, Sig } from '../src/scryptTypes';
 import { bsv, getPreimage } from '../src/utils';
@@ -9,7 +9,7 @@ const inputSatoshis = 100000;
 
 const outputAmount = 222222
 
-const StateExample = buildContractClass(loadDescription('state.json'));
+const StateExample = buildContractClass(loadArtifact('state.json'));
 
 
 describe('state_test', () => {
@@ -247,7 +247,7 @@ describe('state_test', () => {
 
     it('should throw if constract does not have any stateful property', () => {
 
-        const Counter = buildContractClass(loadDescription('counter.json'));
+        const Counter = buildContractClass(loadArtifact('counter.json'));
         let counter = new Counter();
 
         expect(() => {
@@ -263,7 +263,7 @@ describe('state_test', () => {
 
     it('should succeeding when not all state properties are provided in getNewStateScript() ', () => {
 
-        const StateCounter = buildContractClass(loadDescription('statecounter.json'));
+        const StateCounter = buildContractClass(loadArtifact('statecounter.json'));
         let counter = new StateCounter(0n, true);
 
         let newLockingScript = counter.getNewStateScript({
@@ -292,7 +292,7 @@ describe('state_test', () => {
 
     it('should fail when wrong value state properties are provided in getNewStateScript() ', () => {
 
-        const StateCounter = buildContractClass(loadDescription('statecounter.json'));
+        const StateCounter = buildContractClass(loadArtifact('statecounter.json'));
         let counter = new StateCounter(0n, true);
 
         let newLockingScript = counter.getNewStateScript({
@@ -322,7 +322,7 @@ describe('state_test', () => {
 
     it('should succeeding when state contract with a constructor with a param', () => {
 
-        const StateCounter = buildContractClass(loadDescription('statecounter1.json'));
+        const StateCounter = buildContractClass(loadArtifact('statecounter1.json'));
         let counter = new StateCounter(6n);
 
         let newLockingScript = counter.getNewStateScript({
@@ -351,7 +351,7 @@ describe('state_test', () => {
 
     it('should succeeding when state contract with a constructor with two param', () => {
 
-        const StateCounter = buildContractClass(loadDescription('statecounter2.json'));
+        const StateCounter = buildContractClass(loadArtifact('statecounter2.json'));
         let counter = new StateCounter(1n, 2n);
 
         let newLockingScript = counter.getNewStateScript({
@@ -379,7 +379,7 @@ describe('state_test', () => {
 
     it('should succeeding when state contract with a constructor with a struct param and an array param', () => {
 
-        const StateCounter = buildContractClass(loadDescription('statecounter3.json'));
+        const StateCounter = buildContractClass(loadArtifact('statecounter3.json'));
 
         let counter = new StateCounter({
             p1: 1n,
@@ -413,7 +413,7 @@ describe('state_test', () => {
 
     it('should succeeding when state property is struct', () => {
 
-        const Counter = buildContractClass(loadDescription('ststate.json'));
+        const Counter = buildContractClass(loadArtifact('ststate.json'));
 
         let counter = new Counter({
             counter: 1000n,
@@ -450,7 +450,7 @@ describe('state_test', () => {
 
     it('should succeeding when state property is array', () => {
 
-        const Counter = buildContractClass(loadDescription('arraystate.json'));
+        const Counter = buildContractClass(loadArtifact('arraystate.json'));
         let counter = new Counter([0n, 1n, 2n]);
 
         let newLockingScript = counter.getNewStateScript({
@@ -478,7 +478,7 @@ describe('state_test', () => {
 
     it('should succeeding state property is mix struct and array', () => {
 
-        const Counter = buildContractClass(loadDescription('mixstate.json'));
+        const Counter = buildContractClass(loadArtifact('mixstate.json'));
         let counter = new Counter({
             counter: 1000n,
             done: true
@@ -532,7 +532,7 @@ describe('state_test', () => {
 
     it('should fail state property with wrong value', () => {
 
-        const Counter = buildContractClass(loadDescription('mixstate.json'));
+        const Counter = buildContractClass(loadArtifact('mixstate.json'));
         let counter = new Counter({
             counter: 1000n,
             done: true

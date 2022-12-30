@@ -1,4 +1,4 @@
-import { getContractFilePath, loadDescription, newTx } from './helper';
+import { getContractFilePath, loadArtifact, newTx } from './helper';
 import { assert, expect } from 'chai';
 import { buildContractClass, buildTypeResolver } from '../src/contract';
 import { Bytes, Int, PubKey, PubKeyHash, Sig, SymbolType } from '../src/scryptTypes';
@@ -9,7 +9,7 @@ import { toHex } from '../src';
 
 
 describe('Alias type check', () => {
-  const AliasContract = buildContractClass(loadDescription('alias.json'));
+  const AliasContract = buildContractClass(loadArtifact('alias.json'));
 
 
   let man = {
@@ -134,8 +134,8 @@ describe('Alias type check', () => {
 
 
     it('should succeeding when call buildTypeResolver', () => {
-      const jsondesc = loadDescription('alias.json');
-      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
+      const jsonArtifact = loadArtifact('alias.json');
+      const resolver = buildTypeResolver(jsonArtifact.contract, jsonArtifact.alias, jsonArtifact.structs, jsonArtifact.library)
       expect(resolver("Age")).deep.equal({
         finalType: 'int',
         symbolType: SymbolType.ScryptType
@@ -330,9 +330,9 @@ describe('Alias type check', () => {
     })
 
     it('should succeeding when resolver generic type', () => {
-      const jsondesc = loadDescription('autoTyped.json');
+      const jsonArtifact = loadArtifact('autoTyped.json');
 
-      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
+      const resolver = buildTypeResolver(jsonArtifact.contract, jsonArtifact.alias, jsonArtifact.structs, jsonArtifact.library)
 
       expect(resolver("LL<int,ST1>")).deep.equal({
         "info": {
@@ -464,12 +464,12 @@ describe('Alias type check', () => {
 
   describe('Alias1Contract check', () => {
 
-    const Alias1Contract = buildContractClass(loadDescription('alias1.json'));
+    const Alias1Contract = buildContractClass(loadArtifact('alias1.json'));
 
 
     it('should succeeding when call buildTypeResolver', () => {
-      const jsondesc = loadDescription('alias1.json');
-      const resolver = buildTypeResolver(jsondesc.contract, jsondesc.alias, jsondesc.structs, jsondesc.library)
+      const jsonArtifact = loadArtifact('alias1.json');
+      const resolver = buildTypeResolver(jsonArtifact.contract, jsonArtifact.alias, jsonArtifact.structs, jsonArtifact.library)
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
         symbolType: SymbolType.ScryptType
@@ -535,8 +535,8 @@ describe('Alias type check', () => {
       const inputSatoshis = 100000;
       const tx = newTx(inputSatoshis);
 
-      const jsonDescr = loadDescription('p2pkh.json');
-      const DemoP2PKH = buildContractClass(jsonDescr);
+      const jsonArtifact = loadArtifact('p2pkh.json');
+      const DemoP2PKH = buildContractClass(jsonArtifact);
       const p2pkh = new DemoP2PKH(PubKeyHash(toHex(pubKeyHash)));
 
       p2pkh.txContext = {
@@ -559,7 +559,7 @@ describe('Alias type check', () => {
 
 
   describe('test resolver_generic', () => {
-    const C = buildContractClass(loadDescription('genericsst_alias.json'));
+    const C = buildContractClass(loadArtifact('genericsst_alias.json'));
 
     it('should succeeding when resolver type', () => {
 

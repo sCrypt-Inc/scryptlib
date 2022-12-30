@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription } from './helper'
+import { loadArtifact } from './helper'
 import { buildContractClass } from '../src/contract'
 import { Bytes } from '../src'
 
@@ -8,8 +8,8 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('generic.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
             testGenericLibray = new TestGenericLibray(12n)
         })
 
@@ -24,9 +24,9 @@ describe('test.generic', () => {
 
         it('test generic output', () => {
 
-            const jsonDescr = loadDescription('generic.json')
+            const jsonArtifact = loadArtifact('generic.json')
 
-            expect(jsonDescr.library).to.deep.include.members([
+            expect(jsonArtifact.library).to.deep.include.members([
                 {
                     "name": "GenericLibray",
                     "params": [
@@ -54,9 +54,9 @@ describe('test.generic', () => {
 
         it('test generic output', () => {
 
-            const jsonDescr = loadDescription('generic_assignment.json')
+            const jsonArtifact = loadArtifact('generic_assignment.json')
 
-            expect(jsonDescr.library).to.deep.include.members([
+            expect(jsonArtifact.library).to.deep.include.members([
                 {
                     "name": "GenericLibray",
                     "params": [],
@@ -73,8 +73,8 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_nested_property.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('generic_nested_property.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
 
             testGenericLibray = new TestGenericLibray([[{
                 a: 101n,
@@ -97,8 +97,8 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_nested_property1.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('generic_nested_property1.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
             testGenericLibray = new TestGenericLibray([[111n]])
         })
 

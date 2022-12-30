@@ -3,13 +3,13 @@ const { expect } = require('chai');
 import { assert } from 'chai';
 import { Int, readLaunchJson } from '../src';
 import { buildContractClass } from '../src/contract';
-import { getRandomInt, loadDescription } from './helper';
+import { getRandomInt, loadArtifact } from './helper';
 
 describe('Test sCrypt contract identity In Javascript', () => {
   let test, result
 
   before(() => {
-    const Test = buildContractClass(loadDescription('identity.json'));
+    const Test = buildContractClass(loadArtifact('identity.json'));
     test = new Test();
   });
 

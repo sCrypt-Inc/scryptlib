@@ -345,13 +345,13 @@ export function isEmpty(obj: any): boolean {
 export function compileContract(file: string, options?: {
   out?: string,
   sourceMap?: boolean,
-  desc?: boolean,
+  artifact?: boolean,
 }): CompileResult {
   console.log(`Compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '../out'),
     sourceMap: false,
-    desc: false,
+    artifact: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -365,7 +365,7 @@ export function compileContract(file: string, options?: {
   const result = compile(
     { path: file },
     {
-      desc: options.desc, outputDir: options.out,
+      artifact: options.artifact, outputDir: options.out,
       sourceMap: options.sourceMap,
       cmdPrefix: findCompiler()
     }
@@ -377,14 +377,14 @@ export function compileContract(file: string, options?: {
 
 export function compileContractAsync(file: string, options?: {
   out?: string,
-  desc?: boolean,
+  artifact?: boolean,
   sourceMap?: boolean
 }): Promise<CompileResult> {
   console.log(`compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '..', 'out'),
     sourceMap: false,
-    desc: false,
+    artifact: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -395,7 +395,7 @@ export function compileContractAsync(file: string, options?: {
   }
 
   return compileAsync({ path: file }, {
-    desc: options.desc, outputDir: options.out,
+    artifact: options.artifact, outputDir: options.out,
     sourceMap: options.sourceMap,
     hex: true,
     cmdPrefix: findCompiler()
@@ -412,7 +412,7 @@ export function newCall(Cls: typeof AbstractContract, args: Array<SupportedParam
 export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFuncArgs: SupportedParamType[],
   pubFunc: string, name: string, program: string, txContext: TxContext, asmArgs: AsmVarValues): FileUri {
 
-  // some desc without sourceMap will not have file property.
+  // some artifact without sourceMap will not have file property.
   if (!program) {
     return '';
   }

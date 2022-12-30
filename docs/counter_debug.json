@@ -1,0 +1,81 @@
+{
+    "version": 2, // version of artifact file, you can look at VERSIONLOG.md to see what has changed in each version
+    "compilerVersion": "0.1.0+commit.312f643", // version of compiler used to produce this file
+    "contract": "DemoP2PKH", // name of the contract
+    "md5": "01234...", // md5 of the contract source code file
+    "structs": [ // All structures defined in the contracts, including dependent contracts
+        {
+            "name": "Person",
+            "params": [
+                {
+                    "name": "age",
+                    "type": "Age",
+                    "finalType": "int"
+                },
+                {
+                    "name": "name",
+                    "type": "Name",
+                    "finalType": "bytes"
+                },
+                {
+                    "name": "token",
+                    "type": "Token",
+                    "finalType": "int"
+                }
+            ]
+        },
+          ...
+    ],
+    "alias": [ // All type alias defined in the contracts, including dependent contracts
+        {
+            "name": "Male",
+            "type": "Person"
+        },
+        {
+            "name": "Female",
+            "type": "Person"
+        },
+          ...
+    ],
+    "abi": [ // ABI of the contract: interfaces of its public functions and constructor.
+        {
+            "type": "constructor",
+            "name": "constructor",
+            "params": [
+                {
+                    "name": "pubKeyHash",
+                    "type": "Ripemd160",
+                    "state": true
+                }
+            ]
+        },
+        {
+            "type": "function",
+            "name": "unlock",
+            "index": 0,
+            "params": [
+                {
+                    "name": "sig",
+                    "type": "Sig"
+                },
+                {
+                    "name": "pubKey",
+                    "type": "PubKey"
+                }
+            ]
+        },
+      ...
+    ],
+    "buildType": "debug", // debug or release build
+    "file": "file:///C:/Users/sCrypt/code/project/mainContract.scrypt", //file uri of the main contract source code file.
+    "asm": "$pubKeyHash OP_OVER OP_HASH160 ...", // locking script of the contract in ASM format, including placeholders for constructor parameters
+    "hex": "", // locking script in hex format
+    "sources": [ // all compiled sources file related to the contract
+        "std",
+        "C:\\Users\\sCrypt\\code\\project\\util.scrypt""C:\\Users\\sCrypt\\code\\project\\contract.scrypt"
+    ],
+    "sourceMap": [ //sourceMap, you need to enable sourceMap setting in sCrypt IDE, default is disabled.
+        "0:76:53:76:58",
+      ...
+    ]
+}

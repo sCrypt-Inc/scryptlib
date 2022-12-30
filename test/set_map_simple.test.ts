@@ -1,6 +1,6 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath } from './helper';
+import { newTx, loadArtifact, getContractFilePath } from './helper';
 import { buildContractClass, Contract } from '../src';
 
 
@@ -8,7 +8,7 @@ describe('GenericStruct  set_map_simple.test', () => {
 
     let c: Contract, result;
 
-    const C = buildContractClass(loadDescription('set_map_simple.json'));
+    const C = buildContractClass(loadArtifact('set_map_simple.json'));
     before(() => {
         c = new C();
     });

@@ -1,16 +1,16 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { Bytes, } from '../src/scryptTypes';
 
 
-const jsonDescr = loadDescription('mixedstruct.json');
-const MixedStruct = buildContractClass(jsonDescr);
+const jsonArtifact = loadArtifact('mixedstruct.json');
+const MixedStruct = buildContractClass(jsonArtifact);
 
-const mixedDescr = loadDescription('mixed.json');
+const mixedArtifact = loadArtifact('mixed.json');
 
-const MixedArrayAndStruct = buildContractClass(mixedDescr);
+const MixedArrayAndStruct = buildContractClass(mixedArtifact);
 
 
 describe('MixedStruct  test', () => {

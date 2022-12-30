@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription } from './helper'
+import { loadArtifact } from './helper'
 import { buildContractClass } from '../src/contract'
 import { bsv, num2bin, SigHashPreimage } from '../src'
 
@@ -8,7 +8,7 @@ describe('test.Counter', () => {
 
     it('should unlock success', () => {
 
-        const Counter = buildContractClass(loadDescription('counter.json'))
+        const Counter = buildContractClass(loadArtifact('counter.json'))
         let counter = new Counter()
 
         counter.setDataPartInASM('00')
@@ -61,7 +61,7 @@ describe('test.Counter', () => {
 
     it('should unlock failed', () => {
 
-        const Counter = buildContractClass(loadDescription('counter.json'))
+        const Counter = buildContractClass(loadArtifact('counter.json'))
         let counter = new Counter()
 
         counter.setDataPartInASM('00')
