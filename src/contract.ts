@@ -582,51 +582,34 @@ export class AbstractContract {
   }
 
 
+  static sortkeys(keys: SupportedParamType[], keyType: string): SupportedParamType[] {
+    return keys.sort((a, b) => {
+      return bsv.crypto.BN.fromSM(Buffer.from(this.flattenSha256(a, keyType), 'hex'), {
+        endian: 'little'
+      }).cmp(bsv.crypto.BN.fromSM(Buffer.from(this.flattenSha256(b, keyType), 'hex'), {
+        endian: 'little'
+      }));
+    });
+  }
+
+
   // returns index of the HashedMap/HashedSet by the key
   static findKeyIndex(collection: Map<SupportedParamType, SupportedParamType> | Set<SupportedParamType>, key: SupportedParamType, keyType: string): bigint {
 
-    if (collection instanceof Map) {
-      const sortedMap = this.sortmap(collection, keyType);
-      const m = [];
+    const keys = [...collection.keys()];
 
-      for (const entry of sortedMap.entries()) {
-        m.push(entry);
+    keys.push(key);
+
+    const sortedKeys = this.sortkeys(keys, keyType);
+
+    const index = sortedKeys.findIndex((entry) => {
+      if (entry === key) {
+        return true;
       }
+      return false;
+    });
 
-      const index = m.findIndex((entry) => {
-        if (entry[0] === key) {
-          return true;
-        }
-        return false;
-      });
-
-      if (index < 0) {
-        throw new Error(`findKeyIndex fail, key: ${key} not found`);
-      }
-
-      return BigInt(index);
-    } else {
-
-      const sortedSet = this.sortset(collection, keyType);
-      const m = [];
-
-      for (const entry of sortedSet.keys()) {
-        m.push(entry);
-      }
-
-      const index = m.findIndex((entry) => {
-        if (entry === key) {
-          return true;
-        }
-        return false;
-      });
-
-      if (index < 0) {
-        throw new Error(`findKeyIndex fail, key: ${key} not found`);
-      }
-
-      return BigInt(index);
-    }
+    return BigInt(index);
 
   }
 

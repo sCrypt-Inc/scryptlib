@@ -89,12 +89,8 @@ describe('test.stateSet', () => {
             testDelete(3n)
 
             testDelete(0n)
+            testDelete(5n, false)
 
-            expect(() => {
-                testDelete(5n, false)
-
-
-            }).to.throw(/findKeyIndex fail, key: 5 not found/)
         })
 
     })
