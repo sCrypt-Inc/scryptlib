@@ -1,6 +1,6 @@
 
 import { expect } from 'chai';
-import { loadDescription, excludeMembers } from './helper';
+import { loadArtifact, excludeMembers } from './helper';
 import { buildContractClass, } from '../src/contract';
 import { Bytes } from '../src';
 import { readFileSync } from 'fs';
@@ -12,7 +12,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst4', () => {
         let c, result;
 
-        const C = buildContractClass(loadDescription('genericsst4_desc.json'));
+        const C = buildContractClass(loadArtifact('genericsst4.json'));
         before(() => {
             const l = [
                 [

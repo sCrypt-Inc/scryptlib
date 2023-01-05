@@ -1,6 +1,6 @@
 import { Argument, arrayTypeAndSize, bin2num, isArrayType, LibraryEntity, ParamEntity, StructEntity, SymbolType, TypeResolver } from '.';
+import { Bool, Bytes, Int, OpCodeType, PrivKey, PubKey, Ripemd160, ScryptType, Sha1, Sha256, Sig, SigHashPreimage, SigHashType, StructObject, SupportedParamType } from './scryptTypes';
 import Stateful from './stateful';
-import { ScryptType, Bool, Bytes, Int, PrivKey, PubKey, Ripemd160, SigHashPreimage, Sha1, Sha256, Sig, OpCodeType, SigHashType, SupportedParamType, StructObject } from './scryptTypes';
 import { bsv } from './utils';
 
 /**

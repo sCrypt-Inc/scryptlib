@@ -1,6 +1,6 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { bsv, getPreimage } from '../src/utils';
 import { SigHashPreimage, StructObject } from '../src';
@@ -15,7 +15,7 @@ describe('GenericStruct  test', () => {
         let map = new Map<bigint, StructObject>();
         let set = new Set<StructObject>();
 
-        const C = buildContractClass(loadDescription('genericsst7_desc.json'));
+        const C = buildContractClass(loadArtifact('genericsst7.json'));
 
         before(() => {
 

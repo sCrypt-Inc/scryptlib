@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
 
 describe('instProp.test', () => {
@@ -7,8 +7,8 @@ describe('instProp.test', () => {
         let c;
 
         before(() => {
-            const jsonDescr = loadDescription('instProp_desc.json')
-            const C = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('instProp.json')
+            const C = buildContractClass(jsonArtifact)
             c = new C()
         })
 

@@ -1,6 +1,6 @@
 
 import { expect } from 'chai';
-import { loadDescription } from './helper';
+import { loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 
 
@@ -9,7 +9,7 @@ describe('GenericStruct  test', () => {
     describe('test genericsst1', () => {
         let c, result;
 
-        const C = buildContractClass(loadDescription('genericsst1_desc.json'));
+        const C = buildContractClass(loadArtifact('genericsst1.json'));
         before(() => {
             const st2a = [{
                 x: 11n

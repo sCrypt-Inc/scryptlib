@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { bsv, buildContractClass, PubKey, Ripemd160, Sig, signTx, toHex } from '../src';
-import { loadDescription, newTx } from './helper';
+import { loadArtifact, newTx } from './helper';
 
 const inputSatoshis = 10000;
 const inputIndex = 0;
@@ -28,7 +28,7 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
     let accumulatorMultiSig, result
 
     before(() => {
-        const AccumulatorMultiSig = buildContractClass(loadDescription('accumulatorMultiSig_desc.json'))
+        const AccumulatorMultiSig = buildContractClass(loadArtifact('accumulatorMultiSig.json'))
         accumulatorMultiSig = new AccumulatorMultiSig(2n,
             [Ripemd160(toHex(publicKeyHash1)), Ripemd160(toHex(publicKeyHash2)), Ripemd160(toHex(publicKeyHash3))]);
 

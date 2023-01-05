@@ -1,6 +1,6 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { bsv, getPreimage } from '../src/utils';
 import { Bytes, SigHashPreimage } from '../src';
@@ -17,7 +17,7 @@ describe('String.test', () => {
 
     let instance, result;
 
-    const Test = buildContractClass(loadDescription('stringbytes_desc.json'));
+    const Test = buildContractClass(loadArtifact('stringbytes.json'));
     before(() => {
       instance = new Test();
     });
@@ -54,7 +54,7 @@ describe('String.test', () => {
 
     let instance, result;
 
-    const Test = buildContractClass(loadDescription('stringbytes1_desc.json'));
+    const Test = buildContractClass(loadArtifact('stringbytes1.json'));
 
     before(() => {
       instance = new Test([Bytes("1234ab"), stringToBytes("你好world"), stringToBytes("abcd"), stringToBytes("こんにちは"),
@@ -108,7 +108,7 @@ aa`;
 
     let instance, result;
 
-    const Logger = buildContractClass(loadDescription('stringbytes2_desc.json'));
+    const Logger = buildContractClass(loadArtifact('stringbytes2.json'));
 
     before(() => {
       instance = new Logger(stringToBytes("message:"));
@@ -147,7 +147,7 @@ aa`;
 
     let instance, result;
 
-    const HelloWorld = buildContractClass(loadDescription('helloworld_desc.json'));
+    const HelloWorld = buildContractClass(loadArtifact('helloworld.json'));
     before(() => {
       instance = new HelloWorld();
     });

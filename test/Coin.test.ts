@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
 import { PubKey, PubKeyHash, SigHashPreimage, Sig } from '../src/scryptTypes'
 import { bsv, getPreimage, signTx } from '../src/utils';
@@ -23,8 +23,8 @@ const pkhReceiver1 = PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKey
 
 describe('Coin.test', () => {
 
-    const jsonDescr = loadDescription('Coin_desc.json')
-    const Coin = buildContractClass(jsonDescr)
+    const jsonArtifact = loadArtifact('Coin.json')
+    const Coin = buildContractClass(jsonArtifact)
 
     describe('Coin.test', () => {
         let coin;

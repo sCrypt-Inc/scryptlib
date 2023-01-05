@@ -27,7 +27,7 @@ function compileScryptFile(sourcePath) {
             },
             {
                 outputDir: out,
-                desc: true,
+                artifact: true,
                 hex: true,
                 optimize: false,
                 sourceMap: true,
@@ -42,7 +42,7 @@ function compileScryptFile(sourcePath) {
             exit(1);
         }
 
-        const output = path.join(out, `${path.basename(sourcePath, '.scrypt')}_desc.json`);
+        const output = path.join(out, `${path.basename(sourcePath, '.scrypt')}.json`);
 
         console.log(`${chalk.green("✔")} ${chalk.green.bold("Compiling succeeded")} with output: ${output}`);
 

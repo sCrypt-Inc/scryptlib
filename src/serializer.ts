@@ -1,4 +1,4 @@
-import { Bool, Bytes, Int, SupportedParamType, isBytes, ScryptType } from './scryptTypes';
+import { Bool, Bytes, Int, isBytes, ScryptType, SupportedParamType } from './scryptTypes';
 import { bsv } from './utils';
 
 

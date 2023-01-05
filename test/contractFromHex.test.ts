@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import {
   buildContractClass,
   AbstractContract,
@@ -16,11 +16,11 @@ const inputSatoshis = 100000
 const tx = newTx(inputSatoshis)
 const txContext = { inputSatoshis, tx }
 
-const jsonDescr = loadDescription('p2pkh_desc.json')
+const jsonArtifact = loadArtifact('p2pkh.json')
 
 describe('simple scrypt', () => {
   describe('new instance', () => {
-    const Simple = buildContractClass(loadDescription('simple_desc.json'))
+    const Simple = buildContractClass(loadArtifact('simple.json'))
 
     let instance: any
     let result: VerifyResult
@@ -54,7 +54,7 @@ describe('simple scrypt', () => {
 })
 
 describe('create instance from UTXO Hex', () => {
-  const Simple = buildContractClass(loadDescription('simple_desc.json'))
+  const Simple = buildContractClass(loadArtifact('simple.json'))
 
   let instance: any
   let result: VerifyResult
@@ -120,7 +120,7 @@ describe('create instance from UTXO Hex', () => {
 })
 
 describe('buildContractClass and create instance from script', () => {
-  const DemoP2PKH = buildContractClass(jsonDescr)
+  const DemoP2PKH = buildContractClass(jsonArtifact)
 
   describe('instance from an exist script ', () => {
     let instance: any
@@ -260,7 +260,7 @@ describe('buildContractClass and create instance from script', () => {
 
       describe('when build a contract which have Implicit constructor from asm', () => {
 
-        const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgs_desc.json'));
+        const ConstructorArgsContract = buildContractClass(loadArtifact('constructorArgs.json'));
 
         it('should get right constructor args', () => {
 
@@ -326,7 +326,7 @@ describe('buildContractClass and create instance from script', () => {
 
     describe('when build a contract which have explicit constructor from asm', () => {
 
-      const ConstructorArgsContract = buildContractClass(loadDescription('constructorArgsExplicit_desc.json'));
+      const ConstructorArgsContract = buildContractClass(loadArtifact('constructorArgsExplicit.json'));
 
       it('should get right constructor args', () => {
 
@@ -391,7 +391,7 @@ describe('buildContractClass and create instance from script', () => {
 
   describe('when build a contract which have library param in constructor from asm', () => {
 
-    const Test = buildContractClass(loadDescription('LibAsState1_desc.json'));
+    const Test = buildContractClass(loadArtifact('LibAsState1.json'));
 
     it('should get right constructor args', () => {
 

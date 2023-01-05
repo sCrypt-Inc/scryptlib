@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass, Contract, ContractClass } from '../src/contract'
 import { Bytes } from '../src/scryptTypes'
 
@@ -10,8 +10,8 @@ describe('test.hashedmap', () => {
         let map = new Map<bigint, any>();
 
         before(() => {
-            const jsonDescr = loadDescription('hashedmap_desc.json')
-            C = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('hashedmap.json')
+            C = buildContractClass(jsonArtifact)
 
             map.set(22n, Bytes("f1"))
             map.set(3n, Bytes("99"))

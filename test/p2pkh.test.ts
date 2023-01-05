@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription } from './helper'
+import { loadArtifact } from './helper'
 import { buildContractClass } from '../src/contract'
 import { bsv, Ripemd160, toHex, Sig, PubKey } from '../src'
 
@@ -11,7 +11,7 @@ describe('test.P2PKH', () => {
 
     it('should unlock success', () => {
 
-        const DemoP2PKH = buildContractClass(loadDescription('p2pkh_desc.json'))
+        const DemoP2PKH = buildContractClass(loadArtifact('p2pkh.json'))
         let p2pkh = new DemoP2PKH(Ripemd160(toHex(publicKeyHash)))
 
         const inputIndex = 0;

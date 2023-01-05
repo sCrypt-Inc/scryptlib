@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from '../helper'
+import { loadArtifact, newTx } from '../helper'
 import { buildContractClass } from '../../src/contract'
 
 describe('test.issue146', () => {
@@ -7,8 +7,8 @@ describe('test.issue146', () => {
         let test;
 
         before(() => {
-            const jsonDescr = loadDescription('issue146_desc.json')
-            const OpIfDup = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('issue146.json')
+            const OpIfDup = buildContractClass(jsonArtifact)
             test = new OpIfDup()
         })
 

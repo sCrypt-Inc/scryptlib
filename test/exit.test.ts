@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
 import { bsv } from '../src/utils'
 
@@ -16,8 +16,8 @@ describe('test.Exit', () => {
         let exit;
 
         before(() => {
-            const jsonDescr = loadDescription('exit_desc.json')
-            const Exit = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('exit.json')
+            const Exit = buildContractClass(jsonArtifact)
             exit = new Exit(0n)
         })
 

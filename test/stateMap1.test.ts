@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { bsv, getPreimage, Contract, ContractClass, buildContractClass, SigHashPreimage } from '../src';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -12,8 +12,8 @@ describe('test.stateMap1', () => {
         let map = new Map<bigint, bigint>();
 
         before(() => {
-            const jsonDescr = loadDescription('stateMap1_desc.json')
-            StateMapTest = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('stateMap1.json')
+            StateMapTest = buildContractClass(jsonArtifact)
             mapTest = new StateMapTest(StateMapTest.toHashedMap(map, "HashedMap<int, int>"))
         })
 

@@ -17,11 +17,11 @@ A smart contract is compiled to a locking script template. A contract function c
 
 By using `scryptlib`, both scripts can be obtained with ease.
 
-## Contract Description File
+## Contract Artifact File
 
-The compiler output results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract description file**](docs/counter_debug_desc.json).
+The compiler output results in a JSON file. It’s a representation used to build locking and unlocking scripts. We call this file a [**contract artifact file**](docs/counter_debug.json).
 
-There are three ways to generate this file (named as `xxx_desc.json`):
+There are three ways to generate this file (named as `<contract_name>.json`):
 
 1. Use [**sCrypt VS Code extension**](https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt) to compile manually;
 2. Use the function `compile` programmatically:
@@ -35,7 +35,7 @@ There are three ways to generate this file (named as `xxx_desc.json`):
       path: contractFilePath  //  the file path of the contract
     },
     {
-      desc: true  // set this flag to be `true` to get the description file output
+      artifact: true  // set this flag to be `true` to get the artifact file output
       asm: true // set this flag to be `true` to get the asm file output
       optimize: false //set this flag to be `true` to get optimized asm opcode
       sourceMap: true //set this flag to be `true` to get source map
@@ -141,7 +141,7 @@ Access Structure and type aliases by **SDK** :
 
 ```typescript
 
-const PersonContract = buildContractClass(loadDescription('person_desc.json'));
+const PersonContract = buildContractClass(loadArtifact('person.json'));
 
 /*Person is structure and Male, Female are type aliases */
 const { Person, Male, Female } = buildTypeClasses(PersonContract);
@@ -197,7 +197,7 @@ Access Library by **SDK** :
 
 ```typescript
 
-const Test = buildContractClass(loadDescription('test_desc.json'));
+const Test = buildContractClass(loadArtifact('test.json'));
 
 const { L } = buildTypeClasses(Test);
 
@@ -216,9 +216,9 @@ Both **deploying a contract** and **calling a contract function** are achieved b
 
 There are 2 steps.
 ### 1. Get Locking and Unlocking Script
-You can use the description file to build a reflected contract class in Javascript/TypeScript like this:
+You can use the artifact file to build a reflected contract class in Javascript/TypeScript like this:
 ```typescript
-const MyContract = buildContractClass(JSON.parse(descFileContent));
+const MyContract = buildContractClass(JSON.parse(artifactFileContent));
 ```
 To create an instance of the contract class, for example:
 ```typescript
@@ -351,7 +351,7 @@ In addition to using a constructor to create a contract, you can also use a raw 
 ```typescript
 const axios = require('axios');
 
-const Counter = buildContractClass(loadDesc("counter_debug_desc.json"));
+const Counter = buildContractClass(loadArtifact("counter_debug.json"));
 let response = await axios.get("https://api.whatsonchain.com/v1/bsv/test/tx/7b9bc5c67c91a3caa4b3212d3a631a4b61e5c660f0369615e6e3a969f6bef4de/hex")
 // constructor from raw Transaction.
 let counter = Counter.fromTransaction(response.data, 0/** output index**/);

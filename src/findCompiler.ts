@@ -1,11 +1,11 @@
 
-import { join, resolve } from 'path';
-import * as minimist from 'minimist';
+import { execSync } from 'child_process';
 import { existsSync, readdirSync, statSync } from 'fs';
+import * as minimist from 'minimist';
+import * as os from 'os';
+import { join, resolve } from 'path';
 
 import compareVersions = require('compare-versions');
-import { execSync } from 'child_process';
-import * as os from 'os';
 import showNoCompilerFound = require('../util/showerror');
 
 

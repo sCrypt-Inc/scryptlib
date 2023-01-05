@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { Contract, buildContractClass, ContractClass } from '../src/contract'
 import { Bytes, SigHashPreimage, } from '../src/scryptTypes'
 import { bsv, getPreimage } from '../src/utils';
@@ -14,8 +14,8 @@ describe('test.stateMapTest', () => {
         let map = new Map<bigint, bigint>();
 
         before(() => {
-            const jsonDescr = loadDescription('stateMap_desc.json')
-            StateMapTest = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('stateMap.json')
+            StateMapTest = buildContractClass(jsonArtifact)
             mapTest = new StateMapTest(StateMapTest.toHashedMap(map, "HashedMap<int, int>")) // empty initial map
         })
 
@@ -134,8 +134,8 @@ describe('test.stateMapTest', () => {
     describe('stateMapTest: library as state', () => {
         let mapTest;
 
-        const jsonDescr = loadDescription('LibAsState2_desc.json')
-        const Test = buildContractClass(jsonDescr)
+        const jsonArtifact = loadArtifact('LibAsState2.json')
+        const Test = buildContractClass(jsonArtifact)
         let map = new Map<bigint, bigint>();
 
         before(() => {

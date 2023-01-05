@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from '../helper'
+import { loadArtifact, newTx } from '../helper'
 import { buildContractClass } from '../../src/contract'
 
 describe('test.issue_compiler_382', () => {
@@ -7,8 +7,8 @@ describe('test.issue_compiler_382', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('issue_compiler_382_desc.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('issue_compiler_382.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
             testGenericLibray = new TestGenericLibray()
         })
 

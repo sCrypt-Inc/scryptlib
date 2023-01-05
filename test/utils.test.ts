@@ -9,7 +9,7 @@ import {
   buildOpreturnScript, buildPublicKeyHashScript, toHex, signTx, parseAbiFromUnlockingScript,
 
 } from '../src'
-import { getContractFilePath, getRandomInt, loadDescription, newTx } from './helper';
+import { getContractFilePath, getRandomInt, loadArtifact, newTx } from './helper';
 import { tmpdir } from 'os'
 import { FunctionCall } from '../src/abi';
 import { checkSupportedParamType } from '../src/typeCheck';
@@ -548,7 +548,7 @@ describe('utils', () => {
       let ackermann, result;
 
       before(() => {
-        const Ackermann = buildContractClass(loadDescription('ackermann_desc.json'));
+        const Ackermann = buildContractClass(loadArtifact('ackermann.json'));
         ackermann = new Ackermann(2n, 1n);
       });
 
@@ -596,9 +596,9 @@ describe('utils', () => {
 
   describe('flatternParams() ', () => {
 
-    const Counter = buildContractClass(loadDescription('mixstate_desc.json'));
+    const Counter = buildContractClass(loadArtifact('mixstate.json'));
 
-    const Alias = buildContractClass(loadDescription('alias_desc.json'));
+    const Alias = buildContractClass(loadArtifact('alias.json'));
 
 
 
@@ -839,8 +839,8 @@ describe('utils', () => {
       const publicKey = privateKey.publicKey;
       const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
       const inputSatoshis = 100000;
-      const jsonDescr = loadDescription('p2pkh_desc.json');
-      const DemoP2PKH = buildContractClass(jsonDescr);
+      const jsonArtifact = loadArtifact('p2pkh.json');
+      const DemoP2PKH = buildContractClass(jsonArtifact);
       const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
       const tx = newTx(inputSatoshis);
       const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
@@ -861,8 +861,8 @@ describe('utils', () => {
 
     it('test parseAbiFromUnlockingScript when contract only have multiple public function', () => {
 
-      const jsonDescr = loadDescription('mdarray_desc.json');
-      const MDArray = buildContractClass(jsonDescr);
+      const jsonArtifact = loadArtifact('mdarray.json');
+      const MDArray = buildContractClass(jsonArtifact);
 
       let mdArray = new MDArray([[
         [1n, 2n, 3n, 4n],
@@ -901,8 +901,8 @@ describe('utils', () => {
   describe('bitwise', () => {
     let bitwise
     before(() => {
-      const jsonDescr = loadDescription('intbitwise_desc.json')
-      const Intbitwise = buildContractClass(jsonDescr)
+      const jsonArtifact = loadArtifact('intbitwise.json')
+      const Intbitwise = buildContractClass(jsonArtifact)
       bitwise = new Intbitwise()
     })
 

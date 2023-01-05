@@ -1,5 +1,5 @@
 
-import { getContractFilePath, loadDescription, newTx } from './helper';
+import { getContractFilePath, loadArtifact, newTx } from './helper';
 import { assert, expect } from 'chai';
 import { buildContractClass } from '../src/contract';
 import { Bytes, SigHashPreimage, Ripemd160 } from '../src/scryptTypes';
@@ -36,7 +36,7 @@ describe('Test advancedTokenSale.test', () => {
   let saler, preimage, result
 
   before(() => {
-    const AdvancedTokenSale = buildContractClass(loadDescription('advancedTokenSale_desc.json'))
+    const AdvancedTokenSale = buildContractClass(loadArtifact('advancedTokenSale.json'))
     saler = new AdvancedTokenSale(SATS_PER_TOKEN);
 
     // append state as passive data

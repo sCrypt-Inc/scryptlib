@@ -1,5 +1,5 @@
 import { Argument, Arguments, isArrayType, isGenericType, LibraryEntity, ParamEntity, parseGenericType, StructEntity } from '.';
-import { parseLiteral, subscript, toGenericType } from './internal';
+import { subscript, toGenericType } from './internal';
 import { isBytes, ScryptType, StructObject, SupportedParamType, SymbolType, TypeResolver } from './scryptTypes';
 
 

@@ -1,6 +1,4 @@
-import { Int, bsv, Ripemd160, Bytes } from '.';
-import { ScryptType } from './scryptTypes';
-import { toScriptASM } from './serializer';
+import { bsv, Bytes, Int, Ripemd160 } from '.';
 
 /** 
  * bigint can be converted to string with pack

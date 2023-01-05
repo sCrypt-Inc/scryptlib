@@ -1,6 +1,6 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { bsv, getPreimage, signTx } from '../src/utils';
 import { PubKey, toHex } from '../src';
@@ -25,7 +25,7 @@ const receiver = PubKey(toHex(publicKeyReceiver));
 
 describe('Test sCrypt contract erc20 In Javascript', () => {
   let coin, preimage, result, map
-  const Coin = buildContractClass(loadDescription('erc20_desc.json'))
+  const Coin = buildContractClass(loadArtifact('erc20.json'))
   before(() => {
     map = new Map<PubKey, bigint>();
     coin = new Coin(PubKey(toHex(publicKeyMinter)), [0n, Coin.toHashedMap(map, "HashedMap<PubKey, int>")])

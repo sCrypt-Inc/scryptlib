@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from '../helper'
+import { loadArtifact, newTx } from '../helper'
 import { buildContractClass } from '../../src/contract'
 import { PrivKey } from '../../src/scryptTypes'
 import { DebugLaunch, readLaunchJson } from '../../src/internal'
@@ -9,8 +9,8 @@ describe('test.Issue149', () => {
         let test;
 
         before(() => {
-            const jsonDescr = loadDescription('issue149_desc.json')
-            const Issue149 = buildContractClass(jsonDescr)
+            const jsonArtifact = loadArtifact('issue149.json')
+            const Issue149 = buildContractClass(jsonArtifact)
             test = new Issue149()
         })
 

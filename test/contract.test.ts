@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { buildContractClass, AbstractContract, TxContext, VerifyResult } from '../src/contract';
 import { FunctionCall } from '../src/abi';
 import { bsv, signTx } from '../src/utils';
@@ -13,13 +13,13 @@ const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 const txContext = { inputSatoshis, tx };
 
-const jsonDescr = loadDescription('p2pkh_desc.json');
+const jsonArtifact = loadArtifact('p2pkh.json');
 
-const cointoss_desc = loadDescription('cointoss_desc.json');
+const cointossArtifact = loadArtifact('cointoss.json');
 
 describe('check explicit  constructor()', () => {
 
-  const DemoP2PKH = buildContractClass(jsonDescr);
+  const DemoP2PKH = buildContractClass(jsonArtifact);
 
   it('should throw when wrong number of arguments: constructor function', () => {
 
@@ -48,7 +48,7 @@ describe('check explicit  constructor()', () => {
 
 describe('check implicit   constructor()', () => {
 
-  const Cointoss = buildContractClass(cointoss_desc);
+  const Cointoss = buildContractClass(cointossArtifact);
 
   it('should throw when wrong number of arguments', () => {
 
@@ -68,12 +68,12 @@ describe('check implicit   constructor()', () => {
 
 describe('buildContractClass()', () => {
 
-  const DemoP2PKH = buildContractClass(jsonDescr);
+  const DemoP2PKH = buildContractClass(jsonArtifact);
 
   it('should return a reflected contract class object', () => {
     assert.typeOf(DemoP2PKH, 'function');
-    assert.deepEqual(DemoP2PKH.abi, jsonDescr.abi);
-    assert.deepEqual(DemoP2PKH.hex, jsonDescr.hex);
+    assert.deepEqual(DemoP2PKH.abi, jsonArtifact.abi);
+    assert.deepEqual(DemoP2PKH.hex, jsonArtifact.hex);
   })
 
   describe('instance of the returned contract class', () => {

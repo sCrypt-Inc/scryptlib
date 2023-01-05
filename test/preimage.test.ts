@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { AbstractContract, buildContractClass } from '../src/contract'
 import { bsv, getPreimage, getLowSPreimage } from '../src/utils'
 import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'
@@ -11,8 +11,8 @@ const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 const inputSatoshis = 100000
 const tx = newTx(inputSatoshis)
 
-const jsonDescr = loadDescription('p2pkh_desc.json')
-const DemoP2PKH = buildContractClass(jsonDescr)
+const jsonArtifact = loadArtifact('p2pkh.json')
+const DemoP2PKH = buildContractClass(jsonArtifact)
 const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)))
 const inputIndex = 0;
 
@@ -25,8 +25,8 @@ describe('Preimage', () => {
     let ocsPreimage: AbstractContract;
 
     before(() => {
-      const jsonDescr = loadDescription('OCSPreimage_desc.json')
-      const OCSPreimage = buildContractClass(jsonDescr)
+      const jsonArtifact = loadArtifact('OCSPreimage.json')
+      const OCSPreimage = buildContractClass(jsonArtifact)
       ocsPreimage = new OCSPreimage(1n)
     })
 

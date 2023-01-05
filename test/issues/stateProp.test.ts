@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
 import { buildContractClass, SigHashPreimage, Bytes, getPreimage, bsv, toHex, compileContract, AbstractContract } from '../../src/internal'
-import { newTx, loadDescription } from '../helper';
+import { newTx, loadArtifact } from '../helper';
 
 
 const inputSatoshis = 100000;
@@ -13,7 +13,7 @@ describe('Test sCrypt contract stateProp In Javascript', () => {
 
     before(() => {
 
-        const StateProp = buildContractClass(loadDescription('stateProp_desc.json'));
+        const StateProp = buildContractClass(loadArtifact('stateProp.json'));
 
         test = new StateProp([
             { x: 0n, y: true, z: Bytes('00') },

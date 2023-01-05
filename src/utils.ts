@@ -1,25 +1,19 @@
-import { pathToFileURL, fileURLToPath } from 'url';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
+import { parseChunked, stringifyStream } from '@discoveryjs/json-ext';
 import * as bsv from 'bsv';
-import { join, sep } from 'path';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
 import { tmpdir } from 'os';
-import { stringifyStream, parseChunked } from '@discoveryjs/json-ext';
+import { join, sep } from 'path';
 import { decode } from 'sourcemap-codec';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 export { bsv };
 
-import {
-  SupportedParamType, StructEntity, compile,
-  findCompiler, CompileResult, AliasEntity, AbstractContract, AsmVarValues, TxContext, DebugConfiguration, DebugLaunch, FileUri,
-  Arguments,
-  Script, getValidatedHexString, ScryptType, toJSON, isScryptType
-} from './internal';
+import { ABIEntity, LibraryEntity, num2bin, SymbolType, toLiteralArrayType, TypeInfo } from '.';
 import { compileAsync, OpCode, StaticEntity } from './compilerWrapper';
 import { VerifyError } from './contract';
-import { ABIEntity, bin2num, LibraryEntity, num2bin, SymbolType, toLiteralArrayType, TypeInfo } from '.';
-import { arrayTypeAndSizeStr, flatternArg } from './typeCheck';
-import { deserializeArgfromHex } from './deserializer';
+import { AbstractContract, AliasEntity, AsmVarValues, compile, CompileResult, DebugConfiguration, DebugLaunch, FileUri, findCompiler, getValidatedHexString, isScryptType, Script, ScryptType, StructEntity, SupportedParamType, toJSON, TxContext } from './internal';
+import { arrayTypeAndSizeStr } from './typeCheck';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -345,13 +339,13 @@ export function isEmpty(obj: any): boolean {
 export function compileContract(file: string, options?: {
   out?: string,
   sourceMap?: boolean,
-  desc?: boolean,
+  artifact?: boolean,
 }): CompileResult {
   console.log(`Compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '../out'),
     sourceMap: false,
-    desc: false,
+    artifact: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -365,7 +359,7 @@ export function compileContract(file: string, options?: {
   const result = compile(
     { path: file },
     {
-      desc: options.desc, outputDir: options.out,
+      artifact: options.artifact, outputDir: options.out,
       sourceMap: options.sourceMap,
       cmdPrefix: findCompiler()
     }
@@ -377,14 +371,14 @@ export function compileContract(file: string, options?: {
 
 export function compileContractAsync(file: string, options?: {
   out?: string,
-  desc?: boolean,
+  artifact?: boolean,
   sourceMap?: boolean
 }): Promise<CompileResult> {
   console.log(`compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '..', 'out'),
     sourceMap: false,
-    desc: false,
+    artifact: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -395,7 +389,7 @@ export function compileContractAsync(file: string, options?: {
   }
 
   return compileAsync({ path: file }, {
-    desc: options.desc, outputDir: options.out,
+    artifact: options.artifact, outputDir: options.out,
     sourceMap: options.sourceMap,
     hex: true,
     cmdPrefix: findCompiler()
@@ -412,7 +406,7 @@ export function newCall(Cls: typeof AbstractContract, args: Array<SupportedParam
 export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFuncArgs: SupportedParamType[],
   pubFunc: string, name: string, program: string, txContext: TxContext, asmArgs: AsmVarValues): FileUri {
 
-  // some desc without sourceMap will not have file property.
+  // some artifact without sourceMap will not have file property.
   if (!program) {
     return '';
   }
