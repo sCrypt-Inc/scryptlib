@@ -1,13 +1,12 @@
+import { basename, dirname } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, Arguments, FunctionCall, Script, bsv, DEFAULT_FLAGS, resolveType, path2uri, TypeResolver,
-  StructEntity, ABIEntity, CompileResult, AliasEntity, hash160, buildContractCode, JSONParserSync, uri2path, findSrcInfoV2, findSrcInfoV1
+  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, JSONParserSync, path2uri, resolveType, Script, StructEntity, TypeResolver, uri2path
 } from './internal';
-import { SymbolType, TypeInfo, SupportedParamType, HashedMap, HashedSet, Bytes, isScryptType } from './scryptTypes';
-import { basename, dirname } from 'path';
-import { checkSupportedParamType, flatternArg } from './typeCheck';
+import { Bytes, HashedMap, HashedSet, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
+import { checkSupportedParamType, flatternArg } from './typeCheck';
 
 
 export interface TxContext {

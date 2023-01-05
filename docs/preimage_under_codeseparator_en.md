@@ -41,7 +41,7 @@ The following is an example of how to deploy and call the `CheckLockTimeVerifyOC
 const amount = 2000
 
 // get locking script
-const CLTVOCS = buildContractClass(loadDesc('cltvOCS_debug_desc.json'));
+const CLTVOCS = buildContractClass(loadArtifact('cltvOCS_debug.json'));
 cltv = new CLTVOCS(1422674);
 
 // lock fund to the script

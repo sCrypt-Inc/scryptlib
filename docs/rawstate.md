@@ -35,7 +35,7 @@ contract Counter {
 
 
 ```typescript
-const Counter = buildContractClass(loadDescription('counter_desc.json'));
+const Counter = buildContractClass(loadArtifact('counter.json'));
 counter = new Counter();
 const dataPart = counter.dataPart;
 const dataPartASM = counter.dataPart.toASM();

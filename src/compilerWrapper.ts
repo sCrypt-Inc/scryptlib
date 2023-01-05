@@ -1,12 +1,11 @@
+import { ChildProcess, exec, execSync } from 'child_process';
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'fs';
 import { basename, dirname, join } from 'path';
-import { execSync, exec, ChildProcess } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync } from 'fs';
+import {
+  buildTypeResolver, ContractArtifact, CURRENT_CONTRACT_ARTIFACT_VERSION, findCompiler, hash160, md5, path2uri, resolveConstValue, TypeResolver
+} from './internal';
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
-import {
-  path2uri, ContractArtifact, findCompiler, CURRENT_CONTRACT_ARTIFACT_VERSION,
-  buildTypeResolver, TypeResolver, resolveConstValue, hash160, md5
-} from './internal';
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -529,7 +528,7 @@ function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'hex' | 'art
   } else if (target === 'dbg') {
     return join(baseDir, `stdin.${target}.json`);
   } else if (target === 'artifact') {
-    return join(baseDir, `stdin.json`);
+    return join(baseDir, 'stdin.json');
   }
   return join(baseDir, `stdin_${target}.json`);
 }

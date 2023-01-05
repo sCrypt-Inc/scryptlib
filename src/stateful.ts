@@ -1,7 +1,7 @@
 import { AbstractContract, Arguments, bin2num, bsv, num2bin, readBytes } from '.';
 import { deserializeArgfromHex } from './deserializer';
-import { flatternArg, parseLiteral } from './internal';
-import { Int, Bytes, SupportedParamType, ScryptType, Bool, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage, OpCodeType, TypeResolver, isBytes } from './scryptTypes';
+import { flatternArg } from './internal';
+import { Bool, Bytes, Int, isBytes, OpCodeType, PrivKey, PubKey, Ripemd160, ScryptType, Sha1, Sha256, Sig, SigHashPreimage, SigHashType, SupportedParamType, TypeResolver } from './scryptTypes';
 
 export default class Stateful {
 
