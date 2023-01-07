@@ -59,8 +59,8 @@ export type Sha256 = Bytes & { __type: 'Sha256' };
 export type SigHashType = Bytes & { __type: 'SigHashType' };
 export type SigHashPreimage = Bytes & { __type: 'SigHashPreimage' };
 export type OpCodeType = Bytes & { __type: 'OpCodeType' };
-export type HashedSet = Flavor<[Bytes], 'HashedSet'>;
-export type HashedMap = Flavor<[Bytes], 'HashedMap'>;
+export type HashedSet = Flavor<Set<SupportedParamType>, 'HashedSet'>;
+export type HashedMap = Flavor<Map<SupportedParamType, SupportedParamType>, 'HashedMap'>;
 
 
 export function Int(n: number | bigint): Int {
@@ -110,12 +110,12 @@ export function Sha256(b: Bytes): Sha256 {
   return getValidatedHexString(b, false) as Sha256;
 }
 
-export function HashedSet(b: Bytes): HashedSet {
-  return [Bytes(b)] as HashedSet;
+export function HashedSet(set: Set<SupportedParamType>): HashedSet {
+  return set as HashedSet;
 }
 
-export function HashedMap(b: Bytes): HashedMap {
-  return [Bytes(b)] as HashedMap;
+export function HashedMap(map: Map<SupportedParamType, SupportedParamType>): HashedMap {
+  return map as HashedMap;
 }
 
 export enum SigHash {
@@ -147,9 +147,32 @@ export function OpCodeType(b: Bytes): OpCodeType {
   return getValidatedHexString(b) as OpCodeType;
 }
 
+export type SortedItem<T> = {
+  idx: bigint,
+  item: T
+};
+
+export function getMapSortedItem<K, V>(map: Map<K, V>, k: K): SortedItem<K> {
+  return Object.assign({
+    idx: -1n,
+    item: k
+  }, {
+    image: new Map(map)
+  });
+}
+
+export function getSetSortedItem<E>(set: Set<E>, k: E): SortedItem<E> {
+  return Object.assign({
+    idx: -1n,
+    item: k
+  }, {
+    image: new Set(set)
+  });
+}
 
 
-export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | HashedSet | HashedMap;
+
+export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | HashedMap | HashedSet;
 
 
 export type SubBytes = PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType;
@@ -160,8 +183,6 @@ export interface StructObject {
 }
 
 export type SupportedParamType = PrimitiveTypes | StructObject | SupportedParamType[];
-
-
 
 
 export function getValidatedHexString(hex: string, allowEmpty = true): string {
@@ -184,7 +205,8 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
 }
 
 
-export function toJSON(value: SupportedParamType): any {
+
+export function toJSON(value: SupportedParamType): unknown {
 
   if (Array.isArray(value)) {
     const v = value as SupportedParamType[];

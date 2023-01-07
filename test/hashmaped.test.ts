@@ -19,7 +19,7 @@ describe('test.hashedmap', () => {
 
 
 
-            mapTest = new C(C.toHashedMap(map, "HashedMap<int, bytes>"))
+            mapTest = new C(map)
         })
 
 

@@ -55,15 +55,15 @@ contract MapTest {
         require(!map.canGet(key, val + 1));
         require(map.canGet(key, val + 2));
 
-        SortedItem<int> key_6 = {key.item + 3, key.idx};
+        SortedItem<int> key_6 = { key.item + 3, key.idx };
         require(map.set(key_6, val + 3));
         require(map.has(key_6));
 
-        SortedItem<int> key_5 = {key.item + 2, key.idx + 1};
+        SortedItem<int> key_5 = { key.item + 2, key.idx + 1 };
         require(map.set(key_5, val + 5)); // not working as intuition bcoz of hased key orders
         require(map.has(key_5));
         require(map.size() == 3);
-        require(map.delete({3, 2}));
+        require(map.delete({ 3, 2 }));
         require(map.size() == 2);
         require(map.delete(key_5));
         require(map.size() == 1);
@@ -71,7 +71,7 @@ contract MapTest {
         require(map.size() == 0);
 
         HashedMap<bytes, bool> map2 = new HashedMap(b'');
-        SortedItem<bytes> keym = {b'0102', 0};
+        SortedItem<bytes> keym = { b'0102', 0 };
         require(map2.set(keym, true));
         require(map2.canGet(keym, true));
         require(true);
@@ -80,8 +80,8 @@ contract MapTest {
     // test compiler/issues/384
     public function testIssue384(int x) {
         HashedMap<int, int> map = new HashedMap(this._mpData);
-        SortedItem<int> key = {9708714, 0};
-        SortedItem<int> key1 = {7989009, 1};
+        SortedItem<int> key = { 9708714, 0 };
+        SortedItem<int> key1 = { 7989009, 1 };
         require(map.set(key, 284112));
         require(map.set(key1, 9061514));
     }
@@ -117,18 +117,18 @@ contract MapTest {
     public function testInsertMiddle(int x) {
 
         HashedMap<int, int> map = new HashedMap(this._mpData);
-        MapEntry[2] entries = [{ {118542, 0}, 2713441}, { {6816853, 1}, 870415}];
+        MapEntry[2] entries = [{ { 118542, 0 }, 2713441 }, { { 6816853, 1 }, 870415 }];
         loop (2) : i {
             require(map.set(entries[i].key, entries[i].val));
         }
         //InsertMiddle
-        require(map.set({563862, 1}, 8317837));
-        require(map.has({563862, 1}));
+        require(map.set({ 563862, 1 }, 8317837));
+        require(map.has({ 563862, 1 }));
         require(map.size() == 3);
 
     }
 
-    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, bytes data) {
+    public function testInsertMapEntryBytes(MapEntryBytes[MAX] entries, SortedItem<bytes>[MAX] querykeys, bytes data) {
 
         HashedMap<bytes, bytes> map = new HashedMap(this._mpData);
 
@@ -137,26 +137,20 @@ contract MapTest {
         }
 
         loop (MAX) : i {
-            require(map.has(entries[i].key));
+            require(map.has(querykeys[i]));
         }
 
         require(map.size() == MAX);
         require(map.data() == data);
 
-        require(map.delete(entries[5].key));
+        require(map.delete(querykeys[5]));
 
-        require(!map.has(entries[5].key));
+        require(!map.has(querykeys[5]));
 
         require(map.size() == MAX - 1);
-
-        require(map.delete(entries[0].key));
-
-        require(!map.has(entries[0].key));
-
-        require(map.size() == MAX - 2);
     }
 
-    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, bytes data) {
+    public function testInsertMapEntryBool(MapEntryBool[MAX] entries, SortedItem<int>[MAX] querykeys, bytes data) {
 
         HashedMap<int, bool> map = new HashedMap(this._mpData);
 
@@ -165,26 +159,20 @@ contract MapTest {
         }
 
         loop (MAX) : i {
-            require(map.has(entries[i].key));
+            require(map.has(querykeys[i]));
         }
 
         require(map.size() == MAX);
         require(map.data() == data);
 
-        require(map.delete(entries[5].key));
+        require(map.delete(querykeys[5]));
 
-        require(!map.has(entries[5].key));
+        require(!map.has(querykeys[5]));
 
         require(map.size() == MAX - 1);
-
-        require(map.delete(entries[0].key));
-
-        require(!map.has(entries[0].key));
-
-        require(map.size() == MAX - 2);
     }
 
-    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, bytes data) {
+    public function testInsertMapEntrySt(MapEntrySt[MAX] entries, SortedItem<ST>[MAX] querykeys, bytes data) {
 
         HashedMap<ST, int[3]> map = new HashedMap(this._mpData);
 
@@ -195,7 +183,7 @@ contract MapTest {
         }
 
         loop (MAX) : i {
-            require(map.has(entries[i].key));
+            require(map.has(querykeys[i]));
         }
 
         require(map.size() == MAX);

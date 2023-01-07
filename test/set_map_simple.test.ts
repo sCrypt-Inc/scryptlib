@@ -1,7 +1,8 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadArtifact, getContractFilePath } from './helper';
+import { loadArtifact } from './helper';
 import { buildContractClass, Contract } from '../src';
+import { getMapSortedItem, getSetSortedItem } from '../src/scryptTypes';
 
 
 describe('GenericStruct  set_map_simple.test', () => {
@@ -17,10 +18,7 @@ describe('GenericStruct  set_map_simple.test', () => {
         let set = new Set<bigint>();
         const e = 1n;
         set.add(e)
-        result = c.add2Set(({
-            item: 1n,
-            idx: C.findKeyIndex(set, e, "int")
-        })).verify();
+        result = c.add2Set(getSetSortedItem(set, 1n)).verify();
 
         expect(result.success, result.error).to.be.true
     })
@@ -29,10 +27,7 @@ describe('GenericStruct  set_map_simple.test', () => {
         let map = new Map<bigint, bigint>();
         const key = 1n, val = 2n;
         map.set(key, val)
-        result = c.add2Map(({
-            item: key,
-            idx: C.findKeyIndex(map, key, "int")
-        }), val).verify();
+        result = c.add2Map(getMapSortedItem(map, key), val).verify();
 
         expect(result.success, result.error).to.be.true
     })

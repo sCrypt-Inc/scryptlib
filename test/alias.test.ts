@@ -154,6 +154,8 @@ describe('Alias type check', () => {
       })
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("MaleAAA")).deep.equal({
@@ -256,20 +258,98 @@ describe('Alias type check', () => {
         finalType: 'int',
         symbolType: SymbolType.ScryptType
       })
+
       expect(resolver("Person[3]")).deep.equal({
-        finalType: 'Person[3]',
-        symbolType: SymbolType.Struct
+        "info": {
+          "name": "Person",
+          "params": [
+            {
+              "name": "age",
+              "type": "int"
+            },
+            {
+              "name": "name",
+              "type": "bytes"
+            },
+            {
+              "name": "token",
+              "type": "int"
+            }
+          ],
+          "genericTypes": []
+        },
+        generic: undefined,
+        "finalType": "Person[3]",
+        "symbolType": SymbolType.Struct
       })
+
       expect(resolver("MaleAAA[3]")).deep.equal({
-        finalType: 'Person[3]',
-        symbolType: SymbolType.Struct
+        "info": {
+          "name": "Person",
+          "params": [
+            {
+              "name": "age",
+              "type": "int"
+            },
+            {
+              "name": "name",
+              "type": "bytes"
+            },
+            {
+              "name": "token",
+              "type": "int"
+            }
+          ],
+          "genericTypes": []
+        },
+        generic: undefined,
+        "finalType": "Person[3]",
+        "symbolType": "Struct"
       })
       expect(resolver("MaleB[1]")).deep.equal({
         finalType: 'Person[1][3]',
+        "info": {
+          "name": "Person",
+          "params": [
+            {
+              "name": "age",
+              "type": "int"
+            },
+            {
+              "name": "name",
+              "type": "bytes"
+            },
+            {
+              "name": "token",
+              "type": "int"
+            }
+          ],
+          "genericTypes": []
+        },
+        generic: undefined,
         symbolType: SymbolType.Struct
       })
       expect(resolver("MaleC[5]")).deep.equal({
         finalType: 'Person[5][2][3]',
+        "info": {
+          "name": "Person",
+          "params": [
+            {
+              "name": "age",
+              "type": "int"
+            },
+            {
+              "name": "name",
+              "type": "bytes"
+            },
+            {
+              "name": "token",
+              "type": "int"
+            }
+          ],
+          "genericTypes": []
+        },
+        generic: undefined,
         symbolType: SymbolType.Struct
       })
 
@@ -472,22 +552,32 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(jsonArtifact.contract, jsonArtifact.alias, jsonArtifact.structs, jsonArtifact.library)
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenArray")).deep.equal({
         finalType: 'int[1][3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenAA")).deep.equal({
         finalType: 'int[4][5][1][3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Tokens[1]")).deep.equal({
         finalType: 'int[1][3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenArray[4][5]")).deep.equal({
         finalType: 'int[4][5][1][3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
 
@@ -511,10 +601,14 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(result.contract || '', result.alias || [], result.structs || [], result.library || [], result.contracts, result.statics)
       expect(resolver("int[1][SUB]")).deep.equal({
         finalType: 'int[1][3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("int[1][VarAsSub.SUB]")).deep.equal({
         finalType: 'int[1][3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
 
@@ -700,6 +794,8 @@ describe('Alias type check', () => {
 
       expect(C.resolver("INTA")).deep.equal({
         finalType: 'int[3]',
+        generic: undefined,
+        info: undefined,
         symbolType: SymbolType.ScryptType
       })
 

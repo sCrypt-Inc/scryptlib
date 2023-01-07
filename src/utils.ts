@@ -417,9 +417,9 @@ export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFu
     internalConsoleOptions: 'openOnSessionStart',
     name: name,
     program: program,
-    constructorArgs: toJSON(constructorArgs),
+    constructorArgs: toJSON(constructorArgs) as SupportedParamType[],
     pubFunc: pubFunc,
-    pubFuncArgs: toJSON(pubFuncArgs)
+    pubFuncArgs: toJSON(pubFuncArgs) as SupportedParamType[]
   };
 
 
@@ -499,6 +499,8 @@ export function resolveType(type: string, originTypes: Record<string, TypeInfo>,
   const typeInfo = resolveAliasType(originTypes, alias, type);
   if (isArrayType(typeInfo.finalType)) {
     return {
+      generic: typeInfo.generic,
+      info: typeInfo.info,
       finalType: resolveArrayType(contract, typeInfo.finalType, statics),
       symbolType: typeInfo.symbolType
     };

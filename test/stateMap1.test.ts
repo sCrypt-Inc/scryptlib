@@ -14,14 +14,14 @@ describe('test.stateMap1', () => {
         before(() => {
             const jsonArtifact = loadArtifact('stateMap1.json')
             StateMapTest = buildContractClass(jsonArtifact)
-            mapTest = new StateMapTest(StateMapTest.toHashedMap(map, "HashedMap<int, int>"))
+            mapTest = new StateMapTest(map)
         })
 
 
         it('test unlock', () => {
 
             let newLockingScript = mapTest.getNewStateScript({
-                map: StateMapTest.toHashedMap(map, "HashedMap<int, int>"),
+                map: map,
             });
 
             const tx = newTx(inputSatoshis);
@@ -39,7 +39,7 @@ describe('test.stateMap1', () => {
             const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
             const result = mapTest.unlock(SigHashPreimage(preimage)).verify()
             expect(result.success, result.error).to.be.true;
-            mapTest.map = StateMapTest.toHashedMap(map, "HashedMap<int, int>")
+            mapTest.map = map
 
         })
 
@@ -47,7 +47,7 @@ describe('test.stateMap1', () => {
         it('test unlock again', () => {
 
             let newLockingScript = mapTest.getNewStateScript({
-                map: StateMapTest.toHashedMap(map, "HashedMap<int, int>"),
+                map: map,
             });
 
             const tx = newTx(inputSatoshis);
@@ -65,7 +65,7 @@ describe('test.stateMap1', () => {
             const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
             const result = mapTest.unlock(SigHashPreimage(preimage)).verify()
             expect(result.success, result.error).to.be.true;
-            mapTest.map = StateMapTest.toHashedMap(map, "HashedMap<int, int>")
+            mapTest.map = map
 
         })
     })

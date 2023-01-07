@@ -1,9 +1,8 @@
 import { expect } from 'chai'
-import { loadArtifact, newTx } from './helper'
+import { loadArtifact } from './helper'
 import { buildContractClass } from '../src/contract'
-import { Bytes, } from '../src/scryptTypes'
+import { Bytes, getMapSortedItem, StructObject } from '../src/scryptTypes'
 import { Contract, ContractClass, num2bin } from '../src';
-import { StructObject } from '../dist';
 function getRandomInt(): bigint {
     return BigInt(Math.floor(Math.random() * 10000000));
 }
@@ -17,23 +16,56 @@ function getRandomMap(n: bigint) {
 }
 
 
-function getRandomBytesMap(n: bigint) {
-    let map = new Map<Bytes, Bytes>();
-    for (; map.size < n;) {
-        map.set(Bytes(num2bin(getRandomInt(), 8)), Bytes(num2bin(getRandomInt(), 8)));
+function getRandomBytesMap(map: Map<Bytes, Bytes>) {
+    let mapEntrys = [] as any[];
+    for (; map.size < 10;) {
+        let key = Bytes(num2bin(getRandomInt(), 8));
+        let val = Bytes(num2bin(getRandomInt(), 8));
+
+        mapEntrys.push({
+            key: getMapSortedItem(map, key),
+            val: val
+        })
+
+        map.set(key, val);
     }
-    return map;
+
+    return mapEntrys;
 }
 
-function getRandomBoolMap(n: bigint) {
-    let map = new Map<bigint, boolean>();
-    for (; map.size < n;) {
-        map.set(getRandomInt(), getRandomInt() % 2n === 0n);
+function getRandomBoolMap(map: Map<bigint, boolean>) {
+    let mapEntrys = [] as any[];
+    for (; map.size < 10;) {
+        let key = getRandomInt()
+        let val = getRandomInt() % 2n === 0n;
+        mapEntrys.push({
+            key: getMapSortedItem(map, key),
+            val: val
+        })
+        map.set(key, val);
     }
-    return map;
+    return mapEntrys;
 }
 
 
+function getRandomStMap(map: Map<StructObject, bigint[]>) {
+    let mapEntrys = [] as any[];
+    for (; map.size < 10;) {
+        let key = {
+            a: getRandomInt(),
+            b: getRandomInt() % 2n === 0n,
+            c: [Bytes(num2bin(getRandomInt(), 8)), Bytes(num2bin(getRandomInt(), 8)), Bytes(num2bin(getRandomInt(), 8))]
+        };
+
+        let val = [getRandomInt(), getRandomInt(), getRandomInt()];
+        mapEntrys.push({
+            key: getMapSortedItem(map, key),
+            val: val
+        })
+        map.set(key, val);
+    }
+    return mapEntrys;
+}
 
 
 describe('test.mapTest', () => {
@@ -49,10 +81,7 @@ describe('test.mapTest', () => {
         it('test unlock', () => {
             let map = new Map<bigint, bigint>();
             map.set(3n, 1n);
-            const result = mapTest.unlock({
-                item: 3n,
-                idx: MapTest.findKeyIndex(map, 3n, "int")
-            }, 1n).verify()
+            const result = mapTest.unlock(getMapSortedItem(map, 3n), 1n).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -86,41 +115,24 @@ describe('test.mapTest', () => {
 
         it('test testInsertMapEntryBool', () => {
 
-            let map = getRandomBoolMap(10n);
+            let map = new Map<bigint, boolean>();
+            let mapEntrys = getRandomBoolMap(map);
 
+            const querykeys = Array.from(map, ([key, val]) => (getMapSortedItem(map, key)))
 
-            const mapEntrys = Array.from(map, ([key, val]) => ({
-                key: {
-                    item: key,
-                    idx: MapTest.findKeyIndex(map, key, "int")
-                }, val
-            }))
-                .sort((a, b) => {
-                    return Number(a.key.idx - b.key.idx);
-                })
-
-
-            const result = mapTest.testInsertMapEntryBool(mapEntrys, MapTest.toData(map, "HashedMap<int, bool>")).verify()
+            const result = mapTest.testInsertMapEntryBool(mapEntrys, querykeys, MapTest.toData(map, "HashedMap<int, bool>")).verify()
             expect(result.success, result.error).to.be.true;
 
         })
 
         it('test testInsertMapEntryBytes', () => {
 
-            let map = getRandomBytesMap(10n);
+            let map = new Map<Bytes, Bytes>();
+            let mapEntrys = getRandomBytesMap(map);
 
+            const querykeys = Array.from(map, ([key, val]) => (getMapSortedItem(map, key)))
 
-            const mapEntrys = Array.from(MapTest.sortmap(map, "bytes"), ([key, val]) => ({ key, val }))
-                .map((entry, index) => ({
-                    key: {
-                        item: entry.key,
-                        idx: BigInt(index)
-                    },
-                    val: entry.val
-                }))
-
-
-            const result = mapTest.testInsertMapEntryBytes(mapEntrys, MapTest.toData(map, "HashedMap<bytes, bytes>")).verify()
+            const result = mapTest.testInsertMapEntryBytes(mapEntrys, querykeys, MapTest.toData(map, "HashedMap<bytes, bytes>")).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -128,34 +140,13 @@ describe('test.mapTest', () => {
 
         it('test testInsertMapEntrySt', () => {
 
+            let map = new Map<StructObject, bigint[]>();
 
-            function getRandomStMap(n: bigint) {
-                let map = new Map<StructObject, bigint[]>();
-                for (; map.size < n;) {
-                    map.set({
-                        a: getRandomInt(),
-                        b: getRandomInt() % 2n === 0n,
-                        c: [Bytes(num2bin(getRandomInt(), 8)), Bytes(num2bin(getRandomInt(), 8)), Bytes(num2bin(getRandomInt(), 8))]
-                    }, [getRandomInt(), getRandomInt(), getRandomInt()]);
-                }
-                return map;
-            }
+            let mapEntrys = getRandomStMap(map);
 
-            let map = getRandomStMap(10n);
+            const querykeys = Array.from(map, ([key, val]) => (getMapSortedItem(map, key)))
 
-
-            const mapEntrys = Array.from(map, ([key, val]) => ({
-                key: {
-                    item: key,
-                    idx: MapTest.findKeyIndex(map, key, "ST")
-                }, val
-            }))
-                .sort((a, b) => {
-                    return Number(a.key.idx - b.key.idx);
-                })
-
-
-            const result = mapTest.testInsertMapEntrySt(mapEntrys, MapTest.toData(map, "HashedMap<ST, int[3]>")).verify()
+            const result = mapTest.testInsertMapEntrySt(mapEntrys, querykeys, MapTest.toData(map, "HashedMap<ST, int[3]>")).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -164,47 +155,39 @@ describe('test.mapTest', () => {
         it('test testInLoopIf', () => {
 
             let map = new Map<bigint, bigint>();
-
-            map.set(5n, 3n);
-            map.set(9n, 11n);
-            map.set(19n, 22n);
-
-            //init
-
-            const mapEntrys = Array.from(map, ([key, val]) => ({
-                key: {
-                    item: key,
-                    idx: MapTest.findKeyIndex(map, key, "int")
-                }, val
-            }))
-                .sort((a, b) => {
-                    return Number(a.key.idx - b.key.idx);
-                })
-
-            // delete
+            const mapEntrys = [] as any[];
 
             mapEntrys.push({
-                key: {
-                    item: 5n,
-                    idx: MapTest.findKeyIndex(map, 5n, "int")
-                },
+                key: getMapSortedItem(map, 5n),
                 val: 3n
             })
+            map.set(5n, 3n);
+            mapEntrys.push({
+                key: getMapSortedItem(map, 9n),
+                val: 11n
+            })
+            map.set(9n, 11n);
+            mapEntrys.push({
+                key: getMapSortedItem(map, 19n),
+                val: 22n
+            })
+            map.set(19n, 22n);
+
+
+            mapEntrys.push({
+                key: getMapSortedItem(map, 5n),
+                val: 3n
+            })
+
             map.delete(5n)
 
             mapEntrys.push({
-                key: {
-                    item: 9n,
-                    idx: MapTest.findKeyIndex(map, 9n, "int")
-                },
+                key: getMapSortedItem(map, 9n),
                 val: 11n
             })
             map.delete(9n)
             mapEntrys.push({
-                key: {
-                    item: 19n,
-                    idx: MapTest.findKeyIndex(map, 19n, "int")
-                },
+                key: getMapSortedItem(map, 19n),
                 val: 22n
             })
 

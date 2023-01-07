@@ -24,11 +24,11 @@ const minter = PubKey(toHex(publicKeyMinter));
 const receiver = PubKey(toHex(publicKeyReceiver));
 
 describe('Test sCrypt contract erc20 In Javascript', () => {
-  let coin, preimage, result, map
+  let coin, preimage, result, map: Map<PubKey, bigint>
   const Coin = buildContractClass(loadArtifact('erc20.json'))
   before(() => {
     map = new Map<PubKey, bigint>();
-    coin = new Coin(PubKey(toHex(publicKeyMinter)), [0n, Coin.toHashedMap(map, "HashedMap<PubKey, int>")])
+    coin = new Coin(PubKey(toHex(publicKeyMinter)), [0n, map])
   });
 
   const FIRST_MINT = 1000000000n;
@@ -39,7 +39,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     let newLockingScript = coin.getNewStateScript({
       liberc20: {
         _totalSupply: FIRST_MINT,
-        balances: Coin.toHashedMap(map, "HashedMap<PubKey, int>")
+        balances: map
       }
     })
 
@@ -72,7 +72,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
 
     coin.liberc20 = {
       _totalSupply: FIRST_MINT,
-      balances: Coin.toHashedMap(map, "HashedMap<PubKey, int>")
+      balances: map
     };
   });
 
@@ -92,7 +92,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     let newLockingScript = coin.getNewStateScript({
       liberc20: {
         _totalSupply: FIRST_MINT,
-        balances: Coin.toHashedMap(map, "HashedMap<PubKey, int>")
+        balances: map
       }
     })
 
@@ -129,7 +129,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
 
     coin.liberc20 = {
       _totalSupply: FIRST_MINT,
-      balances: Coin.toHashedMap(map, "HashedMap<PubKey, int>")
+      balances: map
     };
 
   });
@@ -154,7 +154,7 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     let newLockingScript = coin.getNewStateScript({
       liberc20: {
         _totalSupply: FIRST_MINT,
-        balances: Coin.toHashedMap(map, "HashedMap<PubKey, int>")
+        balances: map
       }
     })
 

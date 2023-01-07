@@ -19,7 +19,7 @@ describe('GenericStruct  test', () => {
 
         before(() => {
 
-            c = new C(C.toHashedMap(map, "HashedMap<Key, ST0<int>>"), C.toHashedSet(set, "HashedSet<ST0<int>>"));
+            c = new C(map, set);
         });
 
         it('should add element successfully', () => {
@@ -39,8 +39,8 @@ describe('GenericStruct  test', () => {
 
 
             let newLockingScript = c.getNewStateScript({
-                hm: C.toHashedMap(map, "HashedMap<Key, ST0<int>>"),
-                hs: C.toHashedSet(set, "HashedSet<ST0<int>>")
+                hm: map,
+                hs: set
             });
 
             const tx = newTx(inputSatoshis);
@@ -67,8 +67,8 @@ describe('GenericStruct  test', () => {
 
             expect(result.success, result.error).to.be.true
 
-            c.hs = C.toHashedSet(set, "HashedSet<ST0<int>>")
-            c.hm = C.toHashedMap(map, "HashedMap<Key, ST0<int>>")
+            c.hs = set
+            c.hm = map
         })
 
 
@@ -89,8 +89,8 @@ describe('GenericStruct  test', () => {
 
 
             let newLockingScript = c.getNewStateScript({
-                hm: C.toHashedMap(map, "HashedMap<Key, ST0<int>>"),
-                hs: C.toHashedSet(set, "HashedSet<ST0<int>>")
+                hm: map,
+                hs: set
             });
 
             const tx = newTx(inputSatoshis);
@@ -117,8 +117,8 @@ describe('GenericStruct  test', () => {
 
             expect(result.success, result.error).to.be.true
 
-            c.hs = C.toHashedSet(set, "HashedSet<ST0<int>>")
-            c.hm = C.toHashedMap(map, "HashedMap<Key, ST0<int>>")
+            c.hs = set
+            c.hm = map
         })
 
 
@@ -140,8 +140,8 @@ describe('GenericStruct  test', () => {
 
 
             let newLockingScript = c.getNewStateScript({
-                hm: C.toHashedMap(map, "HashedMap<Key, ST0<int>>"),
-                hs: C.toHashedSet(set, "HashedSet<ST0<int>>")
+                hm: map,
+                hs: set
             });
 
             const tx = newTx(inputSatoshis);

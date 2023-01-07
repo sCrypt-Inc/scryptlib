@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadArtifact, newTx } from './helper'
 import { AbstractContract, buildContractClass } from '../src/contract'
-import { Int, SigHashPreimage } from '../src/scryptTypes'
+import { getSetSortedItem, Int, SigHashPreimage } from '../src/scryptTypes'
 import { bsv, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -16,12 +16,12 @@ describe('test.stateSet', () => {
         before(() => {
             const jsonArtifact = loadArtifact('stateSet.json')
             StateSet = buildContractClass(jsonArtifact)
-            stateSet = new StateSet(StateSet.toHashedSet(set, 'HashedSet<int>')) // empty initial set
+            stateSet = new StateSet(set) // empty initial set
         })
 
         function buildTx(set: Set<bigint>) {
             let newLockingScript = stateSet.getNewStateScript({
-                set: StateSet.toHashedSet(set, 'HashedSet<int>'),
+                set: set,
             });
 
             const tx = newTx(inputSatoshis);
@@ -47,12 +47,9 @@ describe('test.stateSet', () => {
                 set.add(key);
                 const tx = buildTx(set);
                 const preimage = getPreimage(tx, stateSet.lockingScript, inputSatoshis)
-                const result = stateSet.insert({
-                    item: key,
-                    idx: StateSet.findKeyIndex(set, key, 'int')
-                }, SigHashPreimage(preimage)).verify()
+                const result = stateSet.insert(getSetSortedItem(set, key), SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
-                stateSet.set = StateSet.toHashedSet(set, 'HashedSet<int>')
+                stateSet.set = set
             }
 
             testInsert(3n);
@@ -77,7 +74,7 @@ describe('test.stateSet', () => {
                 const result = stateSet.delete(key, keyIndex, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.eq(expectedResult);
 
-                stateSet.set = StateSet.toHashedSet(set, 'HashedSet<int>')
+                stateSet.set = set;
             }
 
 

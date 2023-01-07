@@ -2,11 +2,11 @@ import { basename, dirname } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, JSONParserSync, path2uri, resolveType, Script, StructEntity, TypeResolver, uri2path
+  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
 } from './internal';
-import { Bytes, HashedMap, HashedSet, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
+import { Bytes, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
-import { checkSupportedParamType, flatternArg } from './typeCheck';
+import { arrayTypeAndSize, checkSupportedParamType, flatternArg, subArrayType } from './typeCheck';
 
 
 export interface TxContext {
@@ -189,7 +189,8 @@ export class AbstractContract {
     const newState: Arguments = stateArgs.map(arg => {
       if (Object.prototype.hasOwnProperty.call(states, arg.name)) {
         resolveKeys.push(arg.name);
-        const state = states[arg.name];
+        let state = states[arg.name];
+        state = this.transformerArg(state, arg, true);
         const error = checkSupportedParamType(state, arg, this.resolver);
 
         if (error) {
@@ -201,7 +202,7 @@ export class AbstractContract {
             ...arg
           },
           {
-            value: states[arg.name]
+            value: state
           }
         );
       } else {
@@ -482,20 +483,141 @@ export class AbstractContract {
      * all values is hex string, need convert it to number or bytes on using
      */
   get asmVars(): AsmVarValues | null {
-    const ContractClass = Object.getPrototypeOf(this).constructor as typeof AbstractContract;
-    return ContractClass.getAsmVars(this.scriptedConstructor.toHex());
+    return this.ContractClass.getAsmVars(this.scriptedConstructor.toHex());
   }
 
-  public checkArgs(funname: string, params: ParamEntity[], ...args: SupportedParamType[]): void {
+  get ContractClass(): typeof AbstractContract {
+    return Object.getPrototypeOf(this).constructor;
+  }
+
+
+  private transformerArgs(args: SupportedParamType, params: ParamEntity[], state: boolean): SupportedParamType[] {
+    return params.map((p, index) => this.transformerArg(args[index], p, state));
+  }
+
+
+  private transformerArg(arg: SupportedParamType, param: ParamEntity, state: boolean): SupportedParamType {
+
+    const typeInfo = this.resolver(param.type);
+
+    if (isArrayType(typeInfo.finalType)) {
+      const [_, arraySizes] = arrayTypeAndSize(typeInfo.finalType);
+
+      if (!Array.isArray(arg)) {
+        return arg;
+      }
+
+      if (arg.length !== arraySizes[0]) {
+        return arg;
+      }
+
+      const subType = subArrayType(param.type);
+
+      const results = [] as SupportedParamType[];
+
+      for (let i = 0; i < arraySizes[0]; i++) {
+        const elem = arg[i];
+        results.push(this.transformerArg(elem, {
+          name: `${param.name}${subscript(i, arraySizes)}`,
+          type: subType
+        }, state));
+      }
+
+      return results;
+
+    } else if (typeInfo.symbolType === SymbolType.Library) {
+
+      const entity: LibraryEntity = typeInfo.info as LibraryEntity;
+
+      if (entity.name === 'HashedMap') {
+        if (arg instanceof Map) {
+          if (state) {
+            return {
+              _data: this.ContractClass.toData(arg as Map<SupportedParamType, SupportedParamType>, param.type)
+            };
+          } else {
+            return [this.ContractClass.toData(arg as Map<SupportedParamType, SupportedParamType>, param.type)];
+          }
+        }
+      } else if (entity.name === 'HashedSet') {
+        if (arg instanceof Set) {
+          if (state) {
+            return {
+              _data: this.ContractClass.toData(arg as Set<SupportedParamType>, param.type)
+            };
+          } else {
+            return [this.ContractClass.toData(arg as Set<SupportedParamType>, param.type)];
+          }
+        }
+      }
+
+      const params: ParamEntity[] = state ? entity.properties : entity.params;
+
+      if (!state && Array.isArray(arg)) {
+        return params.map((p, index) => {
+          return this.transformerArg(arg[index], p, state);
+        });
+      } else if (state && typeof arg === 'object') {
+        return params.reduce((acc: any, p: ParamEntity) => {
+
+          Object.assign(acc, {
+            [p.name]: this.transformerArg(arg[p.name], p, state)
+          });
+          return acc;
+        }, {});
+      }
+
+
+
+    } else if (typeInfo.symbolType === SymbolType.Struct) {
+
+      if (!Array.isArray(arg) && typeof arg === 'object') {
+        const entity: StructEntity = typeInfo.info as StructEntity;
+
+        if (entity.name === 'SortedItem') {
+          if (arg['idx'] === -1n && (arg['image'] instanceof Map || arg['image'] instanceof Set)) {
+
+            const [_, genericTypes] = parseGenericType(typeInfo.finalType);
+            return Object.assign({}, {
+              idx: this.ContractClass.findKeyIndex(arg['image'], arg['item'], genericTypes[0]),
+              item: arg['item']
+            });
+          }
+
+          return arg;
+        }
+
+        const clone = Object.assign({}, arg);
+        entity.params.forEach(property => {
+          if (arg[property.name]) {
+            clone[property.name] = this.transformerArg(arg[property.name], property, state);
+          }
+        });
+
+        return clone;
+      }
+
+
+    }
+
+    return arg;
+
+  }
+
+
+  public checkArgs(funname: string, params: ParamEntity[], ...args: SupportedParamType[]): SupportedParamType[] {
 
     if (args.length !== params.length) {
       throw new Error(`wrong number of arguments for '${this.contractName}.${funname}', expected ${params.length} but got ${args.length}`);
     }
+
+    const args_ = this.transformerArgs(args, params, false);
     params.forEach((param, index) => {
-      const arg = args[index];
+      const arg = args_[index];
       const error = checkSupportedParamType(arg, param, this.resolver);
       if (error) throw error;
     });
+    return args_;
   }
 
 
@@ -559,7 +681,7 @@ export class AbstractContract {
   }
 
   // sort the map by the result of flattenSha256 of the key
-  static sortmap(map: Map<SupportedParamType, SupportedParamType>, keyType: string): Map<SupportedParamType, SupportedParamType> {
+  private static sortmap(map: Map<SupportedParamType, SupportedParamType>, keyType: string): Map<SupportedParamType, SupportedParamType> {
     return new Map([...map.entries()].sort((a, b) => {
       return bsv.crypto.BN.fromSM(Buffer.from(this.flattenSha256(a[0], keyType), 'hex'), {
         endian: 'little'
@@ -570,7 +692,7 @@ export class AbstractContract {
   }
 
   // sort the set by the result of flattenSha256 of the key
-  static sortset(set: Set<SupportedParamType>, keyType: string): Set<SupportedParamType> {
+  private static sortset(set: Set<SupportedParamType>, keyType: string): Set<SupportedParamType> {
     return new Set([...set.keys()].sort((a, b) => {
       return bsv.crypto.BN.fromSM(Buffer.from(this.flattenSha256(a, keyType), 'hex'), {
         endian: 'little'
@@ -581,7 +703,7 @@ export class AbstractContract {
   }
 
 
-  static sortkeys(keys: SupportedParamType[], keyType: string): SupportedParamType[] {
+  private static sortkeys(keys: SupportedParamType[], keyType: string): SupportedParamType[] {
     return keys.sort((a, b) => {
       return bsv.crypto.BN.fromSM(Buffer.from(this.flattenSha256(a, keyType), 'hex'), {
         endian: 'little'
@@ -632,19 +754,7 @@ export class AbstractContract {
     }
 
     return Bytes(storage);
-  }
 
-  static toHashedMap(collection: Map<SupportedParamType, SupportedParamType>, collectionType: string): HashedMap {
-    const data = this.toData(collection, collectionType);
-    const hashedMap = HashedMap(data);
-
-    return hashedMap;
-  }
-
-  static toHashedSet(collection: Set<SupportedParamType>, collectionType: string): HashedSet {
-    const data = this.toData(collection, collectionType);
-    const hashedSet = HashedSet(data);
-    return hashedSet;
   }
 
 }
@@ -758,6 +868,8 @@ export function buildContractClass(artifact: ContractArtifact | CompileResult): 
         }) as Argument | undefined;
 
         if (arg) {
+
+          value = this.transformerArg(value, arg, true);
 
           const error = checkSupportedParamType(value, arg, this.resolver);
           if (error) throw error;

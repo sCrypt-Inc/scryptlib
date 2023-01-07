@@ -159,12 +159,12 @@ export class ABICoder {
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
 
-    contract.checkArgs('constructor', cParams, ...args);
+    const args_ = contract.checkArgs('constructor', cParams, ...args);
 
     // handle array type
     const flatteredArgs = cParams.flatMap((p, index) => {
       const a = Object.assign({ ...p }, {
-        value: args[index]
+        value: args_[index]
       }) as Argument;
 
       return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
@@ -190,7 +190,7 @@ export class ABICoder {
       args: cParams.map((param, index) => ({
         name: param.name,
         type: param.type,
-        value: args[index]
+        value: args_[index]
       }))
     });
 
@@ -320,11 +320,11 @@ export class ABICoder {
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
     for (const entity of this.abi) {
       if (entity.name === name) {
-        contract.checkArgs(name, entity.params, ...args);
+        const args_ = contract.checkArgs(name, entity.params, ...args);
 
         const flatteredArgs = entity.params.flatMap((p, index) => {
           const a = Object.assign({ ...p }, {
-            value: args[index]
+            value: args_[index]
           }) as Argument;
 
           return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
@@ -341,7 +341,7 @@ export class ABICoder {
           contract, unlockingScript: bsv.Script.fromHex(hex), args: entity.params.map((param, index) => ({
             name: param.name,
             type: param.type,
-            value: args[index]
+            value: args_[index]
           }))
         });
       }
