@@ -10,8 +10,7 @@ export { bsv };
 
 import { ABIEntity, LibraryEntity } from '.';
 import { compileAsync, OpCode } from './compilerWrapper';
-import { VerifyError } from './contract';
-import { AbstractContract, compile, CompileResult, DebugLaunch, findCompiler, getValidatedHexString, Script, ScryptType, StructEntity, SupportedParamType } from './internal';
+import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, Script, ScryptType, StructEntity, SupportedParamType } from './internal';
 import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
 
 const BN = bsv.crypto.BN;

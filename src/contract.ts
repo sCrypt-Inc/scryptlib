@@ -589,7 +589,7 @@ export class AbstractContract {
 
         const clone = Object.assign({}, arg);
         entity.params.forEach(property => {
-          if (arg[property.name]) {
+          if (typeof arg[property.name] !== 'undefined') {
             clone[property.name] = this.transformerArg(arg[property.name], property, state);
           }
         });
@@ -598,6 +598,8 @@ export class AbstractContract {
       }
 
 
+    } else if (typeof arg === 'number') {
+      return BigInt(arg);
     }
 
     return arg;
@@ -651,7 +653,6 @@ export class AbstractContract {
   // struct / array: sha256 every single element of the flattened struct / array, and concat the result to a joint byte, and sha256 again 
   // basic type: sha256 every single element
   static flattenSha256(data: SupportedParamType, type: string): string {
-
     const error = checkSupportedParamType(data, {
       name: '',
       type: type

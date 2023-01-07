@@ -61,7 +61,10 @@ export function genLaunchConfigFile(resolver: TypeResolver, constructorArgs: Arg
     configurations: [debugConfig]
   };
 
-  const jsonstr = JSON.stringify(launch, null, 2);
+  const jsonstr = JSON.stringify(launch, (key, value) => (typeof value === 'bigint'
+    ? value.toString()
+    : value // return everything else unchanged
+  ), 2);
 
   if (isNode()) {
     const filename = `${name}-launch.json`;
