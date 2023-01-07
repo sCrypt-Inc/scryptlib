@@ -5,7 +5,7 @@ import { FunctionCall } from '../src/abi';
 import { bsv, signTx, toHex } from '../src/utils';
 import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes';
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+const privateKey = bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;

@@ -11,11 +11,11 @@ const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
 
-const privateKeyMinter = new bsv.PrivateKey.fromRandom('testnet');
+const privateKeyMinter = bsv.PrivateKey.fromRandom('testnet');
 const publicKeyMinter = privateKeyMinter.publicKey;
 const publicKeyHashMinter = bsv.crypto.Hash.sha256ripemd160(publicKeyMinter.toBuffer());
 
-const privateKeyReceiver = new bsv.PrivateKey.fromRandom('testnet');
+const privateKeyReceiver = bsv.PrivateKey.fromRandom('testnet');
 const publicKeyReceiver = privateKeyReceiver.publicKey;
 const publicKeyHashReceiver = bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver.toBuffer());
 

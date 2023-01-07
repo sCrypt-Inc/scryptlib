@@ -159,7 +159,7 @@ export function deserializeState(s: string | bsv.Script, schema: State | StateAr
   try {
     script = new Script(s);
   } catch (e) {
-    script = Script.fromASM(s);
+    script = Script.fromASM(s as string);
   }
   const chunks = script.chunks;
   const states = [];

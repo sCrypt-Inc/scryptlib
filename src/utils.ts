@@ -378,40 +378,6 @@ export function literal2ScryptType(l: string): ScryptType {
 }
 
 
-export function asm2ScryptType(type: string, asm: string): ScryptType {
-
-  switch (type) {
-    case VariableType.BOOL:
-      return new Bool(BN.fromString(asm) > 0 ? true : false);
-    case VariableType.INT:
-      return new Int(asm2int(asm));
-    case VariableType.BYTES:
-      return new Bytes((asm == '0' || asm == 'OP_0' || asm == 'OP_FALSE') ? '' : asm);
-    case VariableType.PRIVKEY:
-      return new PrivKey(asm2int(asm));
-    case VariableType.PUBKEY:
-      return new PubKey(asm);
-    case VariableType.SIG:
-      return new Sig(asm);
-    case VariableType.RIPEMD160:
-      return new Ripemd160(asm);
-    case VariableType.SHA1:
-      return new Sha1(asm);
-    case VariableType.SHA256:
-      return new Sha256(asm);
-    case VariableType.SIGHASHTYPE:
-      return new SigHashType(asm2int(asm) as number);
-    case VariableType.SIGHASHPREIMAGE:
-      return new SigHashPreimage(asm);
-    case VariableType.OPCODETYPE:
-      return new OpCodeType(asm);
-    default:
-      throw new Error(`<${type}> cannot be cast to ScryptType, only sCrypt native types supported`);
-  }
-
-}
-
-
 export function hex2ScryptType(type: string, hex: string): ScryptType {
 
   const b = bsv.Script.fromHex(hex);
@@ -454,11 +420,11 @@ export function bytes2Literal(bytearray: number[], type: string): string {
 
   switch (type) {
     case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }) > 0 ? 'true' : 'false';
+      return BN.fromBuffer(Buffer.from(bytearray), { endian: 'little' }).gt(0) ? 'true' : 'false';
 
     case 'int':
     case 'PrivKey':
-      return BN.fromSM(bytearray, { endian: 'little' }).toString();
+      return BN.fromSM(Buffer.from(bytearray), { endian: 'little' }).toString();
 
     case 'bytes':
       return `b'${bytesToHexString(bytearray)}'`;
@@ -531,7 +497,7 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
     throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
   }
 
-  const buf = toHex(bsv.Transaction.sighash.sign(
+  const buf = toHex(bsv.Transaction.Sighash.sign(
     tx, privateKey, sighashType, inputIndex,
     lockingScript, new bsv.crypto.BN(inputAmount), flags
   ).toTxFormat());
@@ -546,7 +512,7 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
 }
 
 export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): SigHashPreimage {
-  const preimageBuf = bsv.Transaction.sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
+  const preimageBuf = bsv.Transaction.Sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
   return new SigHashPreimage(preimageBuf.toString('hex'));
 }
 
@@ -577,7 +543,7 @@ export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inpu
 // Throws if the number cannot be accommodated
 // Often used to append numbers to OP_RETURN, which are read in contracts
 // Support Bigint
-export function num2bin(n: number | bigint | bsv.crypto.BN, dataLen: number): string {
+export function num2bin(n: number | bigint | bsv.crypto.BN | string, dataLen: number): string {
   const num = new BN(n);
   if (num.eqn(0)) {
     return '00'.repeat(dataLen);
@@ -2617,7 +2583,7 @@ export function parseStateHex(contract: AbstractContract, scriptHex: string): [b
 
   const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
 
-  const br = new bsv.encoding.BufferReader(stateHex);
+  const br = new bsv.encoding.BufferReader(Buffer.from(stateHex, 'hex'));
 
   const opcodenum = br.readUInt8();
 

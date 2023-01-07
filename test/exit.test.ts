@@ -1,10 +1,8 @@
 import { expect } from 'chai'
 import { loadDescription, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
-import { bsv, toHex, getPreimage, } from '../src/utils'
-import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'
-
-const privateKey = new bsv.PrivateKey.fromRandom('testnet')
+import { bsv } from '../src/utils'
+const privateKey = bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 const inputSatoshis = 100000

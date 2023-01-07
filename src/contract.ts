@@ -215,7 +215,7 @@ export class AbstractContract {
   run_verify(unlockingScriptASM: string, txContext?: TxContext): VerifyResult {
     const txCtx: TxContext = Object.assign({}, this._txContext || {}, txContext || {});
 
-    const us = unlockingScriptASM.trim() ? bsv.Script.fromASM(unlockingScriptASM.trim()) : new bsv.Script();
+    const us = unlockingScriptASM.trim() ? bsv.Script.fromASM(unlockingScriptASM.trim()) : new bsv.Script('');
     const ls = bsv.Script.fromHex(this.lockingScript.toHex());
     const tx = txCtx.tx;
     const inputIndex = txCtx.inputIndex || 0;
@@ -226,7 +226,7 @@ export class AbstractContract {
     bsv.Script.Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 
 
-    const bsi = bsv.Script.Interpreter();
+    const bsi = new bsv.Script.Interpreter();
 
     let lastfExecs: any = {};
 
