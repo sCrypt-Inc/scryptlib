@@ -1,9 +1,7 @@
 import { assert, expect } from 'chai';
 import { newTx, loadArtifact } from './helper';
-import { buildContractClass } from '../src/contract';
-import { signTx, getPreimage, readLaunchJson, bsv } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage, Int } from '../src/scryptTypes';
-import { num2bin, toHex } from '../src';
+import { num2bin, toHex, signTx, getPreimage, readLaunchJson, bsv, buildContractClass, Bytes, PubKey, Sig, Ripemd160, PubKeyHash, SigHashPreimage, Int } from '../src';
+
 
 
 const privateKey = bsv.PrivateKey.fromRandom('testnet');

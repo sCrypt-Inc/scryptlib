@@ -1,10 +1,7 @@
 
 import { assert, expect } from 'chai';
 import { newTx, loadArtifact } from './helper';
-import { buildContractClass } from '../src/contract';
-import { bsv, getPreimage } from '../src/utils';
-import { Bytes, SigHashPreimage } from '../src';
-import { stringToBytes } from '../src/scryptTypes';
+import { buildContractClass, bsv, getPreimage, Bytes, SigHashPreimage, stringToBytes } from '../src';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 

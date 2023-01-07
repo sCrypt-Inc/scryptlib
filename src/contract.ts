@@ -6,7 +6,7 @@ import {
 } from './internal';
 import { Bytes, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
-import { arrayTypeAndSize, checkSupportedParamType, flatternArg, subArrayType } from './typeCheck';
+import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
 
 
 export interface TxContext {
@@ -908,6 +908,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
   structs.forEach(element => {
     resolvedTypes[element.name] = {
       info: element,
+      generic: hasGeneric(element),
       finalType: element.name,
       symbolType: SymbolType.Struct
     };
@@ -916,6 +917,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
   library.forEach(element => {
     resolvedTypes[element.name] = {
       info: element,
+      generic: hasGeneric(element),
       finalType: element.name,
       symbolType: SymbolType.Library
     };
@@ -924,6 +926,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
   contracts.forEach(element => {
     resolvedTypes[element.name] = {
       info: element,
+      generic: hasGeneric(element),
       finalType: element.name,
       symbolType: SymbolType.Contract
     };
@@ -996,17 +999,14 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
   resolvedTypes['PubKeyHash'] = {
     finalType: 'Ripemd160',
+    generic: false,
     symbolType: SymbolType.ScryptType
   };
 
-  alias.forEach(element => {
-    resolvedTypes[element.name] = resolveType(element.name, resolvedTypes, contract, statics, alias, library);
-  });
 
 
 
-
-  const resolver = (type: string) => {
+  const resolver = (type: string): TypeInfo => {
 
     if (resolvedTypes[type]) {
       return resolvedTypes[type];
@@ -1014,6 +1014,7 @@ export function buildTypeResolver(contract: string, alias: AliasEntity[], struct
 
     if (isScryptType(type)) {
       return {
+        generic: false,
         finalType: type,
         symbolType: SymbolType.ScryptType
       };

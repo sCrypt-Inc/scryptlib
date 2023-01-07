@@ -138,28 +138,33 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(jsonArtifact.contract, jsonArtifact.alias, jsonArtifact.structs, jsonArtifact.library)
       expect(resolver("Age")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Time")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Name")).deep.equal({
         finalType: 'bytes',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Token")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("MaleAAA")).deep.equal({
         finalType: 'Person',
+        generic: false,
         info: {
           genericTypes: [],
           name: "Person",
@@ -182,6 +187,7 @@ describe('Alias type check', () => {
       })
       expect(resolver("Male")).deep.equal({
         finalType: 'Person',
+        generic: false,
         info: {
           genericTypes: [],
           name: "Person",
@@ -204,6 +210,7 @@ describe('Alias type check', () => {
       })
       expect(resolver("Female")).deep.equal({
         finalType: 'Person',
+        generic: false,
         info: {
           genericTypes: [],
           name: "Person",
@@ -226,6 +233,7 @@ describe('Alias type check', () => {
       })
       expect(resolver("Block")).deep.equal({
         finalType: 'Block',
+        generic: false,
         info: {
           genericTypes: [],
           name: "Block",
@@ -248,14 +256,17 @@ describe('Alias type check', () => {
       })
       expect(resolver("Coinbase")).deep.equal({
         finalType: 'bytes',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Integer")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Height")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
 
@@ -278,7 +289,7 @@ describe('Alias type check', () => {
           ],
           "genericTypes": []
         },
-        generic: undefined,
+        generic: false,
         "finalType": "Person[3]",
         "symbolType": SymbolType.Struct
       })
@@ -302,7 +313,7 @@ describe('Alias type check', () => {
           ],
           "genericTypes": []
         },
-        generic: undefined,
+        generic: false,
         "finalType": "Person[3]",
         "symbolType": "Struct"
       })
@@ -326,7 +337,7 @@ describe('Alias type check', () => {
           ],
           "genericTypes": []
         },
-        generic: undefined,
+        generic: false,
         symbolType: SymbolType.Struct
       })
       expect(resolver("MaleC[5]")).deep.equal({
@@ -349,61 +360,74 @@ describe('Alias type check', () => {
           ],
           "genericTypes": []
         },
-        generic: undefined,
+        generic: false,
         symbolType: SymbolType.Struct
       })
 
 
       expect(resolver("int")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKey")).deep.equal({
         finalType: 'PubKey',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("PrivKey")).deep.equal({
         finalType: 'PrivKey',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashPreimage")).deep.equal({
         finalType: 'SigHashPreimage',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("bool")).deep.equal({
         finalType: 'bool',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("bytes")).deep.equal({
         finalType: 'bytes',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sig")).deep.equal({
         finalType: 'Sig',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Ripemd160")).deep.equal({
         finalType: 'Ripemd160',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKeyHash")).deep.equal({
         finalType: 'Ripemd160',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha1")).deep.equal({
         finalType: 'Sha1',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha256")).deep.equal({
         finalType: 'Sha256',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashType")).deep.equal({
         finalType: 'SigHashType',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("OpCodeType")).deep.equal({
         finalType: 'OpCodeType',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
 
@@ -488,54 +512,67 @@ describe('Alias type check', () => {
 
       expect(resolver("int")).deep.equal({
         finalType: 'int',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKey")).deep.equal({
         finalType: 'PubKey',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("PrivKey")).deep.equal({
         finalType: 'PrivKey',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashPreimage")).deep.equal({
         finalType: 'SigHashPreimage',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("bool")).deep.equal({
         finalType: 'bool',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("bytes")).deep.equal({
         finalType: 'bytes',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sig")).deep.equal({
         finalType: 'Sig',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Ripemd160")).deep.equal({
         finalType: 'Ripemd160',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("PubKeyHash")).deep.equal({
         finalType: 'Ripemd160',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha1")).deep.equal({
         finalType: 'Sha1',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Sha256")).deep.equal({
         finalType: 'Sha256',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("SigHashType")).deep.equal({
         finalType: 'SigHashType',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("OpCodeType")).deep.equal({
         finalType: 'OpCodeType',
+        generic: false,
         symbolType: SymbolType.ScryptType
       })
 
@@ -552,31 +589,31 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(jsonArtifact.contract, jsonArtifact.alias, jsonArtifact.structs, jsonArtifact.library)
       expect(resolver("Tokens")).deep.equal({
         finalType: 'int[3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenArray")).deep.equal({
         finalType: 'int[1][3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenAA")).deep.equal({
         finalType: 'int[4][5][1][3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("Tokens[1]")).deep.equal({
         finalType: 'int[1][3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("TokenArray[4][5]")).deep.equal({
         finalType: 'int[4][5][1][3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
@@ -601,13 +638,13 @@ describe('Alias type check', () => {
       const resolver = buildTypeResolver(result.contract || '', result.alias || [], result.structs || [], result.library || [], result.contracts, result.statics)
       expect(resolver("int[1][SUB]")).deep.equal({
         finalType: 'int[1][3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
       expect(resolver("int[1][VarAsSub.SUB]")).deep.equal({
         finalType: 'int[1][3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })
@@ -659,6 +696,7 @@ describe('Alias type check', () => {
 
       expect(C.resolver("ST0")).deep.equal({
         finalType: 'ST0',
+        generic: true,
         info: {
           genericTypes: ["T"],
           name: "ST0",
@@ -678,6 +716,7 @@ describe('Alias type check', () => {
 
       expect(C.resolver("ST2")).deep.equal({
         finalType: 'ST2',
+        generic: false,
         info: {
           genericTypes: [],
           name: "ST2",
@@ -794,7 +833,7 @@ describe('Alias type check', () => {
 
       expect(C.resolver("INTA")).deep.equal({
         finalType: 'int[3]',
-        generic: undefined,
+        generic: false,
         info: undefined,
         symbolType: SymbolType.ScryptType
       })

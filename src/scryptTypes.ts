@@ -9,7 +9,7 @@ export enum SymbolType {
 
 export type TypeInfo = {
   info?: unknown,
-  generic?: boolean,
+  generic: boolean,
   finalType: string,
   symbolType: SymbolType
 }
@@ -73,12 +73,6 @@ export function Bool(b: boolean): Bool {
 
 export function Bytes(b: string): Bytes {
   return getValidatedHexString(b);
-}
-
-export function stringToBytes(str: string): Bytes {
-  const encoder = new TextEncoder();
-  const uint8array = encoder.encode(str);
-  return getValidatedHexString(Buffer.from(uint8array).toString('hex'));
 }
 
 export function PrivKey(n: Int): PrivKey {
@@ -195,160 +189,6 @@ export function getValidatedHexString(hex: string, allowEmpty = true): string {
 }
 
 
-
-export function toJSON(value: SupportedParamType): unknown {
-
-  if (Array.isArray(value)) {
-    const v = value as SupportedParamType[];
-    return v.map(i => toJSON(i));
-  } else if (typeof value === 'object') {
-
-    const copy = {};
-
-    for (const key in value) {
-      Object.assign(copy, {
-        [key]: toJSON(value[key])
-      });
-    }
-
-    return copy;
-  } else if (typeof value === 'bigint') {
-    if (value >= BigInt(Number.MIN_SAFE_INTEGER) && value <= BigInt(Number.MAX_SAFE_INTEGER)) {
-      return Number(value);
-    } else {
-      return value.toString();
-    }
-  } else if (typeof value === 'boolean') {
-    return value;
-  } else if (typeof value === 'string') {
-    const [val, type] = parseLiteral(value);
-    if (type === ScryptType.BYTES) {
-      return `b'${val}'`;
-    }
-    return value;
-  }
-}
-
-export function parseLiteral(l: string, supportInt = false): [SupportedParamType /*asm*/, ScryptType] {
-
-
-  // bool
-  if (l === 'false') {
-    return [false, ScryptType.BOOL];
-  }
-  if (l === 'true') {
-    return [true, ScryptType.BOOL];
-  }
-
-  if (supportInt) {
-    // hex int
-    let m = /^(0x[0-9a-fA-F]+)$/.exec(l);
-    if (m) {
-      return [BigInt(m[1]), ScryptType.INT];
-    }
-
-    // decimal int
-    m = /^(-?\d+)$/.exec(l);
-    if (m) {
-      return [BigInt(m[1]), ScryptType.INT];
-    }
-  } else {
-    const m = /^([\da-fA-F]*)$/.exec(l);
-    if (m) {
-      return [Bytes(l), ScryptType.BYTES];
-    }
-  }
-
-
-
-  // bytes
-  // note: special handling of empty bytes b''
-  let m = /^b'([\da-fA-F]*)'$/.exec(l);
-  if (m) {
-    return [Bytes(m[1]), ScryptType.BYTES];
-  }
-
-
-
-  // String
-  m = /^"([\s\S]*)"$/.exec(l);
-  if (m) {
-    return [stringToBytes(m[1]), ScryptType.BYTES];
-  }
-
-
-  // PrivKey
-  // 1) decimal int
-  m = /^PrivKey\((-?\d+)\)$/.exec(l);
-  if (m) {
-    return [BigInt(m[1]), ScryptType.PRIVKEY];
-  }
-  // 2) hex int
-  m = /^PrivKey\((0x[0-9a-fA-F]+)\)$/.exec(l);
-  if (m) {
-    return [BigInt(m[1]), ScryptType.PRIVKEY];
-  }
-
-  // PubKey
-  m = /^PubKey\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.PUBKEY];
-  }
-
-  // Sig
-  m = /^Sig\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.SIG];
-  }
-
-  // Ripemd160
-  m = /^Ripemd160\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.RIPEMD160];
-  }
-
-  // Sha1
-  m = /^Sha1\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.SHA1];
-  }
-
-  // Sha256
-  m = /^Sha256\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.SHA256];
-  }
-
-  // SigHashType
-  m = /^SigHashType\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.SIGHASHTYPE];
-  }
-
-  // SigHashPreimage
-  m = /^SigHashPreimage\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.SIGHASHPREIMAGE];
-  }
-
-  // OpCodeType
-  m = /^OpCodeType\(b'([\da-fA-F]+)'\)$/.exec(l);
-  if (m) {
-    const value = getValidatedHexString(m[1]);
-    return [Bytes(value), ScryptType.OPCODETYPE];
-  }
-
-
-  throw new Error(`<${l}> cannot be cast to ASM format, only sCrypt native types supported`);
-
-}
 
 export function isScryptType(type: string): boolean {
   return Object.keys(ScryptType).map(key => ScryptType[key]).includes(type);

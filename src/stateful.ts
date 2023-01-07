@@ -1,4 +1,4 @@
-import { AbstractContract, Arguments, bin2num, bsv, num2bin, readBytes } from '.';
+import { AbstractContract, Arguments, bin2num, bsv, num2bin } from '.';
 import { deserializeArgfromHex } from './deserializer';
 import { flatternArg } from './internal';
 import { Bool, Bytes, Int, isBytes, OpCodeType, PrivKey, PubKey, Ripemd160, ScryptType, Sha1, Sha256, Sig, SigHashPreimage, SigHashType, SupportedParamType, TypeResolver } from './scryptTypes';
@@ -203,6 +203,43 @@ export default class Stateful {
   }
 
 
+
+  static readBytes(br: bsv.encoding.BufferReader): {
+    data: string,
+    opcodenum: number
+  } {
+    try {
+      const opcodenum = br.readUInt8();
+
+      let len, data;
+      if (opcodenum == 0) {
+        data = '';
+      } else if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+        len = opcodenum;
+        data = br.read(len).toString('hex');
+      } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
+        len = br.readUInt8();
+        data = br.read(len).toString('hex');
+      } else if (opcodenum === bsv.Opcode.OP_PUSHDATA2) {
+        len = br.readUInt16LE();
+        data = br.read(len).toString('hex');
+      } else if (opcodenum === bsv.Opcode.OP_PUSHDATA4) {
+        len = br.readUInt32LE();
+        data = br.read(len).toString('hex');
+      } else {
+        data = num2bin(BigInt(opcodenum - 80), 1);
+      }
+
+      return {
+        data: data,
+        opcodenum: opcodenum
+      };
+    } catch (e) {
+      throw new Error('readBytes: ' + e);
+    }
+  }
+
+
   static parseStateHex(contract: AbstractContract, scriptHex: string): [boolean, Arguments] {
 
     const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
@@ -231,7 +268,7 @@ export default class Stateful {
         const opcodenum = br.readUInt8();
         stateTemplateArgs.set(`<${param.name}>`, opcodenum === 1 ? '01' : '00');
       } else {
-        const { data } = readBytes(br);
+        const { data } = Stateful.readBytes(br);
         stateTemplateArgs.set(`<${param.name}>`, data ? bsv.Script.fromASM(data).toHex() : '');
       }
     });

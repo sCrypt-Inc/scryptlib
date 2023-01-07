@@ -275,11 +275,11 @@ describe('utils', () => {
 
   describe('checkArray()', () => {
 
-    let resolver: TypeResolver = (type: string) => ({ symbolType: SymbolType.ScryptType, finalType: type })
+    let resolver: TypeResolver = (type: string) => ({ symbolType: SymbolType.ScryptType, finalType: type, generic: false })
     it('checkArray int[3]', () => {
       expect(checkSupportedParamType([3n, 3n, 3n], {
         name: "a",
-        type: 'int[3]'
+        type: 'int[3]',
       }, resolver)).to.undefined;
     })
 

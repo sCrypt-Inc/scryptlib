@@ -2,18 +2,17 @@ import { parseChunked, stringifyStream } from '@discoveryjs/json-ext';
 import * as bsv from 'bsv';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import { tmpdir } from 'os';
-import { join, sep } from 'path';
+import { join } from 'path';
 import { decode } from 'sourcemap-codec';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 export { bsv };
 
-import { ABIEntity, LibraryEntity, num2bin, SymbolType, toLiteralArrayType, TypeInfo } from '.';
-import { compileAsync, OpCode, StaticEntity } from './compilerWrapper';
+import { ABIEntity, LibraryEntity } from '.';
+import { compileAsync, OpCode } from './compilerWrapper';
 import { VerifyError } from './contract';
-import { AbstractContract, AliasEntity, AsmVarValues, compile, CompileResult, DebugConfiguration, DebugLaunch, FileUri, findCompiler, getValidatedHexString, isScryptType, Script, ScryptType, StructEntity, SupportedParamType, toJSON, TxContext } from './internal';
-import { arrayTypeAndSizeStr } from './typeCheck';
+import { AbstractContract, compile, CompileResult, DebugLaunch, findCompiler, getValidatedHexString, Script, ScryptType, StructEntity, SupportedParamType } from './internal';
+import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
 
 const BN = bsv.crypto.BN;
 const Interp = bsv.Script.Interpreter;
@@ -403,77 +402,6 @@ export function newCall(Cls: typeof AbstractContract, args: Array<SupportedParam
 
 
 
-export function genLaunchConfigFile(constructorArgs: SupportedParamType[], pubFuncArgs: SupportedParamType[],
-  pubFunc: string, name: string, program: string, txContext: TxContext, asmArgs: AsmVarValues): FileUri {
-
-  // some artifact without sourceMap will not have file property.
-  if (!program) {
-    return '';
-  }
-
-  const debugConfig: DebugConfiguration = {
-    type: 'scrypt',
-    request: 'launch',
-    internalConsoleOptions: 'openOnSessionStart',
-    name: name,
-    program: program,
-    constructorArgs: toJSON(constructorArgs) as SupportedParamType[],
-    pubFunc: pubFunc,
-    pubFuncArgs: toJSON(pubFuncArgs) as SupportedParamType[]
-  };
-
-
-
-
-  const debugTxContext = {};
-
-  if (!isEmpty(txContext)) {
-
-    const tx = txContext.tx || '';
-    const inputIndex = txContext.inputIndex || 0;
-
-    if (tx) {
-      const inputSatoshis = txContext.inputSatoshis || tx.getInputAmount(inputIndex);
-      Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
-    }
-    if (txContext.opReturn) {
-      Object.assign(debugTxContext, { opReturn: txContext.opReturn });
-    } else if (txContext.opReturnHex) {
-      Object.assign(debugTxContext, { opReturnHex: txContext.opReturnHex });
-    }
-  }
-
-
-
-  if (!isEmpty(asmArgs)) {
-    Object.assign(debugConfig, { asmArgs: asmArgs });
-  }
-
-
-
-  if (!isEmpty(debugTxContext)) {
-    Object.assign(debugConfig, { txContext: debugTxContext });
-  }
-
-  const launch: DebugLaunch = {
-    version: '0.2.0',
-    configurations: [debugConfig]
-  };
-
-  const jsonstr = JSON.stringify(launch, null, 2);
-
-  if (isNode()) {
-    const filename = `${name}-launch.json`;
-    const file = join(fs.mkdtempSync(`${tmpdir()}${sep}sCrypt.`), filename);
-    fs.writeFileSync(file, jsonstr);
-    return path2uri(file);
-  } else {
-    console.error(`${pubFunc}() call fail, see launch.json`, jsonstr);
-  }
-
-}
-
-
 
 export function resolveConstValue(node: any): string | undefined {
 
@@ -492,104 +420,6 @@ export function resolveConstValue(node: any): string | undefined {
     }
   }
   return value;
-}
-
-export function resolveType(type: string, originTypes: Record<string, TypeInfo>, contract: string, statics: StaticEntity[], alias: AliasEntity[], librarys: LibraryEntity[]): TypeInfo {
-
-  const typeInfo = resolveAliasType(originTypes, alias, type);
-  if (isArrayType(typeInfo.finalType)) {
-    return {
-      generic: typeInfo.generic,
-      info: typeInfo.info,
-      finalType: resolveArrayType(contract, typeInfo.finalType, statics),
-      symbolType: typeInfo.symbolType
-    };
-  }
-  return typeInfo;
-}
-
-
-function resolveArrayType(contract: string, type: string, statics: StaticEntity[]): string {
-
-  if (isArrayType(type)) {
-    const [elemTypeName, arraySizes] = arrayTypeAndSizeStr(type);
-
-    const sizes = arraySizes.map(size => {
-      if (/^(\d)+$/.test(size)) {
-        return parseInt(size);
-      } else {
-        // size as a static const
-        const size_ = (size.indexOf('.') > 0) ? size : `${contract}.${size}`;
-        const value = findConstStatic(statics, size_);
-        if (!value) {
-          // Unable to solve when the subscript of the array is a function parameter, [CTC](https://scryptdoc.readthedocs.io/en/latest/ctc.html)
-          return size;
-        }
-        return value.value;
-      }
-    });
-
-    return toLiteralArrayType(elemTypeName, sizes);
-  }
-  return type;
-}
-
-
-
-function resolveAliasType(originTypes: Record<string, TypeInfo>, alias: AliasEntity[], type: string): TypeInfo {
-
-  if (isArrayType(type)) {
-    const [elemTypeName, sizes] = arrayTypeAndSizeStr(type);
-    const elemTypeInfo = resolveAliasType(originTypes, alias, elemTypeName);
-
-    if (isArrayType(elemTypeInfo.finalType)) {
-      const [elemTypeName_, sizes_] = arrayTypeAndSizeStr(elemTypeInfo.finalType);
-      return {
-        info: elemTypeInfo.info,
-        generic: elemTypeInfo.generic,
-        finalType: toLiteralArrayType(elemTypeName_, sizes.concat(sizes_)),
-        symbolType: elemTypeInfo.symbolType
-      };
-    }
-
-    return {
-      info: elemTypeInfo.info,
-      generic: elemTypeInfo.generic,
-      finalType: toLiteralArrayType(elemTypeInfo.finalType, sizes),
-      symbolType: elemTypeInfo.symbolType
-    };
-
-  } else if (isGenericType(type)) {
-    const [name, genericTypes] = parseGenericType(type);
-    const typeInfo = resolveAliasType(originTypes, alias, name);
-    const gts = genericTypes.map(t => resolveAliasType(originTypes, alias, t).finalType);
-    return {
-      info: typeInfo.info,
-      generic: true,
-      finalType: toGenericType(typeInfo.finalType, gts),
-      symbolType: typeInfo.symbolType
-    };
-  }
-
-  const a = alias.find(a => {
-    return a.name === type;
-  });
-
-  if (a) {
-    return resolveAliasType(originTypes, alias, a.type);
-  } else if (originTypes[type]) {
-    return originTypes[type];
-  } else if (isScryptType(type)) {
-    return {
-      finalType: type,
-      symbolType: SymbolType.ScryptType
-    };
-  } else {
-    return {
-      finalType: type,
-      symbolType: SymbolType.Unknown
-    };
-  }
 }
 
 
@@ -613,16 +443,7 @@ export function stripAnsi(string: string): string {
 
 
 
-export function findConstStatic(statics: StaticEntity[], name: string): StaticEntity | undefined {
-  return statics.find(s => {
-    return s.const === true && s.name === name;
-  });
-}
-export function findStatic(statics: StaticEntity[], name: string): StaticEntity | undefined {
-  return statics.find(s => {
-    return s.name === name;
-  });
-}
+
 
 function escapeRegExp(stringToGoIntoTheRegex: string) {
   return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -652,108 +473,6 @@ export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTempl
 
 }
 
-
-
-
-
-export function readBytes(br: bsv.encoding.BufferReader): {
-  data: string,
-  opcodenum: number
-} {
-  try {
-    const opcodenum = br.readUInt8();
-
-    let len, data;
-    if (opcodenum == 0) {
-      data = '';
-    } else if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
-      len = opcodenum;
-      data = br.read(len).toString('hex');
-    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
-      len = br.readUInt8();
-      data = br.read(len).toString('hex');
-    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA2) {
-      len = br.readUInt16LE();
-      data = br.read(len).toString('hex');
-    } else if (opcodenum === bsv.Opcode.OP_PUSHDATA4) {
-      len = br.readUInt32LE();
-      data = br.read(len).toString('hex');
-    } else {
-      data = num2bin(BigInt(opcodenum - 80), 1);
-    }
-
-    return {
-      data: data,
-      opcodenum: opcodenum
-    };
-  } catch (e) {
-    throw new Error('readBytes: ' + e);
-  }
-}
-
-
-
-/**
- * check if a type is generic type
- * @param type 
- * @returns 
- */
-export function isGenericType(type: string): boolean {
-  return /^([\w]+)<([\w,[\]\s<>]+)>$/.test(type);
-}
-
-/**
- * 
- * @param type eg. HashedMap<int,int>
- * @param eg. ["HashedMap", ["int", "int"]}] An array generic types returned by @getGenericDeclaration
- * @returns {"K": "int", "V": "int"}
- */
-export function parseGenericType(type: string): [string, Array<string>] {
-
-  if (isGenericType(type)) {
-    const m = type.match(/([\w]+)<([\w,[\]<>\s]+)>$/);
-    if (m) {
-      const library = m[1];
-      const realTypes = [];
-      const brackets = [];
-      let tmpType = '';
-      for (let i = 0; i < m[2].length; i++) {
-        const ch = m[2].charAt(i);
-
-        if (ch === '<' || ch === '[') {
-          brackets.push(ch);
-        } else if (ch === '>' || ch === ']') {
-          brackets.pop();
-        } else if (ch === ',') {
-
-          if (brackets.length === 0) {
-            realTypes.push(tmpType.trim());
-            tmpType = '';
-            continue;
-          }
-        }
-        tmpType += ch;
-      }
-      realTypes.push(tmpType.trim());
-
-      return [library, realTypes];
-    }
-  }
-  throw new Error(`"${type}" is not generic type`);
-}
-
-
-const LINKPATTERN = /(\[((!\[[^\]]*?\]\(\s*)([^\s()]+?)\s*\)\]|(?:\\\]|[^\]])*\])\(\s*)(([^\s()]|\([^\s()]*?\))+)\s*(".*?")?\)/g;
-
-export function readLaunchJson(error: VerifyError): DebugLaunch | undefined {
-  for (const match of error.matchAll(LINKPATTERN)) {
-    if (match[5] && match[5].startsWith('scryptlaunch')) {
-      const file = match[5].replace(/scryptlaunch/, 'file');
-      return JSON.parse(fs.readFileSync(uri2path(file)).toString());
-    }
-  }
-  return undefined;
-}
 
 
 
@@ -794,25 +513,6 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
 }
 
 
-export function resolveGenericType(genericTypeMap: Record<string, string>, type: string): string {
-  if (Object.keys(genericTypeMap).length > 0) {
-    if (isGenericType(type)) {
-      const [name, types] = parseGenericType(type);
-      return toGenericType(name, types.map(t => genericTypeMap[t] || t));
-    }
-
-    if (isArrayType(type)) {
-      const [elem, sizes] = arrayTypeAndSizeStr(type);
-      return toLiteralArrayType(elem, sizes.map(t => genericTypeMap[t] || t));
-    }
-
-    return genericTypeMap[type] || type;
-  }
-
-  return type;
-}
-
-
 export function librarySign(genericEntity: LibraryEntity): string {
   return `[${genericEntity.params.map(p => p.type).join(',')}]`;
 }
@@ -823,13 +523,6 @@ export function structSign(structEntity: StructEntity): string {
   }), {}), null, 4)}`;
 }
 
-
-// If the property is the same as the construction parameter, there may be no constructor, in which case the construction parameter can be assigned to the property. But this does not guarantee that the property is always correct, the user may have modified the value of the property in the constructor
-export function canAssignProperty(libraryAst: LibraryEntity): boolean {
-  return libraryAst.params.length === libraryAst.properties.length && libraryAst.params.every((param, index) => {
-    return param.name === libraryAst.properties[index].name && param.type === libraryAst.properties[index].type;
-  });
-}
 
 
 

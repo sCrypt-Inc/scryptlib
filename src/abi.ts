@@ -2,11 +2,12 @@ import { bin2num } from './builtins';
 import { ABIEntity, ABIEntityType } from './compilerWrapper';
 import { AbstractContract, AsmVarValues, TxContext, VerifyResult } from './contract';
 import { deserializeArgfromHex } from './deserializer';
+import { genLaunchConfigFile } from './launchConfig';
 import { SupportedParamType, TypeResolver } from './scryptTypes';
 import { toScriptHex } from './serializer';
 import Stateful from './stateful';
 import { flatternArg } from './typeCheck';
-import { bsv, buildContractCode, genLaunchConfigFile, int2Asm } from './utils';
+import { bsv, buildContractCode, int2Asm } from './utils';
 
 export type Script = bsv.Script;
 
@@ -116,8 +117,6 @@ export class FunctionCall {
 
   genLaunchConfig(txContext?: TxContext): FileUri {
 
-    const constructorArgs: SupportedParamType[] = this.contract.ctorArgs().map(p => p.value);
-    const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
     const name = `Debug ${this.contract.contractName}`;
     const program = `${this.contract.file}`;
@@ -132,7 +131,7 @@ export class FunctionCall {
       Object.assign(txCtx, { opReturn: this.contract.dataPart.toASM() });
     }
 
-    return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
+    return genLaunchConfigFile(this.contract.resolver, this.contract.ctorArgs(), this.args, pubFunc, name, program, txCtx, asmArgs);
   }
 
   verify(txContext?: TxContext): VerifyResult {
