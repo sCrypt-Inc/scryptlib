@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadArtifact, newTx } from './helper'
 import { AbstractContract, buildContractClass } from '../src/contract'
-import { getSetSortedItem, Int, SigHashPreimage } from '../src/scryptTypes'
+import { getSortedItem, Int, SigHashPreimage } from '../src/scryptTypes'
 import { bsv, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -47,7 +47,7 @@ describe('test.stateSet', () => {
                 set.add(key);
                 const tx = buildTx(set);
                 const preimage = getPreimage(tx, stateSet.lockingScript, inputSatoshis)
-                const result = stateSet.insert(getSetSortedItem(set, key), SigHashPreimage(preimage)).verify()
+                const result = stateSet.insert(getSortedItem(set, key), SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
                 stateSet.set = set
             }

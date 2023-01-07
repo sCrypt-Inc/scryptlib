@@ -152,24 +152,14 @@ export type SortedItem<T> = {
   item: T
 };
 
-export function getMapSortedItem<K, V>(map: Map<K, V>, k: K): SortedItem<K> {
+export function getSortedItem<K, V>(collection: Map<K, V> | Set<K>, k: K): SortedItem<K> {
   return Object.assign({
     idx: -1n,
     item: k
   }, {
-    image: new Map(map)
+    image: collection instanceof Map ? new Map(collection) : new Set(collection)
   });
 }
-
-export function getSetSortedItem<E>(set: Set<E>, k: E): SortedItem<E> {
-  return Object.assign({
-    idx: -1n,
-    item: k
-  }, {
-    image: new Set(set)
-  });
-}
-
 
 
 export type PrimitiveTypes = Int | Bool | Bytes | PrivKey | PubKey | Sig | Sha256 | Sha1 | SigHashType | Ripemd160 | OpCodeType | HashedMap | HashedSet;

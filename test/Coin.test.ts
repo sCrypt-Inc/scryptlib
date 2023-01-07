@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
-import { PubKey, PubKeyHash, SigHashPreimage, Sig, getMapSortedItem } from '../src/scryptTypes'
+import { PubKey, PubKeyHash, SigHashPreimage, Sig, getSortedItem } from '../src/scryptTypes'
 import { bsv, getPreimage, signTx } from '../src/utils';
 import { toHex } from '../src';
 const inputIndex = 0;
@@ -93,7 +93,7 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKey, coin.lockingScript, inputSatoshis);
 
-            const result = coin.mint(getMapSortedItem(map, pkhReceiver), mintAmount, SigHashPreimage(preimage), Sig(sig), publicKey, 0n).verify()
+            const result = coin.mint(getSortedItem(map, pkhReceiver), mintAmount, SigHashPreimage(preimage), Sig(sig), publicKey, 0n).verify()
             expect(result.success, result.error).to.be.true;
             coin.balances = map
             coin.minter = pkh
@@ -101,13 +101,13 @@ describe('Coin.test', () => {
 
 
         it('test send', () => {
-            const key_sender = getMapSortedItem(map, pkhReceiver);
+            const key_sender = getSortedItem(map, pkhReceiver);
             const tx = buildSendTx(pkhReceiver, mintAmount - sendAmount, pkhReceiver1, sendAmount);
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(getMapSortedItem(map, pkhReceiver1), key_sender, sendAmount, SigHashPreimage(preimage), Sig(sig),
+            const result = coin.send(getSortedItem(map, pkhReceiver1), key_sender, sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyReceiver,
                 mintAmount,
                 0n).verify()
@@ -121,7 +121,7 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(getMapSortedItem(map, pkhReceiver1), getMapSortedItem(map, pkhReceiver), sendAmount, SigHashPreimage(preimage), Sig(sig),
+            const result = coin.send(getSortedItem(map, pkhReceiver1), getSortedItem(map, pkhReceiver), sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyReceiver,
                 mintAmount - sendAmount,
                 sendAmount).verify()
@@ -145,7 +145,7 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKeyFake, coin.lockingScript, inputSatoshis);
 
-            let result = coin.send(getMapSortedItem(map, pkhReceiver1), getMapSortedItem(map, pkhFake), sendAmount, SigHashPreimage(preimage), Sig(sig),
+            let result = coin.send(getSortedItem(map, pkhReceiver1), getSortedItem(map, pkhFake), sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyFake,
                 fake_balances_msgSender,
                 balances_receiver).verify()
@@ -161,13 +161,13 @@ describe('Coin.test', () => {
             const sendAmount = 10000n;
             const balances_receiver = 2000n;
             const balances_sender = 8000n;
-            const key_sender = getMapSortedItem(map, pkhReceiver);
+            const key_sender = getSortedItem(map, pkhReceiver);
             const tx = buildSendTx(pkhReceiver, balances_sender - sendAmount, pkhReceiver1, balances_receiver + sendAmount);
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(getMapSortedItem(map, pkhReceiver1), key_sender, sendAmount, SigHashPreimage(preimage), Sig(sig),
+            const result = coin.send(getSortedItem(map, pkhReceiver1), key_sender, sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyReceiver,
                 balances_sender,
                 balances_receiver).verify()

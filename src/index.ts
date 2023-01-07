@@ -14,7 +14,7 @@ export {
   buildTypeResolver, getStructDeclaration, getABIDeclaration, typeOfArg,
   compilerVersion, parseLiteral,
   isEmpty, JSONParser, getFullFilePath, path2uri, uri2path, md5, FunctionCall, stringToBytes, isScryptType, isSubBytes, toJSON,
-  getMapSortedItem, getSetSortedItem
+  getSortedItem
 } from './internal';
 
 export {

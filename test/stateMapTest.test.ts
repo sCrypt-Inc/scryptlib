@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadArtifact, newTx } from './helper'
 import { Contract, buildContractClass, ContractClass } from '../src/contract'
-import { getMapSortedItem, SigHashPreimage, } from '../src/scryptTypes'
+import { getSortedItem, SigHashPreimage, } from '../src/scryptTypes'
 import { bsv, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -48,7 +48,7 @@ describe('test.stateMapTest', () => {
                 map.set(key, val);
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-                const result = mapTest.insert(getMapSortedItem(map, key), val, SigHashPreimage(preimage)).verify()
+                const result = mapTest.insert(getSortedItem(map, key), val, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
                 mapTest.map = map
@@ -75,7 +75,7 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.update(getMapSortedItem(map, key), val, SigHashPreimage(preimage)).verify()
+                const result = mapTest.update(getSortedItem(map, key), val, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
                 mapTest.map = map
@@ -100,7 +100,7 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.delete(getMapSortedItem(map, key), SigHashPreimage(preimage)).verify()
+                const result = mapTest.delete(getSortedItem(map, key), SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
                 mapTest.map = map
@@ -163,7 +163,7 @@ describe('test.stateMapTest', () => {
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
                 const result = mapTest.insert({
-                    key: getMapSortedItem(map, key),
+                    key: getSortedItem(map, key),
                     val: val
                 }, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
@@ -193,7 +193,7 @@ describe('test.stateMapTest', () => {
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
                 const result = mapTest.update({
-                    key: getMapSortedItem(map, key),
+                    key: getSortedItem(map, key),
                     val: val
                 }, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
@@ -215,7 +215,7 @@ describe('test.stateMapTest', () => {
 
             function testDelete(key: bigint) {
 
-                const sortedItem = getMapSortedItem(map, key);
+                const sortedItem = getSortedItem(map, key);
                 map.delete(key);
 
                 const tx = buildTx(map);

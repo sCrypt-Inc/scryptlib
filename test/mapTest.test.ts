@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { loadArtifact } from './helper'
 import { buildContractClass } from '../src/contract'
-import { Bytes, getMapSortedItem, StructObject } from '../src/scryptTypes'
+import { Bytes, getSortedItem, StructObject } from '../src/scryptTypes'
 import { Contract, ContractClass, num2bin } from '../src';
 function getRandomInt(): bigint {
     return BigInt(Math.floor(Math.random() * 10000000));
@@ -23,7 +23,7 @@ function getRandomBytesMap(map: Map<Bytes, Bytes>) {
         let val = Bytes(num2bin(getRandomInt(), 8));
 
         mapEntrys.push({
-            key: getMapSortedItem(map, key),
+            key: getSortedItem(map, key),
             val: val
         })
 
@@ -39,7 +39,7 @@ function getRandomBoolMap(map: Map<bigint, boolean>) {
         let key = getRandomInt()
         let val = getRandomInt() % 2n === 0n;
         mapEntrys.push({
-            key: getMapSortedItem(map, key),
+            key: getSortedItem(map, key),
             val: val
         })
         map.set(key, val);
@@ -59,7 +59,7 @@ function getRandomStMap(map: Map<StructObject, bigint[]>) {
 
         let val = [getRandomInt(), getRandomInt(), getRandomInt()];
         mapEntrys.push({
-            key: getMapSortedItem(map, key),
+            key: getSortedItem(map, key),
             val: val
         })
         map.set(key, val);
@@ -81,7 +81,7 @@ describe('test.mapTest', () => {
         it('test unlock', () => {
             let map = new Map<bigint, bigint>();
             map.set(3n, 1n);
-            const result = mapTest.unlock(getMapSortedItem(map, 3n), 1n).verify()
+            const result = mapTest.unlock(getSortedItem(map, 3n), 1n).verify()
             expect(result.success, result.error).to.be.true;
 
         })
@@ -118,7 +118,7 @@ describe('test.mapTest', () => {
             let map = new Map<bigint, boolean>();
             let mapEntrys = getRandomBoolMap(map);
 
-            const querykeys = Array.from(map, ([key, val]) => (getMapSortedItem(map, key)))
+            const querykeys = Array.from(map, ([key, val]) => (getSortedItem(map, key)))
 
             const result = mapTest.testInsertMapEntryBool(mapEntrys, querykeys, MapTest.toData(map, "HashedMap<int, bool>")).verify()
             expect(result.success, result.error).to.be.true;
@@ -130,7 +130,7 @@ describe('test.mapTest', () => {
             let map = new Map<Bytes, Bytes>();
             let mapEntrys = getRandomBytesMap(map);
 
-            const querykeys = Array.from(map, ([key, val]) => (getMapSortedItem(map, key)))
+            const querykeys = Array.from(map, ([key, val]) => (getSortedItem(map, key)))
 
             const result = mapTest.testInsertMapEntryBytes(mapEntrys, querykeys, MapTest.toData(map, "HashedMap<bytes, bytes>")).verify()
             expect(result.success, result.error).to.be.true;
@@ -144,7 +144,7 @@ describe('test.mapTest', () => {
 
             let mapEntrys = getRandomStMap(map);
 
-            const querykeys = Array.from(map, ([key, val]) => (getMapSortedItem(map, key)))
+            const querykeys = Array.from(map, ([key, val]) => (getSortedItem(map, key)))
 
             const result = mapTest.testInsertMapEntrySt(mapEntrys, querykeys, MapTest.toData(map, "HashedMap<ST, int[3]>")).verify()
             expect(result.success, result.error).to.be.true;
@@ -158,36 +158,36 @@ describe('test.mapTest', () => {
             const mapEntrys = [] as any[];
 
             mapEntrys.push({
-                key: getMapSortedItem(map, 5n),
+                key: getSortedItem(map, 5n),
                 val: 3n
             })
             map.set(5n, 3n);
             mapEntrys.push({
-                key: getMapSortedItem(map, 9n),
+                key: getSortedItem(map, 9n),
                 val: 11n
             })
             map.set(9n, 11n);
             mapEntrys.push({
-                key: getMapSortedItem(map, 19n),
+                key: getSortedItem(map, 19n),
                 val: 22n
             })
             map.set(19n, 22n);
 
 
             mapEntrys.push({
-                key: getMapSortedItem(map, 5n),
+                key: getSortedItem(map, 5n),
                 val: 3n
             })
 
             map.delete(5n)
 
             mapEntrys.push({
-                key: getMapSortedItem(map, 9n),
+                key: getSortedItem(map, 9n),
                 val: 11n
             })
             map.delete(9n)
             mapEntrys.push({
-                key: getMapSortedItem(map, 19n),
+                key: getSortedItem(map, 19n),
                 val: 22n
             })
 
