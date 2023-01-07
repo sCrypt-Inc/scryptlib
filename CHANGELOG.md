@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 1.0.10
+
+- Update bsv library, add Type definitions for bsv `1.5.6`
+
+*Release Date: 2023/01/07*
+
 ## 1.0.9
 
 - Fix big int issue [#206](https://github.com/sCrypt-Inc/scryptlib/issues/206)
