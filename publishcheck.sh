@@ -15,7 +15,7 @@ echo "make sure all your code is merged to master."
 
 echo "doing publishcheck ..."
 
-BRANCH="master"
+BRANCH="v1.0"
 
 git checkout "$BRANCH"
 
