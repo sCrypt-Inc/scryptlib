@@ -20,7 +20,7 @@ script:
   - npm run cov
   # integration testing with boilerplate
   - npm link
-  - git clone -b v1.0 https://github.com/scrypt-sv/boilerplate.git
+  - git clone -b dev https://github.com/scrypt-sv/boilerplate.git
   - cd boilerplate
   - npm install
   - npm link scryptlib # use this version
