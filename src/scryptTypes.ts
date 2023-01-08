@@ -63,7 +63,7 @@ export type HashedSet = Flavor<Set<SupportedParamType>, 'HashedSet'>;
 export type HashedMap = Flavor<Map<SupportedParamType, SupportedParamType>, 'HashedMap'>;
 
 
-export function Int(n: number | bigint): Int {
+export function Int(n: number | bigint | string): Int {
   return BigInt(n);
 }
 
