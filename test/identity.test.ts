@@ -3,13 +3,13 @@ const { expect } = require('chai');
 import { assert } from 'chai';
 import { Int, readLaunchJson } from '../src';
 import { buildContractClass } from '../src/contract';
-import { getRandomInt, loadDescription } from './helper';
+import { getRandomInt, loadArtifact } from './helper';
 
 describe('Test sCrypt contract identity In Javascript', () => {
   let test, result
 
   before(() => {
-    const Test = buildContractClass(loadDescription('identity_desc.json'));
+    const Test = buildContractClass(loadArtifact('identity.json'));
     test = new Test();
   });
 
@@ -20,9 +20,9 @@ describe('Test sCrypt contract identity In Javascript', () => {
     let counter = 100;
 
     while (--counter > 0) {
-      let x = new Int(getRandomInt(-100000000000, 100000000000));
-      let y = new Int(getRandomInt(-100000000000, 100000000000));
-      let z = new Int(getRandomInt(-100000000000, 100000000000));
+      let x = Int(getRandomInt(-100000000000, 100000000000));
+      let y = Int(getRandomInt(-100000000000, 100000000000));
+      let z = Int(getRandomInt(-100000000000, 100000000000));
 
 
       result = test.bitwiseAlgebra(x, y, z).verify()
@@ -58,9 +58,9 @@ describe('Test sCrypt contract identity In Javascript', () => {
     let counter = 1000;
 
     while (--counter > 0) {
-      let x = new Int(getRandomInt(-100000000000, 100000000000));
-      let y = new Int(getRandomInt(-100000000000, 100000000000));
-      let z = new Int(getRandomInt(-100000000000, 100000000000));
+      let x = Int(getRandomInt(-100000000000, 100000000000));
+      let y = Int(getRandomInt(-100000000000, 100000000000));
+      let z = Int(getRandomInt(-100000000000, 100000000000));
 
       result = test.mathAlgebra(x, y, z).verify()
       if (result.success === false) {
@@ -77,8 +77,8 @@ describe('Test sCrypt contract identity In Javascript', () => {
     let counter = 1000;
 
     while (--counter > 0) {
-      let x = new Int(getRandomInt(-100000000000, 100000000000));
-      let y = new Int(getRandomInt(0, 1000));
+      let x = Int(getRandomInt(-100000000000, 100000000000));
+      let y = Int(getRandomInt(0, 1000));
 
       result = test.shiftAlgebra(x, y).verify()
       if (result.success === false) {
@@ -87,8 +87,8 @@ describe('Test sCrypt contract identity In Javascript', () => {
       expect(result.success, result.error).to.be.true
     }
 
-    let x = new Int(getRandomInt(-100000000000, 100000000000));
-    result = test.shiftAlgebra(x, -1).verify()
+    let x = Int(getRandomInt(-100000000000, 100000000000));
+    result = test.shiftAlgebra(x, -1n).verify()
     expect(result.success, result.error).to.be.false
 
   });

@@ -307,4 +307,11 @@ Signature.SIGHASH_SINGLE = 0x03
 Signature.SIGHASH_FORKID = 0x40
 Signature.SIGHASH_ANYONECANPAY = 0x80
 
+Signature.ALL = 0x41
+Signature.NONE = 0x42
+Signature.SINGLE = 0x43
+Signature.ANYONECANPAY_ALL = 0xc1
+Signature.ANYONECANPAY_NONE = 0xc2
+Signature.ANYONECANPAY_SINGLE = 0xc3
+
 module.exports = Signature

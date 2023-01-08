@@ -1,214 +1,71 @@
-import { bin2num, bsv, num2bin } from './utils';
+import { Bool, Bytes, Int, isBytes, ScryptType, SupportedParamType } from './scryptTypes';
+import { bsv } from './utils';
 
-const Script = bsv.Script;
-const Opcode = bsv.Opcode;
+
 const BN = bsv.crypto.BN;
-// number of bytes to denote state length after serialization, exclusing varint prefix
-export const STATE_LEN_2BYTES = 2;
-export const STATE_LEN_4BYTES = 4;
 
-function serializeBool(flag: boolean): string {
-  return flag ? 'OP_TRUE' : 'OP_FALSE';
-}
 
-export function serializeInt(n: number | bigint | string): string {
-  let num = new BN(n);
-  if (typeof n === 'string') {
-    if (n.startsWith('0x')) {
-      num = new BN(n.substr(2), 16);
-    }
-  }
-
-  if (num.eqn(0)) {
+/**
+ * int to little-endian signed magnitude
+ */
+export function int2hex(n: Int): string {
+  if (n === 0n) {
     return '00';
+  } else if (n === -1n) {
+    return '4f';
+  } else if (n > 0n && n <= 16n) {
+    n += 80n;
+    return n.toString(16);
   }
-  return num.toSM({ endian: 'little' }).toString('hex');
+  const number = new BN(n);
+  const m = number.toSM({ endian: 'little' });
+  return bsv.Script.fromASM(m.toString('hex')).toHex();
 }
 
-function serializeString(str: string) {
-  if (str === '') {
-    return '00';
+
+
+export function bool2hex(b: Bool): string {
+  if (b) {
+    return '51';
   }
-  const buf = Buffer.from(str, 'utf8');
-  return buf.toString('hex');
+  return '00';
 }
 
-// TODO: validate
-function serializeBytes(hexStr: string): string {
-  return hexStr;
+
+export function bytes2hex(b: Bytes): string {
+  if (b) {
+
+    if (b.length / 2 > 1) {
+      return bsv.Script.fromASM(b).toHex();
+    }
+
+    const intValue = parseInt(b, 16);
+
+    if (intValue >= 1 && intValue <= 16) {
+      return BigInt(intValue + 80).toString(16);
+    }
+
+    return bsv.Script.fromASM(b).toHex();
+  }
+  return '00';
 }
 
-export type State = Record<string, boolean | number | bigint | string>;
-export type StateArray = Array<boolean | number | bigint | string>;
 
-function serializeWithSchema(state: State | StateArray, key: string | number, schema: State | StateArray = undefined) {
-  const type = schema[key];
-  if (type === 'boolean') {
-    return serializeBool(state[key]);
-  } else if (type === 'number') {
-    return serializeInt(state[key]);
-  } else if (type === 'bigint') {
-    return serializeInt(state[key]);
-  } else if (type === 'string') {
-    return serializeString(state[key]);
-  } else {
-    return serializeBytes(state[key]);
+export function toScriptHex(x: SupportedParamType, type: string): string {
+
+  if (type === ScryptType.INT || type === ScryptType.PRIVKEY) {
+    return int2hex(x as bigint);
+  } else if (type === ScryptType.BOOL) {
+    return bool2hex(x as boolean);
+  } else if (isBytes(type)) {
+    return bytes2hex(x as Bytes);
   }
+
+  throw new Error(`unsupport SupportedParamType: ${x}`);
 }
 
-export function serialize(x: boolean | number | bigint | string): string {
-  if (typeof x === 'boolean') {
-    return serializeBool(x);
-  }
-  if (typeof x === 'number') {
-    return serializeInt(x);
-  }
-  if (typeof x === 'bigint') {
-    return serializeInt(x);
-  } else {
-    return serializeBytes(x);
-  }
-}
 
-// serialize contract state into Script ASM
-export function serializeState(state: State | StateArray, stateBytes: number = STATE_LEN_2BYTES, schema: State | StateArray = undefined): string {
-  const asms = [];
-
-  const keys = Object.keys(state);
-  for (const key of keys) {
-    if (schema) {
-      const str = serializeWithSchema(state, key, schema);
-      asms.push(str);
-    } else {
-      const str = serialize(state[key]);
-      asms.push(str);
-    }
-  }
-
-  const script = Script.fromASM(asms.join(' '));
-  const scriptHex = script.toHex();
-  const stateLen = scriptHex.length / 2;
-
-  // use fixed size to denote state len
-  const len = num2bin(stateLen, stateBytes);
-  return script.toASM() + ' ' + len;
-}
-
-class OpState {
-  public op: any;
-
-  constructor(op) {
-    this.op = op;
-  }
-
-  toNumber(): number | string | bigint {
-
-    if (this.op.opcodenum === Opcode.OP_1) {
-      return Number(1);
-    } else if (this.op.opcodenum === Opcode.OP_0) {
-      return Number(0);
-    } else if (this.op.opcodenum === Opcode.OP_1NEGATE) {
-      return Number(-1);
-    } else if (this.op.opcodenum >= Opcode.OP_2 && this.op.opcodenum <= Opcode.OP_16) {
-      return Number(this.op.opcodenum - Opcode.OP_2 + 2);
-    } else {
-      if (!this.op.buf) throw new Error('state does not have a number representation');
-      return Number(bin2num(this.op.buf));
-    }
-
-  }
-
-  toBigInt(): bigint {
-    if (this.op.opcodenum === Opcode.OP_1) {
-      return BigInt(1);
-    } else if (this.op.opcodenum === Opcode.OP_0) {
-      return BigInt(0);
-    } else if (this.op.opcodenum === Opcode.OP_1NEGATE) {
-      return BigInt(-1);
-    } else if (this.op.opcodenum >= Opcode.OP_2 && this.op.opcodenum <= Opcode.OP_16) {
-      return BigInt(this.op.opcodenum - Opcode.OP_2 + 2);
-    } else {
-      if (!this.op.buf) throw new Error('state does not have a number representation');
-      return BigInt(bin2num(this.op.buf));
-    }
-  }
-
-  toBoolean(): boolean {
-    return this.toNumber() !== Number(0);
-  }
-
-  toHex(): string {
-    if (!this.op.buf) throw new Error('state does not have a hexadecimal representation');
-    return this.op.buf.toString('hex');
-  }
-
-  toString(arg = 'utf8') {
-    if (!this.op.buf) { throw new Error('state does not have a string representation'); }
-    if (this.op.buf[0] === 0) {
-      return '';
-    }
-    return this.op.buf.toString(arg);
-  }
-}
-
-export type OpStateArray = Array<OpState>
-
-// deserialize Script or Script Hex or Script ASM Code to contract state array and object
-export function deserializeState(s: string | bsv.Script, schema: State | StateArray = undefined): OpStateArray | State | StateArray {
-  let script: bsv.Script;
-  try {
-    script = new Script(s);
-  } catch (e) {
-    script = Script.fromASM(s);
-  }
-  const chunks = script.chunks;
-  const states = [];
-  const pos = chunks.length;
-  //the last opcode is length of stats, skip
-  for (let i = pos - 2; i >= 0; i--) {
-    const opcodenum = chunks[i].opcodenum;
-    if (opcodenum === Opcode.OP_RETURN) {
-      break;
-    } else {
-      states.unshift(new OpState(chunks[i]));
-    }
-  }
-
-  //deserialize to an array
-  if (!schema) {
-    return states;
-  }
-
-  //deserialize to an object
-  let ret: State | StateArray;
-  if (Array.isArray(schema)) {
-    ret = [];
-  } else {
-    ret = {};
-  }
-  const keys = Object.keys(schema);
-  for (let i = 0; i < states.length; i++) {
-    const key = keys[i];
-    if (!key) {
-      break;
-    }
-    const val = schema[key];
-    if (val === 'boolean' || typeof val === 'boolean') {
-      ret[key] = states[i].toBoolean();
-    } else if (val === 'number' || typeof val === 'number') {
-      ret[key] = states[i].toNumber();
-    } else if (val === 'bigint' || typeof val === 'bigint') {
-      if (typeof BigInt === 'function') {
-        ret[key] = states[i].toBigInt();
-      } else {
-        ret[key] = states[i].toNumber();
-      }
-    } else if (val === 'string') {
-      ret[key] = states[i].toString();
-    } else {
-      ret[key] = states[i].toHex();
-    }
-  }
-
-  return ret;
+export function toScriptASM(a: SupportedParamType, type: string): string {
+  const hex = toScriptHex(a, type);
+  return bsv.Script.fromHex(hex).toASM();
 }

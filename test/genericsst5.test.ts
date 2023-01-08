@@ -1,53 +1,46 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
-import { Bytes } from '../src';
-import { HashedMap } from '../src/scryptTypes';
+import { newTx, loadArtifact } from './helper';
+import { buildContractClass } from '../src/contract';
+import { Bytes, Contract } from '../src';
 
 
 describe('GenericStruct  test', () => {
 
     describe('test genericsst5', () => {
-        let c, result;
+        let c: Contract, result;
 
-        const C = buildContractClass(loadDescription('genericsst5_desc.json'));
-        const { ST0, ST1, ERC20} = buildTypeClasses(C);
+        const C = buildContractClass(loadArtifact('genericsst5.json'));
         before(() => {
-            const erc20 = new ERC20(
-                1000000,
-                new HashedMap(new Bytes(''))
-            );
-            c = new C(erc20);
+            c = new C([1000000n, [Bytes('')]]);
         });
 
         it('should unlock successfully', () => {
 
-            result = c.unlock(new ST1({
-                x: new ST0({
+            result = c.unlock({
+                x: {
                     x: false,
-                    y: 3000
-                }),
-                y: 2000
-            })).verify();
+                    y: 3000n
+                },
+                y: 2000n
+            }).verify();
 
             expect(result.success, result.error).to.be.true
         })
 
 
         it('should unlock fail', () => {
-            result = c.unlock(new ST1({
-                x: new ST0({
+            result = c.unlock({
+                x: {
                     x: false,
-                    y: 3000
-                }),
-                y: 2001
-            })).verify();
+                    y: 3000n
+                },
+                y: 2001n
+            }).verify();
 
             expect(result.success, result.error).to.be.false
-            
-        })
 
+        })
 
     });
 });

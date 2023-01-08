@@ -1,13 +1,11 @@
+import { ChildProcess, exec, execSync } from 'child_process';
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'fs';
 import { basename, dirname, join } from 'path';
-import { execSync, exec, ChildProcess } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
-import md5 = require('md5');
+import {
+  buildTypeResolver, ContractArtifact, CURRENT_CONTRACT_ARTIFACT_VERSION, findCompiler, hash160, md5, path2uri, resolveConstValue, TypeResolver
+} from './internal';
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
-import {
-  path2uri, ContractDescription, findCompiler, CURRENT_CONTRACT_DESCRIPTION_VERSION,
-  buildTypeResolver, TypeResolver, resolveConstValue, hash160
-} from './internal';
 
 
 const SYNTAX_ERR_REG = /(?<filePath>[^\s]+):(?<line>\d+):(?<column>\d+):\n([^\n]+\n){3}(unexpected (?<unexpected>[^\n]+)\nexpecting (?<expecting>[^\n]+)|(?<message>[^\n]+))/g;
@@ -112,10 +110,10 @@ export class CompileResult {
   sourceMapFile?: string;
   dbgFile?: string;
 
-  toDesc(): ContractDescription {
+  toArtifact(): ContractArtifact {
 
-    const description: ContractDescription = {
-      version: CURRENT_CONTRACT_DESCRIPTION_VERSION,
+    const artifact: ContractArtifact = {
+      version: CURRENT_CONTRACT_ARTIFACT_VERSION,
       compilerVersion: this.compilerVersion || '0.0.0',
       contract: this.contract || '',
       md5: this.md5 || '',
@@ -133,7 +131,7 @@ export class CompileResult {
       sourceMapFile: this.sourceMapFile || '',
     };
 
-    return description;
+    return artifact;
   }
 }
 
@@ -219,7 +217,7 @@ export interface CompilingSettings {
   asm?: boolean,
   hex?: boolean,
   debug?: boolean,
-  desc?: boolean,
+  artifact?: boolean,
   outputDir?: string,
   outputToFiles?: boolean,
   cwd?: string,
@@ -231,8 +229,8 @@ export interface CompilingSettings {
   timeout?: number  // in ms
 }
 
-function toOutputDir(descDir: string, sourcePath: string) {
-  return join(descDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf-8').substring(0, 10));
+function toOutputDir(artifactsDir: string, sourcePath: string) {
+  return join(artifactsDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf-8').substring(0, 10));
 }
 export function doCompileAsync(source: {
   path: string,
@@ -252,7 +250,7 @@ export function doCompileAsync(source: {
   const childProcess = exec(cmd, { cwd: curWorkingDir, timeout, killSignal: 'SIGKILL' },
     (error: Error | null, stdout: string) => {
       if (error) {
-        console.error(`exec error: ${error}`);
+        console.error(`exec error: ${error} stdout: ${stdout}`);
         callback(error, null);
         return;
       }
@@ -310,7 +308,7 @@ const defaultCompilingSettings = {
   asm: false,
   hex: true,
   debug: false,
-  desc: false,
+  artifact: false,
   outputDir: '',
   outputToFiles: false,
   cwd: '',
@@ -324,22 +322,22 @@ const defaultCompilingSettings = {
 
 export function settings2cmd(sourcePath: string, settings: CompilingSettings): string {
   const srcDir = dirname(sourcePath);
-  //dir that store desc file
-  const descDir = settings.outputDir || srcDir;
+  //dir that store artifact file
+  const artifactDir = settings.outputDir || srcDir;
   //dir that store ast,asm file
-  const outputDir = toOutputDir(descDir, sourcePath);
+  const outputDir = toOutputDir(artifactDir, sourcePath);
   const cmdPrefix = settings.cmdPrefix || findCompiler();
   let outOption = `-o "${outputDir}"`;
   if (settings.stdout) {
     outOption = '--stdout';
-    return `${cmdPrefix} compile ${settings.asm || settings.desc ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    return `${cmdPrefix} compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
   } else {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir);
     }
   }
 
-  return `${cmdPrefix} compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.desc ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  return `${cmdPrefix} compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 }
 
 export function compile(
@@ -351,7 +349,7 @@ export function compile(
 ): CompileResult {
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
-  //dir that store desc file
+  //dir that stores artifact file
 
   const curWorkingDir = settings.cwd || srcDir;
 
@@ -375,8 +373,8 @@ export function handleCompilerOutput(
 
   const srcDir = dirname(sourcePath);
   const sourceFileName = basename(sourcePath);
-  const descDir = settings.outputDir || srcDir;
-  const outputDir = toOutputDir(descDir, sourcePath);
+  const artifactsDir = settings.outputDir || srcDir;
+  const outputDir = toOutputDir(artifactsDir, sourcePath);
   const outputFiles = {};
   try {
     // Because the output of the compiler on the win32 platform uses crlf as a newline， here we change \r\n to \n. make SYNTAX_ERR_REG、SEMANTIC_ERR_REG、IMPORT_ERR_REG work.
@@ -407,7 +405,7 @@ export function handleCompilerOutput(
 
     } else {
 
-      if (settings.ast || settings.desc) {
+      if (settings.ast || settings.artifact) {
 
         const outputFilePath = getOutputFilePath(outputDir, 'ast');
         const astFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
@@ -418,7 +416,7 @@ export function handleCompilerOutput(
       }
 
 
-      if (settings.hex || settings.desc) {
+      if (settings.hex || settings.artifact) {
 
         const outputFilePath = getOutputFilePath(outputDir, 'hex');
         const hexFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
@@ -429,8 +427,8 @@ export function handleCompilerOutput(
 
       if (settings.sourceMap) {
         const outputFilePath = getOutputFilePath(outputDir, 'map');
-        if (settings.desc) {
-          const dist = getOutputFilePath(descDir, 'map');
+        if (settings.artifact) {
+          const dist = getOutputFilePath(artifactsDir, 'map');
           const sourceMapFile = dist.replace('stdin', basename(sourcePath, '.scrypt'));
           renameSync(outputFilePath, sourceMapFile);
           result.sourceMapFile = path2uri(sourceMapFile);
@@ -450,12 +448,12 @@ export function handleCompilerOutput(
         result.dbgFile = path2uri(dbgFile);
       }
 
-      if (settings.desc) {
-        const outputFilePath = getOutputFilePath(descDir, 'desc');
-        const descFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
-        const description = result.toDesc();
+      if (settings.artifact) {
+        const outputFilePath = getOutputFilePath(artifactsDir, 'artifact');
+        const artifactFile = outputFilePath.replace('stdin', basename(sourcePath, '.scrypt'));
+        const artifact = result.toArtifact();
 
-        writeFileSync(descFile, JSON.stringify(description, (key, value) => {
+        writeFileSync(artifactFile, JSON.stringify(artifact, (key, value) => {
           //ignore deprecated fields
           if (key == 'sources' || key == 'sourceMap' || key === 'asm')
             return undefined;
@@ -468,7 +466,7 @@ export function handleCompilerOutput(
 
     return result;
   } finally {
-    doClean(settings, outputFiles, outputDir, sourcePath);
+    doClean(settings, outputFiles, outputDir);
   }
 }
 
@@ -522,13 +520,15 @@ function _addSourceLocationProperty(astObj, uri: string | null) {
   return astObj;
 }
 
-function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'hex' | 'desc' | 'map' | 'dbg'): string {
+function getOutputFilePath(baseDir: string, target: 'ast' | 'asm' | 'hex' | 'artifact' | 'map' | 'dbg'): string {
   if (target == 'hex') {
     return join(baseDir, `stdin_${target}.txt`);
   } else if (target === 'map') {
     return join(baseDir, `stdin.${target}.json`);
   } else if (target === 'dbg') {
     return join(baseDir, `stdin.${target}.json`);
+  } else if (target === 'artifact') {
+    return join(baseDir, 'stdin.json');
   }
   return join(baseDir, `stdin_${target}.json`);
 }
@@ -1076,9 +1076,9 @@ function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettin
 
 
 
-function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string, sourcePath: string) {
+function doClean(settings: CompilingSettings, outputFiles: Record<string, string>, outputDir: string) {
 
-  if (settings.stdout || settings.outputToFiles) {
+  if (settings.stdout || settings.outputToFiles || settings.sourceMap) {
     return;
   }
 
@@ -1099,20 +1099,20 @@ function doClean(settings: CompilingSettings, outputFiles: Record<string, string
   // console.log('compile time spent: ', Date.now() - st)
 }
 
-export function loadSourceMapfromDesc(desc: ContractDescription): Array<{
+export function loadSourceMapfromArtifact(artifact: ContractArtifact): Array<{
   pos: Pos | undefined,
   opcode: string
 }> {
 
-  const sources = desc.sources;
-  const asm = desc.asm.split(' ');
+  const sources = artifact.sources;
+  const asm = artifact.asm.split(' ');
 
-  if (!desc.sourceMap || desc.sourceMap.length == 0) {
+  if (!artifact.sourceMap || artifact.sourceMap.length == 0) {
     return [];
   }
 
   return asm.map((opcode, index) => {
-    const item = desc.sourceMap[index];
+    const item = artifact.sourceMap[index];
     const match = SOURCE_REG.exec(item);
     if (match && match.groups) {
       const fileIndex = parseInt(match.groups.fileIndex);

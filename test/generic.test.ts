@@ -1,6 +1,6 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
+import { loadArtifact } from './helper'
+import { buildContractClass } from '../src/contract'
 import { Bytes } from '../src'
 
 describe('test.generic', () => {
@@ -8,14 +8,14 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_desc.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
-            testGenericLibray = new TestGenericLibray(12)
+            const jsonArtifact = loadArtifact('generic.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
+            testGenericLibray = new TestGenericLibray(12n)
         })
 
         it('test unlock', () => {
 
-            const result = testGenericLibray.unlock(1).verify()
+            const result = testGenericLibray.unlock(1n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -24,9 +24,9 @@ describe('test.generic', () => {
 
         it('test generic output', () => {
 
-            const jsonDescr = loadDescription('generic_desc.json')
+            const jsonArtifact = loadArtifact('generic.json')
 
-            expect(jsonDescr.library).to.deep.include.members([
+            expect(jsonArtifact.library).to.deep.include.members([
                 {
                     "name": "GenericLibray",
                     "params": [
@@ -54,9 +54,9 @@ describe('test.generic', () => {
 
         it('test generic output', () => {
 
-            const jsonDescr = loadDescription('generic_assignment_desc.json')
+            const jsonArtifact = loadArtifact('generic_assignment.json')
 
-            expect(jsonDescr.library).to.deep.include.members([
+            expect(jsonArtifact.library).to.deep.include.members([
                 {
                     "name": "GenericLibray",
                     "params": [],
@@ -73,18 +73,18 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_nested_property_desc.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
-            const { GenericLibray, GenericA, ST } = buildTypeClasses(TestGenericLibray);
-            testGenericLibray = new TestGenericLibray(new GenericLibray(new GenericA(new ST({
-                a: 101,
-                b: new Bytes("01010f")
-            })), 11))
+            const jsonArtifact = loadArtifact('generic_nested_property.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
+
+            testGenericLibray = new TestGenericLibray([[{
+                a: 101n,
+                b: Bytes("01010f")
+            }], 11n])
         })
 
         it('test unlock', () => {
 
-            const result = testGenericLibray.unlock(11).verify()
+            const result = testGenericLibray.unlock(11n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -97,19 +97,18 @@ describe('test.generic', () => {
         let testGenericLibray;
 
         before(() => {
-            const jsonDescr = loadDescription('generic_nested_property1_desc.json')
-            const TestGenericLibray = buildContractClass(jsonDescr)
-            const { GenericLibray, GenericA } = buildTypeClasses(TestGenericLibray);
-            testGenericLibray = new TestGenericLibray(new GenericLibray(new GenericA(111)))
+            const jsonArtifact = loadArtifact('generic_nested_property1.json')
+            const TestGenericLibray = buildContractClass(jsonArtifact)
+            testGenericLibray = new TestGenericLibray([[111n]])
         })
 
         it('test unlock', () => {
-            const result = testGenericLibray.unlock(111).verify()
+            const result = testGenericLibray.unlock(111n).verify()
             expect(result.success, result.error).to.be.true;
         })
 
         it('should unlock fail', () => {
-            const result = testGenericLibray.unlock(1111).verify()
+            const result = testGenericLibray.unlock(1111n).verify()
             expect(result.success, result.error).to.be.false;
         })
     })

@@ -9,11 +9,32 @@ var JSUtil = require('../../util/js')
 var Script = require('../../script')
 var Sighash = require('../sighash')
 var Output = require('../output')
+var Signature = require('../../crypto/signature')
+var TransactionSignature = require('../signature')
+var Hash = require('../../crypto/hash')
+var Interpreter = require('../../script/interpreter')
+var Opcode = require('../../opcode')
+const PrivateKey = require('../../privatekey')
 
 var MAXINT = 0xffffffff // Math.pow(2, 32) - 1;
 var DEFAULT_RBF_SEQNUMBER = MAXINT - 2
 var DEFAULT_SEQNUMBER = MAXINT
 var DEFAULT_LOCKTIME_SEQNUMBER = MAXINT - 1
+
+function getLowSPreimage (tx, sigtype, inputIndex, inputLockingScript, inputAmount) {
+  var i = 0
+  do {
+    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex, inputLockingScript, inputAmount)
+
+    var sighash = Hash.sha256sha256(preimage)
+
+    if (_.isPositiveNumber(sighash.readUInt8()) && _.isPositiveNumber(sighash.readUInt8(31))) {
+      return preimage
+    }
+
+    tx.nLockTime++
+  } while (i < Number.MAX_SAFE_INTEGER)
+}
 
 function Input (params) {
   if (!(this instanceof Input)) {
@@ -144,19 +165,61 @@ Input.prototype.setScript = function (script) {
  * Retrieve signatures for the provided PrivateKey.
  *
  * @param {Transaction} transaction - the transaction to be signed
- * @param {PrivateKey} privateKey - the private key to use when signing
+ * @param {PrivateKey | Array} privateKeys - the private key to use when signing
  * @param {number} inputIndex - the index of this input in the provided transaction
- * @param {number} sigType - defaults to Signature.SIGHASH_ALL
- * @param {Buffer} addressHash - if provided, don't calculate the hash of the
- *     public key associated with the private key provided
+ * @param {number} sigType - defaults to Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
  * @abstract
  */
-Input.prototype.getSignatures = function () {
-  // throw new errors.AbstractMethodInvoked(
-  //   'Trying to sign unsupported output type (only P2PKH and P2SH multisig inputs are supported)' +
-  //   ' for input: ' + JSON.stringify(this)
-  // )
-  return []
+Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, sigtype) {
+  $.checkState(this.output instanceof Output)
+  sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+  var results = []
+  if (privateKeys instanceof PrivateKey) {
+    results.push(new TransactionSignature({
+      publicKey: privateKeys.publicKey,
+      prevTxId: this.prevTxId,
+      outputIndex: this.outputIndex,
+      inputIndex: inputIndex,
+      signature: Sighash.sign(transaction, privateKeys, sigtype, inputIndex, this.output.script, this.output.satoshisBN),
+      sigtype: sigtype
+    }))
+  } else if (_.isArray(privateKeys)) {
+    var self = this
+
+    _.each(privateKeys, function (privateKey, index) {
+      var sigtype_ = sigtype
+      if (_.isArray(sigtype)) {
+        sigtype_ = sigtype[index] || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+      }
+      results.push(new TransactionSignature({
+        publicKey: privateKey.publicKey,
+        prevTxId: self.prevTxId,
+        outputIndex: self.outputIndex,
+        inputIndex: inputIndex,
+        signature: Sighash.sign(transaction, privateKey, sigtype_, inputIndex, self.output.script, self.output.satoshisBN),
+        sigtype: sigtype_
+      }))
+    })
+  }
+  return results
+}
+
+/**
+ * Retrieve preimage for the Input.
+ *
+ * @param {Transaction} transaction - the transaction to be signed
+ * @param {number} inputIndex - the index of this input in the provided transaction
+ * @param {number} sigType - defaults to Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
+ * @param {boolean} isLowS - true if the sig hash is safe for low s.
+ * @abstract
+ */
+Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS) {
+  $.checkState(this.output instanceof Output)
+  sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+  isLowS = isLowS || false
+  return isLowS
+    ? getLowSPreimage(transaction, sigtype, inputIndex, this.output.script, this.output.satoshisBN)
+    : Sighash.sighashPreimage(transaction, sigtype, inputIndex, this.output.script, this.output.satoshisBN)
 }
 
 Input.prototype.isFullySigned = function () {
@@ -198,6 +261,41 @@ Input.prototype.isNull = function () {
 
 Input.prototype._estimateSize = function () {
   return this.toBufferWriter().toBuffer().length
+}
+
+Input.prototype.verify = function (transaction, inputIndex) {
+  $.checkState(this.output instanceof Output)
+  $.checkState(this.script instanceof Script)
+  $.checkState(this.output.script instanceof Script)
+
+  var us = this.script
+  var ls = this.output.script
+  var inputSatoshis = this.output.satoshisBN
+
+  Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER
+  Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER
+
+  const bsi = new Interpreter()
+
+  let failedAt = {}
+
+  bsi.stepListener = function (step) {
+    if (step.fExec || (Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= Opcode.OP_ENDIF)) {
+      if ((Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= Opcode.OP_ENDIF) || step.opcode.toNumber() === Opcode.OP_RETURN) /** Opreturn */ {
+        failedAt.opcode = step.opcode
+      } else {
+        failedAt = step
+      }
+    }
+  }
+
+  var success = bsi.verify(us, ls, transaction, inputIndex, Interpreter.DEFAULT_FLAGS, inputSatoshis)
+
+  if (failedAt.opcode) {
+    failedAt.opcode = failedAt.opcode.toNumber()
+  }
+
+  return { success, error: bsi.errstr, failedAt: success ? {} : failedAt }
 }
 
 module.exports = Input

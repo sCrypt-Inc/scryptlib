@@ -1,4 +1,4 @@
-# Contract Description Version 
+# Contract Artifact Version 
 
 
 ## version = 1

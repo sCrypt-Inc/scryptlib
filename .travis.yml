@@ -24,6 +24,6 @@ script:
   - cd boilerplate
   - npm install
   - npm link scryptlib # use this version
-  #- npm ls scryptlib    # double check the latest version is used
+  # #- npm ls scryptlib    # double check the latest version is used
   - npm test
-  - npx scryptlib contracts/demo.scrypt
+  - npx scryptlib compile contracts/demo.scrypt

@@ -1,10 +1,9 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
-import { findKeyIndex, Struct, toHashedMap, toHashedSet } from '../src';
-import { SortedItem } from '../src/scryptTypes';
-import { bsv, toHex, getPreimage } from '../src/utils';
+import { newTx, loadArtifact } from './helper';
+import { buildContractClass } from '../src/contract';
+import { bsv, getPreimage } from '../src/utils';
+import { SigHashPreimage, StructObject } from '../src';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
@@ -13,35 +12,35 @@ describe('GenericStruct  test', () => {
 
     describe('test genericsst7', () => {
         let c, result;
-        let map = new Map<number, any>();
-        let set = new Set<any>();
+        let map = new Map<bigint, StructObject>();
+        let set = new Set<StructObject>();
 
-        const C = buildContractClass(loadDescription('genericsst7_desc.json'));
-        const { ST0} = buildTypeClasses(C);
+        const C = buildContractClass(loadArtifact('genericsst7.json'));
+
         before(() => {
 
-            c = new C(toHashedMap(map), toHashedSet(set));
+            c = new C(map, set);
         });
 
         it('should add element successfully', () => {
 
-            const valMap = new ST0({
-                x: 1,
-                y: 2
-            });
-            map.set(100, valMap);
+            const valMap = {
+                x: 1n,
+                y: 2n
+            };
+            map.set(100n, valMap);
 
-            const valSet = new ST0({
-                x: 11,
-                y: 22
-            })
+            const valSet = {
+                x: 11n,
+                y: 22n
+            }
 
             set.add(valSet);
 
 
             let newLockingScript = c.getNewStateScript({
-                hm: toHashedMap(map),
-                hs: toHashedSet(set)
+                hm: map,
+                hs: set
             });
 
             const tx = newTx(inputSatoshis);
@@ -58,40 +57,40 @@ describe('GenericStruct  test', () => {
 
             const preimage = getPreimage(tx, c.lockingScript, inputSatoshis)
 
-            result = c.unlock(new SortedItem({
-                item: 100,
-                idx: findKeyIndex(map, 100)
-            }), valMap, new SortedItem({
+            result = c.unlock({
+                item: 100n,
+                idx: C.findKeyIndex(map, 100n, "int")
+            }, valMap, {
                 item: valSet,
-                idx: findKeyIndex(set, valSet)
-            }), preimage).verify();
+                idx: C.findKeyIndex(set, valSet, "ST0<int>")
+            }, SigHashPreimage(preimage)).verify();
 
             expect(result.success, result.error).to.be.true
 
-            c.hs = toHashedSet(set)
-            c.hm = toHashedMap(map)
+            c.hs = set
+            c.hm = map
         })
 
 
         it('should add element successfully', () => {
 
-            const valMap = new ST0({
-                x: 1,
-                y: 2
-            });
-            map.set(444, valMap);
+            const valMap = {
+                x: 1n,
+                y: 2n
+            };
+            map.set(444n, valMap);
 
-            const valSet = new ST0({
-                x: 55,
-                y: 676
-            })
+            const valSet = {
+                x: 55n,
+                y: 676n
+            }
 
             set.add(valSet);
 
 
             let newLockingScript = c.getNewStateScript({
-                hm: toHashedMap(map),
-                hs: toHashedSet(set)
+                hm: map,
+                hs: set
             });
 
             const tx = newTx(inputSatoshis);
@@ -108,41 +107,41 @@ describe('GenericStruct  test', () => {
 
             const preimage = getPreimage(tx, c.lockingScript, inputSatoshis)
 
-            result = c.unlock(new SortedItem({
-                item: 444,
-                idx: findKeyIndex(map, 444)
-            }), valMap, new SortedItem({
+            result = c.unlock({
+                item: 444n,
+                idx: C.findKeyIndex(map, 444n, "int")
+            }, valMap, {
                 item: valSet,
-                idx: findKeyIndex(set, valSet)
-            }), preimage).verify();
+                idx: C.findKeyIndex(set, valSet, "ST0<int>")
+            }, SigHashPreimage(preimage)).verify();
 
             expect(result.success, result.error).to.be.true
 
-            c.hs = toHashedSet(set)
-            c.hm = toHashedMap(map)
+            c.hs = set
+            c.hm = map
         })
 
 
 
         it('should add element fail', () => {
 
-            const valMap = new ST0({
-                x: 1,
-                y: 2
-            });
-            map.set(444, valMap);
+            const valMap = {
+                x: 1n,
+                y: 2n
+            };
+            map.set(444n, valMap);
 
-            const valSet = new ST0({
-                x: 55,
-                y: 676
-            })
+            const valSet = {
+                x: 55n,
+                y: 676n
+            }
 
             set.add(valSet);
 
 
             let newLockingScript = c.getNewStateScript({
-                hm: toHashedMap(map),
-                hs: toHashedSet(set)
+                hm: map,
+                hs: set
             });
 
             const tx = newTx(inputSatoshis);
@@ -159,13 +158,13 @@ describe('GenericStruct  test', () => {
 
             const preimage = getPreimage(tx, c.lockingScript, inputSatoshis)
 
-            result = c.unlock(new SortedItem({
-                item: 444,
-                idx: findKeyIndex(map, 444)
-            }), valMap, new SortedItem({
+            result = c.unlock({
+                item: 444n,
+                idx: C.findKeyIndex(map, 444n, "int")
+            }, valMap, {
                 item: valSet,
-                idx: findKeyIndex(set, valSet)
-            }), preimage).verify();
+                idx: C.findKeyIndex(set, valSet, "ST0<int>")
+            }, SigHashPreimage(preimage)).verify();
 
             expect(result.success, result.error).to.be.false
 

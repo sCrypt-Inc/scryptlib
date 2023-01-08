@@ -1,6 +1,6 @@
 import { assert, expect } from 'chai';
-import { buildContractClass, buildTypeClasses, SigHashPreimage, Bytes, getPreimage, bsv, toHex, compileContract, AbstractContract } from '../../src/internal'
-import { newTx, loadDescription } from '../helper';
+import { buildContractClass, SigHashPreimage, Bytes, getPreimage, bsv, toHex, compileContract, AbstractContract } from '../../src/internal'
+import { newTx, loadArtifact } from '../helper';
 
 
 const inputSatoshis = 100000;
@@ -13,18 +13,17 @@ describe('Test sCrypt contract stateProp In Javascript', () => {
 
     before(() => {
 
-        const StateProp = buildContractClass(loadDescription('stateProp_desc.json'));
-        const { ST } = buildTypeClasses(StateProp);
+        const StateProp = buildContractClass(loadArtifact('stateProp.json'));
 
         test = new StateProp([
-            new ST({ x: 0, y: true, z: new Bytes('00') }),
-            new ST({ x: 0, y: true, z: new Bytes('00') })
+            { x: 0n, y: true, z: Bytes('00') },
+            { x: 0n, y: true, z: Bytes('00') }
         ]);
 
         let newLockingScript = test.getNewStateScript({
             st: [
-                new ST({ x: 0, y: true, z: new Bytes('00') }),
-                new ST({ x: 1, y: false, z: new Bytes('0001') })
+                { x: 0n, y: true, z: Bytes('00') },
+                { x: 1n, y: false, z: Bytes('0001') }
             ]
         })
 
@@ -44,7 +43,7 @@ describe('Test sCrypt contract stateProp In Javascript', () => {
     });
 
     it('should return true', () => {
-        result = test.unlock(new SigHashPreimage(toHex(preimg)), new Bytes('01')).verify();
+        result = test.unlock(SigHashPreimage(preimg), Bytes('01')).verify();
         expect(result.success, result.error).to.be.true
     });
 });

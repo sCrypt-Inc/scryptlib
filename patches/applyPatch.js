@@ -36,20 +36,21 @@ function apply(patches) {
 function printFinish() {
     console.info(`${chalk.green("✔")} ${chalk.green.bold("The patches has been successfully applied.")}`)
 
-    console.info(`
-${chalk.grey("•")}`, `If you want to use sCrypt compiler binary, run ${chalk.yellow.bold("npx scryptlib download")} to download the compiler binary.`)
+    //     console.info(`
+    // ${chalk.grey("•")}`, `If you want to use sCrypt compiler binary, run ${chalk.yellow.bold("npx scryptlib download")} to download the compiler binary.`)
 }
 
+module.exports = function () {
+    try {
+        glob('**/*.js', { cwd: "./patches" }, function (err, patches) {
+            apply(patches.slice(1));
+        });
 
-try {
-
-    glob('**/*.js', { cwd: "./patches" }, function (err, patches) {
-        apply(patches.slice(1));
+        apply(["bsv/index.d.ts"]);
         printFinish();
-    });
-
-} catch (error) {
-
-    console.error(error)
-
+    } catch (error) {
+        console.info(`${chalk.red("x")} ${chalk.bgRed.bold("The patches has not been successfully applied.")}`)
+        console.info(`${chalk.bgRed(`**ERROR**: ${error.message}`)}`)
+    }
 }
+

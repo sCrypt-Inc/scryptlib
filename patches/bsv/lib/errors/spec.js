@@ -66,6 +66,9 @@ module.exports = [{
     }, {
       name: 'MissingPreviousOutput',
       message: 'No previous output information.'
+    }, {
+      name: 'MissingInput',
+      message: 'Invalid inputIndex.'
     }]
   }, {
     name: 'NeedMoreInfo',
@@ -88,6 +91,9 @@ module.exports = [{
   }, {
     name: 'DustOutputs',
     message: 'Dust amount detected in one output'
+  }, {
+    name: 'MissingOutput',
+    message: 'Output not found'
   }, {
     name: 'InvalidSatoshis',
     message: 'Output satoshis are invalid'

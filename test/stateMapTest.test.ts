@@ -1,29 +1,27 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
-import { buildContractClass, buildTypeClasses } from '../src/contract'
-import { Bytes, SortedItem, } from '../src/scryptTypes'
-import { findKeyIndex, toData, toHashedMap } from '../src/internal'
-import { bsv, toHex, getPreimage } from '../src/utils';
+import { loadArtifact, newTx } from './helper'
+import { Contract, buildContractClass, ContractClass } from '../src/contract'
+import { getSortedItem, SigHashPreimage, } from '../src/scryptTypes'
+import { bsv, getPreimage } from '../src/utils';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
 describe('test.stateMapTest', () => {
     describe('stateMapTest', () => {
-        let mapTest, StateMapTest, MapEntry;
+        let mapTest: Contract, StateMapTest: ContractClass;
 
-        let map = new Map<number, number>();
+        let map = new Map<bigint, bigint>();
 
         before(() => {
-            const jsonDescr = loadDescription('stateMap_desc.json')
-            StateMapTest = buildContractClass(jsonDescr)
-            MapEntry = buildTypeClasses(StateMapTest).MapEntry
-            mapTest = new StateMapTest(toHashedMap(map)) // empty initial map
+            const jsonArtifact = loadArtifact('stateMap.json')
+            StateMapTest = buildContractClass(jsonArtifact)
+            mapTest = new StateMapTest(map) // empty initial map
         })
 
-        function buildTx(map: Map<number, number>) {
+        function buildTx(map: Map<bigint, bigint>) {
             let newLockingScript = mapTest.getNewStateScript({
-                map: toHashedMap(map),
+                map: map,
             });
 
             const tx = newTx(inputSatoshis);
@@ -45,28 +43,24 @@ describe('test.stateMapTest', () => {
         it('test insert', () => {
 
 
-            function testInsert(key: number, val: number) {
+            function testInsert(key: bigint, val: bigint) {
 
                 map.set(key, val);
-                const keyIndex = findKeyIndex(map, key);
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-                const result = mapTest.insert(new SortedItem({
-                    item: key,
-                    idx: keyIndex
-                }), val, preimage).verify()
+                const result = mapTest.insert(getSortedItem(map, key), val, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest.map = toHashedMap(map)
+                mapTest.map = map
             }
 
-            testInsert(3, 1);
+            testInsert(3n, 1n);
 
-            testInsert(5, 6);
+            testInsert(5n, 6n);
 
-            testInsert(0, 11);
+            testInsert(0n, 11n);
 
-            testInsert(1, 5);
+            testInsert(1n, 5n);
 
         })
 
@@ -74,27 +68,24 @@ describe('test.stateMapTest', () => {
         it('test update', () => {
 
 
-            function testUpdate(key: number, val: number) {
+            function testUpdate(key: bigint, val: bigint) {
 
                 map.set(key, val);
 
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.update(new SortedItem({
-                    item: key,
-                    idx: findKeyIndex(map, key)
-                }), val, preimage).verify()
+                const result = mapTest.update(getSortedItem(map, key), val, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest.map = toHashedMap(map)
+                mapTest.map = map
             }
 
 
-            testUpdate(1, 6)
+            testUpdate(1n, 6n)
 
-            testUpdate(1, 8)
-            testUpdate(0, 1)
+            testUpdate(1n, 8n)
+            testUpdate(0n, 1n)
 
         })
 
@@ -102,31 +93,27 @@ describe('test.stateMapTest', () => {
         it('test delete', () => {
 
 
-            function testDelete(key: number) {
+            function testDelete(key: bigint) {
 
-                const keyIndex = findKeyIndex(map, key);
                 map.delete(key);
 
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.delete(new SortedItem({
-                    item: key,
-                    idx: keyIndex
-                }), preimage).verify()
+                const result = mapTest.delete(getSortedItem(map, key), SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest.map = toHashedMap(map)
+                mapTest.map = map
             }
 
 
-            testDelete(1)
+            testDelete(1n)
 
-            testDelete(5)
+            testDelete(5n)
 
-            testDelete(3)
+            testDelete(3n)
 
-            testDelete(0)
+            testDelete(0n)
 
         })
 
@@ -136,19 +123,18 @@ describe('test.stateMapTest', () => {
     describe('stateMapTest: library as state', () => {
         let mapTest;
 
-        const jsonDescr = loadDescription('LibAsState2_desc.json')
-        const Test = buildContractClass(jsonDescr)
-        const { MapEntry } = buildTypeClasses(jsonDescr);
-        let map = new Map<number, number>();
+        const jsonArtifact = loadArtifact('LibAsState2.json')
+        const Test = buildContractClass(jsonArtifact)
+        let map = new Map<bigint, bigint>();
 
         before(() => {
-            mapTest = new Test(toHashedMap(map)) // empty initial map
+            mapTest = new Test(map) // empty initial map
         })
 
-        function buildTx(map: Map<number, number>) {
+        function buildTx(map: Map<bigint, bigint>) {
 
             let newLockingScript = mapTest.getNewStateScript({
-                map: toHashedMap(map),
+                map: map,
             });
 
             const tx = newTx(inputSatoshis);
@@ -170,32 +156,28 @@ describe('test.stateMapTest', () => {
         it('test insert', () => {
 
 
-            function testInsert(key: number, val: number) {
+            function testInsert(key: bigint, val: bigint) {
 
                 map.set(key, val);
-                const keyIndex = findKeyIndex(map, key);
 
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
-                const result = mapTest.insert(new MapEntry({
-                    key: new SortedItem({
-                        item: key,
-                        idx: keyIndex
-                    }),
+                const result = mapTest.insert({
+                    key: getSortedItem(map, key),
                     val: val
-                }), preimage).verify()
+                }, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest.map = toHashedMap(map)
+                mapTest.map = map
             }
 
-            testInsert(3, 1);
+            testInsert(3n, 1n);
 
-            testInsert(5, 6);
+            testInsert(5n, 6n);
 
-            testInsert(0, 11);
+            testInsert(0n, 11n);
 
-            testInsert(1, 5);
+            testInsert(1n, 5n);
 
         })
 
@@ -203,30 +185,27 @@ describe('test.stateMapTest', () => {
         it('test update', () => {
 
 
-            function testUpdate(key: number, val: number) {
+            function testUpdate(key: bigint, val: bigint) {
 
                 map.set(key, val);
 
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.update(new MapEntry({
-                    key: new SortedItem({
-                        item: key,
-                        idx: findKeyIndex(map, key)
-                    }),
+                const result = mapTest.update({
+                    key: getSortedItem(map, key),
                     val: val
-                }), preimage).verify()
+                }, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest.map = toHashedMap(map)
+                mapTest.map = map
             }
 
 
-            testUpdate(1, 6)
+            testUpdate(1n, 6n)
 
-            testUpdate(1, 8)
-            testUpdate(0, 1)
+            testUpdate(1n, 8n)
+            testUpdate(0n, 1n)
 
         })
 
@@ -234,31 +213,28 @@ describe('test.stateMapTest', () => {
         it('test delete', () => {
 
 
-            function testDelete(key: number) {
+            function testDelete(key: bigint) {
 
-                const keyIndex = findKeyIndex(map, key);
+                const sortedItem = getSortedItem(map, key);
                 map.delete(key);
 
                 const tx = buildTx(map);
                 const preimage = getPreimage(tx, mapTest.lockingScript, inputSatoshis)
 
-                const result = mapTest.delete(new SortedItem({
-                    item: key,
-                    idx: keyIndex
-                }), preimage).verify()
+                const result = mapTest.delete(sortedItem, SigHashPreimage(preimage)).verify()
                 expect(result.success, result.error).to.be.true;
 
-                mapTest.map = toHashedMap(map)
+                mapTest.map = map
             }
 
 
-            testDelete(1)
+            testDelete(1n)
 
-            testDelete(5)
+            testDelete(5n)
 
-            testDelete(3)
+            testDelete(3n)
 
-            testDelete(0)
+            testDelete(0n)
 
         })
 

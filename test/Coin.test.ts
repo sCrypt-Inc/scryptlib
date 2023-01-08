@@ -1,37 +1,41 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
-import { PubKey, PubKeyHash, SortedItem } from '../src/scryptTypes'
-import { bsv, toHex, getPreimage, findKeyIndex, toData, toHashedMap, signTx } from '../src/utils';
+import { PubKey, PubKeyHash, SigHashPreimage, Sig, getSortedItem } from '../src/scryptTypes'
+import { bsv, getPreimage, signTx } from '../src/utils';
+import { toHex } from '../src';
 const inputIndex = 0;
 const inputSatoshis = 100000;
 const outputAmount = inputSatoshis
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet')
-const publicKey = new PubKey(toHex(privateKey.publicKey))
-const pkh = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKey.publicKey.toBuffer())))
+const privateKey = bsv.PrivateKey.fromRandom('testnet')
+const publicKey = PubKey(toHex(privateKey.publicKey))
+const pkh = PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKey.publicKey.toBuffer())))
 
-const privateKeyReceiver = new bsv.PrivateKey.fromRandom('testnet')
-const publicKeyReceiver = new PubKey(toHex(privateKeyReceiver.publicKey))
-const pkhReceiver = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver.publicKey.toBuffer())))
+const privateKeyReceiver = bsv.PrivateKey.fromRandom('testnet')
+const publicKeyReceiver = PubKey(toHex(privateKeyReceiver.publicKey))
+const pkhReceiver = PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver.publicKey.toBuffer())))
 
-const privateKeyReceiver1 = new bsv.PrivateKey.fromRandom('testnet')
-const publicKeyReceiver1 = new PubKey(toHex(privateKeyReceiver1.publicKey))
-const pkhReceiver1 = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver1.publicKey.toBuffer())))
+const privateKeyReceiver1 = bsv.PrivateKey.fromRandom('testnet')
+const publicKeyReceiver1 = PubKey(toHex(privateKeyReceiver1.publicKey))
+const pkhReceiver1 = PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyReceiver1.publicKey.toBuffer())))
 
 
 describe('Coin.test', () => {
+
+    const jsonArtifact = loadArtifact('Coin.json')
+    const Coin = buildContractClass(jsonArtifact)
+
     describe('Coin.test', () => {
         let coin;
 
-        let map = new Map<PubKeyHash, number>();
+        let map = new Map<PubKeyHash, bigint>();
 
-        const mintAmount = 10000;
-        const sendAmount = 1000;
+        const mintAmount = 10000n;
+        const sendAmount = 1000n;
 
         before(() => {
-            const jsonDescr = loadDescription('Coin_desc.json')
-            const Coin = buildContractClass(jsonDescr)
+
             coin = new Coin(pkh)
         })
 
@@ -39,7 +43,7 @@ describe('Coin.test', () => {
 
             map.set(pkhReceiver, mintAmount);
             let newLockingScript = coin.getNewStateScript({
-                balances: toHashedMap(map),
+                balances: map,
                 minter: pkh
             });
 
@@ -59,11 +63,11 @@ describe('Coin.test', () => {
         }
 
 
-        function buildSendTx(r1, r1Amount, r2, r2Amount) {
+        function buildSendTx(r1: PubKeyHash, r1Amount: bigint, r2: PubKeyHash, r2Amount: bigint) {
             map.set(r1, r1Amount);
             map.set(r2, r2Amount);
             let newLockingScript = coin.getNewStateScript({
-                balances: toHashedMap(map),
+                balances: map,
                 minter: pkh
             });
 
@@ -89,127 +93,86 @@ describe('Coin.test', () => {
 
             const sig = signTx(tx, privateKey, coin.lockingScript, inputSatoshis);
 
-            const result = coin.mint(new SortedItem({
-                item: pkhReceiver,
-                idx: findKeyIndex(map, pkhReceiver)
-            }), mintAmount, preimage, sig, publicKey, 0).verify()
+            const result = coin.mint(getSortedItem(map, pkhReceiver), mintAmount, SigHashPreimage(preimage), Sig(sig), publicKey, 0n).verify()
             expect(result.success, result.error).to.be.true;
-            coin.balances = toHashedMap(map)
+            coin.balances = map
             coin.minter = pkh
         })
 
 
         it('test send', () => {
-            const oldKeyIndex = findKeyIndex(map, pkhReceiver);
+            const key_sender = getSortedItem(map, pkhReceiver);
             const tx = buildSendTx(pkhReceiver, mintAmount - sendAmount, pkhReceiver1, sendAmount);
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(new SortedItem({
-                item: pkhReceiver1,
-                idx: findKeyIndex(map, pkhReceiver1)
-            }), sendAmount, preimage, sig,
+            const result = coin.send(getSortedItem(map, pkhReceiver1), key_sender, sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyReceiver,
                 mintAmount,
-                oldKeyIndex,
-                0).verify()
+                0n).verify()
             expect(result.success, result.error).to.be.true;
-            coin.balances = toHashedMap(map)
+            coin.balances = map
         })
 
         it('test send: should succeeding when receiver more coin', () => {
-
-            const oldKeyIndex = findKeyIndex(map, pkhReceiver);
             const tx = buildSendTx(pkhReceiver, mintAmount - sendAmount - sendAmount, pkhReceiver1, sendAmount + sendAmount);
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(new SortedItem({
-                item: pkhReceiver1,
-                idx: findKeyIndex(map, pkhReceiver1)
-            }), sendAmount, preimage, sig,
+            const result = coin.send(getSortedItem(map, pkhReceiver1), getSortedItem(map, pkhReceiver), sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyReceiver,
                 mintAmount - sendAmount,
-                oldKeyIndex,
                 sendAmount).verify()
             expect(result.success, result.error).to.be.true;
-            coin.balances = toHashedMap(map)
+            coin.balances = map
         })
 
 
         it('should fail when sender have not coin', () => {
 
-            const privateKeyFake = new bsv.PrivateKey.fromRandom('testnet')
-            const publicKeyFake = new PubKey(toHex(privateKeyFake.publicKey))
-            const pkhFake = new PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyFake.publicKey.toBuffer())))
+            const privateKeyFake = bsv.PrivateKey.fromRandom('testnet')
+            const publicKeyFake = PubKey(toHex(privateKeyFake.publicKey))
+            const pkhFake = PubKeyHash(toHex(bsv.crypto.Hash.sha256ripemd160(privateKeyFake.publicKey.toBuffer())))
 
 
-            const fake_balances_msgSender = 10000;
-            const balances_receiver = sendAmount * 2;
+            const fake_balances_msgSender = 10000n;
+            const balances_receiver = sendAmount * 2n;
 
-            const tx = buildSendTx(pkhFake, fake_balances_msgSender - sendAmount, pkhReceiver1, sendAmount * 3);
+            const tx = buildSendTx(pkhFake, fake_balances_msgSender - sendAmount, pkhReceiver1, sendAmount * 3n);
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
             const sig = signTx(tx, privateKeyFake, coin.lockingScript, inputSatoshis);
 
-            let result = coin.send(new SortedItem({
-                item: pkhReceiver1,
-                idx: findKeyIndex(map, pkhReceiver1)
-            }), sendAmount, preimage, sig,
+            let result = coin.send(getSortedItem(map, pkhReceiver1), getSortedItem(map, pkhFake), sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyFake,
                 fake_balances_msgSender,
-                0,
                 balances_receiver).verify()
             expect(result.success, result.error).to.be.false;
 
-            result = coin.send(new SortedItem({
-                item: pkhReceiver1,
-                idx: findKeyIndex(map, pkhReceiver1)
-            }), sendAmount, preimage, sig,
-                publicKeyFake,
-                fake_balances_msgSender,
-                1,
-                balances_receiver).verify()
-            expect(result.success, result.error).to.be.false;
-
-            result = coin.send(new SortedItem({
-                item: pkhReceiver1,
-                idx: findKeyIndex(map, pkhReceiver1)
-            }), sendAmount, preimage, sig,
-                publicKeyFake,
-                fake_balances_msgSender,
-                2,
-                balances_receiver).verify()
-            expect(result.success, result.error).to.be.false;
 
             //must reset map to make  not affecting test below.
-            map.set(pkhReceiver1, sendAmount * 2);
+            map.set(pkhReceiver1, sendAmount * 2n);
             map.delete(pkhFake);
         })
 
         it('should fail when sender send too much coin', () => {
-            const sendAmount = 10000;
-            const balances_receiver = 2000;
-            const balances_sender = 8000;
-
-            const oldKeyIndex = findKeyIndex(map, pkhReceiver);
+            const sendAmount = 10000n;
+            const balances_receiver = 2000n;
+            const balances_sender = 8000n;
+            const key_sender = getSortedItem(map, pkhReceiver);
             const tx = buildSendTx(pkhReceiver, balances_sender - sendAmount, pkhReceiver1, balances_receiver + sendAmount);
             const preimage = getPreimage(tx, coin.lockingScript, inputSatoshis);
 
             const sig = signTx(tx, privateKeyReceiver, coin.lockingScript, inputSatoshis);
 
-            const result = coin.send(new SortedItem({
-                item: pkhReceiver1,
-                idx: findKeyIndex(map, pkhReceiver1)
-            }), sendAmount, preimage, sig,
+            const result = coin.send(getSortedItem(map, pkhReceiver1), key_sender, sendAmount, SigHashPreimage(preimage), Sig(sig),
                 publicKeyReceiver,
                 balances_sender,
-                oldKeyIndex,
                 balances_receiver).verify()
             expect(result.success, result.error).to.be.false;
-            expect(result.error).to.contains("Coin.scrypt#53")
+            expect(result.error).to.contains("Coin.scrypt#51")
         })
 
     })

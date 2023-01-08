@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+
+## 2.0.0
+
+- remove scryptType class, use type
+- add bsv typescript defined
+- firstCall rename to isGenesis
+- auto complete transation sig and sighashpreimage.
+- optimize cli
+- remove FORKID from sighash flag
+- auto calc keyIndex
+- Fix genLaunchConfigFile
+- rename desc files to contractname.json now
+
+see [PR #211](https://github.com/sCrypt-Inc/scryptlib/pull/211)
+
+*Release Date: 2023/01/08*
+
+
+
 ## 1.0.9
 
 - Fix big int issue [#206](https://github.com/sCrypt-Inc/scryptlib/issues/206)

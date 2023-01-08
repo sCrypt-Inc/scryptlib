@@ -1,40 +1,33 @@
 
 import { assert, expect } from 'chai';
-import { newTx, loadDescription, getContractFilePath } from './helper';
-import { buildContractClass, VerifyError, buildTypeClasses } from '../src/contract';
-import { Bytes, findKeyIndex, Int } from '../src';
-import { HashedMap, SortedItem } from '../src/scryptTypes';
+import { loadArtifact } from './helper';
+import { buildContractClass, Contract } from '../src';
+import { getSortedItem } from '../src/scryptTypes';
 
 
 describe('GenericStruct  set_map_simple.test', () => {
 
-    let c, result;
+    let c: Contract, result;
 
-    const C = buildContractClass(loadDescription('set_map_simple_desc.json'));
+    const C = buildContractClass(loadArtifact('set_map_simple.json'));
     before(() => {
         c = new C();
     });
 
     it('should add2Set successfully', () => {
-        let set = new Set<number>();
-        const e = 1;
+        let set = new Set<bigint>();
+        const e = 1n;
         set.add(e)
-        result = c.add2Set(new SortedItem({
-            item: 1,
-            idx: findKeyIndex(set, e)
-        })).verify();
+        result = c.add2Set(getSortedItem(set, 1n)).verify();
 
         expect(result.success, result.error).to.be.true
     })
 
     it('should add2Map successfully', () => {
-        let map = new Map<number, number>();
-        const key = 1, val = 2;
+        let map = new Map<bigint, bigint>();
+        const key = 1n, val = 2n;
         map.set(key, val)
-        result = c.add2Map(new SortedItem({
-            item: key,
-            idx: findKeyIndex(map, key)
-        }), val).verify();
+        result = c.add2Map(getSortedItem(map, key), val).verify();
 
         expect(result.success, result.error).to.be.true
     })

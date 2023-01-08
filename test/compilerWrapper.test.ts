@@ -1,13 +1,13 @@
 import { assert, expect } from 'chai';
 import * as path from "path";
-import { loadDescription, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
-import { ABIEntityType, CompileResult, compilerVersion, compile } from '../src/compilerWrapper';
-import { compileContract, compileContractAsync, bsv, toHex, signTx } from '../src/utils';
+import { loadArtifact, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
+import { ABIEntityType, compilerVersion, compile } from '../src/compilerWrapper';
+import { compileContract, compileContractAsync, bsv, signTx } from '../src/utils';
 import { writeFileSync, readFileSync } from 'fs';
-import { basename, join } from 'path';
-import { buildContractClass, buildTypeClasses } from '../src/contract';
+import { join } from 'path';
+import { buildContractClass } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
-import { Ripemd160, PubKey } from '../src';
+import { Ripemd160, PubKey, toHex, Sig, ContractArtifact } from '../src';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -21,7 +21,7 @@ describe('compile()', () => {
 
   it('should generate description file properly', () => {
 
-    const content = loadDescription('bar_desc.json');
+    const content = loadArtifact('bar.json');
 
     assert.deepEqual(content.abi, [
       {
@@ -55,7 +55,7 @@ describe('compile()', () => {
   })
 
   it('should generate structs properly', () => {
-    const result = loadDescription('person_desc.json');
+    const result = loadArtifact('person.json');
 
     assert.equal(result.structs.length, 2);
 
@@ -105,16 +105,14 @@ describe('compile()', () => {
 
 
 
-  describe('desc should be as expected', () => {
-    let desc;
+  describe('artifact should be as expected', () => {
+    let artifact: ContractArtifact;
     before(() => {
-      desc = loadDescription('tokenUtxo_desc.json');
+      artifact = loadArtifact('tokenUtxo.json');
     });
 
-
-
     it('compileResult file should be main contract', () => {
-      expect(desc.file).to.contains("tokenUtxo.scrypt");
+      expect(artifact.file).to.contains("tokenUtxo.scrypt");
     })
 
   });
@@ -362,7 +360,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with const var should be replace with IntLiteral', () => {
-      const result = loadDescription('const_desc.json');
+      const result = loadArtifact('const.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",
@@ -401,7 +399,7 @@ describe('compile()', () => {
 
 
     it('result.abi all param type with alias should be replace with final type', () => {
-      const result = loadDescription('mdarray_desc.json');
+      const result = loadArtifact('mdarray.json');
       expect(result.abi).to.deep.include.members([
         {
           "type": "function",
@@ -901,15 +899,13 @@ describe('compile()', () => {
 
     const CTCContract = buildContractClass(result);
 
-    const { St1, St2 } = buildTypeClasses(CTCContract);
+    let st1 = { x: [1n, 3n, 45n] };
 
-    let st1 = new St1({ x: [1, 3, 45] });
+    let st2 = { st1s: [st1, st1] };
 
-    let st2 = new St2({ st1s: [st1, st1] });
+    const ctc = new CTCContract(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1n, 3n, 3n]);
 
-    const ctc = new CTCContract(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1, 3, 3]);
-
-    let verify_result = ctc.unlock(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1, 3, 3]).verify()
+    let verify_result = ctc.unlock(st1, st2, [st1, st1], [[st1, st1], [st1, st1], [st1, st1]], [1n, 3n, 3n]).verify()
 
     assert.isTrue(verify_result.success, "unlock CTCContract failed")
   })
@@ -1022,7 +1018,7 @@ describe('compile()', () => {
     const result = compile(
       { path: getContractFilePath('p2pkh.scrypt') },
       {
-        desc: false,
+        artifact: false,
         asm: true,
         ast: true,
         debug: false,
@@ -1032,7 +1028,7 @@ describe('compile()', () => {
       }
     );
 
-    const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+    const privateKey = bsv.PrivateKey.fromRandom('testnet');
     const publicKey = privateKey.publicKey;
     const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
     const inputSatoshis = 100000;
@@ -1040,11 +1036,11 @@ describe('compile()', () => {
 
     const DemoP2PKH = buildContractClass(result);
 
-    const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+    const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
     const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-    const pubkey = new PubKey(toHex(publicKey));
+    const pubkey = PubKey(toHex(publicKey));
     p2pkh.txContext = { inputSatoshis, tx };
-    const verifyresult = p2pkh.unlock(sig, pubkey).verify();
+    const verifyresult = p2pkh.unlock(Sig(sig), pubkey).verify();
     expect(verifyresult.success, verifyresult.error).to.true
   })
 
@@ -1054,7 +1050,7 @@ describe('compile()', () => {
     const result = compile(
       { path: getContractFilePath('erc20.scrypt') },
       {
-        desc: false,
+        artifact: false,
         asm: true,
         ast: true,
         debug: false,
@@ -1073,7 +1069,7 @@ describe('compile()', () => {
     const result = compile(
       { path: getContractFilePath('issue146.scrypt') },
       {
-        desc: false,
+        artifact: false,
         asm: true,
         ast: true,
         debug: false,

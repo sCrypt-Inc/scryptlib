@@ -1,38 +1,37 @@
 import { assert, expect } from 'chai';
-import { newTx, loadDescription } from './helper';
+import { newTx, loadArtifact } from './helper';
 import { FunctionCall } from '../src/abi';
-import { buildContractClass, buildTypeClasses, VerifyResult } from '../src/contract';
-import { bsv, toHex, signTx } from '../src/utils';
-import { Bytes, PubKey, Sig, Ripemd160, Sha256, Int } from '../src/scryptTypes';
+import { buildContractClass, VerifyResult } from '../src/contract';
+import { bsv, signTx, toHex } from '../src/utils';
+import { PubKey, Sig, Ripemd160, Sha256 } from '../src/scryptTypes';
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet');
+const privateKey = bsv.PrivateKey.fromRandom('testnet');
 const publicKey = privateKey.publicKey;
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 
-const jsonDescr = loadDescription('p2pkh_desc.json');
-const DemoP2PKH = buildContractClass(jsonDescr);
-const p2pkh = new DemoP2PKH(new Ripemd160(toHex(pubKeyHash)));
+const jsonArtifact = loadArtifact('p2pkh.json');
+const DemoP2PKH = buildContractClass(jsonArtifact);
+const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
 
-const personDescr = loadDescription('person_desc.json');
-const PersonContract = buildContractClass(personDescr);
+const personArtifact = loadArtifact('person.json');
+const PersonContract = buildContractClass(personArtifact);
 
-const { Person, Block } = buildTypeClasses(personDescr);
 
-let man = new Person({
+let man = {
   isMale: false,
-  age: 33,
-  addr: new Bytes("68656c6c6f20776f726c6421")
-});
+  age: 33n,
+  addr: "68656c6c6f20776f726c6421"
+};
 
-let block = new Block({
-  time: 33,
-  header: new Bytes("68656c6c6f20776f726c6421"),
-  hash: new Bytes("68656c6c6f20776f726c6421")
-});
+let block = {
+  time: 33n,
+  header: "68656c6c6f20776f726c6421",
+  hash: "68656c6c6f20776f726c6421"
+};
 
-const person = new PersonContract(man, 18);
+const person = new PersonContract(man, 18n);
 
 describe('FunctionCall', () => {
 
@@ -46,7 +45,7 @@ describe('FunctionCall', () => {
         contract: p2pkh, lockingScript: p2pkh.lockingScript, args: [{
           name: 'pubKeyHash',
           type: 'Ripemd160',
-          value: new Ripemd160(toHex(pubKeyHash))
+          value: Ripemd160(toHex(pubKeyHash))
         }
         ]
       });
@@ -71,10 +70,10 @@ describe('FunctionCall', () => {
     let pubkey: PubKey;
 
     before(() => {
-      sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-      pubkey = new PubKey(toHex(publicKey));
+      sig = Sig(signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis));
+      pubkey = PubKey(toHex(publicKey));
       target = new FunctionCall('unlock', {
-        contract: p2pkh, unlockingScript: bsv.Script.fromASM([sig.toASM(), pubkey.toASM()].join(' ')), args: [{
+        contract: p2pkh, unlockingScript: bsv.Script.fromASM([sig, pubkey].join(' ')), args: [{
           name: 'sig',
           type: 'Sig',
           value: sig
@@ -108,7 +107,7 @@ describe('FunctionCall', () => {
 
     describe('toASM()', () => {
       it('should return the unlocking script in ASM', () => {
-        assert.equal(target.toASM(), [sig.toASM(), pubkey.toASM()].join(' '));
+        assert.equal(target.toASM(), [sig, pubkey].join(' '));
       })
     })
 
@@ -135,7 +134,7 @@ describe('FunctionCall', () => {
       it('should fail if param `txContext` is incorrect', () => {
         // missing txContext
         expect(() => {
-          target.verify({ inputSatoshis })
+          target.verify()
         }).to.throw('should provide txContext.tx when verify')
 
         // incorrect txContext.tx
@@ -155,12 +154,11 @@ describe('FunctionCall', () => {
         contract: person, lockingScript: person.lockingScript, args: [{
           name: 'some',
           type: 'Person',
-          value: new Person({
+          value: {
             isMale: false,
-            age: 33,
-            addr: new Bytes("68656c6c6f20776f726c6421")
-          })
-
+            age: 33n,
+            addr: "68656c6c6f20776f726c6421"
+          }
         }]
       });
     })
@@ -185,7 +183,7 @@ describe('FunctionCall', () => {
 
     it('should return true when age 10', () => {
 
-      let result = person.main(man, 10, false).verify()
+      let result = person.main(man, 10n, false).verify()
 
       assert.isTrue(result.success, result.error);
     })
@@ -193,14 +191,14 @@ describe('FunctionCall', () => {
 
     it('should return false when age 36', () => {
 
-      let result = person.main(man, 36, false).verify()
+      let result = person.main(man, 36n, false).verify()
 
       assert.isFalse(result.success, result.error);
     })
 
     it('should return false when isMale true', () => {
 
-      let result = person.main(man, 18, true).verify()
+      let result = person.main(man, 18n, true).verify()
 
       assert.isFalse(result.success, result.error);
     })
@@ -211,41 +209,41 @@ describe('FunctionCall', () => {
 
     it('should throw with wrong members', () => {
       expect(() => {
-        person.main(new Person({
-          age: 14,
-          addr: new Bytes("68656c6c6f20776f726c6421")
-        }), 18, true)
-      }).to.throw('argument of type struct Person missing member isMale');
+        person.main({
+          age: 14n,
+          addr: "68656c6c6f20776f726c6421"
+        }, 18n, true)
+      }).to.throw('The type of p is wrong, expected Person but missing member [isMale]');
     })
 
     it('should throw with wrong members', () => {
       expect(() => {
-        person.main(new Person({
+        person.main({
           isMale: false,
-          age: 13
-        }), 18, true)
-      }).to.throw('argument of type struct Person missing member addr');
+          age: 13n
+        }, 18n, true)
+      }).to.throw('The type of p is wrong, expected Person but missing member [addr]');
     })
 
     it('should throw with wrong members', () => {
       expect(() => {
-        person.main(new Person({
-          weight: 100,
+        person.main({
+          weight: 100n,
           isMale: false,
-          age: 13,
-          addr: new Bytes("68656c6c6f20776f726c6421")
-        }), 18, true)
-      }).to.throw('weight is not a member of struct Person');
+          age: 13n,
+          addr: "68656c6c6f20776f726c6421"
+        }, 18n, true)
+      }).to.throw('The type of p is wrong, expected Person but redundant member [weight] appears');
     })
 
     it('should throw with wrong members type', () => {
       expect(() => {
-        person.main(new Person({
-          isMale: 11,
-          age: 14,
-          addr: new Bytes("68656c6c6f20776f726c6421")
-        }), 18, true)
-      }).to.throw('Member isMale of struct Person is of wrong type, expected bool but got int');
+        person.main({
+          isMale: 11n,
+          age: 14n,
+          addr: "68656c6c6f20776f726c6421"
+        }, 18n, true)
+      }).to.throw('The type of isMale is wrong, expected bool but got int');
     })
 
   })
@@ -254,11 +252,11 @@ describe('FunctionCall', () => {
   describe('struct type check', () => {
 
     it('should throw with wrong struct type', () => {
-      expect(() => { person.main(block, 18, true) }).to.throw('The type of p is wrong, expected Person but got Block');
+      expect(() => { person.main(block, 18, true) }).to.throw('The type of p is wrong, expected Person but missing member [addr]');
     })
 
     it('should throw with wrong struct type', () => {
-      expect(() => { new PersonContract(block, 18) }).to.throw('The type of some is wrong, expected Person but got Block');
+      expect(() => { new PersonContract(block, 18n) }).to.throw('The type of some is wrong, expected Person but missing member [addr]');
     })
   })
 
@@ -270,13 +268,13 @@ describe('ABICoder', () => {
     describe('when contract has explict constructor', () => {
       it('encodeConstructorCall RegExp replace error fix issue #86', () => {
 
-        const DemoCoinToss = buildContractClass(loadDescription('cointoss_desc.json'));
+        const DemoCoinToss = buildContractClass(loadArtifact('cointoss.json'));
         let demoCoinToss = new DemoCoinToss(
-          new PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
-          new PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
-          new Sha256("bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1"),
-          new Sha256("d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b"),
-          555
+          PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
+          PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
+          Sha256("bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1"),
+          Sha256("d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b"),
+          555n
         );
 
         expect(demoCoinToss.lockingScript.toASM()).to.be.contain('034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281 039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2 bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1 d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b 2b02')
@@ -286,8 +284,8 @@ describe('ABICoder', () => {
 
       it('encodeConstructorCall RegExp replace error fix issue #86', () => {
 
-        const MultiSig = buildContractClass(loadDescription('multiSig_desc.json'));
-        let multiSig = new MultiSig([new Ripemd160("2f87fe26049415441f024eb134ce54bbafd78e96"), new Ripemd160("9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9"), new Ripemd160("58ddca9a92ebf90edf505a172fcef1197b376f5d")]);
+        const MultiSig = buildContractClass(loadArtifact('multiSig.json'));
+        let multiSig = new MultiSig([Ripemd160("2f87fe26049415441f024eb134ce54bbafd78e96"), Ripemd160("9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9"), Ripemd160("58ddca9a92ebf90edf505a172fcef1197b376f5d")]);
 
         expect(multiSig.lockingScript.toASM()).to.be.contain('2f87fe26049415441f024eb134ce54bbafd78e96 9e0ad5f79a7a91cce4f36ebeb6c0d392001683e9 58ddca9a92ebf90edf505a172fcef1197b376f5d')
 
@@ -314,15 +312,15 @@ describe('string as bigInt', () => {
 
   describe('test DemoCoinToss', () => {
 
-    const DemoCoinToss = buildContractClass(loadDescription('cointoss_desc.json'));
+    const DemoCoinToss = buildContractClass(loadArtifact('cointoss.json'));
     it('test lockingScript', () => {
 
       let demoCoinToss = new DemoCoinToss(
-        new PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
-        new PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
-        new Sha256("bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1"),
-        new Sha256("d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b"),
-        "555555555555555555555555555555555555555555555555"
+        PubKey("034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281"),
+        PubKey("039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2"),
+        Sha256("bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1"),
+        Sha256("d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b"),
+        555555555555555555555555555555555555555555555555n
       );
 
       expect(demoCoinToss.lockingScript.toASM()).to.be.contain('034e1f55a9eeec718a19741a04005a87c90de32be5356eb3711905aaf2c9cee281 039671758bb8190eaf4c5b03a424c27012aaee0bc9ee1ce19d711b201159cf9fc2 bfdd565761a74bd95110da480a45e3b408a43aff335473134ef3074637ecbae1 d806b80dd9e76ef5d6be50b6e5c8a54a79fa05d3055f452e5d91e4792f790e0b e3388ee3388e402a180d5bc55a1a09cf02f94f61')
@@ -330,16 +328,16 @@ describe('string as bigInt', () => {
     })
 
     describe('test Demo', () => {
-      const Demo = buildContractClass(loadDescription('demo_desc.json'));
+      const Demo = buildContractClass(loadArtifact('demo.json'));
       it('test demo', () => {
 
 
         function expectDemo(demo) {
-          let result = demo.add("200000000000000000000000000000000000000000000001").verify()
+          let result = demo.add(200000000000000000000000000000000000000000000001n).verify()
 
           expect(result.success).to.be.true;
 
-          result = demo.add("0x23084F676940B7915149BD08B30D000000000001").verify()
+          result = demo.add(0x23084F676940B7915149BD08B30D000000000001n).verify()
 
           expect(result.success).to.be.true;
 
@@ -348,131 +346,24 @@ describe('string as bigInt', () => {
 
           expect(result.success).to.be.true;
 
-          result = demo.add(new Int(200000000000000000000000000000000000000000000001n)).verify()
-
-          expect(result.success).to.be.true;
-
-
-          result = demo.add(new Int("200000000000000000000000000000000000000000000001")).verify()
-
-          expect(result.success).to.be.true;
-
-
-          result = demo.add("200000000000000000000000000000000000000000000002").verify()
-
-          expect(result.success).to.be.false;
-
 
           result = demo.add(200000000000000000000000000000000000000000000002n).verify()
 
           expect(result.success).to.be.false;
 
-          result = demo.add(new Int(200000000000000000000000000000000000000000000002n)).verify()
 
-          expect(result.success).to.be.false;
-
-          result = demo.add(new Int("200000000000000000000000000000000000000000000002")).verify()
-
-          expect(result.success).to.be.false;
         }
 
         expectDemo(new Demo(
-          new Int("100000000000000000000000000000000000000000000000"),
-          new Int(100000000000000000000000000000000000000000000001n)
+          100000000000000000000000000000000000000000000000n,
+          100000000000000000000000000000000000000000000001n
         ))
 
 
         expectDemo(new Demo(
-          "100000000000000000000000000000000000000000000000",
+          100000000000000000000000000000000000000000000000n,
           100000000000000000000000000000000000000000000001n
         ))
-
-      })
-
-
-      it('constract with string bigint', () => {
-
-
-        let demo = new Demo(
-          new Int("100000000000000000000000000000000000000000000000"),
-          new Int("-100000000000000000000000000000000000000000000001")
-        );
-
-        let result = demo.add(-1).verify()
-
-        expect(result.success).to.be.true;
-
-        result = demo.add(0).verify()
-
-        expect(result.success).to.be.false;
-
-      })
-
-      it('should throw  with string not in hex or decimal', () => {
-
-
-        expect(() => {
-          let demo = new Demo(
-            new Int("fasdfeeeeyjtuykjtukj"),
-            33
-          );
-
-        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
-
-
-        expect(() => {
-          let demo = new Demo(
-            "fasdfeeeeyjtuykjtukj",
-            33
-          );
-
-        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
-
-        expect(() => {
-          let demo = new Demo(1, 1);
-
-          demo.add("fasdfeeeeyjtuykjtukj").verify()
-
-
-
-        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
-
-        expect(() => {
-          new Int("fasdfeeeeyjtuykjtukj")
-        }).to.be.throw('can\'t construct Int from <fasdfeeeeyjtuykjtukj>, Only supports integers, should use integer number, bigint, hex string or decimal string');
-
-        expect(() => {
-          new Int("afe3")
-        }).to.be.throw('can\'t construct Int from <afe3>, Only supports integers, should use integer number, bigint, hex string or decimal string');
-
-
-        expect(() => {
-          new Int(1.3)
-        }).to.be.throw('can\'t construct Int from <1.3>, Only supports integers, should use integer number, bigint, hex string or decimal string');
-
-        expect(() => {
-          new Int(1.401e30)
-        }).to.be.throw('can\'t construct Int from <1.401e+30>, <1.401e+30> is not safe integer, should use bigint, hex string or decimal string');
-
-        expect(new Int(1.401e10).toLiteral()).to.be.equal('14010000000');
-
-        expect(new Int(Number.MAX_SAFE_INTEGER).toLiteral()).to.be.equal('9007199254740991');
-
-        expect(new Int(Number.MIN_SAFE_INTEGER).toLiteral()).to.be.equal('-9007199254740991');
-
-
-        expect(() => {
-          new Int(Number.MIN_SAFE_INTEGER - 1)
-        }).to.be.throw('can\'t construct Int from <-9007199254740992>, <-9007199254740992> is not safe integer, should use bigint, hex string or decimal string');
-
-
-        expect(() => {
-          new Int(Number.MAX_SAFE_INTEGER + 1)
-        }).to.be.throw('can\'t construct Int from <9007199254740992>, <9007199254740992> is not safe integer, should use bigint, hex string or decimal string');
-
-        expect(() => {
-          new Int(1.401e-30)
-        }).to.be.throw('can\'t construct Int from <1.401e-30>, Only supports integers, should use integer number, bigint, hex string or decimal string');
 
       })
 
@@ -482,32 +373,32 @@ describe('string as bigInt', () => {
 
     describe('test MDArray', () => {
 
-      const jsonDescr = loadDescription('mdarray_desc.json');
-      const MDArray = buildContractClass(jsonDescr);
+      const jsonArtifact = loadArtifact('mdarray.json');
+      const MDArray = buildContractClass(jsonArtifact);
 
 
       it('test lockingScript', () => {
         let mdArray = new MDArray([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          [999999999999999999999999999999n, 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999999n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, 11111111111111111111111111111111111n]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111111n]
         ]]);
 
 
         let mdArrayBigInt = new MDArray([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          ["999999999999999999999999999999", 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999999n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, "11111111111111111111111111111111111"]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111111n]
         ]]);
 
 
@@ -517,27 +408,27 @@ describe('string as bigInt', () => {
 
       it('test unlockX', () => {
         let mdArray = new MDArray([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          [999999999999999999999999999999n, 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999999n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, 11111111111111111111111111111111111n]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111111n]
         ]]);
 
 
 
         let result = mdArray.unlockX([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          ["999999999999999999999999999999", 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999999n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, "11111111111111111111111111111111111"]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111111n]
         ]]).verify()
 
 
@@ -545,41 +436,41 @@ describe('string as bigInt', () => {
 
 
         result = mdArray.unlockX([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          [999999999999999999999999999999n, 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999999n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, 11111111111111111111111111111111111n]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111111n]
         ]]).verify()
         expect(result.success).to.be.true;
 
 
 
         result = mdArray.unlockX([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          [999999999999999999999999999998n, 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999998n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, 11111111111111111111111111111111111n]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111111n]
         ]]).verify()
         expect(result.success).to.be.false;
 
 
         result = mdArray.unlockX([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          ["999999999999999999999999999999", 10, 11, 12]
+          [1n, 2n, 3n, 4n],
+          [5n, 6n, 7n, 8n],
+          [999999999999999999999999999999n, 10n, 11n, 12n]
         ],
         [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, "11111111111111111111111111111111110"]
+          [13n, 14n, 15n, 16n],
+          [17n, 18n, 19n, 20n],
+          [21n, 22n, 23n, 11111111111111111111111111111111110n]
         ]]).verify()
         expect(result.success).to.be.false;
 
@@ -587,18 +478,7 @@ describe('string as bigInt', () => {
       })
 
 
-      expect(() => {
-        new MDArray([[
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          ["999999999999999999999999999999", 10, 11, 12]
-        ],
-        [
-          [13, 14, 15, 16],
-          [17, 18, 19, 20],
-          [21, 22, 23, "1111111111111111h1111111111111111111"]
-        ]]);
-      }).to.be.throw('can\'t construct Int from <1111111111111111h1111111111111111111>, Only supports integers, should use integer number, bigint, hex string or decimal string');
+
 
     })
 
@@ -608,21 +488,21 @@ describe('string as bigInt', () => {
 
       it('test lockingScript', () => {
 
-        let person1 = new Person({
+        let person1 = ({
           isMale: false,
           age: 33333333333333333333333333333333333n,
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          addr: "68656c6c6f20776f726c6421"
         });
 
-        let person2 = new Person({
+        let person2 = ({
           isMale: false,
-          age: "33333333333333333333333333333333333",
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          age: 33333333333333333333333333333333333n,
+          addr: "68656c6c6f20776f726c6421"
         });
 
         let main = new PersonContract(person1, 33333333333333333333333333333333333n);
 
-        let mainBigIntStr = new PersonContract(person2, "33333333333333333333333333333333333");
+        let mainBigIntStr = new PersonContract(person2, 33333333333333333333333333333333333n);
 
         expect(main.lockingScript.toASM()).to.be.equal(mainBigIntStr.lockingScript.toASM());
       })
@@ -630,16 +510,16 @@ describe('string as bigInt', () => {
 
       it('test equal', () => {
 
-        let person1 = new Person({
+        let person1 = ({
           isMale: false,
           age: 33333333333333333333333333333333333n,
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          addr: "68656c6c6f20776f726c6421"
         });
 
-        let person2 = new Person({
+        let person2 = ({
           isMale: false,
-          age: "33333333333333333333333333333333333",
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          age: 33333333333333333333333333333333333n,
+          addr: "68656c6c6f20776f726c6421"
         });
 
         let main = new PersonContract(person1, 33333333333333333333333333333333333n);
@@ -651,10 +531,10 @@ describe('string as bigInt', () => {
         result = main.equal(person1).verify()
         expect(result.success).to.be.true;
 
-        result = main.equal(new Person({
+        result = main.equal(({
           isMale: false,
-          age: "33333333333333333333333333333333334",
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          age: 33333333333333333333333333333333334n,
+          addr: "68656c6c6f20776f726c6421"
         })).verify()
         expect(result.success).to.be.false;
 
@@ -671,16 +551,16 @@ describe('string as bigInt', () => {
 
       it('test encodePubFunctionCallFromHex: PersonContract.equal', () => {
 
-        let person1 = new Person({
+        let person1 = ({
           isMale: false,
           age: 33333333333333333333333333333333333n,
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          addr: "68656c6c6f20776f726c6421"
         });
 
-        let person2 = new Person({
+        let person2 = ({
           isMale: false,
-          age: "33333333333333333333333333333333333",
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          age: 33333333333333333333333333333333333n,
+          addr: "68656c6c6f20776f726c6421"
         });
 
         let main = new PersonContract(person1, 33333333333333333333333333333333333n);
@@ -691,7 +571,7 @@ describe('string as bigInt', () => {
         let mainClone = PersonContract.fromHex(main.lockingScript.toHex());
 
 
-        const funCallClone = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCall.unlockingScript.toHex());
+        const funCallClone = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCall.unlockingScript?.toHex() || '');
 
 
         main = new PersonContract(person1, 33333333333333333333333333333333333n);
@@ -699,17 +579,17 @@ describe('string as bigInt', () => {
         const result = funCallClone.verify()
         expect(result.success).to.be.true;
 
-        assert.equal(funCallClone.unlockingScript.toHex(), funCall.unlockingScript.toHex())
+        assert.equal(funCallClone.unlockingScript?.toHex(), funCall.unlockingScript?.toHex())
 
 
-        let funCallWrongArgs = main.equal(new Person({
+        let funCallWrongArgs = main.equal(({
           isMale: false,
-          age: "33333333333333333333333333333333334",
-          addr: new Bytes("68656c6c6f20776f726c6421")
+          age: 33333333333333333333333333333333334n,
+          addr: "68656c6c6f20776f726c6421"
         })) as FunctionCall;
 
 
-        const funCallCloneWrong = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCallWrongArgs.unlockingScript.toHex());
+        const funCallCloneWrong = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCallWrongArgs.unlockingScript?.toHex() || '');
 
         const result1 = funCallCloneWrong.verify()
         expect(result1.success).to.be.false;
@@ -721,23 +601,23 @@ describe('string as bigInt', () => {
       it('test encodePubFunctionCallFromHex: DemoP2PKH.unlock', () => {
 
         const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
-        const pubkey = new PubKey(toHex(publicKey));
+        const pubkey = PubKey(toHex(publicKey));
 
-        let result = p2pkh.unlock(sig, pubkey).verify({ inputSatoshis, tx })
+        let result = p2pkh.unlock(Sig(sig), pubkey).verify({ inputSatoshis, tx })
 
         expect(result.success).to.be.true;
 
-        let funCall = p2pkh.unlock(sig, pubkey) as FunctionCall;
+        let funCall = p2pkh.unlock(Sig(sig), pubkey) as FunctionCall;
 
         let p2pkhClone = DemoP2PKH.fromHex(p2pkh.lockingScript.toHex());
 
-        const funCallClone = DemoP2PKH.abiCoder.encodePubFunctionCallFromHex(p2pkhClone, 'unlock', funCall.unlockingScript.toHex());
+        const funCallClone = DemoP2PKH.abiCoder.encodePubFunctionCallFromHex(p2pkhClone, 'unlock', funCall.unlockingScript?.toHex() || '');
 
         result = funCallClone.verify({ inputSatoshis, tx })
 
         expect(result.success).to.be.true;
 
-        result = p2pkhClone.unlock(sig, pubkey).verify({ inputSatoshis, tx })
+        result = p2pkhClone.unlock(Sig(sig), pubkey).verify({ inputSatoshis, tx })
 
         expect(result.success).to.be.true;
 

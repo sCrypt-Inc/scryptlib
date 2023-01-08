@@ -1,10 +1,9 @@
 import { expect } from 'chai'
-import { loadDescription, newTx } from './helper'
+import { loadArtifact, newTx } from './helper'
 import { buildContractClass } from '../src/contract'
-import { bsv, toHex, getPreimage, } from '../src/utils'
-import { SigHashPreimage, Ripemd160 } from '../src/scryptTypes'
+import { bsv } from '../src/utils'
 
-const privateKey = new bsv.PrivateKey.fromRandom('testnet')
+const privateKey = bsv.PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 const inputSatoshis = 100000
@@ -17,14 +16,14 @@ describe('test.Exit', () => {
         let exit;
 
         before(() => {
-            const jsonDescr = loadDescription('exit_desc.json')
-            const Exit = buildContractClass(jsonDescr)
-            exit = new Exit(0)
+            const jsonArtifact = loadArtifact('exit.json')
+            const Exit = buildContractClass(jsonArtifact)
+            exit = new Exit(0n)
         })
 
         it('test unlock', () => {
 
-            const result = exit.unlock(0).verify()
+            const result = exit.unlock(0n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -32,7 +31,7 @@ describe('test.Exit', () => {
 
         it('test unlock if', () => {
 
-            const result = exit.unlockif(1).verify()
+            const result = exit.unlockif(1n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -40,7 +39,7 @@ describe('test.Exit', () => {
 
         it('test unlockelse', () => {
 
-            const result = exit.unlockelse(-1).verify()
+            const result = exit.unlockelse(-1n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -49,7 +48,7 @@ describe('test.Exit', () => {
 
         it('test unlockloopif', () => {
 
-            const result = exit.unlockloopif(1).verify()
+            const result = exit.unlockloopif(1n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -57,7 +56,7 @@ describe('test.Exit', () => {
 
         it('test unlockifif', () => {
 
-            const result = exit.unlockifif(1).verify()
+            const result = exit.unlockifif(1n).verify()
 
             expect(result.success, result.error).to.be.true;
 
@@ -65,7 +64,7 @@ describe('test.Exit', () => {
 
         it('test unlockfalse', () => {
 
-            const result = exit.unlockfalse(1).verify()
+            const result = exit.unlockfalse(1n).verify()
             expect(result.success, result.error).to.be.false;
         })
 

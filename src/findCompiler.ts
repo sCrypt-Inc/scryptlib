@@ -1,13 +1,12 @@
 
-import { dirname, join, resolve, sep } from 'path';
-import * as minimist from 'minimist';
+import { execSync } from 'child_process';
 import { existsSync, readdirSync, statSync } from 'fs';
+import * as minimist from 'minimist';
+import * as os from 'os';
+import { join, resolve } from 'path';
 
 import compareVersions = require('compare-versions');
-import { execSync } from 'child_process';
-import chalk from 'chalk';
-import * as os from 'os';
-import { exit } from 'process';
+import showNoCompilerFound = require('../util/showerror');
 
 
 export function getPlatformScryptc(): string {
@@ -118,15 +117,6 @@ export function findCompiler(): string | undefined {
     return scryptc;
   }
 
-  console.info(`${chalk.red.bold('**ERROR**')} ${chalk.red('No sCrypt compiler found.')}
+  showNoCompilerFound();
 
-  `);
-
-  console.info(`${chalk.green.bold('You can install the compiler in the following ways: \n')}`);
-
-  console.info(`${chalk.grey('•')}`, `Run ${chalk.yellow.bold('npx scryptlib download')} to download the compiler binary.`);
-
-  console.info(`${chalk.grey('•')}`, `Install ${chalk.bold('sCrypt IDE')} at vscode extension marketplace: ${chalk.blue.bold('https://marketplace.visualstudio.com/items?itemName=bsv-scrypt.sCrypt')}`);
-
-  exit(-1);
 }

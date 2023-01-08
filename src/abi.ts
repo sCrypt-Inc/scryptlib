@@ -1,7 +1,13 @@
-import { int2Asm, bsv, genLaunchConfigFile, isArrayType, checkSupportedParamType, flatternArray, deserializeArgfromHex, parseStateHex, buildContractCode, buildDefaultStateProps, flatternCtorArgs, flatternParams, bin2num } from './utils';
-import { AbstractContract, TxContext, VerifyResult, AsmVarValues } from './contract';
-import { ScryptType, Bool, Int, SupportedParamType, ScryptTypeResolver } from './scryptTypes';
-import { ABIEntityType, ABIEntity, ParamEntity } from './compilerWrapper';
+import { bin2num } from './builtins';
+import { ABIEntity, ABIEntityType } from './compilerWrapper';
+import { AbstractContract, AsmVarValues, TxContext, VerifyResult } from './contract';
+import { deserializeArgfromHex } from './deserializer';
+import { genLaunchConfigFile } from './launchConfig';
+import { SupportedParamType, TypeResolver } from './scryptTypes';
+import { toScriptHex } from './serializer';
+import Stateful from './stateful';
+import { flatternArg } from './typeCheck';
+import { bsv, buildContractCode, int2Asm } from './utils';
 
 export type Script = bsv.Script;
 
@@ -20,7 +26,7 @@ export interface DebugConfiguration {
   pubFunc: string;
   pubFuncArgs: SupportedParamType[];
   asmArgs?: AsmVarValues;
-  txContext?: any;
+  txContext?: TxContext;
 }
 
 export interface DebugLaunch {
@@ -99,7 +105,7 @@ export class FunctionCall {
     if (this.lockingScript) {
       return this.lockingScript;
     } else {
-      return this.unlockingScript;
+      return this.unlockingScript as Script;
     }
   }
 
@@ -111,27 +117,25 @@ export class FunctionCall {
 
   genLaunchConfig(txContext?: TxContext): FileUri {
 
-    const constructorArgs: SupportedParamType[] = this.contract.ctorArgs().map(p => p.value);
-    const pubFuncArgs: SupportedParamType[] = this.args.map(arg => arg.value);
     const pubFunc: string = this.methodName;
     const name = `Debug ${this.contract.contractName}`;
     const program = `${this.contract.file}`;
 
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
 
-    const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : undefined;
-    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state });
+    const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : '';
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state }) as TxContext;
     if (AbstractContract.isStateful(this.contract)) {
-      Object.assign(txCtx, { opReturnHex: this.contract.dataPart.toHex() });
+      Object.assign(txCtx, { opReturnHex: this.contract.dataPart?.toHex() || '' });
     } else if (this.contract.dataPart) {
       Object.assign(txCtx, { opReturn: this.contract.dataPart.toASM() });
     }
 
-    return genLaunchConfigFile(constructorArgs, pubFuncArgs, pubFunc, name, program, txCtx, asmArgs);
+    return genLaunchConfigFile(this.contract.resolver, this.contract.ctorArgs(), this.args, pubFunc, name, program, txCtx, asmArgs);
   }
 
   verify(txContext?: TxContext): VerifyResult {
-    const result = this.contract.run_verify(this.unlockingScript.toASM() || '', txContext);
+    const result = this.contract.run_verify(this.unlockingScript, txContext);
 
     if (!result.success) {
       const debugUrl = this.genLaunchConfig(txContext);
@@ -146,45 +150,36 @@ export class FunctionCall {
 
 export class ABICoder {
 
-  constructor(public abi: ABIEntity[], public resolver: ScryptTypeResolver) { }
+  constructor(public abi: ABIEntity[], public resolver: TypeResolver) { }
 
-  checkArgs(contractname: string, funname: string, params: ParamEntity[], ...args: SupportedParamType[]): void {
-
-    if (args.length !== params.length) {
-      throw new Error(`wrong number of arguments for '${contractname}.${funname}', expected ${params.length} but got ${args.length}`);
-    }
-
-    params.forEach((param, index) => {
-      const arg = args[index];
-      const error = checkSupportedParamType(arg, param, this.resolver.resolverType);
-      if (error) throw error;
-    });
-  }
 
   encodeConstructorCall(contract: AbstractContract, hexTemplate: string, ...args: SupportedParamType[]): FunctionCall {
 
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
-    this.checkArgs(contract.contractName, 'constructor', cParams, ...args);
+
+    const args_ = contract.checkArgs('constructor', cParams, ...args);
 
     // handle array type
-    const flatteredArgs = flatternCtorArgs(cParams.map((p, index) => (Object.assign({ ...p }, {
-      value: args[index]
-    }))), this.resolver.resolverType);
+    const flatteredArgs = cParams.flatMap((p, index) => {
+      const a = Object.assign({ ...p }, {
+        value: args_[index]
+      }) as Argument;
 
-
+      return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
+    });
 
     flatteredArgs.forEach(arg => {
       if (!hexTemplate.includes(`<${arg.name}>`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
       }
 
-      contract.hexTemplateArgs.set(`<${arg.name}>`, this.encodeParam(arg.value, arg));
+      contract.hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value, arg.type));
     });
 
     contract.hexTemplateArgs.set('<__codePart__>', '00');
 
-    contract.statePropsArgs = buildDefaultStateProps(contract);
+    contract.statePropsArgs = Stateful.buildDefaultStateArgs(contract);
 
     const lockingScript = buildContractCode(contract.hexTemplateArgs, contract.hexTemplateInlineASM, hexTemplate);
 
@@ -194,7 +189,7 @@ export class ABICoder {
       args: cParams.map((param, index) => ({
         name: param.name,
         type: param.type,
-        value: args[index]
+        value: args_[index]
       }))
     });
 
@@ -291,26 +286,23 @@ export class ABICoder {
 
 
     const ctorArgs: Arguments = cParams.map(param => deserializeArgfromHex(contract.resolver, Object.assign(param, {
-      value: undefined
-    }), contract.hexTemplateArgs));
+      value: false // fake value
+    }), contract.hexTemplateArgs, { state: false }));
 
 
-    if (AbstractContract.isStateful(contract)) {
+    if (AbstractContract.isStateful(contract) && dataPartInHex) {
 
 
       const scriptHex = dataPartInHex;
       const metaScript = dataPartInHex.substr(scriptHex.length - 10, 10);
-      const version = bin2num(metaScript.substr(metaScript.length - 2, 2)) as number;
-
-
-
+      const version = bin2num(metaScript.substr(metaScript.length - 2, 2));
 
       switch (version) {
-        case 0:
+        case 0n:
           {
-            const [firstCall, args] = parseStateHex(contract, scriptHex);
+            const [isGenesis, args] = Stateful.parseStateHex(contract, scriptHex);
             contract.statePropsArgs = args;
-            contract.firstCall = firstCall;
+            contract.isGenesis = isGenesis;
           }
           break;
       }
@@ -327,11 +319,18 @@ export class ABICoder {
   encodePubFunctionCall(contract: AbstractContract, name: string, args: SupportedParamType[]): FunctionCall {
     for (const entity of this.abi) {
       if (entity.name === name) {
-        this.checkArgs(contract.contractName, name, entity.params, ...args);
-        let hex = this.encodeParams(args, entity.params.map(p => ({
-          name: p.name,
-          type: this.resolver.resolverType(p.type).finalType
-        })));
+        const args_ = contract.checkArgs(name, entity.params, ...args);
+
+        const flatteredArgs = entity.params.flatMap((p, index) => {
+          const a = Object.assign({ ...p }, {
+            value: args_[index]
+          }) as Argument;
+
+          return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
+        });
+
+        let hex = flatteredArgs.map(a => toScriptHex(a.value, a.type)).join('');
+
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
@@ -341,7 +340,7 @@ export class ABICoder {
           contract, unlockingScript: bsv.Script.fromHex(hex), args: entity.params.map((param, index) => ({
             name: param.name,
             type: param.type,
-            value: args[index]
+            value: args_[index]
           }))
         });
       }
@@ -365,10 +364,14 @@ export class ABICoder {
     }
     const cParams = entity?.params || [];
 
+    const dummyArgs = cParams.map(p => {
+      const dummyArg = Object.assign({}, p, { value: false });
+      return flatternArg(dummyArg, contract.resolver, { state: true, ignoreValue: true });
+    }).flat(Infinity) as Arguments;
 
-    const flatternArgs = flatternParams(cParams, contract.resolver);
 
-    let fArgsLen = flatternArgs.length;
+
+    let fArgsLen = dummyArgs.length;
     if (this.abi.length > 2 && entity.index !== undefined) {
       fArgsLen += 1;
     }
@@ -382,7 +385,7 @@ export class ABICoder {
 
     const hexTemplateArgs: Map<string, string> = new Map();
 
-    flatternArgs.forEach((farg, index) => {
+    dummyArgs.forEach((farg: Argument, index: number) => {
 
       hexTemplateArgs.set(`<${farg.name}>`, bsv.Script.fromASM(asmOpcodes[index]).toHex());
 
@@ -390,50 +393,11 @@ export class ABICoder {
 
 
     const args: Arguments = cParams.map(param => deserializeArgfromHex(contract.resolver, Object.assign(param, {
-      value: undefined
-    }), hexTemplateArgs));
+      value: false //fake value
+    }), hexTemplateArgs, { state: false }));
 
     return new FunctionCall(name, { contract, unlockingScript: script, args: args });
 
-  }
-
-  encodeParams(args: SupportedParamType[], paramsEntitys: ParamEntity[]): string {
-    return args.map((arg, i) => this.encodeParam(arg, paramsEntitys[i])).join('');
-  }
-
-  encodeParamArray(args: SupportedParamType[], arrayParam: ParamEntity): string {
-    return flatternArray(args, arrayParam.name, arrayParam.type).map(arg => {
-      return this.encodeParam(arg.value, { name: arg.name, type: this.resolver.resolverType(arg.type).finalType });
-    }).join('');
-  }
-
-
-  encodeParam(arg: SupportedParamType, paramEntity: ParamEntity): string {
-
-    if (isArrayType(paramEntity.type)) {
-      return this.encodeParamArray(arg as SupportedParamType[], paramEntity);
-    }
-
-    if (arg instanceof ScryptType) {
-      return arg.toHex();
-    }
-
-    const typeofArg = typeof arg;
-
-    if (typeofArg === 'boolean') {
-      arg = new Bool(arg as boolean);
-    } else if (typeofArg === 'number') {
-      arg = new Int(arg as number);
-    } else if (typeofArg === 'bigint') {
-      arg = new Int(arg as bigint);
-    } else if (typeof arg === 'string') {
-      arg = new Int(arg as string);
-    } else {
-      //we call checkArg before encodeParam, shouldn't get here under normal circumstances
-      throw new Error(`The value of parameter ${paramEntity.name} is unknown type: ${typeofArg}`);
-    }
-
-    return (arg as ScryptType).toHex();
   }
 
 }

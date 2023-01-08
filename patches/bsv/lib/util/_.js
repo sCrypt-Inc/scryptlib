@@ -40,5 +40,6 @@ _.difference = (a, b) => a.filter(t => !b.includes(t))
 _.findIndex = (a, f) => a.findIndex(f)
 _.some = (a, f) => a.some(f)
 _.range = n => [...Array(n).keys()]
+_.isPositiveNumber = (n) => n < 0x7e
 
 module.exports = _
