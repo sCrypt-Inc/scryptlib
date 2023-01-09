@@ -1,5 +1,13 @@
 # CHANGELOG
 
+
+## 2.0.2
+
+- [Fix parseStateHex](https://github.com/sCrypt-Inc/scryptlib/commit/832ddd56627fa32fdf0288af09835ee09f79f182)
+- update [bsv index.d.ts](./patches/bsv/index.d.ts)
+
+*Release Date: 2023/01/09*
+
 ## 2.0.1
 
 - update [bsv index.d.ts](./patches/bsv/index.d.ts)
