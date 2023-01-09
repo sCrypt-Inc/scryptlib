@@ -365,6 +365,7 @@ declare module 'bsv' {
             toObject(): { satoshis: number; script: string };
             getSize(): number;
             toBufferWriter(writer?: encoding.BufferWriter): encoding.BufferWriter;
+            static fromBufferReader(reader: encoding.BufferReader): Output;
         }
 
         class Input {
