@@ -173,6 +173,9 @@ declare module 'bsv' {
             readVarintBN(): crypto.BN;
             reverse(): this;
             readReverse(len: number): Buffer;
+            readAll(): Buffer;
+            eof(): boolean;
+            pos: number;
         }
         class BufferWriter {
             write(buf: Buffer): this;
@@ -476,7 +479,7 @@ declare module 'bsv' {
         getFee(): number;
         getChangeOutput(): Transaction.Output | null;
         getLockTime(): Date | number;
-        setLockTime(t: number): void;
+        setLockTime(t: number): this;
 
         verify(): string | true;
         isCoinbase(): boolean;
