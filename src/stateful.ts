@@ -269,7 +269,7 @@ export default class Stateful {
         stateTemplateArgs.set(`<${param.name}>`, opcodenum === 1 ? '01' : '00');
       } else {
         const { data } = Stateful.readBytes(br);
-        stateTemplateArgs.set(`<${param.name}>`, data ? bsv.Script.fromASM(data).toHex() : '');
+        stateTemplateArgs.set(`<${param.name}>`, data ? bsv.Script.fromASM(data).toHex() : '00');
       }
     });
 
