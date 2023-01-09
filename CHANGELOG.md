@@ -1,6 +1,10 @@
 # CHANGELOG
 
+## 2.0.1
 
+- update [bsv index.d.ts](./patches/bsv/index.d.ts)
+
+*Release Date: 2023/01/09*
 
 ## 2.0.0
 
