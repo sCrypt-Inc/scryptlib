@@ -273,9 +273,13 @@ export default class Stateful {
       }
     });
 
-    return [isGenesis, contract.stateProps.map(param => deserializeArgfromHex(contract.resolver, Object.assign(param, {
+    const args = contract.stateProps.map(param => Object.assign({}, param, {
       value: false
-    }), stateTemplateArgs, { state: true }))];
+    })).map(arg => {
+      return deserializeArgfromHex(contract.resolver, arg, stateTemplateArgs, { state: true });
+    });
+
+    return [isGenesis, args];
   }
 
 }
