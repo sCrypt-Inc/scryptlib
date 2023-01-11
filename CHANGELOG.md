@@ -1,6 +1,11 @@
 # CHANGELOG
 
 
+## 2.0.3
+
+- [Fix stateProps change by parseStateHex](https://github.com/sCrypt-Inc/scryptlib/commit/737ba575f35da8241ef8719452620f41fbbc0abe)
+
+
 ## 2.0.2
 
 - [Fix parseStateHex](https://github.com/sCrypt-Inc/scryptlib/commit/832ddd56627fa32fdf0288af09835ee09f79f182)
