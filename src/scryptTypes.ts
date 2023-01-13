@@ -133,12 +133,12 @@ export function SigHashType(s: SigHash | 0): SigHashType {
 
 
 export function SigHashPreimage(b: Bytes): SigHashPreimage {
-  return getValidatedHexString(b) as SigHashPreimage;
+  return getValidatedHexString(b, false) as SigHashPreimage;
 }
 
 
 export function OpCodeType(b: Bytes): OpCodeType {
-  return getValidatedHexString(b) as OpCodeType;
+  return getValidatedHexString(b, false) as OpCodeType;
 }
 
 export type SortedItem<T> = {
@@ -197,7 +197,7 @@ export function isScryptType(type: string): boolean {
 export function isSubBytes(type: string): boolean {
   return [ScryptType.OPCODETYPE, ScryptType.PUBKEY, ScryptType.RIPEMD160, ScryptType.SHA1, ScryptType.SHA256, ScryptType.SIG,
   // eslint-disable-next-line indent
-  ScryptType.SIGHASHPREIMAGE, ScryptType.SIGHASHTYPE].map(t => t.toString()).includes(type);
+  ScryptType.SIGHASHPREIMAGE, ScryptType.SIGHASHTYPE, 'PubKeyHash'].map(t => t.toString()).includes(type);
 }
 
 export function isBytes(type: string): boolean {
