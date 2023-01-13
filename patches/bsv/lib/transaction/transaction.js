@@ -1279,6 +1279,48 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
   return this
 }
 
+/**
+ *
+ * @param {number | object} inputIndex or option
+ * @param {(tx, output) => Promise<Script>} callback  a callback returns a unlocking script
+ * @returns A promise which resolves to unlockScript of the special input
+ */
+Transaction.prototype.setInputScriptAsync = async function (options, callback) {
+  var inputIndex = 0
+  var sigtype
+  var isLowS = false
+  if (typeof options === 'number') {
+    inputIndex = options
+    sigtype = Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
+  } else {
+    inputIndex = options.inputIndex || 0
+    sigtype = options.sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
+    isLowS = options.isLowS || false
+  }
+
+  if (callback instanceof Function) {
+    var outputInPrevTx = this.inputs[inputIndex].output
+
+    var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, options.sigtype, isLowS)
+    this._preimagesMap.set(inputIndex, preimage)
+
+    this._inputsMap.set(inputIndex, {
+      sigtype,
+      isLowS,
+      callback
+    })
+
+    var self = this
+    var unlockScript = await callback(self, outputInPrevTx)
+    this.inputs[inputIndex].setScript(unlockScript)
+  } else {
+    throw new errors.InvalidArgument('Must provide a callback returns a unlocking script')
+  }
+
+  this._updateChangeOutput()
+  return this
+}
+
 Transaction.prototype.setInputSequence = function (inputIndex, sequence) {
   this.inputs[inputIndex].sequenceNumber = sequence
   return this
@@ -1327,6 +1369,47 @@ Transaction.prototype.seal = function () {
     var unlockScript = options.callback(self, outputInPrevTx)
 
     self.inputs[key].setScript(unlockScript)
+  })
+
+  if (this._privateKey) {
+    this.sign(this._privateKey, this._sigType)
+  }
+
+  this.sealed = true
+
+  return this
+}
+
+/**
+ * Seal a transaction asynchronously. After the transaction is sealed, except for the unlock script entered,
+ * other attributes of the transaction cannot be modified
+ */
+Transaction.prototype.sealAsync = async function () {
+  var self = this
+
+  this._outputsMap.forEach(function (callback, key) {
+    self.outputs[key] = callback(self)
+  })
+
+  var promises = []
+
+  this._inputsMap.forEach(function (options, key) {
+    var outputInPrevTx = self.inputs[key].output
+
+    var preimage = self.inputs[key].getPreimage(self, key, options.sigtype, options.isLowS)
+    self._preimagesMap.set(key, preimage)
+
+    promises.push(
+      Promise.resolve(options.callback(self, outputInPrevTx)).then(unlockScript => {
+        return { key, unlockScript }
+      })
+    )
+  })
+
+  await Promise.all(promises).then(items => {
+    items.forEach(({ key, unlockScript }) => {
+      self.inputs[key].setScript(unlockScript)
+    })
   })
 
   if (this._privateKey) {
