@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 2.0.4
+
+- [Add `setInputScriptAsync`](https://github.com/sCrypt-Inc/scryptlib/blob/f2d269149002314c28fcdd1b15557e710e9a7a49/patches/bsv/index.d.ts#L511)
+- [Add `sealAsync`](https://github.com/sCrypt-Inc/scryptlib/blob/f2d269149002314c28fcdd1b15557e710e9a7a49/patches/bsv/index.d.ts#L519)
+
+
 ## 2.0.3
 
 - [Fix stateProps change by parseStateHex](https://github.com/sCrypt-Inc/scryptlib/commit/737ba575f35da8241ef8719452620f41fbbc0abe)
