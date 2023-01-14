@@ -9,12 +9,12 @@ const BN = bsv.crypto.BN;
  * int to little-endian signed magnitude
  */
 export function int2hex(n: Int): string {
-  if (n === 0n) {
+  if (n === Int(0)) {
     return '00';
-  } else if (n === -1n) {
+  } else if (n === Int(-1)) {
     return '4f';
-  } else if (n > 0n && n <= 16n) {
-    n += 80n;
+  } else if (n > Int(0) && n <= Int(16)) {
+    n += Int(80);
     return n.toString(16);
   }
   const number = new BN(n);

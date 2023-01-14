@@ -123,7 +123,7 @@ export function xor(a: Int, b: Int): Int {
 }
 
 export function invert(a: Int): Int {
-  if (a === 0n) {
+  if (a === Int(0)) {
     return a;
   }
   const size = pack(a).length / 2;
@@ -150,7 +150,7 @@ export function toLEUnsigned(n: bigint, l: number): string {
   // one extra byte to accommodate possible negative sign byte
   const m = num2bin(n, l + 1);
   // remove sign byte
-  return m.slice(0, Number(len(m) - 1n));
+  return m.slice(0, Number(len(m) - Int(1)));
 }
 
 // convert 'b' to a VarInt field, including the preceding length

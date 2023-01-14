@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.1.0
+
+- `target` in [compilerOptions](https://github.com/sCrypt-Inc/scryptlib/blob/00c64dbab8508ff82aacb3cc2e14755f854046c0/tsconfig.json#L20) change to `es5`
 
 ## 2.0.4
 

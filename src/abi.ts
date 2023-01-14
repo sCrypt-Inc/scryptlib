@@ -3,7 +3,7 @@ import { ABIEntity, ABIEntityType } from './compilerWrapper';
 import { AbstractContract, AsmVarValues, TxContext, VerifyResult } from './contract';
 import { deserializeArgfromHex } from './deserializer';
 import { genLaunchConfigFile } from './launchConfig';
-import { SupportedParamType, TypeResolver } from './scryptTypes';
+import { SupportedParamType, TypeResolver, Int } from './scryptTypes';
 import { toScriptHex } from './serializer';
 import Stateful from './stateful';
 import { flatternArg } from './typeCheck';
@@ -298,7 +298,7 @@ export class ABICoder {
       const version = bin2num(metaScript.substr(metaScript.length - 2, 2));
 
       switch (version) {
-        case 0n:
+        case Int(0):
           {
             const [isGenesis, args] = Stateful.parseStateHex(contract, scriptHex);
             contract.statePropsArgs = args;

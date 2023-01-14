@@ -4,7 +4,7 @@ import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, Sta
 import {
   ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
 } from './internal';
-import { Bytes, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
+import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
 import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
 
@@ -575,7 +575,7 @@ export class AbstractContract {
         const entity: StructEntity = typeInfo.info as StructEntity;
 
         if (entity.name === 'SortedItem') {
-          if (arg['idx'] === -1n && (arg['image'] instanceof Map || arg['image'] instanceof Set)) {
+          if (arg['idx'] === Int(-1) && (arg['image'] instanceof Map || arg['image'] instanceof Set)) {
 
             const [_, genericTypes] = parseGenericType(typeInfo.finalType);
             return Object.assign({}, {

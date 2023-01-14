@@ -6,7 +6,7 @@ import { Bool, Bytes, Int, isBytes, OpCodeType, PrivKey, PubKey, Ripemd160, Scry
 export default class Stateful {
 
   // state version
-  static readonly CURRENT_STATE_VERSION = 0n;
+  static readonly CURRENT_STATE_VERSION = Int(0);
 
   static int2hex(n: Int): string {
     let asm = '';
@@ -143,7 +143,7 @@ export default class Stateful {
     dummyArgs.forEach(p => {
 
       if (p.type === ScryptType.INT || p.type === ScryptType.PRIVKEY) {
-        hexTemplateMap.set(`<${p.name}>`, Stateful.int2hex(0n));
+        hexTemplateMap.set(`<${p.name}>`, Stateful.int2hex(Int(0)));
       } else if (p.type === ScryptType.BOOL) {
         hexTemplateMap.set(`<${p.name}>`, Stateful.bool2hex(true));
       } else if (p.type === ScryptType.BYTES

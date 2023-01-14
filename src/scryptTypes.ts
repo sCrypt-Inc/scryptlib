@@ -148,7 +148,7 @@ export type SortedItem<T> = {
 
 export function getSortedItem<K, V>(collection: Map<K, V> | Set<K>, k: K): SortedItem<K> {
   return Object.assign({
-    idx: -1n,
+    idx: Int(-1),
     item: k
   }, {
     image: collection instanceof Map ? new Map(collection) : new Set(collection)

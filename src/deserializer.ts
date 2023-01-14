@@ -9,9 +9,9 @@ import { bsv } from './utils';
 export function hex2int(hex: string): bigint {
 
   if (hex === '00') {
-    return 0n;
+    return Int(0);
   } else if (hex === '4f') {
-    return -1n;
+    return Int(-1);
   } else {
     const b = bsv.Script.fromHex(hex);
     const chuck = b.chunks[0];
