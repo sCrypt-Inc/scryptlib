@@ -935,19 +935,20 @@ declare module 'bsv' {
             network?: Networks.Type | string,
             type?: string
         );
-        static fromString(address: string, network: Networks.Type): Address;
-        static fromPublicKey(data: PublicKey, network: Networks.Type): Address;
+        static fromString(address: string, network?: Networks.Type): Address;
+        static fromHex(hex: string, network?: Networks.Type): Address;
+        static fromPublicKey(data: PublicKey, network?: Networks.Type): Address;
         static fromPrivateKey(
             privateKey: PrivateKey,
-            network: Networks.Type
+            network?: Networks.Type
         ): Address;
         static fromPublicKeyHash(
             hash: Buffer | Uint8Array,
-            network: Networks.Type
+            network?: Networks.Type
         ): Address;
         static fromScriptHash(
             hash: Buffer | Uint8Array,
-            network: Networks.Type
+            network?: Networks.Type
         ): Address;
         isValid(
             data: Buffer | Uint8Array | string | object,
