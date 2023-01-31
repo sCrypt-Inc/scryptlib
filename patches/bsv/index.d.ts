@@ -209,6 +209,9 @@ declare module 'bsv' {
                 base?: number,
                 endian?: Endianness,
             );
+
+            One: BN;
+
             clone(): BN;
             toString(base?: number | 'hex', length?: number): string;
             toNumber(): number;
@@ -456,6 +459,8 @@ declare module 'bsv' {
         from(
             utxos: Transaction.IUnspentOutput | Transaction.IUnspentOutput[]
         ): this;
+        fromString(rawTxHex: string): this;
+        fromBuffer(buffer: Buffer): this;
         to(address: Address[] | Address | string, amount: number): this;
         change(address: Address | string): this;
         fee(amount: number): this;
