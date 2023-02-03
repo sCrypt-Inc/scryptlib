@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2.1.2
+
+- fix transaction fee evaluation 
+- update [bsv index.d.ts](./patches/bsv/index.d.ts)
+
+
 ## 2.1.1
 
 - update [bsv index.d.ts](./patches/bsv/index.d.ts)
