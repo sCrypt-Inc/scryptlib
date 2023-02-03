@@ -469,7 +469,7 @@ declare module 'bsv' {
             privateKey: PrivateKey[] | string[] | PrivateKey | string,
             sigtype?: number
         ): this;
-        applySignature(sig: crypto.Signature): this;
+        applySignature(sig: { inputIndex: number, sigtype: number, publicKey: PublicKey, signature: crypto.Signature}): this;
         verifySignature(sig: crypto.Signature, pubkey: PublicKey, nin: number, subscript: Script, satoshisBN: crypto.BN, flags: number): boolean;
         addInput(
             input: Transaction.Input,
@@ -512,7 +512,7 @@ declare module 'bsv' {
             privateKey?: PrivateKey | Array<PrivateKey>,
             sigtype?: number,
             isLowS?: boolean
-        }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output) => Script )): this;
+        }, unlockingScript: Script | ((tx: Transaction, outputInPrevTx: Transaction.Output) => Script)): this;
         setInputScriptAsync(inputIndex: number | {
             inputIndex: number,
             sigtype?: number,

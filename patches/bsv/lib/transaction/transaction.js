@@ -67,7 +67,7 @@ var DEFAULT_NLOCKTIME = 0
 var MAX_BLOCK_SIZE = 1000000
 
 // Minimum amount for an output for it not to be considered a dust output
-Transaction.DUST_AMOUNT = 546
+Transaction.DUST_AMOUNT = 1
 
 // Margin of error to allow fees in the vecinity of the expected value but doesn't allow a big difference
 Transaction.FEE_SECURITY_MARGIN = 150
@@ -853,7 +853,6 @@ Transaction.prototype._updateChangeOutput = function () {
   if (!this._changeScript) {
     return
   }
-  this._clearSignatures()
   if (!_.isUndefined(this._changeIndex)) {
     this._removeOutput(this._changeIndex)
   }
@@ -874,6 +873,7 @@ Transaction.prototype._updateChangeOutput = function () {
       satoshis: changeAmount
     }))
   }
+  this._clearSignatures()
 }
 /**
  * Calculates the fee of the transaction.
@@ -1274,7 +1274,6 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
   } else {
     this.inputs[inputIndex].setScript(unlockScriptOrCallback)
   }
-
   this._updateChangeOutput()
   return this
 }
