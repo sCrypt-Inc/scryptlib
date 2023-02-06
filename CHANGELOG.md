@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.1.4
+
+- update exports
 
 ## 2.1.3
 
