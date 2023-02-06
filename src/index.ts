@@ -18,7 +18,7 @@ export {
 } from './internal';
 
 export {
-  Flavor, Int, Bool, Bytes, SubBytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage,
+  Int, Bool, Bytes, SubBytes, PrivKey, PubKey, Sig, Ripemd160, Sha1, Sha256, SigHashType, SigHashPreimage,
   OpCodeType, SupportedParamType, PubKeyHash, TxContext, ContractClass, Contract, SortedItem, HashedMap, HashedSet,
   StructObject, TypeResolver, PrimitiveTypes, AsmVarValues, Flavor,
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
