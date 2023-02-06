@@ -1469,7 +1469,7 @@ Transaction.prototype.getSignature = function (inputIndex, privateKeys, sigtypes
   var inputOpt = (this._inputsMap || new Map()).get(inputIndex)
 
   privateKeys = privateKeys ||
-    inputOpt ? inputOpt.privateKey : this._privateKey
+    (inputOpt ? inputOpt.privateKey : this._privateKey)
 
   if (privateKeys) {
     sigtypes = sigtypes || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)

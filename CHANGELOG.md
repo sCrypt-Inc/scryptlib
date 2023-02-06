@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2.1.5
+
+- fix bsv issue
+
 ## 2.1.4
 
 - update exports
