@@ -1,5 +1,10 @@
 # CHANGELOG
 
+
+## 2.1.3
+
+- remove `_preimagesMap` and `_signaturesMap` in `bsv.Transaction`
+
 ## 2.1.2
 
 - fix transaction fee evaluation 
