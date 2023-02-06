@@ -40,8 +40,6 @@ function Transaction (serialized) {
   this._outputAmount = undefined
   this._inputsMap = new Map()
   this._outputsMap = new Map()
-  this._preimagesMap = new Map()
-  this._signaturesMap = new Map()
   this._privateKey = undefined
   this._sigType = undefined
   this.sealed = false
@@ -1252,39 +1250,28 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
 
   if (unlockScriptOrCallback instanceof Function) {
     var outputInPrevTx = this.inputs[inputIndex].output
-
-    var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, options.sigtype, isLowS)
-    this._preimagesMap.set(inputIndex, preimage)
-
-    if (privateKey instanceof PrivateKey || _.isArray(privateKey)) {
-      var sigs = this.inputs[inputIndex].getSignatures(this, privateKey, inputIndex, options.sigtype)
-      this._signaturesMap.set(inputIndex, sigs)
-    }
-
-    var unlockScript = unlockScriptOrCallback(this, outputInPrevTx)
-
     this._inputsMap.set(inputIndex, {
       sigtype,
       privateKey,
       isLowS,
       callback: unlockScriptOrCallback
     })
-
+    var unlockScript = unlockScriptOrCallback(this, outputInPrevTx)
     this.inputs[inputIndex].setScript(unlockScript)
   } else {
     this.inputs[inputIndex].setScript(unlockScriptOrCallback)
   }
-  this._updateChangeOutput()
+
   return this
 }
 
 /**
  *
  * @param {number | object} inputIndex or option
- * @param {(tx, output) => Promise<Script>} callback  a callback returns a unlocking script
+ * @param {(tx, output) => Promise<Script>} unlockScriptOrCallback  a callback returns a unlocking script
  * @returns A promise which resolves to unlockScript of the special input
  */
-Transaction.prototype.setInputScriptAsync = async function (options, callback) {
+Transaction.prototype.setInputScriptAsync = async function (options, unlockScriptOrCallback) {
   var inputIndex = 0
   var sigtype
   var isLowS = false
@@ -1297,26 +1284,19 @@ Transaction.prototype.setInputScriptAsync = async function (options, callback) {
     isLowS = options.isLowS || false
   }
 
-  if (callback instanceof Function) {
+  if (unlockScriptOrCallback instanceof Function) {
     var outputInPrevTx = this.inputs[inputIndex].output
-
-    var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, options.sigtype, isLowS)
-    this._preimagesMap.set(inputIndex, preimage)
-
     this._inputsMap.set(inputIndex, {
       sigtype,
       isLowS,
-      callback
+      callback: unlockScriptOrCallback
     })
-
-    var self = this
-    var unlockScript = await callback(self, outputInPrevTx)
+    var unlockScript = await unlockScriptOrCallback(this, outputInPrevTx)
     this.inputs[inputIndex].setScript(unlockScript)
   } else {
     throw new errors.InvalidArgument('Must provide a callback returns a unlocking script')
   }
 
-  this._updateChangeOutput()
   return this
 }
 
@@ -1354,19 +1334,11 @@ Transaction.prototype.seal = function () {
     self.outputs[key] = callback(self)
   })
 
+  this._updateChangeOutput()
+
   this._inputsMap.forEach(function (options, key) {
     var outputInPrevTx = self.inputs[key].output
-
-    var preimage = self.inputs[key].getPreimage(self, key, options.sigtype, options.isLowS)
-    self._preimagesMap.set(key, preimage)
-
-    if (options.privateKey instanceof PrivateKey || _.isArray(options.privateKey)) {
-      var sigs = self.inputs[key].getSignatures(self, options.privateKey, key, options.sigtype)
-      self._signaturesMap.set(key, sigs)
-    }
-
     var unlockScript = options.callback(self, outputInPrevTx)
-
     self.inputs[key].setScript(unlockScript)
   })
 
@@ -1390,13 +1362,12 @@ Transaction.prototype.sealAsync = async function () {
     self.outputs[key] = callback(self)
   })
 
+  this._updateChangeOutput()
+
   var promises = []
 
   this._inputsMap.forEach(function (options, key) {
     var outputInPrevTx = self.inputs[key].output
-
-    var preimage = self.inputs[key].getPreimage(self, key, options.sigtype, options.isLowS)
-    self._preimagesMap.set(key, preimage)
 
     promises.push(
       Promise.resolve(options.callback(self, outputInPrevTx)).then(unlockScript => {
@@ -1485,39 +1456,20 @@ Transaction.prototype.isSealed = function () {
 
 Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
-  var cached = this._preimagesMap.get(inputIndex || 0)
-
-  if (cached) {
-    return cached.toString('hex')
-  }
-
   sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
-
   isLowS = isLowS || false
-
   inputIndex = inputIndex || 0
-
   var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS)
-
-  this._preimagesMap.set(inputIndex, preimage)
-
   return preimage.toString('hex')
 }
 
 Transaction.prototype.getSignature = function (inputIndex, privateKeys, sigtypes) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
-  var cached = this._signaturesMap.get(inputIndex || 0)
   var results = []
-  if (cached) {
-    _.each(cached, function (sig) {
-      results.push(sig.signature.toTxFormat().toString('hex'))
-    })
+  var inputOpt = (this._inputsMap || new Map()).get(inputIndex)
 
-    if (results.length === 1) {
-      return results[0]
-    }
-    return results
-  }
+  privateKeys = privateKeys ||
+    inputOpt ? inputOpt.privateKey : this._privateKey
 
   if (privateKeys) {
     sigtypes = sigtypes || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
