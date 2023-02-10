@@ -34,7 +34,7 @@ export function genLaunchConfigFile(resolver: TypeResolver, constructorArgs: Arg
     const inputIndex = txContext.inputIndex || 0;
 
     if (tx) {
-      const inputSatoshis = txContext.inputSatoshis || tx.getInputAmount(inputIndex);
+      const inputSatoshis = txContext.inputSatoshis;
       Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
     }
     if (txContext.opReturn) {

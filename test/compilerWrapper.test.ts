@@ -1039,7 +1039,7 @@ describe('compile()', () => {
     const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
     const sig = signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis);
     const pubkey = PubKey(toHex(publicKey));
-    p2pkh.txContext = { inputSatoshis, tx };
+    p2pkh.txContext = { inputSatoshis, tx, inputIndex: 0 };
     const verifyresult = p2pkh.unlock(Sig(sig), pubkey).verify();
     expect(verifyresult.success, verifyresult.error).to.true
   })

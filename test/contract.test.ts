@@ -11,7 +11,7 @@ const publicKey = privateKey.toPublicKey();
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
-const txContext = { inputSatoshis, tx };
+const txContext: TxContext = { inputSatoshis, tx, inputIndex: 0 };
 
 const jsonArtifact = loadArtifact('p2pkh.json');
 

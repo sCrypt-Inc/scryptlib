@@ -123,13 +123,15 @@ export class FunctionCall {
 
     const asmArgs: AsmVarValues = this.contract.asmArgs || {};
 
-    const state: string = !AbstractContract.isStateful(this.contract) && this.contract.dataPart ? this.contract.dataPart.toASM() : '';
-    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, { opReturn: state }) as TxContext;
+    const state = {};
     if (AbstractContract.isStateful(this.contract)) {
-      Object.assign(txCtx, { opReturnHex: this.contract.dataPart?.toHex() || '' });
+      Object.assign(state, { opReturnHex: this.contract.dataPart?.toHex() || '' });
     } else if (this.contract.dataPart) {
-      Object.assign(txCtx, { opReturn: this.contract.dataPart.toASM() });
+      Object.assign(state, { opReturn: this.contract.dataPart.toASM() });
     }
+
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, state) as TxContext;
+
 
     return genLaunchConfigFile(this.contract.resolver, this.contract.ctorArgs(), this.args, pubFunc, name, program, txCtx, asmArgs);
   }

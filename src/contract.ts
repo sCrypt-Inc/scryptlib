@@ -11,11 +11,8 @@ import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, sub
 
 export interface TxContext {
   tx: bsv.Transaction;
-  inputIndex?: number;
-  /**
-   * @deprecated no need any more
-   */
-  inputSatoshis?: number;
+  inputIndex: number;
+  inputSatoshis: number;
   opReturn?: string;
   opReturnHex?: string;
 }
@@ -345,19 +342,16 @@ export class AbstractContract {
   public genLaunchConfig(err: {
     error: string,
     failedAt: any,
-  }, tx: bsv.Transaction, index?: number): string {
+  }, txContext?: TxContext): string {
+
+    const txCtx = Object.assign({}, this._txContext || {}, txContext || {}) as TxContext;
 
     let error = this.fmtError(err);
 
     const lastCalledPubFunction = this.lastCalledPubFunction();
 
-    const inputIndex = index || 0;
-
     if (lastCalledPubFunction) {
-      const debugUrl = lastCalledPubFunction.genLaunchConfig({
-        tx,
-        inputIndex
-      });
+      const debugUrl = lastCalledPubFunction.genLaunchConfig(txCtx);
       error = error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
     }
 
