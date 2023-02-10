@@ -9,11 +9,20 @@ import Stateful from './stateful';
 import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
 
 
+/**
+ * TxContext provides some context information of the current transaction, 
+ * needed only if signature is checked inside the contract.
+ */
 export interface TxContext {
-  tx: bsv.Transaction;
+  /** current transaction represented in bsv.Transaction object or hex string */
+  tx: bsv.Transaction | string;
+  /** input index */
   inputIndex: number;
+  /** input amount in satoshis */
   inputSatoshis: number;
+  /** contract state in ASM format */
   opReturn?: string;
+  /** contract state in hex format */
   opReturnHex?: string;
 }
 
@@ -33,21 +42,37 @@ export const CURRENT_CONTRACT_ARTIFACT_VERSION = 9;
 
 export const SUPPORTED_MINIMUM_VERSION = 8;
 export interface ContractArtifact {
+  /** version of artifact file */
   version: number;
+  /** version of compiler used to produce this file */
   compilerVersion: string;
+  /** build type, can be debug or release */
   buildType: string;
+  /** name of the contract */
   contract: string;
+  /** md5 of the contract source code */
   md5: string;
+  /** all stateful properties defined in the contracts */
   stateProps: Array<ParamEntity>;
+  /** all structures defined in the contracts, including dependent contracts */
   structs: Array<StructEntity>;
+  /** all library defined in the contracts, including dependent contracts */
   library: Array<LibraryEntity>;
+  /** all typealias defined in the contracts, including dependent contracts */
   alias: Array<AliasEntity>
+  /** ABI of the contract: interfaces of its public functions and constructor */
   abi: Array<ABIEntity>;
-  asm: string;
+  /** @deprecated locking script of the contract in ASM format, including placeholders for constructor parameters */
+  asm?: string;
+  /** locking script of the contract in hex format, including placeholders for constructor parameters */
   hex: string;
+  /** file uri of the main contract source code file */
   file: string;
-  sources?: Array<string>; // deprecated
-  sourceMap?: Array<string>; // deprecated
+  /** @deprecated **/
+  sources?: Array<string>;
+  /** @deprecated **/
+  sourceMap?: Array<string>;
+  /** file uri of source map file **/
   sourceMapFile: string;
 }
 
@@ -227,9 +252,9 @@ export class AbstractContract {
     }
 
     const ls = bsv.Script.fromHex(this.lockingScript.toHex());
-    const tx = txCtx.tx;
-    const inputIndex = txCtx.inputIndex || 0;
-    const inputSatoshis = txCtx.inputSatoshis || (tx ? tx.getInputAmount(inputIndex) : 0);
+    const tx = typeof txCtx.tx === 'string' ? new bsv.Transaction(txCtx.tx) : txCtx.tx;
+    const inputIndex = txCtx.inputIndex;
+    const inputSatoshis = txCtx.inputSatoshis;
 
 
     bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;

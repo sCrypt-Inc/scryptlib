@@ -30,12 +30,11 @@ export function genLaunchConfigFile(resolver: TypeResolver, constructorArgs: Arg
 
   if (!isEmpty(txContext)) {
 
-    const tx = txContext.tx || '';
     const inputIndex = txContext.inputIndex || 0;
 
-    if (tx) {
+    if (txContext.tx) {
       const inputSatoshis = txContext.inputSatoshis;
-      Object.assign(debugTxContext, { hex: tx.toString(), inputIndex, inputSatoshis });
+      Object.assign(debugTxContext, { hex: txContext.tx.toString(), inputIndex, inputSatoshis });
     }
     if (txContext.opReturn) {
       Object.assign(debugTxContext, { opReturn: txContext.opReturn });
