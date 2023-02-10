@@ -184,7 +184,7 @@ export type ParamEntity = {
   type: string;
 }
 export interface ABIEntity {
-  type: ABIEntityType;
+  type: string;
   name?: string;
   params: Array<ParamEntity>;
   index?: number;
