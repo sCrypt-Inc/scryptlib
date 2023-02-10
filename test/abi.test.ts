@@ -114,20 +114,20 @@ describe('FunctionCall', () => {
     describe('verify()', () => {
       it('should return true if params are appropriate', () => {
         // has no txContext in binding contract
-        result = target.verify({ inputSatoshis, tx });
+        result = target.verify({ inputSatoshis, tx, inputIndex: 0 });
         assert.isTrue(result.success, result.error);
 
         // has txContext in binding contract
-        p2pkh.txContext = { inputSatoshis, tx };
+        p2pkh.txContext = { inputSatoshis, tx, inputIndex: 0 };
         result = target.verify();
         assert.isTrue(result.success, result.error);
         p2pkh.txContext = undefined;
       })
 
       it('should fail if param `inputSatoshis` is incorrect', () => {
-        result = target.verify({ inputSatoshis: inputSatoshis + 1, tx });
+        result = target.verify({ inputSatoshis: inputSatoshis + 1, tx, inputIndex: 0 });
         assert.isFalse(result.success, result.error);
-        result = target.verify({ inputSatoshis: inputSatoshis - 1, tx });
+        result = target.verify({ inputSatoshis: inputSatoshis - 1, tx, inputIndex: 0 });
         assert.isFalse(result.success, result.error);
       })
 
@@ -139,7 +139,7 @@ describe('FunctionCall', () => {
 
         // incorrect txContext.tx
         tx.nLockTime = tx.nLockTime + 1;
-        result = target.verify({ inputSatoshis, tx });
+        result = target.verify({ inputSatoshis, tx, inputIndex: 0 });
         assert.isFalse(result.success, result.error);
         tx.nLockTime = tx.nLockTime - 1;  //reset
       })
@@ -613,7 +613,7 @@ describe('string as bigInt', () => {
 
         const funCallClone = DemoP2PKH.abiCoder.encodePubFunctionCallFromHex(p2pkhClone, 'unlock', funCall.unlockingScript?.toHex() || '');
 
-        result = funCallClone.verify({ inputSatoshis, tx })
+        result = funCallClone.verify({ inputSatoshis, tx, inputIndex: 0 })
 
         expect(result.success).to.be.true;
 

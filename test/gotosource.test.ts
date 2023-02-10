@@ -196,7 +196,7 @@ describe('VerifyError', () => {
       let sig = signTx(tx, bsv.PrivateKey.fromRandom('testnet'), p2pkh.lockingScript, inputSatoshis);
       let pubkey = PubKey(toHex(publicKey));
 
-      p2pkh.txContext = { inputSatoshis, tx };
+      p2pkh.txContext = { inputSatoshis, tx, inputIndex: 0 };
       let result = p2pkh.unlock(Sig(sig), pubkey).verify();
 
       expect(result.error).to.contains("p2pkh.scrypt#10");

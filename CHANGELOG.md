@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## 2.1.6
+
+- Fix definition of `TxContext`
+
+```ts
+/**
+ * TxContext provides some context information of the current transaction, 
+ * needed only if signature is checked inside the contract.
+ */
+export interface TxContext {
+  /** current transaction represented in bsv.Transaction object or hex string */
+  tx: bsv.Transaction | string;
+  /** input index */
+  inputIndex: number;
+  /** input amount in satoshis */
+  inputSatoshis: number;
+  /** contract state in ASM format */
+  opReturn?: string;
+  /** contract state in hex format */
+  opReturnHex?: string;
+}
+```
+
+- deprecated `asm` field of `ContractArtifact`
+
+
+
 ## 2.1.5
 
 - fix bsv issue
