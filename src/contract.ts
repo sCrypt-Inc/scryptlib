@@ -303,9 +303,18 @@ export class AbstractContract {
     };
   }
 
-  private fmtError(err: {
+  /**
+   * format the error 
+   * @param err the result output by  `tx.verifyInputScript(inputIndex)`
+   * @returns string the formatted error message.
+   */
+  public fmtError(err: {
     error: string,
-    failedAt: any,
+    failedAt: {
+      fExec: boolean,
+      opcode: number,
+      pc: number
+    },
   }): string {
     const failedOpCode: number = err.failedAt.opcode;
 
@@ -364,24 +373,22 @@ export class AbstractContract {
   }
 
 
-  public genLaunchConfig(err: {
-    error: string,
-    failedAt: any,
-  }, txContext?: TxContext): string {
+  /**
+   * Generate a debugger launch configuration for the contract's last called public method
+   * @param txContext 
+   * @returns a uri of the debugger launch configuration
+   */
+  public genLaunchConfig(txContext?: TxContext): string {
 
-    const txCtx = Object.assign({}, this._txContext || {}, txContext || {}) as TxContext;
-
-    let error = this.fmtError(err);
+    const txCtx = Object.assign({}, this.txContext || {}, txContext || {}) as TxContext;
 
     const lastCalledPubFunction = this.lastCalledPubFunction();
 
     if (lastCalledPubFunction) {
       const debugUrl = lastCalledPubFunction.genLaunchConfig(txCtx);
-      error = error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
+      return `[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
     }
-
-    return error;
-
+    throw new Error('No public function called');
   }
 
 

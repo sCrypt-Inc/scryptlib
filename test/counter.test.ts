@@ -98,15 +98,17 @@ describe('test.Counter', () => {
             }
         })
 
-        const launchConfigErr = counter.genLaunchConfig(result, {
+        const launchConfigUri = counter.genLaunchConfig({
             tx: callTx,
             inputIndex: 0,
             inputSatoshis: 1000
         });
 
-        expect(launchConfigErr).to.includes("counter.scrypt#20")
-        expect(launchConfigErr).to.includes("fails at OP_RETURN")
-        expect(launchConfigErr).to.includes("Launch Debugger")
+        expect(launchConfigUri).to.includes("Launch Debugger")
+
+        expect(counter.fmtError(result)).to.includes("counter.scrypt#20")
+        expect(counter.fmtError(result)).to.includes("fails at OP_RETURN")
+
 
     })
 })

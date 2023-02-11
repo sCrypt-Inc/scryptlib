@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2.1.7
+
+- make `genLaunchConfig()` more independent, now it just generate a debugger launch configuration for the contract's last called public method
+
 ## 2.1.6
 
 - Fix definition of `TxContext`
