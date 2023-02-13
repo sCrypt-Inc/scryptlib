@@ -1,5 +1,11 @@
 # CHANGELOG
 
+
+## 2.1.9
+
+- bsv: add `getChangeAddress()` for `Transaction` class
+
+
 ## 2.1.8
 
 - fix bsv issue

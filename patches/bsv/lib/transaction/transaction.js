@@ -330,6 +330,11 @@ Transaction.prototype.toObject = Transaction.prototype.toJSON = function toObjec
   if (this._changeScript) {
     obj.changeScript = this._changeScript.toString()
   }
+
+  if (this._changeScript) {
+    obj.changeAddress = this._changeAddress.toString()
+  }
+
   if (!_.isUndefined(this._changeIndex)) {
     obj.changeIndex = this._changeIndex
   }
@@ -377,6 +382,9 @@ Transaction.prototype.fromObject = function fromObject (arg) {
   if (transaction.changeScript) {
     this._changeScript = new Script(transaction.changeScript)
   }
+  if (transaction.changeAddress) {
+    this._changeAddress = Address.fromString(transaction.changeAddress)
+  }
   if (transaction.fee) {
     this._fee = transaction.fee
   }
@@ -389,6 +397,7 @@ Transaction.prototype.fromObject = function fromObject (arg) {
 Transaction.prototype._checkConsistency = function (arg) {
   if (!_.isUndefined(this._changeIndex)) {
     $.checkState(this._changeScript, 'Change script is expected.')
+    $.checkState(this._changeAddress, 'Change address is expected.')
     $.checkState(this.outputs[this._changeIndex], 'Change index points to undefined output.')
     $.checkState(this.outputs[this._changeIndex].script.toString() ===
       this._changeScript.toString(), 'Change output has an unexpected script.')
@@ -690,6 +699,7 @@ Transaction.prototype.feePerKb = function (amount) {
 Transaction.prototype.change = function (address) {
   $.checkArgument(address, 'address is required')
   this._changeScript = Script.fromAddress(address)
+  this._changeAddress = Address(address)
   this._updateChangeOutput()
   return this
 }
@@ -700,6 +710,16 @@ Transaction.prototype.change = function (address) {
 Transaction.prototype.getChangeOutput = function () {
   if (!_.isUndefined(this._changeIndex)) {
     return this.outputs[this._changeIndex]
+  }
+  return null
+}
+
+/**
+ * @return {Address} change address, if it exists
+ */
+Transaction.prototype.getChangeAddress = function () {
+  if (!_.isUndefined(this._changeIndex)) {
+    return this._changeAddress
   }
   return null
 }

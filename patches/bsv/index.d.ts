@@ -485,6 +485,7 @@ declare module 'bsv' {
         hasWitnesses(): boolean;
         getFee(): number;
         getChangeOutput(): Transaction.Output | null;
+        getChangeAddress(): Address | null;        
         getLockTime(): Date | number;
         setLockTime(t: number): this;
 
