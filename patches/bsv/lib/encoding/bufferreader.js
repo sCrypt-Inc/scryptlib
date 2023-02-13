@@ -197,4 +197,8 @@ BufferReader.prototype.readReverse = function (len) {
   return Buffer.from(buf).reverse()
 }
 
+BufferReader.prototype.remaining = function () {
+  return this.buf.length - this.pos
+}
+
 module.exports = BufferReader

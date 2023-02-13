@@ -152,6 +152,9 @@ Output.fromBufferReader = function (br) {
   obj.satoshis = br.readUInt64LEBN()
   var size = br.readVarintNum()
   if (size !== 0) {
+    if (br.remaining() < size) {
+      throw new TypeError('Unrecognized Output')
+    }
     obj.script = br.read(size)
   } else {
     obj.script = buffer.Buffer.from([])

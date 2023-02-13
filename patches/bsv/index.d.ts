@@ -175,6 +175,7 @@ declare module 'bsv' {
             readReverse(len: number): Buffer;
             readAll(): Buffer;
             eof(): boolean;
+            remaining(): number;
             pos: number;
         }
         class BufferWriter {
