@@ -715,13 +715,10 @@ Transaction.prototype.getChangeOutput = function () {
 }
 
 /**
- * @return {Address} change address, if it exists
+ * @return {Address | null} change address, if it exists
  */
 Transaction.prototype.getChangeAddress = function () {
-  if (!_.isUndefined(this._changeIndex)) {
-    return this._changeAddress
-  }
-  return null
+  return this._changeAddress ? this._changeAddress : null
 }
 
 /**
@@ -1560,7 +1557,7 @@ Transaction.prototype.dummyChange = function () {
   return this.change(Transaction.DUMMY_PRIVATEKEY.toAddress())
 }
 
-Transaction.prototype.verifyInputScript = function (inputIndex) {
+Transaction.prototype.verifyScript = function (inputIndex) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
 
   if (!this.inputs[inputIndex]) {
@@ -1568,6 +1565,13 @@ Transaction.prototype.verifyInputScript = function (inputIndex) {
   }
 
   return this.inputs[inputIndex].verify(this, inputIndex)
+}
+
+/**
+ * @deprecated, please use `verifyScript` instead
+ */
+Transaction.prototype.verifyInputScript = function (inputIndex) {
+  return this.verifyScript(inputIndex)
 }
 
 Transaction.prototype.getInputAmount = function (inputIndex) {
