@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.1.10
+
+- bsv: add `verifyScript()`
 
 ## 2.1.9
 

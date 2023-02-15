@@ -534,7 +534,16 @@ declare module 'bsv' {
         addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
         addDummyInput(script: Script, satoshis: number): this;
         dummyChange(): this;
+        /**
+         * @deprecated please use `verifyScript` instead
+         * @param inputIndex 
+         */
         verifyInputScript(inputIndex: number): {
+            success: boolean,
+            error: string,
+            failedAt: any
+        };
+        verifyScript(inputIndex: number):  {
             success: boolean,
             error: string,
             failedAt: any
