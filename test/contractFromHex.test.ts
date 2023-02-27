@@ -6,7 +6,7 @@ import {
   VerifyResult
 } from '../src/contract'
 import { bsv, signTx } from '../src/utils'
-import { Ripemd160, Bytes, Int } from '../src/scryptTypes'
+import { Ripemd160, Bytes, Int, SigHashPreimage } from '../src/scryptTypes'
 import { toHex } from '../src'
 
 const privateKey = bsv.PrivateKey.fromRandom('testnet')
@@ -18,7 +18,7 @@ const txContext = { inputSatoshis, tx }
 
 const jsonArtifact = loadArtifact('p2pkh.json')
 
-describe('simple scrypt', () => {
+describe('contractFromHex', () => {
   describe('new instance', () => {
     const Simple = buildContractClass(loadArtifact('simple.json'))
 
@@ -389,7 +389,7 @@ describe('buildContractClass and create instance from script', () => {
 
 
 
-  describe('when build a contract which have library param in constructor from asm', () => {
+  describe('when build a contractFromHex contract which have library param in constructor from asm', () => {
 
     const Test = buildContractClass(loadArtifact('LibAsState1.json'));
 
@@ -402,9 +402,41 @@ describe('buildContractClass and create instance from script', () => {
       }];
       let instance = new Test(l);
 
-      let newContract = Test.fromHex(instance.lockingScript.toHex());
+      let contract = Test.fromHex(instance.lockingScript.toHex());
 
-      assert.deepEqual(newContract.ctorArgs().map(i => i.value), [l])
+
+
+      assert.deepEqual(contract.codePart.toASM().endsWith('OP_RETURN'), true);
+
+
+      assert.deepEqual(contract.ctorArgs().map(i => i.value), [l]);
+
+      let callTx = new bsv.Transaction()
+        .addDummyInput(contract.lockingScript, 1)
+        .setOutput(0, (tx) => {
+          const newLockingScript = contract.getNewStateScript({
+            l: {
+              x: 6n,
+              st: {
+                x: 1n,
+                c: false,
+                aa: [1n, 1n, 1n]
+              }
+            }
+          })
+
+          return new bsv.Transaction.Output({
+            script: newLockingScript,
+            satoshis: 1
+          })
+        })
+        .setInputScript(0, (tx) => {
+          return contract.unlock(1n, SigHashPreimage(tx.getPreimage(0))).toScript();
+        })
+        .seal();
+
+      // just verify the contract inputs
+      expect(callTx.verifyInputScript(0).success).to.true
 
     })
   })

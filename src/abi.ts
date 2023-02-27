@@ -206,6 +206,7 @@ export class ABICoder {
     let offset = 0;
 
     let dataPartInHex: string | undefined = undefined;
+    let codePartEndIndex = -1;
     for (let index = 0; index < script.chunks.length; index++) {
       const chunk = script.chunks[index];
 
@@ -214,6 +215,7 @@ export class ABICoder {
         const b = bsv.Script.fromChunks(script.chunks.slice(index + 1));
 
         dataPartInHex = b.toHex();
+        codePartEndIndex = index;
         break;
 
       } else if (hexTemplate.charAt(offset) == '<') {
@@ -314,7 +316,11 @@ export class ABICoder {
       contract.setDataPartInHex(dataPartInHex);
     }
 
-    return new FunctionCall('constructor', { contract, lockingScript: script, args: ctorArgs });
+    return new FunctionCall('constructor', {
+      contract,
+      lockingScript: codePartEndIndex > -1 ? bsv.Script.fromChunks(script.chunks.slice(0, codePartEndIndex)) : script,
+      args: ctorArgs
+    });
 
   }
 

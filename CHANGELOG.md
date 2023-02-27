@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2.1.11
+
+- fix `fromHex()` issue
+
 ## 2.1.10
 
 - bsv: add `verifyScript()`
