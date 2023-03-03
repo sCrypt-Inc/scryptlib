@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2.1.12
+
+- fix #228
+
 ## 2.1.11
 
 - fix `fromHex()` issue

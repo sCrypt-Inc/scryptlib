@@ -330,14 +330,13 @@ export function settings2cmd(sourcePath: string, settings: CompilingSettings): s
   let outOption = `-o "${outputDir}"`;
   if (settings.stdout) {
     outOption = '--stdout';
-    return `${cmdPrefix} compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    return `"${cmdPrefix}" compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
   } else {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir);
     }
   }
-
-  return `${cmdPrefix} compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  return `"${cmdPrefix}" compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 }
 
 export function compile(
@@ -473,7 +472,7 @@ export function handleCompilerOutput(
 export function compilerVersion(cwd: string): string | undefined {
 
   try {
-    const text = execSync(`${cwd} version`).toString();
+    const text = execSync(`"${cwd}" version`).toString();
     return /Version:\s*([^\s]+)\s*/.exec(text)[1];
   } catch (e) {
     throw new Error(`compilerVersion fail when run: ${cwd} version`);
