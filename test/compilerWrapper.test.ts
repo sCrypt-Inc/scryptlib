@@ -1089,7 +1089,12 @@ describe('compile()', () => {
   it('cmdPrefix with space', () => {
 
     const dir = mkdtempSync(path.join(os.tmpdir(), 'scrypt space'))
-    copyFileSync(findCompiler() as string, path.join(dir, "scryptc"));
+
+    if (os.platform() === 'win32') {
+      copyFileSync(findCompiler() as string, path.join(dir, "scryptc.exe"));
+    } else {
+      copyFileSync(findCompiler() as string, path.join(dir, "scryptc"));
+    }
 
     const result = compile(
       { path: getContractFilePath('issue146.scrypt') },
