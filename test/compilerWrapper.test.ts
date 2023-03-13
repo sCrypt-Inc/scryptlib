@@ -1,9 +1,10 @@
 import { assert, expect } from 'chai';
 import * as path from "path";
+import * as os from "os";
 import { loadArtifact, getContractFilePath, getInvalidContractFilePath, excludeMembers, newTx } from './helper'
 import { ABIEntityType, compilerVersion, compile } from '../src/compilerWrapper';
 import { compileContract, compileContractAsync, bsv, signTx } from '../src/utils';
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync, readFileSync, mkdtempSync, copyFileSync } from 'fs';
 import { join } from 'path';
 import { buildContractClass } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
@@ -1085,5 +1086,35 @@ describe('compile()', () => {
 
 
 
+  it('cmdPrefix with space', () => {
+
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'scrypt space'))
+    copyFileSync(findCompiler() as string, path.join(dir, "scryptc"));
+
+    const result = compile(
+      { path: getContractFilePath('issue146.scrypt') },
+      {
+        artifact: false,
+        asm: true,
+        ast: true,
+        debug: false,
+        hex: true,
+        stdout: true,
+        cmdPrefix: path.join(dir, "scryptc")
+      }
+    );
+
+    expect(result.errors.length === 0).to.true
+    expect(result.warnings.length === 1).to.true
+
+
+
+    const versionStr = compilerVersion(path.join(dir, "scryptc")) as string;
+
+    console.log(versionStr)
+    expect(typeof versionStr === 'string').to.be.true
+    expect(versionStr.includes("+commit")).to.be.true
+
+  })
 
 })
