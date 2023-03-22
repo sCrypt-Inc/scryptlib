@@ -1,0 +1,5 @@
+contract PushSize {
+    public function unlock(bytes data, int size) {
+        require(len(data) == size);
+    }
+}
