@@ -1,5 +1,10 @@
 # CHANGELOG
 
+
+## 2.1.13
+
+- update bsv
+
 ## 2.1.12
 
 - fix #228
