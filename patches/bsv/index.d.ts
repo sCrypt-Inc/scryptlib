@@ -11,62 +11,512 @@
 /// <reference types="node" />
 
 declare module 'bsv' {
+    /**
+     * Opcode class, representing opcodes used in Bitcoin Script
+     * @constructor
+     * @param {number} op_code
+     * @class
+     */
     class Opcode {
+        /** 
+         * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
+         * @opcode {`0`} 
+         * @hex {`0x00`} 
+         * @input Nothing
+         * @output empty
+         * @static
+         */
         static OP_0: number;
+        /** 
+         * The next byte contains the number of bytes to be pushed onto the stack.
+         * @opcode {`76`} 
+         * @hex {`0x4c`} 
+         * @input special
+         * @output data
+         * @static
+         */
         static OP_PUSHDATA1: number;
+        /** 
+         * The next two bytes contain the number of bytes to be pushed onto the stack in little endian order.
+         * @opcode {`77`} 
+         * @hex {`0x4d`} 
+         * @input special
+         * @output data
+         * @static
+         */
         static OP_PUSHDATA2: number;
+        /** 
+         * The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
+         * @opcode {`78`} 
+         * @hex {`0x4e`} 
+         * @input special
+         * @output data
+         * @static
+         */
         static OP_PUSHDATA4: number;
+        /** 
+         * The number -1 is pushed onto the stack.
+         * @opcode {`79`} 
+         * @hex {`0x4f`} 
+         * @input Nothing
+         * @output `-1`
+         * @static
+         */
         static OP_1NEGATE: number;
+        /** 
+         * Reserved words, Using an unassigned opcode makes the transaction invalid.
+         * @opcode {`80`} 
+         * @hex {`0x50`} 
+         * @input Nothing
+         * @output Nothing
+         * @static
+         */
         static OP_RESERVED: number;
+        /** 
+         * The number 1 is pushed onto the stack.
+         * @opcode {`81`} 
+         * @hex {`0x51`} 
+         * @input Nothing
+         * @output `1`
+         * @static
+         */
         static OP_TRUE: number;
+        /** 
+         * The number 1 is pushed onto the stack.
+         * @opcode {`81`} 
+         * @hex {`0x51`} 
+         * @input Nothing
+         * @output `1`
+         * @static
+         */
         static OP_1: number;
+        /** 
+         * The number in the word name 2 is pushed onto the stack.
+         * @opcode {`82`} 
+         * @hex {`0x52`} 
+         * @input Nothing
+         * @output `2`
+         * @static
+         */
         static OP_2: number;
+        /** 
+         * The number in the word name 3 is pushed onto the stack.
+         * @opcode {`83`} 
+         * @hex {`0x53`} 
+         * @input Nothing
+         * @output `3`
+         * @static
+         */
         static OP_3: number;
+        /** 
+         * The number in the word name 4 is pushed onto the stack.
+         * @opcode {`84`} 
+         * @hex {`0x54`} 
+         * @input Nothing
+         * @output `4`
+         * @static
+         */
         static OP_4: number;
+        /** 
+         * The number in the word name 5 is pushed onto the stack.
+         * @opcode {`85`} 
+         * @hex {`0x55`} 
+         * @input Nothing
+         * @output `5`
+         * @static
+         */
         static OP_5: number;
+        /** 
+         * The number in the word name 6 is pushed onto the stack.
+         * @opcode {`86`} 
+         * @hex {`0x56`} 
+         * @input Nothing
+         * @output `6`
+         * @static
+         */
         static OP_6: number;
+        /** 
+         * The number in the word name 7 is pushed onto the stack.
+         * @opcode {`87`} 
+         * @hex {`0x57`} 
+         * @input Nothing
+         * @output `7`
+         * @static
+         */
         static OP_7: number;
+        /** 
+         * The number in the word name 8 is pushed onto the stack.
+         * @opcode {`88`} 
+         * @hex {`0x58`} 
+         * @input Nothing
+         * @output `8`
+         * @static
+         */
         static OP_8: number;
+        /** 
+         * The number in the word name 9 is pushed onto the stack.
+         * @opcode {`89`} 
+         * @hex {`0x59`} 
+         * @input Nothing
+         * @output `9`
+         * @static
+         */
         static OP_9: number;
+        /** 
+         * The number in the word name 10 is pushed onto the stack.
+         * @opcode {`90`} 
+         * @hex {`0x5a`} 
+         * @input Nothing
+         * @output `10`
+         * @static
+         */
         static OP_10: number;
+        /** 
+         * The number in the word name 11 is pushed onto the stack.
+         * @opcode {`91`} 
+         * @hex {`0x5b`} 
+         * @input Nothing
+         * @output `11`
+         * @static
+         */
         static OP_11: number;
+        /** 
+         * The number in the word name 12 is pushed onto the stack.
+         * @opcode {`92`} 
+         * @hex {`0x5c`} 
+         * @input Nothing
+         * @output `12`
+         * @static
+         */
         static OP_12: number;
+        /** 
+         * The number in the word name 13 is pushed onto the stack.
+         * @opcode {`93`} 
+         * @hex {`0x5d`} 
+         * @input Nothing
+         * @output `13`
+         * @static
+         */
         static OP_13: number;
+        /** 
+         * The number in the word name 14 is pushed onto the stack.
+         * @opcode {`94`} 
+         * @hex {`0x5e`} 
+         * @input Nothing
+         * @output `14`
+         * @static
+         */
         static OP_14: number;
+        /** 
+         * The number in the word name 15 is pushed onto the stack.
+         * @opcode {`95`} 
+         * @hex {`0x5f`} 
+         * @input Nothing
+         * @output `15`
+         * @static
+         */
         static OP_15: number;
+        /** 
+         * The number in the word name 16 is pushed onto the stack.
+         * @opcode {`96`} 
+         * @hex {`0x60`} 
+         * @input Nothing
+         * @output `16`
+         * @static
+         */
         static OP_16: number;
 
-        // control
+         /** 
+         * Does nothing.
+         * @opcode {`97`} 
+         * @hex {`0x61`} 
+         * @input Nothing
+         * @output Nothing
+         * @static
+         */
         static OP_NOP: number;
+
+        /**
+         * DISABLED.Puts the version of the protocol under which this transaction will be evaluated onto the stack.
+         * @opcode {`99`} 
+         * @hex {`0x62`} 
+         * @input Nothing
+         * @output Protocol version
+         * @static
+         */
         static OP_VER: number;
+        /**
+         * If the top stack value is TRUE, statement 1 is executed.
+         * If the top stack value is FALSE and ELSE is used, statement 2 is executed. If ELSE is NOT used, the script jumps to ENDIF.
+         * The top stack value is removed.
+         * @opcode {`99`} 
+         * @hex {`0x63`} 
+         * @example
+         * `[expression] IF
+         *      [statement 1]
+         * ENDIF`
+         * OR
+         * `[expression] IF
+         *      [statement 1]
+         *  ELSE
+         *      [statement 2]
+         * ENDIF`
+         * @static
+         */
         static OP_IF: number;
+        /**
+         * If the top stack value is FALSE, statement 1 is executed.
+         * If the top stack value is TRUE and ELSE is used, statement 2 is executed. If ELSE is NOT used, the script jumps to ENDIF.
+         * The top stack value is removed.
+         * @opcode {`100`} 
+         * @hex {`0x64`} 
+         * @example
+         * `[expression] NOTIF
+         *      [statement 1]
+         * ENDIF`
+         * OR
+         * `[expression] NOTIF
+         *      [statement 1]
+         *  ELSE
+         *      [statement 2]
+         * ENDIF`
+         * @static
+         */
         static OP_NOTIF: number;
+        /**
+         * DISABLED
+         * @opcode {`101`} 
+         * @hex {`0x65`} 
+         * @static
+         */
         static OP_VERIF: number;
+        /**
+         * DISABLED
+         * @opcode {`102`} 
+         * @hex {`0x66`} 
+         * @static
+         */
         static OP_VERNOTIF: number;
+        /**
+         * If the preceding IF or NOTIF check was not valid then statement 2 is executed.
+         * @opcode {`103`} 
+         * @hex {`0x67`} 
+         * @example
+         * `[expression] IF
+         *      [statement 1]
+         *  ELSE
+         *      [statement 2]
+         * ENDIF`
+         * @static
+         */
         static OP_ELSE: number;
+        /**
+         * Ends an if/else block. All blocks must end, or the transaction is invalid. An OP_ENDIF without a prior matching OP_IF or OP_NOTIF is also invalid.
+         * @opcode {`104`} 
+         * @hex {`0x68`} 
+         * @example
+         * `[expression] IF
+         *      [statement 1]
+         *  ELSE
+         *      [statement 2]
+         * ENDIF`
+         * @static
+         */
         static OP_ENDIF: number;
+        /** 
+         * Marks transaction as invalid if top stack value is not true. The top stack value is removed.
+         * @opcode {`105`} 
+         * @hex {`0x69`} 
+         * @input True / false
+         * @output Nothing / fail
+         * @static
+         */
         static OP_VERIFY: number;
+        /** 
+         * OP_RETURN can also be used to create "False Return" outputs with a scriptPubKey consisting of OP_FALSE OP_RETURN followed by data.
+         * Such outputs are provably unspendable and should be given a value of zero Satoshis. These outputs can be pruned from storage 
+         * in the UTXO set, reducing its size. After the Genesis upgrade in 2020 miners will be free to mine transactions 
+         * containing FALSE RETURN outputs of any size.
+         * @opcode {`106`} 
+         * @hex {`0x6a`} 
+         * @input Nothing
+         * @output Ends script with top value on stack as final result
+         * @static
+         */
         static OP_RETURN: number;
 
         // stack ops
+
+        /** 
+         * Puts the input onto the top of the alt stack. Removes it from the main stack.
+         * @opcode {`107`} 
+         * @hex {`0x6b`} 
+         * @input x1
+         * @output (alt)x1
+         * @static
+         */
         static OP_TOALTSTACK: number;
+        /** 
+         * Puts the input onto the top of the main stack. Removes it from the alt stack.
+         * @opcode {`108`} 
+         * @hex {`0x6c`} 
+         * @input (alt)x1
+         * @output x1
+         * @static
+         */
         static OP_FROMALTSTACK: number;
+        /** 
+         * Removes the top two stack items.
+         * @opcode {`109`} 
+         * @hex {`0x6d`} 
+         * @input x1 x2
+         * @output Nothing
+         * @static
+         */
         static OP_2DROP: number;
+        /** 
+         * Duplicates the top two stack items.
+         * @opcode {`110`} 
+         * @hex {`0x6e`} 
+         * @input x1 x2
+         * @output x1 x2 x1 x2
+         * @static
+         */
         static OP_2DUP: number;
+        /** 
+         * Duplicates the top three stack items.
+         * @opcode {`111`} 
+         * @hex {`0x6f`} 
+         * @input x1 x2 x3
+         * @output x1 x2 x3 x1 x2 x3
+         * @static
+         */
         static OP_3DUP: number;
+        /** 
+         * Copies the pair of items two spaces back in the stack to the front.
+         * @opcode {`112`} 
+         * @hex {`0x70`} 
+         * @input x1 x2 x3 x4
+         * @output x1 x2 x3 x4 x1 x2
+         * @static
+         */
         static OP_2OVER: number;
+        /** 
+         * The fifth and sixth items back are moved to the top of the stack.
+         * @opcode {`113`} 
+         * @hex {`0x71`} 
+         * @input x1 x2 x3 x4 x5 x6
+         * @output x3 x4 x5 x6 x1 x2
+         * @static
+         */
         static OP_2ROT: number;
+        /** 
+         * Swaps the top two pairs of items.
+         * @opcode {`114`} 
+         * @hex {`0x72`} 
+         * @input x1 x2 x3 x4
+         * @output x3 x4 x1 x2
+         * @static
+         */
         static OP_2SWAP: number;
+        /** 
+         * If the top stack value is not 0, duplicate it.
+         * @opcode {`115`} 
+         * @hex {`0x73`} 
+         * @input x
+         * @output x / x x
+         * @static
+         */
         static OP_IFDUP: number;
+        /** 
+         * Counts the number of stack items onto the stack and places the value on the top
+         * @opcode {`116`} 
+         * @hex {`0x74`} 
+         * @input Nothing
+         * @output <Stack size>
+         * @static
+         */
         static OP_DEPTH: number;
+        /** 
+         * Removes the top stack item.
+         * @opcode {`117`} 
+         * @hex {`0x75`} 
+         * @input x
+         * @output Nothing
+         * @static
+         */
         static OP_DROP: number;
+        /** 
+         * Removes the top stack item.
+         * @opcode {`118`} 
+         * @hex {`0x76`} 
+         * @input x
+         * @output x x
+         * @static
+         */
         static OP_DUP: number;
+        /** 
+         * Removes the second-to-top stack item.
+         * @opcode {`119`} 
+         * @hex {`0x77`} 
+         * @input x1 x2
+         * @output x2
+         * @static
+         */
         static OP_NIP: number;
+        /** 
+         * Copies the second-to-top stack item to the top.
+         * @opcode {`120`} 
+         * @hex {`0x78`} 
+         * @input x1 x2
+         * @output x1 x2 x1
+         * @static
+         */
         static OP_OVER: number;
+        /** 
+         * The item `n` back in the stack is copied to the top.
+         * @opcode {`121`} 
+         * @hex {`0x79`} 
+         * @input xn ... x2 x1 x0 <n>
+         * @output 	xn ... x2 x1 x0 xn
+         * @static
+         */
         static OP_PICK: number;
+        /** 
+         * The item `n` back in the stack is copied to the top.
+         * @opcode {`122`} 
+         * @hex {`0x7a`} 
+         * @input xn ... x2 x1 x0 <n>
+         * @output ... x2 x1 x0 xn
+         * @static
+         */
         static OP_ROLL: number;
+        /** 
+         * The top three items on the stack are rotated to the left.
+         * @opcode {`123`} 
+         * @hex {`0x7b`} 
+         * @input x1 x2 x3
+         * @output x2 x3 x1
+         * @static
+         */
         static OP_ROT: number;
+        /** 
+         * The top two items on the stack are swapped.
+         * @opcode {`124`} 
+         * @hex {`0x7c`} 
+         * @input x1 x2
+         * @output x2 x1
+         * @static
+         */
         static OP_SWAP: number;
+        /** 
+         * The item at the top of the stack is copied and inserted before the second-to-top item.
+         * @opcode {`125`} 
+         * @hex {`0x7d`} 
+         * @input x1 x2
+         * @output x2 x1 x2
+         * @static
+         */
         static OP_TUCK: number;
 
         // splice ops
@@ -172,7 +622,7 @@ declare module 'bsv' {
             readVarintBuf(): Buffer;
             readVarintBN(): crypto.BN;
             reverse(): this;
-            readReverse(len: number): Buffer;
+            readReverse(len?: number): Buffer;
             readAll(): Buffer;
             eof(): boolean;
             remaining(): number;
@@ -937,7 +1387,7 @@ declare module 'bsv' {
         function remove(network: Networks.Type): void;
         function get(
             args: string | number | Networks.Type,
-            keys: string | string[]
+            keys?: string | string[]
         ): Network;
     }
 
