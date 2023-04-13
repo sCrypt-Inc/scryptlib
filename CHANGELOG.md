@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.1.14
+
+- `PrivateKey.fromRandom() now takes `Network.Type` parameter
 
 ## 2.1.13
 
