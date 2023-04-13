@@ -835,7 +835,7 @@ describe('utils', () => {
 
     it('test parseAbiFromUnlockingScript when contract only have one public function', () => {
 
-      const privateKey = bsv.PrivateKey.fromRandom('testnet');
+      const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
       const publicKey = privateKey.publicKey;
       const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
       const inputSatoshis = 100000;

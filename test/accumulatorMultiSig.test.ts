@@ -6,22 +6,22 @@ const inputSatoshis = 10000;
 const inputIndex = 0;
 describe('Test SmartContract `AccumulatorMultiSig`', () => {
 
-    const privateKey1 = bsv.PrivateKey.fromRandom('testnet');
+    const privateKey1 = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
     const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1);
     const publicKeyHash1 = bsv.crypto.Hash.sha256ripemd160(publicKey1.toBuffer());
 
 
-    const privateKey2 = bsv.PrivateKey.fromRandom('testnet');
+    const privateKey2 = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
     const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2);
     const publicKeyHash2 = bsv.crypto.Hash.sha256ripemd160(publicKey2.toBuffer());
 
 
-    const privateKey3 = bsv.PrivateKey.fromRandom('testnet');
+    const privateKey3 = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
     const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3);
     const publicKeyHash3 = bsv.crypto.Hash.sha256ripemd160(publicKey3.toBuffer());
 
 
-    const privateKeyWrong = bsv.PrivateKey.fromRandom('testnet');
+    const privateKeyWrong = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
     const publicKeyWrong = bsv.PublicKey.fromPrivateKey(privateKeyWrong);
 
 

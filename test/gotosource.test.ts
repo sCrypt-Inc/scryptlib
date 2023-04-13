@@ -4,7 +4,7 @@ import { num2bin, toHex, signTx, getPreimage, readLaunchJson, bsv, buildContract
 
 
 
-const privateKey = bsv.PrivateKey.fromRandom('testnet');
+const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
 const publicKey = privateKey.toPublicKey();
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;
@@ -58,7 +58,7 @@ describe('VerifyError', () => {
     let p2pkh, result;
 
     before(() => {
-      const privateKey = bsv.PrivateKey.fromRandom('testnet');
+      const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
       const publicKey = privateKey.toPublicKey();
       const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
       const jsonArtifact = loadArtifact('p2pkh_without_sourceMap.json');
@@ -81,9 +81,9 @@ describe('VerifyError', () => {
     const privateKey1 = bsv.PrivateKey.fromWIF('cMwKrDrzN5YPRHvPAAn9SfbQcXvARzpdtuufFQZZTBvBaqDETPhP')
     const publicKey1 = bsv.PublicKey.fromPrivateKey(privateKey1)
     const pkh1 = bsv.crypto.Hash.sha256ripemd160(publicKey1.toBuffer())
-    const privateKey2 = bsv.PrivateKey.fromRandom('testnet')
+    const privateKey2 = bsv.PrivateKey.fromRandom(bsv.Networks.testnet)
     const publicKey2 = bsv.PublicKey.fromPrivateKey(privateKey2)
-    const privateKey3 = bsv.PrivateKey.fromRandom('testnet')
+    const privateKey3 = bsv.PrivateKey.fromRandom(bsv.Networks.testnet)
     const publicKey3 = bsv.PublicKey.fromPrivateKey(privateKey3)
 
     before(() => {
@@ -193,7 +193,7 @@ describe('VerifyError', () => {
 
     it('stop at p2pkh.scrypt#10', () => {
 
-      let sig = signTx(tx, bsv.PrivateKey.fromRandom('testnet'), p2pkh.lockingScript, inputSatoshis);
+      let sig = signTx(tx, bsv.PrivateKey.fromRandom(bsv.Networks.testnet), p2pkh.lockingScript, inputSatoshis);
       let pubkey = PubKey(toHex(publicKey));
 
       p2pkh.txContext = { inputSatoshis, tx, inputIndex: 0 };

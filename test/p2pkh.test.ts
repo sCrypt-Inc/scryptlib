@@ -5,7 +5,7 @@ import { bsv, Ripemd160, toHex, Sig, PubKey } from '../src'
 
 describe('test.P2PKH', () => {
 
-    const privateKey = bsv.PrivateKey.fromRandom('testnet');
+    const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
     const publicKey = bsv.PublicKey.fromPrivateKey(privateKey);
     const publicKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 

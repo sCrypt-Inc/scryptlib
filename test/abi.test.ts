@@ -5,7 +5,7 @@ import { buildContractClass, VerifyResult } from '../src/contract';
 import { bsv, signTx, toHex } from '../src/utils';
 import { PubKey, Sig, Ripemd160, Sha256 } from '../src/scryptTypes';
 
-const privateKey = bsv.PrivateKey.fromRandom('testnet');
+const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
 const publicKey = privateKey.publicKey;
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;

@@ -6,7 +6,7 @@ import { bsv, signTx } from '../src/utils';
 import { Sig, PubKey, Ripemd160 } from '../src/scryptTypes';
 import { toHex } from '../src';
 
-const privateKey = bsv.PrivateKey.fromRandom('testnet');
+const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
 const publicKey = privateKey.toPublicKey();
 const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
 const inputSatoshis = 100000;

@@ -232,7 +232,7 @@ PrivateKey.fromObject = PrivateKey.fromJSON = function (obj) {
 /**
  * Instantiate a PrivateKey from random bytes
  *
- * @param {string=} network - Either "livenet" or "testnet"
+ * @param {string|Network=} network - Network
  * @returns {PrivateKey} A new valid instance of PrivateKey
  */
 PrivateKey.fromRandom = function (network) {
