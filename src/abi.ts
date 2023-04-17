@@ -7,7 +7,7 @@ import { SupportedParamType, TypeResolver, Int } from './scryptTypes';
 import { toScriptHex } from './serializer';
 import Stateful from './stateful';
 import { flatternArg } from './typeCheck';
-import { bsv, buildContractCode, int2Asm } from './utils';
+import { asm2int, bsv, buildContractCode, int2Asm } from './utils';
 
 export type Script = bsv.Script;
 
@@ -150,9 +150,21 @@ export class FunctionCall {
 
 }
 
+/**
+ * Calldata is the relevant information when the contract is called, such as the public function name and function arguments when the call occurs.
+ */
+export interface CallData {
+  /** name of public function */
+  methodName: string;
+  /** unlocking Script */
+  unlockingScript: bsv.Script;
+  /** function arguments */
+  args: Arguments;
+}
+
 export class ABICoder {
 
-  constructor(public abi: ABIEntity[], public resolver: TypeResolver) { }
+  constructor(public abi: ABIEntity[], public resolver: TypeResolver, public contractName: string) { }
 
 
   encodeConstructorCall(contract: AbstractContract, hexTemplate: string, ...args: SupportedParamType[]): FunctionCall {
@@ -364,19 +376,49 @@ export class ABICoder {
    * @param hex hex of unlocking script
    * @returns a FunctionCall which contains the function parameters that have been deserialized
    */
-  encodePubFunctionCallFromHex(contract: AbstractContract, name: string, hex: string): FunctionCall {
-    const script = bsv.Script.fromHex(hex);
-    const entity = this.abi.filter(entity => entity.type === 'function' && entity.name === name)[0];
-    if (!entity) {
-      throw new Error(`no public function named '${name}' found in contract '${contract.contractName}'`);
+  encodePubFunctionCallFromHex(contract: AbstractContract, hex: string): FunctionCall {
+    const callData = this.parseCallData(hex);
+    return new FunctionCall(callData.methodName, { contract, unlockingScript: callData.unlockingScript, args: callData.args });
+  }
+
+
+
+  /**
+   * build a CallData by unlocking script in hex.
+   * @param hex hex of unlocking script
+   * @returns a CallData which contains the function parameters that have been deserialized
+   */
+  parseCallData(hex: string): CallData {
+
+    const unlockingScript = bsv.Script.fromHex(hex);
+
+    const usASM = unlockingScript.toASM() as string;
+
+    const pubFunAbis = this.abi.filter(entity => entity.type === 'function');
+    const pubFunCount = pubFunAbis.length;
+
+    let entity: ABIEntity | undefined = undefined;
+    if (pubFunCount === 1) {
+      entity = pubFunAbis[0];
+    } else {
+
+      const pubFuncIndexASM = usASM.slice(usASM.lastIndexOf(' ') + 1);
+
+      const pubFuncIndex = asm2int(pubFuncIndexASM);
+
+      entity = this.abi.find(entity => entity.index === pubFuncIndex);
     }
-    const cParams = entity?.params || [];
+
+    if (!entity) {
+      throw new Error(`the raw unlocking script cannot match the contract ${this.constructor.name}`);
+    }
+
+    const cParams = entity.params || [];
 
     const dummyArgs = cParams.map(p => {
       const dummyArg = Object.assign({}, p, { value: false });
-      return flatternArg(dummyArg, contract.resolver, { state: true, ignoreValue: true });
+      return flatternArg(dummyArg, this.resolver, { state: true, ignoreValue: true });
     }).flat(Infinity) as Arguments;
-
 
 
     let fArgsLen = dummyArgs.length;
@@ -384,11 +426,10 @@ export class ABICoder {
       fArgsLen += 1;
     }
 
-    const usASM = script.toASM();
     const asmOpcodes = usASM.split(' ');
 
     if (fArgsLen != asmOpcodes.length) {
-      throw new Error(`the raw unlockingScript cannot match the arguments of public function ${name} of contract ${contract.contractName}`);
+      throw new Error(`the raw unlockingScript cannot match the arguments of public function ${entity.name} of contract ${this.contractName}`);
     }
 
     const hexTemplateArgs: Map<string, string> = new Map();
@@ -400,12 +441,16 @@ export class ABICoder {
     });
 
 
-    const args: Arguments = cParams.map(param => deserializeArgfromHex(contract.resolver, Object.assign(param, {
+    const args: Arguments = cParams.map(param => deserializeArgfromHex(this.resolver, Object.assign(param, {
       value: false //fake value
     }), hexTemplateArgs, { state: false }));
 
-    return new FunctionCall(name, { contract, unlockingScript: script, args: args });
+
+    return {
+      methodName: entity.name,
+      args,
+      unlockingScript
+    };
 
   }
-
 }
