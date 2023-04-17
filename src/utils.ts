@@ -339,7 +339,6 @@ export function compileContract(file: string, options?: {
   sourceMap?: boolean,
   artifact?: boolean,
 }): CompileResult {
-  console.log(`Compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '../out'),
     sourceMap: false,
@@ -372,7 +371,6 @@ export function compileContractAsync(file: string, options?: {
   artifact?: boolean,
   sourceMap?: boolean
 }): Promise<CompileResult> {
-  console.log(`compiling contract ${file} ...`);
   options = Object.assign({
     out: join(__dirname, '..', 'out'),
     sourceMap: false,
