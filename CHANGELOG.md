@@ -1,8 +1,13 @@
 # CHANGELOG
 
+
+## 2.1.15
+
+- add `ContractClass.abiCoder.parseCallData(hex: string)`, which can parse [CallData](./src/abi.ts#L156) from a unlocking script hex.
+
 ## 2.1.14
 
-- `PrivateKey.fromRandom() now takes `Network.Type` parameter
+- `PrivateKey.fromRandom()` now takes `Network.Type` parameter
 
 ## 2.1.13
 

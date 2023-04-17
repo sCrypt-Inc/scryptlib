@@ -853,7 +853,7 @@ export function buildContractClass(artifact: ContractArtifact | CompileResult): 
   ContractClass.resolver = buildTypeResolverFromArtifact(artifact);
   ContractClass.abi = artifact.abi;
   ContractClass.hex = artifact.hex;
-  ContractClass.abiCoder = new ABICoder(artifact.abi, ContractClass.resolver);
+  ContractClass.abiCoder = new ABICoder(artifact.abi, ContractClass.resolver, artifact.contract);
   ContractClass.stateProps = artifact.stateProps || [];
 
 

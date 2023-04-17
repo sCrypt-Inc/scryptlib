@@ -571,8 +571,8 @@ describe('string as bigInt', () => {
         let mainClone = PersonContract.fromHex(main.lockingScript.toHex());
 
 
-        const funCallClone = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCall.unlockingScript?.toHex() || '');
-
+        const funCallClone = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, funCall.unlockingScript?.toHex() || '');
+        expect(funCallClone.methodName).to.equal('equal');
 
         main = new PersonContract(person1, 33333333333333333333333333333333333n);
 
@@ -589,8 +589,8 @@ describe('string as bigInt', () => {
         })) as FunctionCall;
 
 
-        const funCallCloneWrong = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, 'equal', funCallWrongArgs.unlockingScript?.toHex() || '');
-
+        const funCallCloneWrong = PersonContract.abiCoder.encodePubFunctionCallFromHex(mainClone, funCallWrongArgs.unlockingScript?.toHex() || '');
+        expect(funCallCloneWrong.methodName).to.equal('equal');
         const result1 = funCallCloneWrong.verify()
         expect(result1.success).to.be.false;
 
@@ -611,7 +611,10 @@ describe('string as bigInt', () => {
 
         let p2pkhClone = DemoP2PKH.fromHex(p2pkh.lockingScript.toHex());
 
-        const funCallClone = DemoP2PKH.abiCoder.encodePubFunctionCallFromHex(p2pkhClone, 'unlock', funCall.unlockingScript?.toHex() || '');
+        const funCallClone = DemoP2PKH.abiCoder.encodePubFunctionCallFromHex(p2pkhClone, funCall.unlockingScript?.toHex() || '');
+
+        expect(funCallClone.methodName).to.equal('unlock');
+
 
         result = funCallClone.verify({ inputSatoshis, tx, inputIndex: 0 })
 
