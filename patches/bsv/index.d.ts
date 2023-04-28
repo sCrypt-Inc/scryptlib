@@ -1044,7 +1044,7 @@ declare module 'bsv' {
 
         static fromString(str: string): PrivateKey;
         static fromWIF(str: string): PrivateKey;
-        static fromRandom(network?: string | Networks.Type): PrivateKey;
+        static fromRandom(netowrk?: string): PrivateKey;
         static fromBuffer(buf: Buffer, network: Networks.Type): PrivateKey;
         static fromHex(hex: string, network: Networks.Type): PrivateKey;
         static getValidationError(data: string): any | null;

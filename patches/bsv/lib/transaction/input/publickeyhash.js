@@ -91,10 +91,10 @@ PublicKeyHashInput.prototype.isFullySigned = function () {
 // 1    signature size (OP_PUSHDATA)
 // <=72 signature (DER + SIGHASH type)
 // 1    public key size (OP_PUSHDATA)
-// 33   compressed public key
+// 65   uncompressed public key
 //
 // 4    sequence number
-PublicKeyHashInput.SCRIPT_MAX_SIZE = 108
+PublicKeyHashInput.SCRIPT_MAX_SIZE = 140
 
 PublicKeyHashInput.prototype._estimateSize = function () {
   return Input.BASE_SIZE + PublicKeyHashInput.SCRIPT_MAX_SIZE
