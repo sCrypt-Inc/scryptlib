@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2.1.17
+
+- `PrivateKey.fromRandom()` now takes `Network.Type` parameter
+
 ## 2.1.16
 
 - update bsv to fix change amount error when using a uncompressed public key.
