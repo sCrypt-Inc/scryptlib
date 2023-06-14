@@ -6,6 +6,7 @@ import { Bool, Bytes, Int, isBytes, OpCodeType, PrivKey, PubKey, Ripemd160, Scry
 export default class Stateful {
 
   // state version
+  // TODO: change to 1 if we upgrade scrypt compiler
   static readonly CURRENT_STATE_VERSION = Int(0);
 
   static int2hex(n: Int): string {
@@ -95,14 +96,8 @@ export default class Stateful {
   }
 
 
-  /**
- * only used for state contract
- * @param args 
- * @param isGenesis 
- * @param finalTypeResolver 
- * @returns 
- */
-  static buildState(args: Arguments, isGenesis: boolean, resolver: TypeResolver): string {
+
+  static buildStateHex(args: Arguments, isGenesis: boolean, resolver: TypeResolver, version: Int): string {
 
     const args_ = args.map(arg => {
       return flatternArg(arg, resolver, { state: true, ignoreValue: false });
@@ -118,14 +113,32 @@ export default class Stateful {
     state_hex += args_.map(a => Stateful.toHex(a.value, a.type)).join('');
 
     //append meta
-    if (state_hex) {
-      const state_len = state_hex.length / 2;
-      state_hex += num2bin(BigInt(state_len), 4) + num2bin(Stateful.CURRENT_STATE_VERSION, 1);
-      return state_hex;
-    }
-
+    const state_len = state_hex.length / 2;
+    state_hex += num2bin(BigInt(state_len), 4) + num2bin(version, 1);
     return state_hex;
 
+  }
+
+  /**
+ * only used for state contract
+ * @param args 
+ * @param isGenesis 
+ * @param resolver 
+ * @returns 
+ */
+  static buildStateV0(args: Arguments, isGenesis: boolean, resolver: TypeResolver): bsv.Script {
+    return bsv.Script.fromHex(Stateful.buildStateHex(args, isGenesis, resolver, Int(0)));
+  }
+
+  /**
+ * only used for state contract
+ * @param args 
+ * @param isGenesis 
+ * @param resolver 
+ * @returns 
+ */
+  static buildStateV1(args: Arguments, isGenesis: boolean, resolver: TypeResolver): bsv.Script {
+    return bsv.Script.fromASM(Stateful.buildStateHex(args, isGenesis, resolver, Int(1)));
   }
 
 
@@ -240,7 +253,13 @@ export default class Stateful {
   }
 
 
-  static parseStateHex(contract: AbstractContract, scriptHex: string): [boolean, Arguments] {
+  /**
+   * parsing state in hex format
+   * @param contract 
+   * @param scriptHex 
+   * @returns [isGenesis, version , states]
+   */
+  static parseStateHex(contract: AbstractContract, scriptHex: string): [boolean, number, Arguments] {
 
     const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
     const version = Number(bin2num(metaScript.substr(metaScript.length - 2, 2)));
@@ -279,7 +298,7 @@ export default class Stateful {
       return deserializeArgfromHex(contract.resolver, arg, stateTemplateArgs, { state: true });
     });
 
-    return [isGenesis, args];
+    return [isGenesis, version, args];
   }
 
 }

@@ -108,6 +108,8 @@ export class AbstractContract {
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
   isGenesis = true;
 
+  stateVersion = Stateful.CURRENT_STATE_VERSION;
+
   get lockingScript(): Script {
 
     if (!this.dataPart) {
@@ -239,7 +241,14 @@ export class AbstractContract {
       }
     });
 
-    return this.codePart.add(bsv.Script.fromHex(Stateful.buildState(newState, false, this.resolver)));
+    switch (this.stateVersion) {
+      case Int(0):
+        return this.codePart.add(Stateful.buildStateV0(newState, false, this.resolver));
+      case Int(1):
+        return this.codePart.add(Stateful.buildStateV1(newState, false, this.resolver));
+      default:
+        throw new Error(`Unsupport state version: ${this.stateVersion}`);
+    }
   }
 
   run_verify(unlockingScript: bsv.Script | string | undefined, txContext?: TxContext): VerifyResult {
@@ -402,8 +411,16 @@ export class AbstractContract {
   get dataPart(): Script | undefined {
 
     if (AbstractContract.isStateful(this)) {
-      const state = Stateful.buildState(this.statePropsArgs, this.isGenesis, this.resolver);
-      return bsv.Script.fromHex(state);
+
+
+      switch (this.stateVersion) {
+        case Int(0):
+          return Stateful.buildStateV0(this.statePropsArgs, this.isGenesis, this.resolver);
+        case Int(1):
+          return Stateful.buildStateV1(this.statePropsArgs, this.isGenesis, this.resolver);
+        default:
+          throw new Error(`Unsupport state version: ${this.stateVersion}`);
+      }
     }
 
     if (this._dataPartInHex) {
@@ -448,9 +465,10 @@ export class AbstractContract {
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
     if (AbstractContract.isStateful(this)) {
-      const [isGenesis, args] = Stateful.parseStateHex(this, this._dataPartInHex);
+      const [isGenesis, stateVersion, args] = Stateful.parseStateHex(this, this._dataPartInHex);
       this.statePropsArgs = args;
       this.isGenesis = isGenesis;
+      this.stateVersion = Int(stateVersion);
     }
   }
 
