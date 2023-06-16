@@ -1,34 +1,26 @@
 
-const { execSync } = require("child_process");
-const { exit } = require("process");
 const { join } = require("path");
-const { copyFileSync, existsSync } = require("fs");
+const { copyFileSync } = require("fs");
 const chalk = require("chalk");
-var glob = require('glob');
-
-function isDev() {
-    const cwd = process.cwd();
-    if (cwd.indexOf("node_modules") > -1) {
-        return false;
-    }
-
-    return true;
-}
-
-const _isDev = isDev();
-
+const glob = require('glob');
+const findNodeModules = require('find-node-modules');
 
 function apply(patches) {
+    const targets = findNodeModules({ relative: false })
+
+    if (targets.length < 1) {
+        throw new Error('No node modules found.');
+    }
+
     patches.map(patch => {
-        const dest = _isDev ? join(__dirname, '..', 'node_modules', patch) : join(__dirname, '..', '..', patch);
-        if (!existsSync(dest)) {
-            new Error(`apply patch ${patch} fail, dest file ${dest} not exist`);
-        }
-        const src = join(__dirname, patch);
-        if (!existsSync(src)) {
-            new Error(`apply patch ${patch} fail, src file ${src} not exist`);
-        }
-        copyFileSync(src, dest);
+        targets.forEach(target => {
+            try {
+                const dest = join(target, patch);
+                const src = join(__dirname, patch);
+                copyFileSync(src, dest);
+            } catch (error) {
+            }
+        })
     })
 }
 
