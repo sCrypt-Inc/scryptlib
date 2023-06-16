@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2.1.18
+
+- Fix patching issue.
+
 ## 2.1.17
 
 - `PrivateKey.fromRandom()` now takes `Network.Type` parameter
