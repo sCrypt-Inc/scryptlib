@@ -661,7 +661,9 @@ declare module 'bsv' {
                 endian?: Endianness,
             );
 
-            One: BN;
+            static Zero: BN;
+            static One: BN;
+            static Minus1: BN;
 
             clone(): BN;
             toString(base?: number | 'hex', length?: number): string;
@@ -676,6 +678,7 @@ declare module 'bsv' {
             isEven(): boolean;
             isOdd(): boolean;
             isZero(): boolean;
+            isBN(): boolean;
             cmp(b: any): number;
             lt(b: any): boolean;
             lte(b: any): boolean;
@@ -719,7 +722,6 @@ declare module 'bsv' {
             toNumber(): number;
             static fromBuffer(buf: Buffer, opts?: IOpts): BN;
             static fromNumber(n: number): BN;
-            //toBuffer(opts?: IOpts): Buffer;
             static fromHex(hex: string, opts?: IOpts): BN;
             static fromString(hex: string, base?: number): BN;
         }
