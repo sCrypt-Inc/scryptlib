@@ -7,7 +7,7 @@ export default class Stateful {
 
   // state version
   // TODO: change to 1 if we upgrade scrypt compiler
-  static readonly CURRENT_STATE_VERSION = Int(0);
+  static readonly CURRENT_STATE_VERSION = 1;
 
   static int2hex(n: Int): string {
     let asm = '';

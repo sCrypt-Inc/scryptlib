@@ -38,7 +38,7 @@ export interface VerifyResult {
   success: boolean;
   error?: VerifyError;
 }
-export const CURRENT_CONTRACT_ARTIFACT_VERSION = 9;
+export const CURRENT_CONTRACT_ARTIFACT_VERSION = 10;
 
 export const SUPPORTED_MINIMUM_VERSION = 8;
 export interface ContractArtifact {
@@ -108,8 +108,6 @@ export class AbstractContract {
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
   isGenesis = true;
 
-  stateVersion = Stateful.CURRENT_STATE_VERSION;
-
   get lockingScript(): Script {
 
     if (!this.dataPart) {
@@ -153,6 +151,14 @@ export class AbstractContract {
   get version(): number {
     const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
     return artifact.version || 0;
+  }
+
+  get stateVersion(): number {
+    const version = this.version;
+    if (version >= 10) {
+      return Stateful.CURRENT_STATE_VERSION;
+    }
+    return 0;
   }
 
   addFunctionCall(f: FunctionCall): void {
@@ -242,9 +248,9 @@ export class AbstractContract {
     });
 
     switch (this.stateVersion) {
-      case Int(0):
+      case 0:
         return this.codePart.add(Stateful.buildStateV0(newState, false, this.resolver));
-      case Int(1):
+      case 1:
         return this.codePart.add(Stateful.buildStateV1(newState, false, this.resolver));
       default:
         throw new Error(`Unsupport state version: ${this.stateVersion}`);
@@ -414,9 +420,9 @@ export class AbstractContract {
 
 
       switch (this.stateVersion) {
-        case Int(0):
+        case 0:
           return Stateful.buildStateV0(this.statePropsArgs, this.isGenesis, this.resolver);
-        case Int(1):
+        case 1:
           return Stateful.buildStateV1(this.statePropsArgs, this.isGenesis, this.resolver);
         default:
           throw new Error(`Unsupport state version: ${this.stateVersion}`);
@@ -468,7 +474,10 @@ export class AbstractContract {
       const [isGenesis, stateVersion, args] = Stateful.parseStateHex(this, this._dataPartInHex);
       this.statePropsArgs = args;
       this.isGenesis = isGenesis;
-      this.stateVersion = Int(stateVersion);
+
+      if (stateVersion != this.stateVersion) {
+        throw new Error('the dataPart in hex can\'t match current artifact version');
+      }
     }
   }
 
