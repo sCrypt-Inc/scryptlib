@@ -315,8 +315,10 @@ export class ABICoder {
 
       switch (version) {
         case Int(0):
+        case Int(1):
           {
-            const [isGenesis, args] = Stateful.parseStateHex(contract, scriptHex);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const [isGenesis, _, args] = Stateful.parseStateHex(contract, scriptHex);
             contract.statePropsArgs = args;
             contract.isGenesis = isGenesis;
           }

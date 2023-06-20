@@ -26,12 +26,18 @@ describe('state_test', () => {
             Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541"),
         );
 
-        expect(stateExample.dataPart?.toHex()).to.be.equal('01010001000101000100010001000100010001001400000000');
+        expect(stateExample.dataPart?.toHex()).to.be.equal(
+
+            stateExample.stateVersion >= 1 ?
+                '1901010001000101000100010001000100010001001400000001'
+                : '01010001000101000100010001000100010001001400000000');
         stateExample.counter++;
         stateExample.state_bytes = Bytes('010101');
         stateExample.state_bool = false;
 
-        expect(stateExample.dataPart?.toHex()).to.be.equal('000101030101010001000100010001000100010001001600000000');
+        expect(stateExample.dataPart?.toHex()).to.be.equal(stateExample.stateVersion >= 1 ?
+            '1b000101030101010001000100010001000100010001001600000001'
+            : '000101030101010001000100010001000100010001001600000000');
 
 
     });
@@ -49,11 +55,15 @@ describe('state_test', () => {
         );
 
 
-        expect(stateExample.dataPart?.toHex()).to.be.eq('01010001000101000100010001000100010001001400000000');
+        expect(stateExample.dataPart?.toHex()).to.be.eq(stateExample.stateVersion >= 1 ?
+            '1901010001000101000100010001000100010001001400000001'
+            : '01010001000101000100010001000100010001001400000000');
 
         let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
 
-        expect(newStateExample.dataPart?.toHex()).to.be.eq('01010001000101000100010001000100010001001400000000');
+        expect(newStateExample.dataPart?.toHex()).to.be.eq(stateExample.stateVersion >= 1 ?
+            '1901010001000101000100010001000100010001001400000001'
+            : '01010001000101000100010001000100010001001400000000');
 
         expect(newStateExample.counter == Int(0)).to.be.true;
         expect(newStateExample.state_bytes == Bytes('00')).to.be.true;
@@ -81,7 +91,9 @@ describe('state_test', () => {
         );
 
         stateExample.counter = 3n;
-        expect(stateExample.dataPart?.toHex()).to.be.eq('00010301000101000100010001000100010001001400000000');
+        expect(stateExample.dataPart?.toHex()).to.be.eq(stateExample.stateVersion >= 1 ?
+            '1900010301000101000100010001000100010001001400000001'
+            : '00010301000101000100010001000100010001001400000000');
 
         let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
 

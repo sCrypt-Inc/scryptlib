@@ -43,4 +43,9 @@
 * remove `sources` field
 * remove `asm` field
 
+## version = 10
+
+* state hex start with push data
+
+
 The minimum version number currently supported: `8`

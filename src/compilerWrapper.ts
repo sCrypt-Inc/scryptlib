@@ -112,8 +112,18 @@ export class CompileResult {
 
   toArtifact(): ContractArtifact {
 
+    const compilerVersion = this.compilerVersion || '0.0.0';
+
+    const [major, minor, patch] = compilerVersion.split('.');
+
+    let version = CURRENT_CONTRACT_ARTIFACT_VERSION;
+
+    if (parseInt(major) == 1 && parseInt(minor) < 20) {
+      version = 9;
+    }
+
     const artifact: ContractArtifact = {
-      version: CURRENT_CONTRACT_ARTIFACT_VERSION,
+      version: version,
       compilerVersion: this.compilerVersion || '0.0.0',
       contract: this.contract || '',
       md5: this.md5 || '',

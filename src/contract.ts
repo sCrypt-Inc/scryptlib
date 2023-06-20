@@ -38,7 +38,7 @@ export interface VerifyResult {
   success: boolean;
   error?: VerifyError;
 }
-export const CURRENT_CONTRACT_ARTIFACT_VERSION = 9;
+export const CURRENT_CONTRACT_ARTIFACT_VERSION = 10;
 
 export const SUPPORTED_MINIMUM_VERSION = 8;
 export interface ContractArtifact {
@@ -153,6 +153,14 @@ export class AbstractContract {
     return artifact.version || 0;
   }
 
+  get stateVersion(): number {
+    const version = this.version;
+    if (version >= 10) {
+      return Stateful.CURRENT_STATE_VERSION;
+    }
+    return 0;
+  }
+
   addFunctionCall(f: FunctionCall): void {
     this.calledPubFunctions.push(f);
   }
@@ -239,7 +247,14 @@ export class AbstractContract {
       }
     });
 
-    return this.codePart.add(bsv.Script.fromHex(Stateful.buildState(newState, false, this.resolver)));
+    switch (this.stateVersion) {
+      case 0:
+        return this.codePart.add(Stateful.buildStateV0(newState, false, this.resolver));
+      case 1:
+        return this.codePart.add(Stateful.buildStateV1(newState, false, this.resolver));
+      default:
+        throw new Error(`Unsupport state version: ${this.stateVersion}`);
+    }
   }
 
   run_verify(unlockingScript: bsv.Script | string | undefined, txContext?: TxContext): VerifyResult {
@@ -402,8 +417,16 @@ export class AbstractContract {
   get dataPart(): Script | undefined {
 
     if (AbstractContract.isStateful(this)) {
-      const state = Stateful.buildState(this.statePropsArgs, this.isGenesis, this.resolver);
-      return bsv.Script.fromHex(state);
+
+
+      switch (this.stateVersion) {
+        case 0:
+          return Stateful.buildStateV0(this.statePropsArgs, this.isGenesis, this.resolver);
+        case 1:
+          return Stateful.buildStateV1(this.statePropsArgs, this.isGenesis, this.resolver);
+        default:
+          throw new Error(`Unsupport state version: ${this.stateVersion}`);
+      }
     }
 
     if (this._dataPartInHex) {
@@ -448,9 +471,13 @@ export class AbstractContract {
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
     if (AbstractContract.isStateful(this)) {
-      const [isGenesis, args] = Stateful.parseStateHex(this, this._dataPartInHex);
+      const [isGenesis, stateVersion, args] = Stateful.parseStateHex(this, this._dataPartInHex);
       this.statePropsArgs = args;
       this.isGenesis = isGenesis;
+
+      if (stateVersion != this.stateVersion) {
+        throw new Error('the dataPart in hex can\'t match current artifact version');
+      }
     }
   }
 
