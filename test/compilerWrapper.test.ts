@@ -8,7 +8,7 @@ import { writeFileSync, readFileSync, mkdtempSync, copyFileSync } from 'fs';
 import { join } from 'path';
 import { buildContractClass } from '../src/contract';
 import { findCompiler } from '../src/findCompiler';
-import { Ripemd160, PubKey, toHex, Sig, ContractArtifact } from '../src';
+import { Ripemd160, PubKey, toHex, Sig, Artifact } from '../src';
 
 describe('compile()', () => {
   it('compile successfully', () => {
@@ -107,7 +107,7 @@ describe('compile()', () => {
 
 
   describe('artifact should be as expected', () => {
-    let artifact: ContractArtifact;
+    let artifact: Artifact;
     before(() => {
       artifact = loadArtifact('tokenUtxo.json');
     });

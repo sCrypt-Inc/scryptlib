@@ -1,8 +1,8 @@
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { bsv } from '../src/utils';
-import { ContractArtifact } from '../src/contract';
-export function loadArtifact(fileName: string): ContractArtifact {
+import { Artifact } from '../src/contract';
+export function loadArtifact(fileName: string): Artifact {
   return JSON.parse(readFileSync(join(__dirname, "../out/", fileName)).toString());
 }
 
