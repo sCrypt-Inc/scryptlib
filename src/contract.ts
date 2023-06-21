@@ -41,7 +41,7 @@ export interface VerifyResult {
 export const CURRENT_CONTRACT_ARTIFACT_VERSION = 9;
 
 export const SUPPORTED_MINIMUM_VERSION = 8;
-export interface ContractArtifact {
+export interface Artifact {
   /** version of artifact file */
   version: number;
   /** version of compiler used to produce this file */
@@ -82,7 +82,7 @@ export type StepIndex = number;
 
 export class AbstractContract {
 
-  public static artifact: ContractArtifact;
+  public static artifact: Artifact;
   public static opcodes?: OpCode[];
   public static hex: string;
   public static abi: ABIEntity[];
@@ -129,27 +129,27 @@ export class AbstractContract {
   }
 
   get sourceMapFile(): string {
-    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as Artifact;
     return artifact.sourceMapFile;
   }
 
   get file(): string {
-    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as Artifact;
     return artifact.file;
   }
 
   get contractName(): string {
-    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as Artifact;
     return artifact.contract;
   }
 
   get stateProps(): ParamEntity[] {
-    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as Artifact;
     return artifact.stateProps || [];
   }
 
   get version(): number {
-    const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+    const artifact = Object.getPrototypeOf(this).constructor.artifact as Artifact;
     return artifact.version || 0;
   }
 
@@ -338,7 +338,7 @@ export class AbstractContract {
       }
     } else if (this.version <= 8) {
 
-      const artifact = Object.getPrototypeOf(this).constructor.artifact as ContractArtifact;
+      const artifact = Object.getPrototypeOf(this).constructor.artifact as Artifact;
 
       const sourceMap = loadSourceMapfromArtifact(artifact);
 
@@ -811,7 +811,7 @@ const invalidMethodName = ['arguments',
 
 
 
-export function buildContractClass(artifact: ContractArtifact | CompileResult): typeof AbstractContract {
+export function buildContractClass(artifact: Artifact | CompileResult): typeof AbstractContract {
 
 
   if (artifact instanceof CompileResult) {
@@ -918,7 +918,7 @@ export function buildContractClass(artifact: ContractArtifact | CompileResult): 
 
 
 
-export function buildTypeResolverFromArtifact(artifact: ContractArtifact): TypeResolver {
+export function buildTypeResolverFromArtifact(artifact: Artifact): TypeResolver {
   const alias: AliasEntity[] = artifact.alias || [];
   const library: LibraryEntity[] = artifact.library || [];
   const structs: StructEntity[] = artifact.structs || [];

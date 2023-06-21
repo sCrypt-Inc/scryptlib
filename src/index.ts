@@ -22,7 +22,7 @@ export {
   OpCodeType, SupportedParamType, PubKeyHash, TxContext, ContractClass, Contract, SortedItem, HashedMap, HashedSet,
   StructObject, TypeResolver, PrimitiveTypes, AsmVarValues, Flavor,
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
-  BuildType, RelatedInformation, ContractArtifact, VerifyResult, VerifyError, AbstractContract,
+  BuildType, RelatedInformation, Artifact, VerifyResult, VerifyError, AbstractContract,
   DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, DEFAULT_FLAGS, ScryptType, DEFAULT_SIGHASH_TYPE, CallData
 } from './internal';
 

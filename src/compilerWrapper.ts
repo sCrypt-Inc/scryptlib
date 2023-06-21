@@ -2,7 +2,7 @@ import { ChildProcess, exec, execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'fs';
 import { basename, dirname, join } from 'path';
 import {
-  buildTypeResolver, ContractArtifact, CURRENT_CONTRACT_ARTIFACT_VERSION, findCompiler, hash160, md5, path2uri, resolveConstValue, TypeResolver
+  buildTypeResolver, Artifact, CURRENT_CONTRACT_ARTIFACT_VERSION, findCompiler, hash160, md5, path2uri, resolveConstValue, TypeResolver
 } from './internal';
 import rimraf = require('rimraf');
 import JSONbig = require('json-bigint');
@@ -110,9 +110,9 @@ export class CompileResult {
   sourceMapFile?: string;
   dbgFile?: string;
 
-  toArtifact(): ContractArtifact {
+  toArtifact(): Artifact {
 
-    const artifact: ContractArtifact = {
+    const artifact: Artifact = {
       version: CURRENT_CONTRACT_ARTIFACT_VERSION,
       compilerVersion: this.compilerVersion || '0.0.0',
       contract: this.contract || '',
@@ -1098,7 +1098,7 @@ function doClean(settings: CompilingSettings, outputFiles: Record<string, string
   // console.log('compile time spent: ', Date.now() - st)
 }
 
-export function loadSourceMapfromArtifact(artifact: ContractArtifact): Array<{
+export function loadSourceMapfromArtifact(artifact: Artifact): Array<{
   pos: Pos | undefined,
   opcode: string
 }> {
