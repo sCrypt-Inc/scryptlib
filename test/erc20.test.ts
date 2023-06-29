@@ -4,7 +4,7 @@ import { newTx, loadArtifact } from './helper';
 import { buildContractClass } from '../src/contract';
 import { bsv, getPreimage, signTx } from '../src/utils';
 import { PubKey, toHex } from '../src';
-import { Sig, SigHash, SigHashPreimage } from '../src/scryptTypes';
+import { Sig, SignatureHashType, SigHashPreimage } from '../src/scryptTypes';
 
 const inputIndex = 0;
 const inputSatoshis = 100000;
@@ -51,9 +51,9 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     }))
 
 
-    preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE)
+    preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SignatureHashType.SINGLE)
 
-    const sigMinter = signTx(tx, privateKeyMinter, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE);
+    const sigMinter = signTx(tx, privateKeyMinter, coin.lockingScript, inputSatoshis, 0, SignatureHashType.SINGLE);
 
     // set txContext for verification
     coin.txContext = {
@@ -104,9 +104,9 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     }))
 
 
-    preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE)
+    preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SignatureHashType.SINGLE)
 
-    const senderSig = signTx(tx, privateKeyMinter, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE);
+    const senderSig = signTx(tx, privateKeyMinter, coin.lockingScript, inputSatoshis, 0, SignatureHashType.SINGLE);
 
     // set txContext for verification
     coin.txContext = {
@@ -166,9 +166,9 @@ describe('Test sCrypt contract erc20 In Javascript', () => {
     }))
 
 
-    preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE)
+    preimage = getPreimage(tx, coin.lockingScript, inputSatoshis, 0, SignatureHashType.SINGLE)
 
-    const senderSig = signTx(tx, senderPrivateKey, coin.lockingScript, inputSatoshis, 0, SigHash.SINGLE);
+    const senderSig = signTx(tx, senderPrivateKey, coin.lockingScript, inputSatoshis, 0, SignatureHashType.SINGLE);
 
     // set txContext for verification
     coin.txContext = {
