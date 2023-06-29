@@ -1,7 +1,7 @@
 import { assert, expect } from 'chai';
 import { loadArtifact, newTx } from './helper';
 import { buildContractClass } from '../src/contract';
-import { Bool, Bytes, Int, PrivKey, PubKey, Ripemd160, Sha256, SigHashPreimage, SigHashType, OpCodeType, SigHash, Sig } from '../src/scryptTypes';
+import { Bool, Bytes, Int, PrivKey, PubKey, Ripemd160, Sha256, SigHashPreimage, SigHashType, OpCodeType, SignatureHashType, Sig } from '../src/scryptTypes';
 import { bsv, getPreimage } from '../src/utils';
 
 const inputIndex = 0;
@@ -22,7 +22,7 @@ describe('state_test', () => {
             Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
             OpCodeType("76"),
-            SigHashType(SigHash.ALL),
+            SigHashType(SignatureHashType.ALL),
             Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541"),
         );
 
@@ -44,7 +44,7 @@ describe('state_test', () => {
             Ripemd160("02"),
             Sha256("03"),
             OpCodeType('76'),
-            SigHashType(SigHash.ALL),
+            SigHashType(SignatureHashType.ALL),
             Sig("05")
         );
 
@@ -76,7 +76,7 @@ describe('state_test', () => {
             Ripemd160("02"),
             Sha256("03"),
             OpCodeType('76'),
-            SigHashType(SigHash.ALL),
+            SigHashType(SignatureHashType.ALL),
             Sig("05")
         );
 
@@ -97,7 +97,7 @@ describe('state_test', () => {
             Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
             OpCodeType('76'),
-            SigHashType(SigHash.ALL),
+            SigHashType(SignatureHashType.ALL),
             Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
 
@@ -108,7 +108,7 @@ describe('state_test', () => {
         stateExample.ripemd160 = Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4");
         stateExample.sha256 = Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
         stateExample.opCodeType = OpCodeType('76');
-        stateExample.sigHashType = SigHashType(SigHash.ALL);
+        stateExample.sigHashType = SigHashType(SignatureHashType.ALL);
         stateExample.sig = Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541");
 
         let newStateExample = StateExample.fromHex(stateExample.lockingScript.toHex());
@@ -120,7 +120,7 @@ describe('state_test', () => {
         expect(newStateExample.ripemd160 === Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4")).to.be.true;
         expect(newStateExample.sha256 === Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")).to.be.true;
         expect(newStateExample.opCodeType === OpCodeType('76')).to.be.true;
-        expect(newStateExample.sigHashType === SigHashType(SigHash.ALL)).to.be.true;
+        expect(newStateExample.sigHashType === SigHashType(SignatureHashType.ALL)).to.be.true;
         expect(newStateExample.sig === Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")).to.be.true;
     });
 
@@ -133,7 +133,7 @@ describe('state_test', () => {
             Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
             OpCodeType('76'),
-            SigHashType(SigHash.ALL),
+            SigHashType(SignatureHashType.ALL),
             Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
 
@@ -144,7 +144,7 @@ describe('state_test', () => {
         stateExample.ripemd160 = Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4");
         stateExample.sha256 = Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
         stateExample.opCodeType = OpCodeType('76');
-        stateExample.sigHashType = SigHashType(SigHash.ALL);
+        stateExample.sigHashType = SigHashType(SignatureHashType.ALL);
         stateExample.sig = Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541");
 
 
@@ -156,7 +156,7 @@ describe('state_test', () => {
             ripemd160: Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             sha256: Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
             opCodeType: OpCodeType('76'),
-            sigHashType: SigHashType(SigHash.ALL),
+            sigHashType: SigHashType(SignatureHashType.ALL),
             sig: Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         });
 
@@ -185,7 +185,7 @@ describe('state_test', () => {
         stateExample.ripemd160 = Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4");
         stateExample.sha256 = Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
         stateExample.opCodeType = OpCodeType('76');
-        stateExample.sigHashType = SigHashType(SigHash.ALL);
+        stateExample.sigHashType = SigHashType(SignatureHashType.ALL);
         stateExample.sig = Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541");
 
 
@@ -198,7 +198,7 @@ describe('state_test', () => {
             ripemd160: Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             sha256: Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
             opCodeType: OpCodeType('76'),
-            sigHashType: SigHashType(SigHash.ALL),
+            sigHashType: SigHashType(SignatureHashType.ALL),
             sig: Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         })
 
@@ -229,7 +229,7 @@ describe('state_test', () => {
             Ripemd160("40933785f6695815a7e1afb59aff20226bbb5bd4"),
             Sha256("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
             OpCodeType('76'),
-            SigHashType(SigHash.ALL),
+            SigHashType(SignatureHashType.ALL),
             Sig("304402207b6ce0aaae3a379721a364ab11414abd658a9940c10d48cd0bc6b273e81d058902206f6c0671066aef4c0de58ab8c349fde38ef3ea996b9f2e79241ebad96049299541")
         );
 

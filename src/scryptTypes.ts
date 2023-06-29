@@ -112,7 +112,7 @@ export function HashedMap(map: Map<SupportedParamType, SupportedParamType>): Has
   return map as HashedMap;
 }
 
-export enum SigHash {
+export enum SignatureHashType {
   ALL = 0x41,
   NONE = 0x42,
   SINGLE = 0x43,
@@ -121,12 +121,12 @@ export enum SigHash {
   ANYONECANPAY_SINGLE = 0xc3,
 }
 
-export function SigHashType(s: SigHash | 0): SigHashType {
+export function SigHashType(s: SignatureHashType | 0): SigHashType {
   if (s == 0) {
     return '00' as SigHashType;
-  } else if (s === SigHash.ALL || s === SigHash.NONE || s === SigHash.SINGLE
-    || s === SigHash.ANYONECANPAY_ALL || s === SigHash.ANYONECANPAY_NONE || s === SigHash.ANYONECANPAY_SINGLE) {
-    return `${(s as SigHash).toString(16)}` as SigHashType;
+  } else if (s === SignatureHashType.ALL || s === SignatureHashType.NONE || s === SignatureHashType.SINGLE
+    || s === SignatureHashType.ANYONECANPAY_ALL || s === SignatureHashType.ANYONECANPAY_NONE || s === SignatureHashType.ANYONECANPAY_SINGLE) {
+    return `${(s as SignatureHashType).toString(16)}` as SigHashType;
   }
   throw new Error(`unsupported SigHashType: ${s}`);
 }
