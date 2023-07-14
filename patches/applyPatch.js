@@ -2,7 +2,8 @@
 const { join } = require("path");
 const { copyFileSync } = require("fs");
 const chalk = require("chalk");
-const glob = require('glob');
+const { glob } = require('glob')
+
 const findNodeModules = require('find-node-modules');
 
 function apply(patches) {
