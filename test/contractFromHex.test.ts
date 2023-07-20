@@ -62,9 +62,10 @@ describe('create instance from UTXO Hex', () => {
   beforeEach(() => {
     const simple = new Simple()
     const asmVars = {
-      'Simple.equalImpl.x': 'OP_11'
+      'Simple.equalImpl.x': 'OP_11',
     }
     simple.replaceAsmVars(asmVars)
+    console.log(simple.lockingScript)
 
     //create instance from an exist script
     instance = Simple.fromHex(simple.lockingScript.toHex())
