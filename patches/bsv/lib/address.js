@@ -90,6 +90,7 @@ function Address (data, network, type) {
  * @returns {Object} An "info" object with "type", "network", and "hashBuffer"
  */
 Address.prototype._classifyArguments = function (data, network, type) {
+  var Script = require('./script')
   // transform and validate input data
   if ((data instanceof Buffer || data instanceof Uint8Array) && data.length === 20) {
     return Address._transformHash(data)
@@ -237,6 +238,7 @@ Address._transformPublicKey = function (pubkey) {
  * @private
  */
 Address._transformScript = function (script, network) {
+  var Script = require('./script')
   $.checkArgument(script instanceof Script, 'script must be a Script instance')
   var info = script.getAddressInfo(network)
   if (!info) {
@@ -258,6 +260,7 @@ Address._transformScript = function (script, network) {
  * @return {Address}
  */
 Address.createMultisig = function (publicKeys, threshold, network) {
+  var Script = require('./script')
   network = network || publicKeys[0].network || Networks.defaultNetwork
   return Address.payingTo(Script.buildMultisigOut(publicKeys, threshold), network)
 }
@@ -351,6 +354,7 @@ Address.fromScriptHash = function (hash, network) {
  * @returns {Address} A new valid and frozen instance of an Address
  */
 Address.payingTo = function (script, network) {
+  var Script = require('./script')
   $.checkArgument(script, 'script is required')
   $.checkArgument(script instanceof Script, 'script must be instance of Script')
 
@@ -370,6 +374,7 @@ Address.payingTo = function (script, network) {
  * @returns {Address} A new valid and frozen instance of an Address
  */
 Address.fromScript = function (script, network) {
+  var Script = require('./script')
   $.checkArgument(script instanceof Script, 'script must be a Script instance')
   var info = Address._transformScript(script, network)
   return new Address(info.hashBuffer, network, info.type)
