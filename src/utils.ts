@@ -3,7 +3,7 @@ import * as bsv from 'bsv';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { join } from 'path';
-import { decode } from 'sourcemap-codec';
+import { decode } from '@jridgewell/sourcemap-codec';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 export { bsv };
