@@ -433,7 +433,7 @@ declare module 'bsv' {
          * @opcode {`116`} 
          * @hex {`0x74`} 
          * @input Nothing
-         * @output <Stack size>
+         * @output Stack size
          * @static
          */
         static OP_DEPTH: number;
@@ -477,7 +477,7 @@ declare module 'bsv' {
          * The item `n` back in the stack is copied to the top.
          * @opcode {`121`} 
          * @hex {`0x79`} 
-         * @input xn ... x2 x1 x0 <n>
+         * @input xn ... x2 x1 x0 {n}
          * @output 	xn ... x2 x1 x0 xn
          * @static
          */
@@ -486,7 +486,7 @@ declare module 'bsv' {
          * The item `n` back in the stack is copied to the top.
          * @opcode {`122`} 
          * @hex {`0x7a`} 
-         * @input xn ... x2 x1 x0 <n>
+         * @input xn ... x2 x1 x0 {n}
          * @output ... x2 x1 x0 xn
          * @static
          */
