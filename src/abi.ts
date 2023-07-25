@@ -192,17 +192,17 @@ export class ABICoder {
       contract.hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value, arg.type));
     });
 
-    const hasCodePartTemplate = hexTemplate.match(/<__codePart__>/g) ? true : false
+    const hasCodePartTemplate = hexTemplate.match(/<__codePart__>/g) ? true : false;
     if (hasCodePartTemplate) {
       contract.hexTemplateArgs.set('<__codePart__>', '00');
     }
 
     // Check if inline ASM var values are expected to be set.
-    const templateMatches = hexTemplate.match(/<.*?>/g)
-    const templateCount = templateMatches ? templateMatches.length : 0
+    const templateMatches = hexTemplate.match(/<.*?>/g);
+    const templateCount = templateMatches ? templateMatches.length : 0;
     contract.hasInlineASMVars = hasCodePartTemplate ?
       templateCount > contract.hexTemplateArgs.size + 1 :
-      templateCount > contract.hexTemplateArgs.size
+      templateCount > contract.hexTemplateArgs.size;
 
     contract.statePropsArgs = Stateful.buildDefaultStateArgs(contract);
 

@@ -113,7 +113,7 @@ export class AbstractContract {
   get lockingScript(): Script {
 
     if (this.hasInlineASMVars && this.hexTemplateInlineASM.size === 0) {
-      throw new Error('Values for inline ASM variables have not yet been set! Cannot get locking script.')
+      throw new Error('Values for inline ASM variables have not yet been set! Cannot get locking script.');
     }
 
     if (!this.dataPart) {
