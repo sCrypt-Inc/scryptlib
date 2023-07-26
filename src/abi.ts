@@ -183,6 +183,7 @@ export class ABICoder {
       return flatternArg(a, this.resolver, { state: false, ignoreValue: false });
     });
 
+
     flatteredArgs.forEach(arg => {
       if (!hexTemplate.includes(`<${arg.name}>`)) {
         throw new Error(`abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`);
@@ -191,7 +192,17 @@ export class ABICoder {
       contract.hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value, arg.type));
     });
 
-    contract.hexTemplateArgs.set('<__codePart__>', '00');
+    const hasCodePartTemplate = hexTemplate.match(/<__codePart__>/g) ? true : false;
+    if (hasCodePartTemplate) {
+      contract.hexTemplateArgs.set('<__codePart__>', '00');
+    }
+
+    // Check if inline ASM var values are expected to be set.
+    const templateMatches = hexTemplate.match(/<.*?>/g);
+    const templateCount = templateMatches ? templateMatches.length : 0;
+    contract.hasInlineASMVars = hasCodePartTemplate ?
+      templateCount > contract.hexTemplateArgs.size + 1 :
+      templateCount > contract.hexTemplateArgs.size;
 
     contract.statePropsArgs = Stateful.buildDefaultStateArgs(contract);
 

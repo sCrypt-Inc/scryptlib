@@ -101,6 +101,8 @@ export class AbstractContract {
 
   scriptedConstructor: FunctionCall;
   private calledPubFunctions: Array<FunctionCall> = [];
+  // This will be set to true, if the contract will expect inline ASM variable values to be set.
+  hasInlineASMVars = false;
   hexTemplateInlineASM: Map<string, string> = new Map();
   hexTemplateArgs: Map<string, string> = new Map();
   statePropsArgs: Arguments = [];
@@ -109,6 +111,10 @@ export class AbstractContract {
   isGenesis = true;
 
   get lockingScript(): Script {
+
+    if (this.hasInlineASMVars && this.hexTemplateInlineASM.size === 0) {
+      throw new Error('Values for inline ASM variables have not yet been set! Cannot get locking script.');
+    }
 
     if (!this.dataPart) {
       return this.scriptedConstructor?.lockingScript as Script;
