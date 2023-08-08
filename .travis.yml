@@ -20,6 +20,7 @@ os:
 script:
   - npm run getBinary
   - npm run testlint
+  - npm run cov
   # integration testing with boilerplate
   - npm link
   - git clone -b legacy https://github.com/scrypt-sv/boilerplate.git
@@ -28,5 +29,4 @@ script:
   - npm link scryptlib # use this version
   # #- npm ls scryptlib    # double check the latest version is used
   - npm test
-  - npm run cov
   - npx scryptlib compile contracts/demo.scrypt

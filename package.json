@@ -15,7 +15,7 @@
   "scripts": {
     "compile": "tsc -b",
     "watch": "tsc -b -w",
-    "cov": "nyc npm run td",
+    "cov": "nyc npm t",
     "lint": "eslint src --ext .ts,.js --cache --fix",
     "testlint": "eslint src --ext .ts,.js",
     "test": "npm run td",
