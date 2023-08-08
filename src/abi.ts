@@ -230,18 +230,109 @@ export class ABICoder {
 
     let dataPartInHex: string | undefined = undefined;
     let codePartEndIndex = -1;
-    for (let index = 0; index < script.chunks.length; index++) {
-      const chunk = script.chunks[index];
 
-      if (offset >= hexTemplate.length && chunk.opcodenum == 106/*OP_RETURN*/) {
+    const err = new Error(`the raw script cannot match the ASM template of contract ${contract.contractName}`);
+    function checkOp(chunk: bsv.Script.IOpChunk) {
 
-        const b = bsv.Script.fromChunks(script.chunks.slice(index + 1));
+      const op = hexTemplate.substring(offset, offset + 2);
+      if (parseInt(op, 16) != chunk.opcodenum) {
+        throw err;
+      }
+      offset = offset + 2;
+    }
 
-        dataPartInHex = b.toHex();
-        codePartEndIndex = index;
-        break;
+    function checkPushByteLength(chunk: bsv.Script.IOpChunk) {
 
-      } else if (hexTemplate.charAt(offset) == '<') {
+      const op = hexTemplate.substring(offset, offset + 2);
+      if (parseInt(op, 16) != chunk.opcodenum) {
+        throw err;
+      }
+      offset = offset + 2;
+
+      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+
+      if (chunk.buf.toString('hex') != data) {
+        throw err;
+      }
+      offset = offset + chunk.len * 2;
+    }
+
+
+    function checkPushData1(chunk: bsv.Script.IOpChunk) {
+
+      const op = hexTemplate.substring(offset, offset + 2);
+      if (parseInt(op, 16) != chunk.opcodenum) {
+        throw err;
+      }
+      offset = offset + 2;
+
+      const next1Byte = hexTemplate.substring(offset, offset + 2);
+
+      if (parseInt(next1Byte, 16) != chunk.len) {
+        throw err;
+      }
+
+      offset = offset + 2;
+
+      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+
+      if (chunk.buf.toString('hex') != data) {
+        throw err;
+      }
+      offset = offset + chunk.len * 2;
+    }
+
+    function checkPushData2(chunk: bsv.Script.IOpChunk) {
+
+      const op = hexTemplate.substring(offset, offset + 2);
+      if (parseInt(op, 16) != chunk.opcodenum) {
+        throw err;
+      }
+      offset = offset + 2;
+
+      const next2Byte = hexTemplate.substring(offset, offset + 4);
+
+      if (bin2num(next2Byte) != BigInt(chunk.len)) {
+        throw err;
+      }
+
+      offset = offset + 4;
+
+      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+
+      if (chunk.buf.toString('hex') != data) {
+        throw err;
+      }
+      offset = offset + chunk.len * 2;
+    }
+
+    function checkPushData4(chunk: bsv.Script.IOpChunk) {
+
+      const op = hexTemplate.substring(offset, offset + 2);
+      if (parseInt(op, 16) != chunk.opcodenum) {
+        throw err;
+      }
+      offset = offset + 2;
+
+      const next4Byte = hexTemplate.substring(offset, offset + 8);
+
+      if (bin2num(next4Byte) != BigInt(chunk.len)) {
+        throw err;
+      }
+
+      offset = offset + 8;
+
+      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+
+      if (chunk.buf.toString('hex') != data) {
+        throw err;
+      }
+
+      offset = offset + chunk.len * 2;
+    }
+
+    function findTemplateVariable() {
+      if (hexTemplate.charAt(offset) == '<') {
 
         const start = offset;
 
@@ -258,56 +349,135 @@ export class ABICoder {
           throw new Error('cannot found break >');
         }
 
-        const name = hexTemplate.substring(start, offset);
+        return hexTemplate.substring(start, offset);
+      }
+    }
 
+    function saveTemplateVariableValue(name: string, chunk: bsv.Script.IOpChunk) {
+      const bw = new bsv.encoding.BufferWriter();
 
-        const bw = new bsv.encoding.BufferWriter();
-
-        bw.writeUInt8(chunk.opcodenum);
-        if (chunk.buf) {
-          if (chunk.opcodenum < bsv.Opcode.OP_PUSHDATA1) {
-            bw.write(chunk.buf);
-          } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA1) {
-            bw.writeUInt8(chunk.len);
-            bw.write(chunk.buf);
-          } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA2) {
-            bw.writeUInt16LE(chunk.len);
-            bw.write(chunk.buf);
-          } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA4) {
-            bw.writeUInt32LE(chunk.len);
-            bw.write(chunk.buf);
-          }
+      bw.writeUInt8(chunk.opcodenum);
+      if (chunk.buf) {
+        if (chunk.opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+          bw.write(chunk.buf);
+        } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA1) {
+          bw.writeUInt8(chunk.len);
+          bw.write(chunk.buf);
+        } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA2) {
+          bw.writeUInt16LE(chunk.len);
+          bw.write(chunk.buf);
+        } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA4) {
+          bw.writeUInt32LE(chunk.len);
+          bw.write(chunk.buf);
         }
+      }
 
-
-
-        if (name.startsWith(`<${contract.contractName}.`)) { //inline asm
-          contract.hexTemplateInlineASM.set(name, bw.toBuffer().toString('hex'));
-        } else {
-          contract.hexTemplateArgs.set(name, bw.toBuffer().toString('hex'));
-        }
-
+      if (name.startsWith(`<${contract.contractName}.`)) { //inline asm
+        contract.hexTemplateInlineASM.set(name, bw.toBuffer().toString('hex'));
       } else {
+        contract.hexTemplateArgs.set(name, bw.toBuffer().toString('hex'));
+      }
 
+    }
 
-        const op = hexTemplate.substring(offset, offset + 2);
+    for (let index = 0; index < script.chunks.length; index++) {
+      const chunk = script.chunks[index];
 
-        offset = offset + 2;
+      let breakfor = false;
+      switch (true) {
+        case (chunk.opcodenum === 106):
+          {
 
-        if (parseInt(op, 16) != chunk.opcodenum) {
-          throw new Error(`the raw script cannot match the ASM template of contract ${contract.contractName}`);
-        }
+            if (offset >= hexTemplate.length) {
 
-        if (chunk.len > 0) {
+              const b = bsv.Script.fromChunks(script.chunks.slice(index + 1));
 
-          const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+              dataPartInHex = b.toHex();
+              codePartEndIndex = index;
+              breakfor = true;
+            } else {
+              checkOp(chunk);
+            }
 
-          if (chunk.buf.toString('hex') != data) {
-            throw new Error(`the raw script cannot match the ASM template of contract ${contract.contractName}`);
+            break;
+          }
+        case (chunk.opcodenum === 0): {
+          const variable = findTemplateVariable();
+
+          if (variable) {
+            saveTemplateVariableValue(variable, chunk);
+          } else {
+            checkOp(chunk);
           }
 
-          offset = offset + chunk.len * 2;
+          break;
         }
+
+        case (chunk.opcodenum >= 1 && chunk.opcodenum <= 75):
+          {
+            const variable = findTemplateVariable();
+
+            if (variable) {
+              saveTemplateVariableValue(variable, chunk);
+            } else {
+              checkPushByteLength(chunk);
+            }
+
+            break;
+          }
+        case (chunk.opcodenum >= 79 && chunk.opcodenum <= 96):
+          {
+            const variable = findTemplateVariable();
+
+            if (variable) {
+              saveTemplateVariableValue(variable, chunk);
+            } else {
+              checkOp(chunk);
+            }
+
+            break;
+          }
+        case (chunk.opcodenum === 76):
+          {
+            const variable = findTemplateVariable();
+
+            if (variable) {
+              saveTemplateVariableValue(variable, chunk);
+            } else {
+              checkPushData1(chunk);
+            }
+            break;
+          }
+        case (chunk.opcodenum === 77):
+          {
+            const variable = findTemplateVariable();
+
+            if (variable) {
+              saveTemplateVariableValue(variable, chunk);
+            } else {
+              checkPushData2(chunk);
+            }
+            break;
+          }
+        case (chunk.opcodenum === 78):
+          {
+            const variable = findTemplateVariable();
+
+            if (variable) {
+              saveTemplateVariableValue(variable, chunk);
+            } else {
+              checkPushData4(chunk);
+            }
+            break;
+          }
+        default:
+          {
+            checkOp(chunk);
+          }
+      }
+
+      if (breakfor) {
+        break;
       }
     }
 
@@ -381,12 +551,12 @@ export class ABICoder {
   }
 
   /**
-   * build a FunctionCall by function name and unlocking script in hex.
-   * @param contract 
-   * @param name name of public function
-   * @param hex hex of unlocking script
-   * @returns a FunctionCall which contains the function parameters that have been deserialized
-   */
+     * build a FunctionCall by function name and unlocking script in hex.
+     * @param contract 
+     * @param name name of public function
+     * @param hex hex of unlocking script
+     * @returns a FunctionCall which contains the function parameters that have been deserialized
+     */
   encodePubFunctionCallFromHex(contract: AbstractContract, hex: string): FunctionCall {
     const callData = this.parseCallData(hex);
     return new FunctionCall(callData.methodName, { contract, unlockingScript: callData.unlockingScript, args: callData.args });
@@ -395,10 +565,10 @@ export class ABICoder {
 
 
   /**
-   * build a CallData by unlocking script in hex.
-   * @param hex hex of unlocking script
-   * @returns a CallData which contains the function parameters that have been deserialized
-   */
+     * build a CallData by unlocking script in hex.
+     * @param hex hex of unlocking script
+     * @returns a CallData which contains the function parameters that have been deserialized
+     */
   parseCallData(hex: string): CallData {
 
     const unlockingScript = bsv.Script.fromHex(hex);
