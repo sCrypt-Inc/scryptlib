@@ -269,11 +269,13 @@ export function isArrayType(type: string): boolean {
 export function getNameByType(type: string): string {
 
   if (isArrayType(type)) {
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const [elemType, _] = arrayTypeAndSizeStr(type);
     return getNameByType(elemType);
   }
 
   if (isGenericType(type)) {
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const [tn, _] = parseGenericType(type);
     return getNameByType(tn);
   }

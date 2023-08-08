@@ -93,7 +93,7 @@ describe('create instance from UTXO Hex', () => {
     }).to.be.throw(/the raw script cannot match the ASM template of contract Simple/);
 
 
-    simple.setDataPart("00 11");
+    simple.setDataPartInASM("00 11");
 
     // should not throw
     instance = Simple.fromHex(simple.lockingScript.toHex())
@@ -433,6 +433,63 @@ describe('buildContractClass and create instance from script', () => {
         })
         .setInputScript(0, (tx) => {
           return contract.unlock(1n, SigHashPreimage(tx.getPreimage(0))).toScript();
+        })
+        .seal();
+
+      // just verify the contract inputs
+      expect(callTx.verifyInputScript(0).success).to.true
+
+    })
+  })
+
+
+  describe('when build a contractFromHex contract which have pushdata1', () => {
+
+    const Pushdata1 = buildContractClass(loadArtifact('pushdata1.json'));
+
+    it('should get right constructor args', () => {
+
+
+      let instance = new Pushdata1();
+
+      let contract = Pushdata1.fromHex(instance.lockingScript.toHex());
+
+
+      assert.deepEqual(contract.ctorArgs().map(i => i.value), []);
+
+      let callTx = new bsv.Transaction()
+        .addDummyInput(contract.lockingScript, 1)
+        .dummyChange()
+        .setInputScript(0, (tx) => {
+          return contract.add(1829242205158919081612948116945621074359902846590230415405905851847151653111362805089526991918515717929789289269295691772564212986498178144673616832580110190112293523954713829321239941209031548855941608655453227624899470714988234371988383378492413525943871558048853228687026003751784842839597402013721n).toScript();
+        })
+        .seal();
+
+      // just verify the contract inputs
+      expect(callTx.verifyInputScript(0).success).to.true
+
+    })
+  })
+
+  describe('when build a contractFromHex contract which have pushdata2', () => {
+
+    const Pushdata2 = buildContractClass(loadArtifact('pushdata2.json'));
+
+    it('should get right constructor args', () => {
+
+
+      let instance = new Pushdata2();
+
+      let contract = Pushdata2.fromHex(instance.lockingScript.toHex());
+
+
+      assert.deepEqual(contract.ctorArgs().map(i => i.value), []);
+
+      let callTx = new bsv.Transaction()
+        .addDummyInput(contract.lockingScript, 1)
+        .dummyChange()
+        .setInputScript(0, (tx) => {
+          return contract.add(182924220515891908161294811694562107435990284659023041540590585184715165311136280508952699191851571792978928926929569177256421298649817814467361683258011019011229352395471382932123994120903154885594160865545322762489947071498823437198838337849241352594387155804885322868702600375178484283959740201372118292422051589190816129481169456210743599028465902304154059058518471516531113628050895269919185157179297892892692956917725642129864981781446736168325801101901122935239547138293212399412090315488559416086554532276248994707149882343719883833784924135259438715580488532286870260037517848428395974020137211829242205158919081612948116945621074359902846590230415405905851847151653111362805089526991918515717929789289269295691772564212986498178144673616832580110190112293523954713829321239941209031548855941608655453227624899470714988234371988383378492413525943871558048853228687026003751784842839597402013721n).toScript();
         })
         .seal();
 

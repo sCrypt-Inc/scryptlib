@@ -1,6 +1,11 @@
 # CHANGELOG
 
 
+## 2.1.24
+
+- Fix `AbstractContract.fromHex(hex: string)`
+
+
 ## 2.1.21
 
 - Fix glob issue.

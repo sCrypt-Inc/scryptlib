@@ -2,9 +2,12 @@ dist: bionic
 
 language: node_js
 node_js:
-  - 14
+  - 16
 git:
   autocrlf: false
+
+cache:
+  npm: false
 
 os:
   - linux

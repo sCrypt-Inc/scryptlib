@@ -91,17 +91,16 @@ export function sha256ByPartialHash(partialHash: string, partialPreimage: string
 
 
   const h0 = [byteToUint32(partialHashBuffer.slice(0, 4)),
-    byteToUint32(partialHashBuffer.slice(4, 8)),
-    byteToUint32(partialHashBuffer.slice(8, 12)),
-    byteToUint32(partialHashBuffer.slice(12, 16)),
-    byteToUint32(partialHashBuffer.slice(16, 20)),
-    byteToUint32(partialHashBuffer.slice(20, 24)),
-    byteToUint32(partialHashBuffer.slice(24, 28)),
-    byteToUint32(partialHashBuffer.slice(28, 32))
+  byteToUint32(partialHashBuffer.slice(4, 8)),
+  byteToUint32(partialHashBuffer.slice(8, 12)),
+  byteToUint32(partialHashBuffer.slice(12, 16)),
+  byteToUint32(partialHashBuffer.slice(16, 20)),
+  byteToUint32(partialHashBuffer.slice(20, 24)),
+  byteToUint32(partialHashBuffer.slice(24, 28)),
+  byteToUint32(partialHashBuffer.slice(28, 32))
   ];
 
   let hi = h0;
-  const W = [];
   for (let i = 0; i < broken.length; i++) {
     const chunk = broken[i];
     hi = g(hi, chunk);
@@ -177,13 +176,13 @@ function g(hprev: number[], chunk: Buffer): number[] {
   }
 
   return [ToUint32(hprev[0] + a),
-    ToUint32(hprev[1] + b),
-    ToUint32(hprev[2] + c),
-    ToUint32(hprev[3] + d),
-    ToUint32(hprev[4] + e),
-    ToUint32(hprev[5] + f),
-    ToUint32(hprev[6] + g),
-    ToUint32(hprev[7] + h)];
+  ToUint32(hprev[1] + b),
+  ToUint32(hprev[2] + c),
+  ToUint32(hprev[3] + d),
+  ToUint32(hprev[4] + e),
+  ToUint32(hprev[5] + f),
+  ToUint32(hprev[6] + g),
+  ToUint32(hprev[7] + h)];
 }
 
 

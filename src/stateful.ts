@@ -243,6 +243,7 @@ export default class Stateful {
   static parseStateHex(contract: AbstractContract, scriptHex: string): [boolean, Arguments] {
 
     const metaScript = scriptHex.substr(scriptHex.length - 10, 10);
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const version = Number(bin2num(metaScript.substr(metaScript.length - 2, 2)));
     const stateLen = Number(bin2num(metaScript.substr(0, 8)));
 

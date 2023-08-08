@@ -93,6 +93,7 @@ export class AbstractContract {
   public static resolver: TypeResolver;
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   constructor(...ctorParams: SupportedParamType[]) {
   }
 
@@ -533,6 +534,7 @@ export class AbstractContract {
     const typeInfo = this.resolver(param.type);
 
     if (isArrayType(typeInfo.finalType)) {
+      /* eslint-disable @typescript-eslint/no-unused-vars */
       const [_, arraySizes] = arrayTypeAndSize(typeInfo.finalType);
 
       if (!Array.isArray(arg)) {
@@ -608,7 +610,7 @@ export class AbstractContract {
 
         if (entity.name === 'SortedItem') {
           if (arg['idx'] === Int(-1) && (arg['image'] instanceof Map || arg['image'] instanceof Set)) {
-
+            /* eslint-disable @typescript-eslint/no-unused-vars */
             const [_, genericTypes] = parseGenericType(typeInfo.finalType);
             return Object.assign({}, {
               idx: this.ContractClass.findKeyIndex(arg['image'], arg['item'], genericTypes[0]),
@@ -770,8 +772,8 @@ export class AbstractContract {
 
   //serialize the HashedMap / HashedSet, but only flattenSha256 of the key and value
   static toData(collection: Map<SupportedParamType, SupportedParamType> | Set<SupportedParamType>, collectionType: string): Bytes {
-
-    const [name, genericTypes] = parseGenericType(collectionType);
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    const [_, genericTypes] = parseGenericType(collectionType);
     let storage = '';
     if (collection instanceof Map) {
       const sortedMap = this.sortmap(collection, genericTypes[0]);
