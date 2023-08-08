@@ -83,6 +83,7 @@ export function toJSON(arg: Argument, resolver: TypeResolver): unknown {
 
   if (isArrayType(typeInfo.finalType)) {
     const v = arg.value as SupportedParamType[];
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const [_, arraySizes] = arrayTypeAndSize(typeInfo.finalType);
     const subType = subArrayType(typeInfo.finalType);
 

@@ -244,10 +244,6 @@ export function hasGeneric(entity: StructEntity | LibraryEntity): boolean {
   return entity.genericTypes.length > 0;
 }
 
-function isGenericParamType(entity: StructEntity | LibraryEntity, t: string): boolean {
-  return entity.genericTypes.includes(t);
-}
-
 class GenericDeducer {
   private inferred: Record<string, string> = {};
 
