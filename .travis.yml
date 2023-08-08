@@ -6,6 +6,9 @@ node_js:
 git:
   autocrlf: false
 
+cache:
+  npm: false
+  
 os:
   - linux
   - osx
