@@ -5,7 +5,7 @@
     "ts"
   ],
   "spec": [
-    "./test/**/contractFromHex.test.ts"
+    "./test/**/*.test.ts"
   ],
   "package": "./package.json",
   "reporter": "spec",
