@@ -5,11 +5,11 @@ on:
     branches:
       - master
 
-name: Publish Stable
+name: Publish to NPM
 
 jobs:
   build:
-    name: Publish Stable
+    name: Publish to NPM
     runs-on: ubuntu-latest
     steps:
       - name: Prepare git
@@ -22,14 +22,15 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 16
+      - name: Npm install
+        run: npm i
       - name: Download Compiler
         run: npm run getBinary
-
       - name: Run test
-        run: npm run testlint && npm t
+        run: npm t
       - name: clone boilerplate
         run: git clone -b legacy https://github.com/scrypt-sv/boilerplate.git
-      - name: test boilerplate
-        run: cd boilerplate && npm i .. && npm test
+      - name: Test boilerplate
+        run: cd boilerplate && npm i ../ && npm t
       - name: Verify Versions
         run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
