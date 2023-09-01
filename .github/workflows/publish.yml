@@ -2,8 +2,6 @@ on:
   push:
     tags:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
-    branches:
-      - master
 
 name: Publish to NPM
 
@@ -14,14 +12,12 @@ jobs:
     steps:
       - name: Prepare git
         run: git config --global core.autocrlf false
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      # Setup .npmrc file to publish to npm
+      - uses: actions/setup-node@v3
         with:
-          submodules: true
-      - name: Install Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: 16
+          node-version: "16.x"
+          registry-url: "https://registry.npmjs.org"
       - name: Npm install
         run: npm i
       - name: Download Compiler
@@ -34,3 +30,7 @@ jobs:
         run: cd boilerplate && npm i ../ && npm t
       - name: Verify Versions
         run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
