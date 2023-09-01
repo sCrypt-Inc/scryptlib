@@ -10,7 +10,7 @@ export { bsv };
 
 import { ABIEntity, LibraryEntity } from '.';
 import { compileAsync, OpCode } from './compilerWrapper';
-import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, Script, ScryptType, StructEntity, SupportedParamType } from './internal';
+import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, Inscription, Script, ScryptType, stringToBytes, StructEntity, SupportedParamType } from './internal';
 import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
 
 const BN = bsv.crypto.BN;
@@ -596,4 +596,13 @@ export function md5(s: string): string {
   const md5 = crypto.createHash('md5');
 
   return md5.update(s).digest('hex');
+}
+
+export function createOrdinalScript(inscription: Inscription): bsv.Script {
+  return bsv.Script.fromASM(`OP_FALSE OP_IF 6f7264 OP_1 ${stringToBytes(inscription.contentType)} OP_0 ${inscription.content} OP_ENDIF`);
+}
+
+export function sizeOfOrdinal(inscription: Inscription): bigint {
+  const inscriptionScript = createOrdinalScript(inscription);
+  return BigInt(inscriptionScript.toHex().length / 2);
 }
