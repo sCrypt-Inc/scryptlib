@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.1.25
+
+- Support Ordinal
 
 ## 2.1.24
 
