@@ -2,9 +2,9 @@ import { basename, dirname } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
+  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, createOrdinalScript, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
 } from './internal';
-import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
+import { Bytes, Inscription, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
 import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
 
@@ -111,6 +111,8 @@ export class AbstractContract {
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
   isGenesis = true;
 
+  inscription: Inscription | null;
+
   get lockingScript(): Script {
 
     if (this.hasInlineASMVars && this.hexTemplateInlineASM.size === 0) {
@@ -118,11 +120,19 @@ export class AbstractContract {
     }
 
     if (!this.dataPart) {
-      return this.scriptedConstructor?.lockingScript as Script;
+      return this._wrapInscription(this.scriptedConstructor?.lockingScript as Script);
     }
 
     // append dataPart script to codePart if there is dataPart
     return this.codePart.add(this.dataPart);
+  }
+
+  private _wrapInscription(lockingScript: bsv.Script) {
+    if (this.inscription && this.isGenesis) {
+      return createOrdinalScript(this.inscription).add(lockingScript);
+    }
+
+    return lockingScript;
   }
 
   private _txContext?: TxContext;
@@ -461,10 +471,16 @@ export class AbstractContract {
     }
   }
 
+
+  setOrdinal(inscription: Inscription | null): void {
+    this.inscription = inscription;
+  }
+
+
   get codePart(): Script {
-    const lockingScript = this.scriptedConstructor.toScript();
+    const contractScript = this.scriptedConstructor.toScript();
     // note: do not trim the trailing space
-    return lockingScript.clone().add(bsv.Script.fromHex('6a'));
+    return this._wrapInscription(contractScript.clone()).add(bsv.Script.fromHex('6a'));
   }
 
   get codeHash(): string {
