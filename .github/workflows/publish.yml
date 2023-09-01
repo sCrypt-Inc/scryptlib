@@ -1,0 +1,35 @@
+on:
+  push:
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches:
+      - master
+
+name: Publish Stable
+
+jobs:
+  build:
+    name: Publish Stable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare git
+        run: git config --global core.autocrlf false
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - name: Download Compiler
+        run: npm run getBinary
+
+      - name: Run test
+        run: npm run testlint && npm t
+      - name: clone boilerplate
+        run: git clone -b legacy https://github.com/scrypt-sv/boilerplate.git
+      - name: test boilerplate
+        run: cd boilerplate && npm i .. && npm test
+      - name: Verify Versions
+        run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
