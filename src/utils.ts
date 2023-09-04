@@ -599,6 +599,10 @@ export function md5(s: string): string {
 }
 
 export function createOrdinalScript(inscription: Inscription): bsv.Script {
+  if (inscription instanceof bsv.Script) {
+    return inscription;
+  }
+
   return bsv.Script.fromASM(`OP_FALSE OP_IF 6f7264 OP_1 ${stringToBytes(inscription.contentType)} OP_0 ${inscription.content} OP_ENDIF`);
 }
 

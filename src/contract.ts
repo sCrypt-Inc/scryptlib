@@ -4,7 +4,7 @@ import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, Sta
 import {
   ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, createOrdinalScript, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
 } from './internal';
-import { Bytes, Inscription, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
+import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
 import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
 
@@ -75,6 +75,16 @@ export interface Artifact {
   /** file uri of source map file **/
   sourceMapFile: string;
 }
+
+
+/** Ordinal Inscription */
+export type Inscription = {
+  /** content in raw hex */
+  content: string,
+  /** contentType in utf8 text */
+  contentType: string
+} | bsv.Script;
+
 
 export type AsmVarValues = { [key: string]: string }
 export type StepIndex = number;

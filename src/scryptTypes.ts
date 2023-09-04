@@ -169,15 +169,6 @@ export interface StructObject {
 export type SupportedParamType = PrimitiveTypes | StructObject | SupportedParamType[];
 
 
-/** Ordinal Inscription */
-export type Inscription = {
-  /** content in raw hex */
-  content: string,
-  /** contentType in utf8 text */
-  contentType: string
-}
-
-
 
 export function getValidatedHexString(hex: string, allowEmpty = true): string {
 
