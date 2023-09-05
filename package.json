@@ -1,6 +1,6 @@
 {
   "name": "scryptlib",
-  "version": "2.1.25",
+  "version": "2.1.26",
   "description": "Javascript SDK for integration of Bitcoin SV Smart Contracts written in sCrypt language.",
   "engines": {
     "node": ">=14.0.0"
@@ -24,7 +24,7 @@
     "prepare": "husky install && npm run compile",
     "postinstall": "node ./postinstall.js",
     "publishcheck": "sh ./publishcheck.sh",
-    "prepublishOnly": "npm run publishcheck && npm run lint && npm run compile",
+    "prepublishOnly": "npm run testlint && npm run compile",
     "getBinary": "node ./util/getBinary.js",
     "beta": "npm run compile && npm run testlint && npm publish --tag beta"
   },
