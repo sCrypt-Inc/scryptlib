@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2.1.26
+
+- remove Ordinal and add `nopScript`
+  
+
 ## 2.1.25
 
 - Support Ordinal

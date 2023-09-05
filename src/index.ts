@@ -24,7 +24,7 @@ export {
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, Artifact, VerifyResult, VerifyError, AbstractContract,
   DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, DEFAULT_FLAGS, ScryptType, DEFAULT_SIGHASH_TYPE, CallData,
-  Inscription, sizeOfOrdinal
+  NOPScript
 } from './internal';
 
 //Equivalent to the built-in functions

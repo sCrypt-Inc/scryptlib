@@ -2,7 +2,7 @@ import { basename, dirname } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, createOrdinalScript, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
+  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
 } from './internal';
 import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
@@ -77,13 +77,8 @@ export interface Artifact {
 }
 
 
-/** Ordinal Inscription */
-export type Inscription = {
-  /** content in raw hex */
-  content: string,
-  /** contentType in utf8 text */
-  contentType: string
-} | bsv.Script;
+/** NOPScript */
+export type NOPScript = bsv.Script;
 
 
 export type AsmVarValues = { [key: string]: string }
@@ -121,7 +116,7 @@ export class AbstractContract {
   // A newly constructed contract always has this set to true, and after invocation, always has it set to false
   isGenesis = true;
 
-  inscription: Inscription | null;
+  nopScript: NOPScript | null;
 
   get lockingScript(): Script {
 
@@ -130,16 +125,16 @@ export class AbstractContract {
     }
 
     if (!this.dataPart) {
-      return this._wrapInscription(this.scriptedConstructor?.lockingScript as Script);
+      return this._wrapNOPScript(this.scriptedConstructor?.lockingScript as Script);
     }
 
     // append dataPart script to codePart if there is dataPart
     return this.codePart.add(this.dataPart);
   }
 
-  private _wrapInscription(lockingScript: bsv.Script) {
-    if (this.inscription && this.isGenesis) {
-      return createOrdinalScript(this.inscription).add(lockingScript);
+  private _wrapNOPScript(lockingScript: bsv.Script) {
+    if (this.nopScript) {
+      return this.nopScript.clone().add(lockingScript);
     }
 
     return lockingScript;
@@ -482,15 +477,18 @@ export class AbstractContract {
   }
 
 
-  setOrdinal(inscription: Inscription | null): void {
-    this.inscription = inscription;
+  setNOPScript(inscription: NOPScript | null): void {
+    this.nopScript = inscription;
   }
 
+  getNOPScript(): NOPScript | null {
+    return this.nopScript;
+  }
 
   get codePart(): Script {
     const contractScript = this.scriptedConstructor.toScript();
     // note: do not trim the trailing space
-    return this._wrapInscription(contractScript.clone()).add(bsv.Script.fromHex('6a'));
+    return this._wrapNOPScript(contractScript.clone()).add(bsv.Script.fromHex('6a'));
   }
 
   get codeHash(): string {
