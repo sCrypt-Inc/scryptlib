@@ -17,3 +17,7 @@ docs
 *.log
 bsv.sh
 bsv/
+.github
+.mocharc.json
+.gitattributes
+*.md
