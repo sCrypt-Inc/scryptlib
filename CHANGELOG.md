@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2.1.27
+
+- publish `latest` tag
+  
+
 ## 2.1.26
 
 - remove Ordinal and add `nopScript`
