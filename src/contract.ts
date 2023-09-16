@@ -2,7 +2,7 @@ import { basename, dirname } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
+  ABICoder, ABIEntity, AliasEntity, Arguments, bsv, buildContractCode, checkNOPScript, CompileResult, DEFAULT_FLAGS, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, Script, StructEntity, subscript, TypeResolver, uri2path
 } from './internal';
 import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
@@ -476,9 +476,12 @@ export class AbstractContract {
     }
   }
 
+  setNOPScript(nopScript: NOPScript | null): void {
+    if (nopScript instanceof bsv.Script) {
+      checkNOPScript(nopScript);
+    }
 
-  setNOPScript(inscription: NOPScript | null): void {
-    this.nopScript = inscription;
+    this.nopScript = nopScript;
   }
 
   getNOPScript(): NOPScript | null {
