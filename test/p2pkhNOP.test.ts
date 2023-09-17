@@ -40,4 +40,16 @@ describe('test.P2PKH with NOP', () => {
     })
 
 
+    it('should throw with inValid nopscript', () => {
+        const DemoP2PKH = buildContractClass(loadArtifact('p2pkh.json'))
+        let p2pkh = new DemoP2PKH(Ripemd160(toHex(publicKeyHash)))
+        expect(() => {
+            p2pkh.setNOPScript(bsv.Script.fromASM("OP_1 OP_IF OP_1 OP_ENDIF"))
+        }).to.throw(/NopScript should be a script that does not affect the Bitcoin virtual machine stack\./)
+
+
+        expect(() => {
+            p2pkh.setNOPScript(bsv.Script.fromASM("OP_1 OP_RETURN"))
+        }).to.throw(/NopScript should be a script that does not affect the Bitcoin virtual machine stack\./)
+    })
 })

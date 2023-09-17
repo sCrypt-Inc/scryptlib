@@ -597,3 +597,25 @@ export function md5(s: string): string {
 
   return md5.update(s).digest('hex');
 }
+
+
+export function checkNOPScript(nopScript: bsv.Script) {
+
+  bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
+  bsv.Script.Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
+
+  const bsi = new bsv.Script.Interpreter();
+  const tx = new bsv.Transaction().from({
+    txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
+    outputIndex: 0,
+    script: '',   // placeholder
+    satoshis: 1
+  });
+
+  const result = bsi.verify(new bsv.Script(""), nopScript, tx, 0, DEFAULT_FLAGS, new bsv.crypto.BN(1));
+
+  if (result || bsi.errstr !== "SCRIPT_ERR_EVAL_FALSE_NO_RESULT") {
+    throw new Error("NopScript should be a script that does not affect the Bitcoin virtual machine stack.");
+  }
+
+}

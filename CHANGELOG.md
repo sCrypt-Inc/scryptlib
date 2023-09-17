@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2.1.28
+
+- check nopscript when call `this.setNOPScript()`
+
+
 ## 2.1.27
 
 - publish `latest` tag
