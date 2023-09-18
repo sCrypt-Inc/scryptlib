@@ -476,7 +476,7 @@ export class AbstractContract {
     }
   }
 
-  setNOPScript(nopScript: NOPScript | null): void {
+  prependNOPScript(nopScript: NOPScript | null): void {
     if (nopScript instanceof bsv.Script) {
       checkNOPScript(nopScript);
     }
@@ -484,7 +484,7 @@ export class AbstractContract {
     this.nopScript = nopScript;
   }
 
-  getNOPScript(): NOPScript | null {
+  getPrependNOPScript(): NOPScript | null {
     return this.nopScript;
   }
 
