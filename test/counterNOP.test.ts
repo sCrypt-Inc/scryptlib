@@ -14,7 +14,7 @@ describe('test.Counter with NOPScript', () => {
         let counter = new Counter()
 
         counter.setDataPartInASM('00')
-        counter.setNOPScript(nopScript)
+        counter.prependNOPScript(nopScript)
 
 
         expect(counter.lockingScript.toASM().startsWith("OP_NOP")).to.true
@@ -71,7 +71,7 @@ describe('test.Counter with NOPScript', () => {
         let nopScript = bsv.Script.fromASM("OP_NOP");
 
         counter.setDataPartInASM('00')
-        counter.setNOPScript(nopScript)
+        counter.prependNOPScript(nopScript)
 
         let callTx = new bsv.Transaction()
             .addDummyInput(counter.lockingScript, 1000)

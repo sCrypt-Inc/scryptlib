@@ -14,7 +14,7 @@ describe('test.P2PKH with NOP', () => {
         const DemoP2PKH = buildContractClass(loadArtifact('p2pkh.json'))
         let p2pkh = new DemoP2PKH(Ripemd160(toHex(publicKeyHash)))
         let nopScript = bsv.Script.fromASM("OP_NOP");
-        p2pkh.setNOPScript(nopScript)
+        p2pkh.prependNOPScript(nopScript)
 
         const inputIndex = 0;
         expect(p2pkh.lockingScript.toASM().startsWith("OP_NOP")).to.true
@@ -44,12 +44,12 @@ describe('test.P2PKH with NOP', () => {
         const DemoP2PKH = buildContractClass(loadArtifact('p2pkh.json'))
         let p2pkh = new DemoP2PKH(Ripemd160(toHex(publicKeyHash)))
         expect(() => {
-            p2pkh.setNOPScript(bsv.Script.fromASM("OP_1 OP_IF OP_1 OP_ENDIF"))
+            p2pkh.prependNOPScript(bsv.Script.fromASM("OP_1 OP_IF OP_1 OP_ENDIF"))
         }).to.throw(/NopScript should be a script that does not affect the Bitcoin virtual machine stack\./)
 
 
         expect(() => {
-            p2pkh.setNOPScript(bsv.Script.fromASM("OP_1 OP_RETURN"))
+            p2pkh.prependNOPScript(bsv.Script.fromASM("OP_1 OP_RETURN"))
         }).to.throw(/NopScript should be a script that does not affect the Bitcoin virtual machine stack\./)
     })
 })
