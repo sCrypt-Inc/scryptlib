@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2.1.29
+
+- rename `this.setNOPScript()` to `this.prependNOPScript()`
+
+
 ## 2.1.28
 
 - check nopscript when call `this.setNOPScript()`
