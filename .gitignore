@@ -111,6 +111,6 @@ compiler/
 boilerplate/
 
 out/
-bsv/
+/bsv/
 
 .DS_Store

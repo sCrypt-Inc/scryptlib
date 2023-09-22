@@ -527,5 +527,3 @@ Address.prototype.toString = function () {
 }
 
 module.exports = Address
-
-var Script = require('./script')
