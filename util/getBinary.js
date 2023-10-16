@@ -7,7 +7,7 @@ const path = require('path');
 const chalk = require("chalk");
 const { findCompiler, compilerVersion, getPlatformScryptc } = require('../dist');
 
-const DEFAULT_COMPILER_VERSION = '1.19.0';
+const DEFAULT_COMPILER_VERSION = '1.19.1';
 
 function safeCompilerVersion(cmd) {
   try {
@@ -19,7 +19,18 @@ function safeCompilerVersion(cmd) {
 
 
 const getBinary = async (version) => {
-  let FILENAME = "Windows.exe";
+  const architecture = os.arch()
+  const platform = os.platform()
+
+  if (architecture !== 'x64' && architecture !== 'arm64') {
+    throw new Error(`CPU architecture ${architecture} is not supported.`)
+  } else {
+    if (architecture === 'arm64' && platform != 'linux') {
+      throw new Error(`Only Linux is currently supported for arm64.`)
+    }
+  }
+
+  let FILENAME = "Windows-AMD64.exe";
 
   version = version || DEFAULT_COMPILER_VERSION
 
@@ -36,10 +47,14 @@ ${chalk.grey.bold("x")}`)}`, `fetch latest sCrypt compiler version failed, using
     }
   }
 
-  if (os.platform() === 'linux') {
-    FILENAME = "Linux";
-  } else if (os.platform() === 'darwin') {
-    FILENAME = "macOS";
+  if (platform === 'linux') {
+    if (architecture == 'arm64') {
+      FILENAME = "Linux-aarch64";
+    } else {
+      FILENAME = "Linux-x86_64";
+    }
+  } else if (platform === 'darwin') {
+    FILENAME = "macOS-x86_64";
   }
 
   const compilerPath = findCompiler();
