@@ -22,14 +22,6 @@ const getBinary = async (version) => {
   const architecture = os.arch()
   const platform = os.platform()
 
-  if (architecture !== 'x64' && architecture !== 'arm64') {
-    throw new Error(`CPU architecture ${architecture} is not supported.`)
-  } else {
-    if (architecture === 'arm64' && platform != 'linux') {
-      throw new Error(`Only Linux is currently supported for arm64.`)
-    }
-  }
-
   let FILENAME = "Windows-AMD64.exe";
 
   version = version || DEFAULT_COMPILER_VERSION
