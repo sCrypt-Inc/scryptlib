@@ -5,7 +5,7 @@ import * as minimist from 'minimist';
 import * as os from 'os';
 import { join, resolve } from 'path';
 
-import showNoCompilerFound = require('../util/showerror');
+import { showNoCompilerFound } from '../util/showerror';
 
 
 export function getPlatformScryptc(): string {
