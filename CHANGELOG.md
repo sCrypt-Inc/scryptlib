@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2.1.34
+
+- don't donwload sCrypt compiler when install
+- support https proxy
+
+
 ## 2.1.29
 
 - rename `this.setNOPScript()` to `this.prependNOPScript()`
