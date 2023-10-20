@@ -1,11 +1,10 @@
 
 import { execSync } from 'child_process';
-import { existsSync, readdirSync, statSync } from 'fs';
+import { existsSync, statSync } from 'fs';
 import * as minimist from 'minimist';
 import * as os from 'os';
 import { join, resolve } from 'path';
 
-import compareVersions = require('compare-versions');
 import showNoCompilerFound = require('../util/showerror');
 
 
@@ -20,35 +19,6 @@ export function getPlatformScryptc(): string {
     default:
       throw `sCrypt doesn't support ${os.platform()}`;
   }
-}
-
-
-function find_compiler_vscode(): string | undefined {
-  const homedir = os.homedir();
-  const extensionPath = join(homedir, '.vscode/extensions');
-  if (!existsSync(extensionPath)) {
-    return undefined;
-  }
-
-  const sCryptPrefix = 'bsv-scrypt.scrypt-';
-  let versions = readdirSync(extensionPath).reduce((filtered, item) => {
-    if (item.indexOf(sCryptPrefix) > -1) {
-      const version = item.substring(sCryptPrefix.length);
-      if (compareVersions.validate(version)) {
-        filtered.push(version);
-      }
-    }
-    return filtered;
-  }, []);
-
-  // compareVersions is ascending, so reverse.
-  versions = versions.sort(compareVersions).reverse();
-  const sCryptExtensionDirName = sCryptPrefix + versions[0];
-
-  const scryptc = join(extensionPath, sCryptExtensionDirName, getPlatformScryptc());
-
-  return existsSync(scryptc) ? scryptc : undefined;
-
 }
 
 
@@ -106,12 +76,6 @@ export function findCompiler(): string | undefined {
   }
 
   scryptc = find_compiler_PATH();
-
-  if (scryptc && existsSync(scryptc)) {
-    return scryptc;
-  }
-
-  scryptc = find_compiler_vscode();
 
   if (scryptc && existsSync(scryptc)) {
     return scryptc;
