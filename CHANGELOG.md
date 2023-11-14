@@ -1,5 +1,11 @@
 # CHANGELOG
 
+
+## 2.1.36
+
+- support special sCrypt compiler by Enviroment Variables: `SCRYPTC`
+
+
 ## 2.1.35
 
 - fix `findCompiler`

@@ -69,6 +69,11 @@ export function findCompiler(): string | undefined {
     return scryptc;
   }
 
+  // special compiler by Enviroment Variables 
+  if (process.env.SCRYPTC && existsSync(process.env.SCRYPTC)) {
+    return process.env.SCRYPTC;
+  }
+
   scryptc = find_compiler_local();
 
   if (scryptc && existsSync(scryptc)) {
