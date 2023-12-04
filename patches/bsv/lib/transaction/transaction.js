@@ -1471,12 +1471,12 @@ Transaction.prototype.isSealed = function () {
   return this.sealed
 }
 
-Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
+Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS, csIdx) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex')
   sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
   isLowS = isLowS || false
   inputIndex = inputIndex || 0
-  var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS)
+  var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS, csIdx)
   return preimage.toString('hex')
 }
 

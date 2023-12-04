@@ -834,7 +834,7 @@ declare module 'bsv' {
             isValidSignature(tx: Transaction, sig: any): boolean;
             setScript(script: Script): this;
             getSignatures(tx: Transaction, privateKey: PrivateKey, inputIndex: number, sigtype?: number): any;
-            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean): any;
+            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean, csIdx?: number): any;
         }
 
 
@@ -982,7 +982,7 @@ declare module 'bsv' {
         checkFeeRate(feePerKb?: number): boolean;
         prevouts(): string;
         getSignature(inputIndex: number, privateKey?: PrivateKey | Array<PrivateKey>, sigtype?: number): string | Array<string>;
-        getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): string;
+        getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean, csIdx?: number): string;
         addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
         addDummyInput(script: Script, satoshis: number): this;
         dummyChange(): this;

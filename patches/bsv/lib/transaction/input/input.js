@@ -21,10 +21,10 @@ var DEFAULT_RBF_SEQNUMBER = MAXINT - 2
 var DEFAULT_SEQNUMBER = MAXINT
 var DEFAULT_LOCKTIME_SEQNUMBER = MAXINT - 1
 
-function getLowSPreimage (tx, sigtype, inputIndex, inputLockingScript, inputAmount) {
+function getLowSPreimage (tx, sigtype, inputIndex, subscript, inputAmount) {
   var i = 0
   do {
-    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex, inputLockingScript, inputAmount)
+    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex, subscript, inputAmount)
 
     var sighash = Hash.sha256sha256(preimage)
 
@@ -211,15 +211,17 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
  * @param {number} inputIndex - the index of this input in the provided transaction
  * @param {number} sigType - defaults to Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
  * @param {boolean} isLowS - true if the sig hash is safe for low s.
+ * @param {number} csIdx - the index of OP_CODESEPARATOR
  * @abstract
  */
-Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS) {
+Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS, csIdx) {
   $.checkState(this.output instanceof Output)
   sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
   isLowS = isLowS || false
+  var subscript = typeof csIdx === 'number' ? this.output.script.subscript(csIdx) : this.output.script
   return isLowS
-    ? getLowSPreimage(transaction, sigtype, inputIndex, this.output.script, this.output.satoshisBN)
-    : Sighash.sighashPreimage(transaction, sigtype, inputIndex, this.output.script, this.output.satoshisBN)
+    ? getLowSPreimage(transaction, sigtype, inputIndex, subscript, this.output.satoshisBN)
+    : Sighash.sighashPreimage(transaction, sigtype, inputIndex, subscript, this.output.satoshisBN)
 }
 
 Input.prototype.isFullySigned = function () {
