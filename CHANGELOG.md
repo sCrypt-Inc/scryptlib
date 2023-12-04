@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.1.37
+
+- update bsv lib
 
 ## 2.1.36
 
