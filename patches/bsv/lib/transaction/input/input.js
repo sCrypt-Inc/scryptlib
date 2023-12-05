@@ -218,7 +218,7 @@ Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS
   $.checkState(this.output instanceof Output)
   sigtype = sigtype || (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
   isLowS = isLowS || false
-  var subscript = typeof csIdx === 'number' ? this.output.script.subscript(csIdx) : this.output.script
+  var subscript = typeof csIdx === 'number' ? this.output.script.subScript(csIdx) : this.output.script
   return isLowS
     ? getLowSPreimage(transaction, sigtype, inputIndex, subscript, this.output.satoshisBN)
     : Sighash.sighashPreimage(transaction, sigtype, inputIndex, subscript, this.output.satoshisBN)
