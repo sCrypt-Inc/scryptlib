@@ -50,7 +50,7 @@
 
   var Buffer
   try {
-    Buffer = require('buffer').Buffer
+    Buffer = require('buffer/').Buffer
   } catch (e) {
   }
 

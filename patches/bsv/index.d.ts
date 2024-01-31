@@ -929,6 +929,7 @@ declare module 'bsv' {
             outputScript?: Script | string,
             satoshis?: number
         ): this;
+        removeInput(txId: string, outputIndex: number): void;
         addOutput(output: Transaction.Output): this;
         addData(value: Buffer | string): this;
         lockUntilDate(time: Date | number): this;
@@ -958,9 +959,7 @@ declare module 'bsv' {
 
         getSerializationError(opts?: object): any;
 
-        _getUnspentValue(): number;
-        _estimateFee(): number;
-        _estimateSize: number;
+        getUnspentValue(): number;
         setInputScript(inputIndex: number | {
             inputIndex: number,
             privateKey?: PrivateKey | Array<PrivateKey>,
@@ -978,6 +977,7 @@ declare module 'bsv' {
         sealAsync(): Promise<this>;
         isSealed(): boolean;
         getChangeAmount(): number;
+        getEstimateSize(): number;
         getEstimateFee(): number;
         checkFeeRate(feePerKb?: number): boolean;
         prevouts(): string;
