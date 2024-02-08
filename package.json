@@ -58,21 +58,21 @@
     "nyc": "^15.1.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
-    "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "@discoveryjs/json-ext": "^0.5.7",
-    "@jridgewell/sourcemap-codec": "^1.4.15",
-    "bsv": "^1.5.6",
+    "patch-package": "^6.4.7",
+    "rimraf": "^3.0.2",
     "compare-versions": "^3.6.0",
     "find-node-modules": "^2.1.3",
     "get-proxy-settings": "^0.1.13",
+    "node-fetch": "^3.0.0",
     "glob": "^7.2.3",
     "https-proxy-agent": "^7.0.2",
-    "json-bigint": "^1.0.0",
-    "node-fetch": "^3.0.0",
-    "patch-package": "^6.4.7",
-    "rimraf": "^3.0.2",
-    "yargs": "^17.6.2"
+    "yargs": "^17.6.2",
+    "typescript": "^4.9.5",
+    "@discoveryjs/json-ext": "^0.5.7",
+    "@jridgewell/sourcemap-codec": "^1.4.15"
+  },
+  "dependencies": {
+    "bsv": "^1.5.6",
+    "json-bigint": "^1.0.0"
   }
 }
