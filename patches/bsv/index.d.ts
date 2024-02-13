@@ -226,14 +226,14 @@ declare module 'bsv' {
          */
         static OP_16: number;
 
-         /** 
-         * Does nothing.
-         * @opcode {`97`} 
-         * @hex {`0x61`} 
-         * @input Nothing
-         * @output Nothing
-         * @static
-         */
+        /** 
+        * Does nothing.
+        * @opcode {`97`} 
+        * @hex {`0x61`} 
+        * @input Nothing
+        * @output Nothing
+        * @static
+        */
         static OP_NOP: number;
 
         /**
@@ -753,6 +753,10 @@ declare module 'bsv' {
         }
 
         class Point {
+            constructor(x: crypto.BN | string,
+                y: crypto.BN | string,
+                isRed: boolean);
+
             static fromX(odd: boolean, x: crypto.BN | string): Point;
             static getG(): any;
             static getN(): crypto.BN;
@@ -760,9 +764,13 @@ declare module 'bsv' {
             getY(): crypto.BN;
             validate(): this;
             mul(n: crypto.BN): Point;
+            add(n: crypto.Point): Point;
+            neg(): Point;
         }
 
         class Signature {
+            constructor(r: crypto.BN, s: crypto.BN);
+
             static fromDER(sig: Buffer): Signature;
             static fromTxFormat(buf: Buffer): Signature;
             static fromString(data: string): Signature;
@@ -922,7 +930,7 @@ declare module 'bsv' {
             privateKey: PrivateKey[] | string[] | PrivateKey | string,
             sigtype?: number
         ): this;
-        applySignature(sig: { inputIndex: number, sigtype: number, publicKey: PublicKey, signature: crypto.Signature}): this;
+        applySignature(sig: { inputIndex: number, sigtype: number, publicKey: PublicKey, signature: crypto.Signature }): this;
         verifySignature(sig: crypto.Signature, pubkey: PublicKey, nin: number, subscript: Script, satoshisBN: crypto.BN, flags: number): boolean;
         addInput(
             input: Transaction.Input,
@@ -938,7 +946,7 @@ declare module 'bsv' {
         hasWitnesses(): boolean;
         getFee(): number;
         getChangeOutput(): Transaction.Output | null;
-        getChangeAddress(): Address | null;        
+        getChangeAddress(): Address | null;
         getLockTime(): Date | number;
         setLockTime(t: number): this;
 
@@ -995,7 +1003,7 @@ declare module 'bsv' {
             error: string,
             failedAt: any
         };
-        verifyScript(inputIndex: number):  {
+        verifyScript(inputIndex: number): {
             success: boolean,
             error: string,
             failedAt: any
