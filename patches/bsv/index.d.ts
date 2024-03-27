@@ -6,8 +6,6 @@
 // Definitions extended by: David Case <https://github.com/shruggr>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-import HashCache from "./lib/hash-cache";
-
 // TypeScript Version: 3.0
 
 /// <reference types="node" />
