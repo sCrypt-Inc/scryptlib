@@ -165,7 +165,16 @@ export function hexStringToBytes(hex: string): number[] {
 }
 
 
-export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
+export function signTx(
+  tx: bsv.Transaction,
+  privateKey: bsv.PrivateKey,
+  lockingScript: Script,
+  inputAmount: number,
+  inputIndex = 0,
+  sighashType = DEFAULT_SIGHASH_TYPE,
+  flags = DEFAULT_FLAGS,
+  hashCache?: bsv.HashCache
+): string {
 
   if (!tx) {
     throw new Error('param tx can not be empty');
@@ -189,7 +198,7 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
 
   return toHex(bsv.Transaction.Sighash.sign(
     tx, privateKey, sighashType, inputIndex,
-    lockingScript, new bsv.crypto.BN(inputAmount), flags
+    lockingScript, new bsv.crypto.BN(inputAmount), flags, hashCache
   ).toTxFormat());
 }
 

@@ -55,6 +55,7 @@ bsv.PublicKey = require('./lib/publickey')
 bsv.Script = require('./lib/script')
 bsv.Transaction = require('./lib/transaction')
 bsv.ECIES = require('./lib/ecies')
+bsv.HashCache = require('./lib/hash-cache')
 
 // dependencies, subject to change
 bsv.deps = {}

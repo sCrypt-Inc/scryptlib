@@ -753,10 +753,6 @@ declare module 'bsv' {
         }
 
         class Point {
-            constructor(x: crypto.BN | string,
-                y: crypto.BN | string,
-                isRed: boolean);
-
             static fromX(odd: boolean, x: crypto.BN | string): Point;
             static getG(): any;
             static getN(): crypto.BN;
@@ -764,13 +760,9 @@ declare module 'bsv' {
             getY(): crypto.BN;
             validate(): this;
             mul(n: crypto.BN): Point;
-            add(n: crypto.Point): Point;
-            neg(): Point;
         }
 
         class Signature {
-            constructor(r: crypto.BN, s: crypto.BN);
-
             static fromDER(sig: Buffer): Signature;
             static fromTxFormat(buf: Buffer): Signature;
             static fromString(data: string): Signature;
@@ -873,7 +865,8 @@ declare module 'bsv' {
                 inputNumber: number,
                 subscript: Script,
                 satoshisBN: crypto.BN,
-                flags?: number
+                flags?: number,
+                hashCache?: HashCache
             ): Buffer;
             function sighash(
                 transaction: Transaction,
@@ -881,7 +874,8 @@ declare module 'bsv' {
                 inputNumber: number,
                 subscript: Script,
                 satoshisBN: crypto.BN,
-                flags?: number
+                flags?: number,
+                hashCache?: HashCache
             ): Buffer;
             function sign(
                 transaction: Transaction,
@@ -890,7 +884,8 @@ declare module 'bsv' {
                 inputIndex: number,
                 subscript: Script,
                 satoshisBN: crypto.BN,
-                flags?: number
+                flags?: number,
+                hashCache?: HashCache
             ): crypto.Signature;
             function verify(
                 transaction: Transaction,
@@ -899,7 +894,8 @@ declare module 'bsv' {
                 inputIndex: number,
                 subscript: Script,
                 satoshisBN: crypto.BN,
-                flags?: number
+                flags?: number,
+                hashCache?: HashCache
             ): boolean;
         }
     }
@@ -1485,5 +1481,21 @@ declare module 'bsv' {
             hashes: Array<string>;
             flags: Array<number>;
         };
+    }
+
+    export class HashCache {
+        constructor(
+            prevoutsHashBuf?: Buffer,
+            sequenceHashBuf?: Buffer,
+            outputsHashBuf?: Buffer
+        )
+
+        static fromBuffer(buf: Buffer): HashCache
+        static fromJSON(json: object): HashCache
+        static fromHex(hex: string): HashCache
+        
+        toBuffer(): HashCache
+        toJSON(): HashCache
+        toHex(): HashCache
     }
 }
