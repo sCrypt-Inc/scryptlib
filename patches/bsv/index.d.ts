@@ -1485,9 +1485,9 @@ declare module 'bsv' {
 
     export class HashCache {
         constructor(
-            prevoutsHashBuf: Buffer,
-            sequenceHashBuf: Buffer,
-            outputsHashBuf: Buffer
+            prevoutsHashBuf?: Buffer,
+            sequenceHashBuf?: Buffer,
+            outputsHashBuf?: Buffer
         )
 
         static fromBuffer(buf: Buffer): HashCache
