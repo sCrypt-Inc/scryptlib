@@ -1,34 +1,14 @@
 import { parseChunked, stringifyStream } from '@discoveryjs/json-ext';
-import * as bsv from 'bsv';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { join } from 'path';
 import { decode } from '@jridgewell/sourcemap-codec';
 import { fileURLToPath, pathToFileURL } from 'url';
-
-export { bsv };
-
 import { ABIEntity, LibraryEntity } from '.';
 import { compileAsync, OpCode } from './compilerWrapper';
-import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, Script, ScryptType, StructEntity, SupportedParamType } from './internal';
+import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, ScryptType, StructEntity, SupportedParamType, } from './internal';
 import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
-
-const BN = bsv.crypto.BN;
-const Interp = bsv.Script.Interpreter;
-
-export const DEFAULT_FLAGS =
-  //Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CLEANSTACK | // no longer applies now p2sh is deprecated: cleanstack only applies to p2sh
-  Interp.SCRIPT_ENABLE_MAGNETIC_OPCODES | Interp.SCRIPT_ENABLE_MONOLITH_OPCODES | // TODO: to be removed after upgrade to bsv 2.0
-  Interp.SCRIPT_VERIFY_STRICTENC |
-  Interp.SCRIPT_ENABLE_SIGHASH_FORKID | Interp.SCRIPT_VERIFY_LOW_S | Interp.SCRIPT_VERIFY_NULLFAIL |
-  Interp.SCRIPT_VERIFY_DERSIG |
-  Interp.SCRIPT_VERIFY_MINIMALDATA | Interp.SCRIPT_VERIFY_NULLDUMMY |
-  Interp.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
-  Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY | Interp.SCRIPT_VERIFY_CLEANSTACK;
-
-export const DEFAULT_SIGHASH_TYPE =
-  bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
-
+import { PrivateKey, Transaction, BigNumber, LockingScript, TransactionSignature, Hash, UnlockingScript, Script, Utils } from '@bsv/sdk'
 
 /**
  * decimal or hex int to little-endian signed magnitude
@@ -37,14 +17,13 @@ export function int2Asm(str: string): string {
 
   if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
 
-    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
+    const number = str.startsWith('0x') ? new BigNumber(str.substring(2), 16) : new BigNumber(str, 10);
 
     if (number.eqn(-1)) { return 'OP_1NEGATE'; }
 
     if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
 
-    const m = number.toSM({ endian: 'little' });
-    return m.toString('hex');
+    return number.toHex();
 
   } else {
     throw new Error(`invalid str '${str}' to convert to int`);
@@ -82,9 +61,7 @@ export function asm2int(str: string): number | string {
       return parseInt(str.replace('OP_', ''));
     default: {
       const value = getValidatedHexString(str);
-      const bn = BN.fromHex(value, {
-        endian: 'little'
-      });
+      const bn = BigNumber.fromHex(value, 'little');
 
       if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
         return bn.toNumber();
@@ -129,11 +106,11 @@ export function bytes2Literal(bytearray: Buffer, type: string): string {
 
   switch (type) {
     case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }).gt(0) ? 'true' : 'false';
+      return Array.from(bytearray)[0] !== 0 ? 'true' : 'false';
 
     case 'int':
     case 'PrivKey':
-      return BN.fromSM(bytearray, { endian: 'little' }).toString();
+      return BigNumber.fromSm(Array.from(bytearray), "little").toString();
 
     case 'bytes':
       return `b'${bytesToHexString(bytearray)}'`;
@@ -165,7 +142,7 @@ export function hexStringToBytes(hex: string): number[] {
 }
 
 
-export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
+export function signTx(tx: Transaction, privateKey: PrivateKey, subscript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number = 65): string {
 
   if (!tx) {
     throw new Error('param tx can not be empty');
@@ -175,50 +152,74 @@ export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingS
     throw new Error('param privateKey can not be empty');
   }
 
-  if (!lockingScript) {
-    throw new Error('param lockingScript can not be empty');
-  }
-
   if (!inputAmount) {
     throw new Error('param inputAmount can not be empty');
   }
 
-  if (typeof lockingScript === 'string') {
-    throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
-  }
+  const preimage = getPreimage(tx, subscript, inputAmount, inputIndex, sighashType);
 
-  return toHex(bsv.Transaction.Sighash.sign(
-    tx, privateKey, sighashType, inputIndex,
-    lockingScript, new bsv.crypto.BN(inputAmount), flags
-  ).toTxFormat());
+  const rawSignature = privateKey.sign(Hash.sha256(preimage, 'hex'))
+  const sig = new TransactionSignature(
+    rawSignature.r,
+    rawSignature.s,
+    sighashType
+  )
+  const sigForScript = sig.toChecksigFormat()
+
+  return Utils.toHex(sigForScript);
 }
 
 
 
-export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
-  const preimageBuf = bsv.Transaction.Sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
-  return toHex(preimageBuf);
+export function getPreimage(tx: Transaction, subscript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number): string {
+
+  const input = tx.inputs[inputIndex]
+  const otherInputs = tx.inputs.filter((_, index) => index !== inputIndex)
+
+  const sourceTXID = input.sourceTXID || input.sourceTransaction?.id('hex') as string;
+  if (!sourceTXID) {
+    // Question: Should the library support use-cases where the source transaction is not provided? This is to say, is it ever acceptable for someone to sign an input spending some output from a transaction they have not provided? Some elements (such as the satoshi value and output script) are always required. A merkle proof is also always required, and verifying it (while also verifying that the claimed output is contained within the claimed transaction) is also always required. This seems to require the entire input transaction.
+    throw new Error(
+      'The source transaction is needed for transaction signing.'
+    )
+  }
+
+  const preimage = TransactionSignature.format({
+    sourceTXID: sourceTXID,
+    sourceOutputIndex: input.sourceOutputIndex,
+    sourceSatoshis: inputAmount,
+    transactionVersion: tx.version,
+    otherInputs,
+    inputIndex,
+    outputs: tx.outputs,
+    inputSequence: input.sequence,
+    subscript: subscript,
+    lockTime: tx.lockTime,
+    scope: sighashType
+  })
+
+  return Utils.toHex(preimage);
 }
 
 const MSB_THRESHOLD = 0x7e;
 
 
-export function hashIsPositiveNumber(sighash: Buffer): boolean {
-  const highByte = sighash.readUInt8(31);
+export function hashIsPositiveNumber(sighash: number[]): boolean {
+  const highByte = sighash[31];
   return highByte < MSB_THRESHOLD;
 }
 
 
-export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
+export function getLowSPreimage(tx: Transaction, lockingScript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number): string {
 
   for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
-    const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType, flags);
-    const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(preimage, 'hex'));
-    const msb = sighash.readUInt8();
+    const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType);
+    const sighash = Hash.hash256(preimage);
+    const msb = sighash[0]
     if (msb < MSB_THRESHOLD && hashIsPositiveNumber(sighash)) {
       return preimage;
     }
-    tx.inputs[inputIndex].sequenceNumber--;
+    tx.inputs[inputIndex].sequence--;
   }
 }
 
@@ -450,7 +451,7 @@ function escapeRegExp(stringToGoIntoTheRegex: string) {
 
 
 
-export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTemplateInlineASM: Map<string, string>, hexTemplate: string): bsv.Script {
+export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTemplateInlineASM: Map<string, string>, hexTemplate: string): LockingScript {
 
 
   let lsHex = hexTemplate;
@@ -468,7 +469,7 @@ export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTempl
     lsHex = lsHex.replace(new RegExp(`${escapeRegExp(name)}`, 'g'), value);
   }
 
-  return bsv.Script.fromHex(lsHex);
+  return LockingScript.fromHex(lsHex);
 
 }
 
@@ -493,7 +494,7 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
     return pubFunAbis[0];
   }
 
-  const script = bsv.Script.fromHex(hex);
+  const script = UnlockingScript.fromHex(hex);
 
   const usASM = script.toASM() as string;
 
@@ -599,23 +600,28 @@ export function md5(s: string): string {
 }
 
 
-export function checkNOPScript(nopScript: bsv.Script) {
+export function checkNOPScript(nopScript: Script) {
 
-  bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
-  bsv.Script.Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 
-  const bsi = new bsv.Script.Interpreter();
-  const tx = new bsv.Transaction().from({
-    txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
-    outputIndex: 0,
-    script: '',   // placeholder
-    satoshis: 1
-  });
+  // const bsi = new bsv.Script.Interpreter();
+  // const tx = new Transaction(1, [{
+  //   sourceTXID: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458'
+  // }]).from({
+  //   txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
+  //   outputIndex: 0,
+  //   script: '',   // placeholder
+  //   satoshis: 1
+  // });
 
-  const result = bsi.verify(new bsv.Script(""), nopScript, tx, 0, DEFAULT_FLAGS, new bsv.crypto.BN(1));
+  // const result = bsi.verify(new bsv.Script(""), nopScript, tx, 0, DEFAULT_FLAGS, new bsv.crypto.BN(1));
 
-  if (result || bsi.errstr !== "SCRIPT_ERR_EVAL_FALSE_NO_RESULT") {
-    throw new Error("NopScript should be a script that does not affect the Bitcoin virtual machine stack.");
-  }
+  // if (result || bsi.errstr !== "SCRIPT_ERR_EVAL_FALSE_NO_RESULT") {
+  //   throw new Error("NopScript should be a script that does not affect the Bitcoin virtual machine stack.");
+  // }
 
+}
+
+export function addScript(a: Script, b: Script): Script {
+  const merged = a.chunks.concat(b.chunks);
+  return new Script(merged);
 }

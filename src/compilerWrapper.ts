@@ -230,7 +230,7 @@ export interface CompilingSettings {
 }
 
 function toOutputDir(artifactsDir: string, sourcePath: string) {
-  return join(artifactsDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf-8').substring(0, 10));
+  return join(artifactsDir, basename(sourcePath) + '-' + hash160(sourcePath, 'utf8').substring(0, 10));
 }
 export function doCompileAsync(source: {
   path: string,

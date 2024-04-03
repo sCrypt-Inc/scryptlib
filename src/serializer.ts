@@ -1,8 +1,8 @@
+import { BigNumber, Script, Utils } from '@bsv/sdk';
 import { Bool, Bytes, Int, isBytes, ScryptType, SupportedParamType } from './scryptTypes';
-import { bsv } from './utils';
 
 
-const BN = bsv.crypto.BN;
+const BN = BigNumber
 
 
 /**
@@ -17,9 +17,9 @@ export function int2hex(n: Int): string {
     n += Int(80);
     return n.toString(16);
   }
-  const number = new BN(n);
-  const m = number.toSM({ endian: 'little' });
-  return bsv.Script.fromASM(m.toString('hex')).toHex();
+  const number = new BN(n.toString().replace(/n/, ''));
+  const m = number.toSm('little');
+  return Script.fromASM(Utils.toHex(m)).toHex();
 }
 
 
@@ -36,7 +36,7 @@ export function bytes2hex(b: Bytes): string {
   if (b) {
 
     if (b.length / 2 > 1) {
-      return bsv.Script.fromASM(b).toHex();
+      return Script.fromASM(b).toHex();
     }
 
     const intValue = parseInt(b, 16);
@@ -45,7 +45,7 @@ export function bytes2hex(b: Bytes): string {
       return BigInt(intValue + 80).toString(16);
     }
 
-    return bsv.Script.fromASM(b).toHex();
+    return Script.fromASM(b).toHex();
   }
   return '00';
 }
@@ -67,5 +67,5 @@ export function toScriptHex(x: SupportedParamType, type: string): string {
 
 export function toScriptASM(a: SupportedParamType, type: string): string {
   const hex = toScriptHex(a, type);
-  return bsv.Script.fromHex(hex).toASM();
+  return Script.fromHex(hex).toASM();
 }

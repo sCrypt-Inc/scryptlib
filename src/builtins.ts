@@ -1,12 +1,13 @@
-import { bsv, Bytes, Int, Ripemd160 } from '.';
+import { BigNumber, Hash, Script, Utils } from '@bsv/sdk';
+import { Bytes, Int, Ripemd160 } from '.';
 
 /** 
  * bigint can be converted to string with pack
  * @category Bytes Operations
  */
 export function pack(n: bigint): Bytes {
-  const num = new bsv.crypto.BN(n);
-  return num.toSM({ endian: 'little' }).toString('hex');
+  const num = new BigNumber(n.toString().replace(/n/, ''));
+  return Utils.toHex(num.toSm('little'))
 }
 
 /**
@@ -24,11 +25,11 @@ export function unpack(a: Bytes): bigint {
 // Often used to append numbers to OP_RETURN, which are read in contracts
 // Support Bigint
 export function num2bin(n: bigint, dataLen: number): string {
-  const num = new bsv.crypto.BN(n);
+  const num = new BigNumber(n.toString().replace(/n/, ''));
   if (num.eqn(0)) {
     return '00'.repeat(dataLen);
   }
-  const s = num.toSM({ endian: 'little' }).toString('hex');
+  const s = Utils.toHex(num.toSm('little'))
 
   const byteLen_ = s.length / 2;
   if (byteLen_ > dataLen) {
@@ -66,7 +67,7 @@ export function bin2num(hex: string): bigint {
     nHex = '0' + nHex;
   }
   //Support negative number
-  let bn = bsv.crypto.BN.fromHex(rest + nHex, { endian: 'little' });
+  let bn = BigNumber.fromHex(rest + nHex, 'little');
   if (m >> 7) {
     bn = bn.neg();
   }
@@ -176,13 +177,13 @@ export function writeVarint(b: string): string {
 }
 
 
-export function buildOpreturnScript(data: string): bsv.Script {
-  return bsv.Script.fromASM(['OP_FALSE', 'OP_RETURN', data].join(' '));
+export function buildOpreturnScript(data: string): Script {
+  return Script.fromASM(['OP_FALSE', 'OP_RETURN', data].join(' '));
 }
 
 
-export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): bsv.Script {
-  return bsv.Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash, 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
+export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
+  return Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash, 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
 }
 
 
@@ -190,17 +191,17 @@ export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): bsv.Script {
 
 
 // Equivalent to the built-in function `hash160` in scrypt
-export function hash160(hexstr: string, encoding?: BufferEncoding): string {
-  return bsv.crypto.Hash.sha256ripemd160(Buffer.from(hexstr, encoding || 'hex')).toString('hex');
+export function hash160(hexstr: string, encoding?: 'hex' | 'utf8'): string {
+  return Utils.toHex(Hash.hash160(hexstr, encoding || 'hex'));
 }
 
 // Equivalent to the built-in function `sha256` in scrypt
-export function sha256(hexstr: string, encoding?: BufferEncoding): string {
-  return bsv.crypto.Hash.sha256(Buffer.from(hexstr, encoding || 'hex')).toString('hex');
+export function sha256(hexstr: string, encoding?: 'hex' | 'utf8'): string {
+  return Utils.toHex(Hash.sha256(hexstr, encoding || 'hex'));
 }
 
 
 // Equivalent to the built-in function `hash256` in scrypt
-export function hash256(hexstr: string, encoding?: BufferEncoding): string {
-  return sha256(sha256(hexstr, encoding), encoding);
+export function hash256(hexstr: string, encoding?: 'hex' | 'utf8'): string {
+  return Utils.toHex(Hash.hash256(hexstr, encoding || 'hex'));
 }

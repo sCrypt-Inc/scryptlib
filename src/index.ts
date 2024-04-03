@@ -4,7 +4,7 @@ export {
 } from './internal';
 
 export {
-  bsv, toHex, bin2num, int2Asm, bytes2Literal, bytesToHexString, getValidatedHexString,
+  toHex, bin2num, int2Asm, bytes2Literal, bytesToHexString, getValidatedHexString,
   findStructByType, findStructByName, isArrayType,
   arrayTypeAndSize, newCall, getNameByType, genLaunchConfigFile, subArrayType,
   isGenericType, parseGenericType,
@@ -23,7 +23,7 @@ export {
   StructObject, TypeResolver, PrimitiveTypes, AsmVarValues, Flavor,
   Arguments, Argument, StructEntity, LibraryEntity, ABIEntity, ABIEntityType, ABI, ParamEntity,
   BuildType, RelatedInformation, Artifact, VerifyResult, VerifyError, AbstractContract,
-  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, DEFAULT_FLAGS, ScryptType, DEFAULT_SIGHASH_TYPE, CallData,
+  DebugInfo, DebugModeTag, ContractEntity, TypeInfo, SymbolType, ScryptType, CallData,
   NOPScript
 } from './internal';
 

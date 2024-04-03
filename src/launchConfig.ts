@@ -142,7 +142,7 @@ export function toJSON(arg: Argument, resolver: TypeResolver): unknown {
       case ScryptType.BOOL:
         return arg.value;
       case ScryptType.INT: {
-        if (arg.value >= BigInt(Number.MIN_SAFE_INTEGER) && arg.value <= BigInt(Number.MAX_SAFE_INTEGER)) {
+        if (BigInt(arg.value as bigint) >= BigInt(Number.MIN_SAFE_INTEGER) && BigInt(arg.value as bigint) <= BigInt(Number.MAX_SAFE_INTEGER)) {
           return Number(arg.value);
         } else {
           return arg.value.toString();
