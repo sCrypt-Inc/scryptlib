@@ -1,4 +1,3 @@
-import { LockingScript, OP, Script, UnlockingScript, Utils } from '@bsv/sdk';
 import { bin2num } from './builtins';
 import { ABIEntity, ABIEntityType } from './compilerWrapper';
 import { AbstractContract, AsmVarValues, TxContext, VerifyResult } from './contract';
@@ -9,7 +8,8 @@ import { toScriptHex } from './serializer';
 import Stateful from './stateful';
 import { flatternArg } from './typeCheck';
 import { asm2int, buildContractCode, int2Asm } from './utils';
-import ScriptChunk from '@bsv/sdk/dist/types/src/script/ScriptChunk';
+
+import { Chain, UnlockingScript, LockingScript, Script, ScriptChunk } from './chain';
 
 export type FileUri = string;
 
@@ -221,7 +221,7 @@ export class ABICoder {
   }
 
   encodeConstructorCallFromRawHex(contract: AbstractContract, hexTemplate: string, raw: string): FunctionCall {
-    const script = LockingScript.fromHex(raw);
+    const script = Chain.getFactory().LockingScript.fromHex(raw);
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
 
@@ -251,7 +251,7 @@ export class ABICoder {
 
       const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (Utils.toHex(chunk.data) != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
       offset = offset + chunk.data.length * 2;
@@ -276,7 +276,7 @@ export class ABICoder {
 
       const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (Utils.toHex(chunk.data) != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
       offset = offset + chunk.data.length * 2;
@@ -300,7 +300,7 @@ export class ABICoder {
 
       const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (Utils.toHex(chunk.data) != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
       offset = offset + chunk.data.length * 2;
@@ -324,7 +324,7 @@ export class ABICoder {
 
       const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (Utils.toHex(chunk.data) != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
 
@@ -354,19 +354,19 @@ export class ABICoder {
     }
 
     function saveTemplateVariableValue(name: string, chunk: ScriptChunk) {
-      const bw = new Utils.Writer();
+      const bw = Chain.getFactory().Writer.from();
 
       bw.writeUInt8(chunk.op);
       if (chunk.op > 0) {
-        if (chunk.op < OP.OP_PUSHDATA1) {
+        if (chunk.op < Chain.getFactory().OP.OP_PUSHDATA1) {
           bw.write(chunk.data);
-        } else if (chunk.op === OP.OP_PUSHDATA1) {
+        } else if (chunk.op === Chain.getFactory().OP.OP_PUSHDATA1) {
           bw.writeUInt8(chunk.data.length);
           bw.write(chunk.data);
-        } else if (chunk.op === OP.OP_PUSHDATA2) {
+        } else if (chunk.op === Chain.getFactory().OP.OP_PUSHDATA2) {
           bw.writeUInt16LE(chunk.data.length);
           bw.write(chunk.data);
-        } else if (chunk.op === OP.OP_PUSHDATA4) {
+        } else if (chunk.op === Chain.getFactory().OP.OP_PUSHDATA4) {
           bw.writeUInt32LE(chunk.data.length);
           bw.write(chunk.data);
         }
@@ -375,9 +375,9 @@ export class ABICoder {
 
 
       if (name.startsWith(`<${contract.contractName}.`)) { //inline asm
-        contract.hexTemplateInlineASM.set(name, Utils.toHex(bw.toArray()));
+        contract.hexTemplateInlineASM.set(name, Chain.getFactory().Utils.toHex(bw.toArray()));
       } else {
-        contract.hexTemplateArgs.set(name, Utils.toHex(bw.toArray()));
+        contract.hexTemplateArgs.set(name, Chain.getFactory().Utils.toHex(bw.toArray()));
       }
 
     }
@@ -393,7 +393,7 @@ export class ABICoder {
 
             if (offset >= hexTemplate.length) {
 
-              const b = new Script(script.chunks.slice(index + 1));
+              const b = Chain.getFactory().LockingScript.from(script.chunks.slice(index + 1));
 
               dataPartInHex = b.toHex();
               codePartEndIndex = index;
@@ -514,7 +514,7 @@ export class ABICoder {
 
     return new FunctionCall('constructor', {
       contract,
-      lockingScript: codePartEndIndex > -1 ? new Script(script.chunks.slice(0, codePartEndIndex)) : script,
+      lockingScript: codePartEndIndex > -1 ? Chain.getFactory().LockingScript.from(script.chunks.slice(0, codePartEndIndex)) : script,
       args: ctorArgs
     });
 
@@ -538,10 +538,10 @@ export class ABICoder {
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
-          hex += `${UnlockingScript.fromASM(int2Asm(pubFuncIndex.toString())).toHex()}`;
+          hex += `${Chain.getFactory().UnlockingScript.fromASM(int2Asm(pubFuncIndex.toString())).toHex()}`;
         }
         return new FunctionCall(name, {
-          contract, unlockingScript: UnlockingScript.fromHex(hex), args: entity.params.map((param, index) => ({
+          contract, unlockingScript: Chain.getFactory().UnlockingScript.fromHex(hex), args: entity.params.map((param, index) => ({
             name: param.name,
             type: param.type,
             value: args_[index]
@@ -574,7 +574,7 @@ export class ABICoder {
      */
   parseCallData(hex: string): CallData {
 
-    const unlockingScript = UnlockingScript.fromHex(hex);
+    const unlockingScript = Chain.getFactory().UnlockingScript.fromHex(hex);
 
     const usASM = unlockingScript.toASM();
 
@@ -620,7 +620,7 @@ export class ABICoder {
 
     dummyArgs.forEach((farg: Argument, index: number) => {
 
-      hexTemplateArgs.set(`<${farg.name}>`, UnlockingScript.fromASM(asmOpcodes[index]).toHex());
+      hexTemplateArgs.set(`<${farg.name}>`, Chain.getFactory().UnlockingScript.fromASM(asmOpcodes[index]).toHex());
 
     });
 

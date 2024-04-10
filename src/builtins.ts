@@ -1,13 +1,12 @@
-import { BigNumber, Hash, Script, Utils } from '@bsv/sdk';
 import { Bytes, Int, Ripemd160 } from '.';
+import { Chain, LockingScript } from './chain';
 
 /** 
  * bigint can be converted to string with pack
  * @category Bytes Operations
  */
 export function pack(n: bigint): Bytes {
-  const num = new BigNumber(n.toString().replace(/n/, ''));
-  return Utils.toHex(num.toSm('little'))
+  return num2bin(n);
 }
 
 /**
@@ -15,7 +14,7 @@ export function pack(n: bigint): Bytes {
 * @category Bytes Operations
 */
 export function unpack(a: Bytes): bigint {
-  return BigInt(bin2num(a));
+  return bin2num(a);
 }
 
 
@@ -24,56 +23,20 @@ export function unpack(a: Bytes): bigint {
 // Throws if the number cannot be accommodated
 // Often used to append numbers to OP_RETURN, which are read in contracts
 // Support Bigint
-export function num2bin(n: bigint, dataLen: number): string {
-  const num = new BigNumber(n.toString().replace(/n/, ''));
-  if (num.eqn(0)) {
-    return '00'.repeat(dataLen);
-  }
-  const s = Utils.toHex(num.toSm('little'))
-
-  const byteLen_ = s.length / 2;
-  if (byteLen_ > dataLen) {
-    throw new Error(`${n} cannot fit in ${dataLen} byte[s]`);
-  }
-  if (byteLen_ === dataLen) {
-    return s;
-  }
-
-  const paddingLen = dataLen - byteLen_;
-  const lastByte = s.substring(s.length - 2);
-  const rest = s.substring(0, s.length - 2);
-  let m = parseInt(lastByte, 16);
-  if (num.isNeg()) {
-    // reset sign bit
-    m &= 0x7F;
-  }
-  let mHex = m.toString(16);
-  if (mHex.length < 2) {
-    mHex = '0' + mHex;
-  }
-
-  const padding = n > 0 ? '00'.repeat(paddingLen) : '00'.repeat(paddingLen - 1) + '80';
-  return rest + mHex + padding;
+export function num2bin(n: bigint, dataLen?: number): string {
+  const bin = Chain.getFactory().Utils.num2bin(n, dataLen);
+  return toHex(bin);
 }
 
 //Support Bigint
 export function bin2num(hex: string): bigint {
-  const lastByte = hex.substring(hex.length - 2);
-  const rest = hex.substring(0, hex.length - 2);
-  const m = parseInt(lastByte, 16);
-  const n = m & 0x7F;
-  let nHex = n.toString(16);
-  if (nHex.length < 2) {
-    nHex = '0' + nHex;
-  }
-  //Support negative number
-  let bn = BigNumber.fromHex(rest + nHex, 'little');
-  if (m >> 7) {
-    bn = bn.neg();
-  }
-  return BigInt(bn.toString());
+  const bin = Chain.getFactory().Utils.toArray(hex);
+  return Chain.getFactory().Utils.bin2num(bin);
 }
 
+export function toHex(msg: number[]): string {
+  return Chain.getFactory().Utils.toHex(msg);
+}
 
 export function and(a: Int, b: Int): Int {
   const size1 = pack(a).length / 2;
@@ -177,13 +140,13 @@ export function writeVarint(b: string): string {
 }
 
 
-export function buildOpreturnScript(data: string): Script {
-  return Script.fromASM(['OP_FALSE', 'OP_RETURN', data].join(' '));
+export function buildOpreturnScript(data: string): LockingScript {
+  return Chain.getFactory().LockingScript.fromASM(['OP_FALSE', 'OP_RETURN', data].join(' '));
 }
 
 
-export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
-  return Script.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash, 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
+export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): LockingScript {
+  return Chain.getFactory().LockingScript.fromASM(['OP_DUP', 'OP_HASH160', pubKeyHash, 'OP_EQUALVERIFY', 'OP_CHECKSIG'].join(' '));
 }
 
 
@@ -192,16 +155,16 @@ export function buildPublicKeyHashScript(pubKeyHash: Ripemd160): Script {
 
 // Equivalent to the built-in function `hash160` in scrypt
 export function hash160(hexstr: string, encoding?: 'hex' | 'utf8'): string {
-  return Utils.toHex(Hash.hash160(hexstr, encoding || 'hex'));
+  return toHex(Chain.getFactory().Hash.hash160(hexstr, encoding || 'hex'));
 }
 
 // Equivalent to the built-in function `sha256` in scrypt
 export function sha256(hexstr: string, encoding?: 'hex' | 'utf8'): string {
-  return Utils.toHex(Hash.sha256(hexstr, encoding || 'hex'));
+  return toHex(Chain.getFactory().Hash.sha256(hexstr, encoding || 'hex'));
 }
 
 
 // Equivalent to the built-in function `hash256` in scrypt
 export function hash256(hexstr: string, encoding?: 'hex' | 'utf8'): string {
-  return Utils.toHex(Hash.hash256(hexstr, encoding || 'hex'));
+  return toHex(Chain.getFactory().Hash.hash256(hexstr, encoding || 'hex'));
 }

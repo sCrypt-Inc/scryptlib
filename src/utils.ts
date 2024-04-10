@@ -6,9 +6,11 @@ import { decode } from '@jridgewell/sourcemap-codec';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { ABIEntity, LibraryEntity } from '.';
 import { compileAsync, OpCode } from './compilerWrapper';
-import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, ScryptType, StructEntity, SupportedParamType, } from './internal';
+import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, hash256, ScryptType, StructEntity, SupportedParamType, } from './internal';
 import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
-import { PrivateKey, Transaction, BigNumber, LockingScript, TransactionSignature, Hash, UnlockingScript, Script, Utils } from '@bsv/sdk'
+
+import { UnlockingScript, PrivateKey, LockingScript, Chain, Transaction, BigNumber, Script } from './chain'
+
 
 /**
  * decimal or hex int to little-endian signed magnitude
@@ -90,6 +92,11 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
+export function toArray(x: string): number[] {
+  return Chain.getFactory().Utils.toArray(x);
+}
+
+
 export function utf82Hex(val: string): string {
   const encoder = new TextEncoder();
   const uint8array = encoder.encode(val);
@@ -166,39 +173,14 @@ export function signTx(tx: Transaction, privateKey: PrivateKey, subscript: Locki
   )
   const sigForScript = sig.toChecksigFormat()
 
-  return Utils.toHex(sigForScript);
+  return toHex(sigForScript);
 }
 
 
 
-export function getPreimage(tx: Transaction, subscript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number): string {
+export function getPreimage(tx: Transaction, subscript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number = 65): string {
 
-  const input = tx.inputs[inputIndex]
-  const otherInputs = tx.inputs.filter((_, index) => index !== inputIndex)
-
-  const sourceTXID = input.sourceTXID || input.sourceTransaction?.id('hex') as string;
-  if (!sourceTXID) {
-    // Question: Should the library support use-cases where the source transaction is not provided? This is to say, is it ever acceptable for someone to sign an input spending some output from a transaction they have not provided? Some elements (such as the satoshi value and output script) are always required. A merkle proof is also always required, and verifying it (while also verifying that the claimed output is contained within the claimed transaction) is also always required. This seems to require the entire input transaction.
-    throw new Error(
-      'The source transaction is needed for transaction signing.'
-    )
-  }
-
-  const preimage = TransactionSignature.format({
-    sourceTXID: sourceTXID,
-    sourceOutputIndex: input.sourceOutputIndex,
-    sourceSatoshis: inputAmount,
-    transactionVersion: tx.version,
-    otherInputs,
-    inputIndex,
-    outputs: tx.outputs,
-    inputSequence: input.sequence,
-    subscript: subscript,
-    lockTime: tx.lockTime,
-    scope: sighashType
-  })
-
-  return Utils.toHex(preimage);
+  return toHex(Chain.getFactory().Utils.getPreimage(tx, subscript, inputAmount, inputIndex, sighashType));
 }
 
 const MSB_THRESHOLD = 0x7e;
@@ -214,7 +196,7 @@ export function getLowSPreimage(tx: Transaction, lockingScript: LockingScript, i
 
   for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
     const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType);
-    const sighash = Hash.hash256(preimage);
+    const sighash = hash256(preimage);
     const msb = sighash[0]
     if (msb < MSB_THRESHOLD && hashIsPositiveNumber(sighash)) {
       return preimage;
@@ -469,7 +451,7 @@ export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTempl
     lsHex = lsHex.replace(new RegExp(`${escapeRegExp(name)}`, 'g'), value);
   }
 
-  return LockingScript.fromHex(lsHex);
+  return Chain.getFactory().LockingScript.fromHex(lsHex);
 
 }
 
@@ -494,7 +476,7 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
     return pubFunAbis[0];
   }
 
-  const script = UnlockingScript.fromHex(hex);
+  const script = Chain.getFactory().UnlockingScript.fromHex(hex);
 
   const usASM = script.toASM() as string;
 

@@ -2,12 +2,12 @@ import { basename, dirname } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
-  ABICoder, ABIEntity, addScript, AliasEntity, Arguments, buildContractCode, checkNOPScript, CompileResult, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, sha256, StructEntity, subscript, TypeResolver, uri2path
+  ABICoder, ABIEntity, addScript, AliasEntity, Arguments, buildContractCode, checkNOPScript, CompileResult, findSrcInfoV1, findSrcInfoV2, FunctionCall, hash160, isArrayType, JSONParserSync, path2uri, resolveType, sha256, StructEntity, subscript, TypeResolver, unpack, uri2path
 } from './internal';
 import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
 import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
-import { BigNumber, OP, Script, Transaction, UnlockingScript, Utils, Spend } from '@bsv/sdk';
+import { LockingScript, BigNumber, OP, Script, Transaction, UnlockingScript, Chain } from './chain';
 
 /**
  * TxContext provides some context information of the current transaction, 
@@ -118,7 +118,7 @@ export class AbstractContract {
 
   nopScript: NOPScript | null;
 
-  get lockingScript(): Script {
+  get lockingScript(): LockingScript {
 
     if (this.hasInlineASMVars && this.hexTemplateInlineASM.size === 0) {
       throw new Error('Values for inline ASM variables have not yet been set! Cannot get locking script.');
@@ -132,9 +132,9 @@ export class AbstractContract {
     return addScript(this.codePart, this.dataPart);
   }
 
-  private _wrapNOPScript(lockingScript: Script) {
+  private _wrapNOPScript(lockingScript: LockingScript) {
     if (this.nopScript) {
-      const clone = Script.fromBinary(this.nopScript.toBinary())
+      const clone = Chain.getFactory().LockingScript.fromBinary(this.nopScript.toBinary())
 
       return addScript(clone, lockingScript);
     }
@@ -192,7 +192,7 @@ export class AbstractContract {
     if (asmVarValues) {
       for (const key in asmVarValues) {
         const val = asmVarValues[key];
-        this.hexTemplateInlineASM.set(`<${key.startsWith('$') ? key.substring(1) : key}>`, Script.fromASM(val).toHex());
+        this.hexTemplateInlineASM.set(`<${key.startsWith('$') ? key.substring(1) : key}>`, Chain.getFactory().LockingScript.fromASM(val).toHex());
       }
     }
 
@@ -212,7 +212,7 @@ export class AbstractContract {
     for (const entry of this.hexTemplateInlineASM.entries()) {
       const name = entry[0].replace('<', '').replace('>', '');
       const value = entry[1];
-      result[name] = Script.fromHex(value).toASM();
+      result[name] = Chain.getFactory().LockingScript.fromHex(value).toASM();
     }
 
     return result;
@@ -263,7 +263,7 @@ export class AbstractContract {
       }
     });
 
-    return addScript(this.codePart, Script.fromHex(Stateful.buildState(newState, false, this.resolver)));
+    return addScript(this.codePart, Chain.getFactory().LockingScript.fromHex(Stateful.buildState(newState, false, this.resolver)));
   }
 
   run_verify(unlockingScript: UnlockingScript): VerifyResult {
@@ -271,7 +271,7 @@ export class AbstractContract {
     let tx: Transaction;
 
     if (this._txContext && this._txContext.tx) {
-      tx = typeof this._txContext.tx === 'string' ? Transaction.fromHex(this._txContext.tx) : this._txContext.tx;
+      tx = typeof this._txContext.tx === 'string' ? Chain.getFactory().Transaction.fromHex(this._txContext.tx) : this._txContext.tx;
     } else {
       const sourceTx = new Transaction(1, [], [{
         lockingScript: this.lockingScript,
@@ -475,11 +475,11 @@ export class AbstractContract {
 
     if (AbstractContract.isStateful(this)) {
       const state = Stateful.buildState(this.statePropsArgs, this.isGenesis, this.resolver);
-      return Script.fromHex(state);
+      return Chain.getFactory().LockingScript.fromHex(state);
     }
 
     if (this._dataPartInHex) {
-      return Script.fromHex(this._dataPartInHex);
+      return Chain.getFactory().LockingScript.fromHex(this._dataPartInHex);
     }
 
   }
@@ -510,7 +510,7 @@ export class AbstractContract {
       throw new Error('should not use `setDataPartInASM` for a stateful contract, using `setDataPartInHex`');
     }
     const dataPartInASM = asm.trim();
-    this.setDataPartInHex(Script.fromASM(dataPartInASM).toHex());
+    this.setDataPartInHex(Chain.getFactory().LockingScript.fromASM(dataPartInASM).toHex());
   }
 
   /**
@@ -527,7 +527,7 @@ export class AbstractContract {
   }
 
   prependNOPScript(nopScript: NOPScript | null): void {
-    if (nopScript instanceof Script) {
+    if (nopScript) {
       checkNOPScript(nopScript);
     }
 
@@ -541,8 +541,8 @@ export class AbstractContract {
   get codePart(): Script {
     const contractScript = this.scriptedConstructor.toScript();
     // note: do not trim the trailing space
-    const clone = Script.fromBinary(contractScript.toBinary())
-    return addScript(this._wrapNOPScript(clone), Script.fromHex('6a'));
+    const clone = Chain.getFactory().LockingScript.fromBinary(contractScript.toBinary())
+    return addScript(this._wrapNOPScript(clone), Chain.getFactory().LockingScript.fromHex('6a'));
   }
 
   get codeHash(): string {
@@ -737,7 +737,7 @@ export class AbstractContract {
 
 
   static fromASM(asm: string): AbstractContract {
-    return this.fromHex(Script.fromASM(asm).toHex());
+    return this.fromHex(Chain.getFactory().LockingScript.fromASM(asm).toHex());
   }
 
   static fromHex(hex: string): AbstractContract {
@@ -751,7 +751,7 @@ export class AbstractContract {
 
 
   static fromTransaction(hex: string, outputIndex = 0): AbstractContract {
-    const tx = Transaction.fromHex(hex);
+    const tx = Chain.getFactory().Transaction.fromHex(hex);
     return this.fromHex(tx.outputs[outputIndex].lockingScript.toHex());
   }
 
@@ -796,8 +796,7 @@ export class AbstractContract {
   // sort the map by the result of flattenSha256 of the key
   private static sortmap(map: Map<SupportedParamType, SupportedParamType>, keyType: string): Map<SupportedParamType, SupportedParamType> {
     return new Map([...map.entries()].sort((a, b) => {
-      return BigNumber.fromSm(Utils.toArray(this.flattenSha256(a[0], keyType)), 'little')
-        .cmp(BigNumber.fromSm(Utils.toArray(this.flattenSha256(b[0], keyType)), 'little'));
+      return unpack(this.flattenSha256(a[0], keyType)) - unpack(this.flattenSha256(a[0], keyType));
     }));
   }
 

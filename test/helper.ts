@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import { bsv } from '../src/utils';
 import { Artifact } from '../src/contract';
+import { LockingScript, Transaction, UnlockingScript } from '@bsv/sdk';
 export function loadArtifact(fileName: string): Artifact {
   return JSON.parse(readFileSync(join(__dirname, "../out/", fileName)).toString());
 }
@@ -18,14 +18,20 @@ export function getInvalidContractFilePath(fileName: string): string {
   return join(__dirname, 'fixture', 'invalid', fileName);
 }
 
-export function newTx(inputSatoshis: number) {
-  const utxo = {
-    txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
-    outputIndex: 0,
-    script: '',   // placeholder
+export function newTx(inputSatoshis: number = 100000, lockingScript: LockingScript = new LockingScript()) {
+
+  const sourceTx = new Transaction(1, [], [{
+    lockingScript: lockingScript,
     satoshis: inputSatoshis
-  };
-  return new bsv.Transaction().from(utxo);
+  }], 0)
+
+  const spendTx = new Transaction(1, [{
+    sourceTransaction: sourceTx,
+    sourceOutputIndex: 0,
+    sequence: 0xffffffff,
+  }], [], 0)
+
+  return spendTx;
 }
 
 export function excludeMembers(o: any, members: string[]) {

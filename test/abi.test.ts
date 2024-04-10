@@ -2,18 +2,19 @@ import { assert, expect } from 'chai';
 import { newTx, loadArtifact } from './helper';
 import { FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
-import { bsv, signTx, toHex } from '../src/utils';
+import { signTx, toHex } from '../src/utils';
 import { PubKey, Sig, Ripemd160, Sha256 } from '../src/scryptTypes';
+import { PrivateKey, Script } from '@bsv/sdk';
 
-const privateKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet);
-const publicKey = privateKey.publicKey;
-const pubKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer());
+const privateKey = PrivateKey.fromRandom();
+const publicKey = privateKey.toPublicKey()
+const pubKeyHash = publicKey.toHash('hex') as string
 const inputSatoshis = 100000;
 const tx = newTx(inputSatoshis);
 
 const jsonArtifact = loadArtifact('p2pkh.json');
 const DemoP2PKH = buildContractClass(jsonArtifact);
-const p2pkh = new DemoP2PKH(Ripemd160(toHex(pubKeyHash)));
+const p2pkh = new DemoP2PKH(Ripemd160(pubKeyHash));
 
 const personArtifact = loadArtifact('person.json');
 const PersonContract = buildContractClass(personArtifact);
@@ -41,6 +42,7 @@ describe('FunctionCall', () => {
   describe('when it is the contract constructor', () => {
 
     before(() => {
+      p2pkh.txContext = { inputSatoshis, tx, inputIndex: 0 }
       target = new FunctionCall('constructor', {
         contract: p2pkh, lockingScript: p2pkh.lockingScript, args: [{
           name: 'pubKeyHash',
@@ -73,7 +75,7 @@ describe('FunctionCall', () => {
       sig = Sig(signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis));
       pubkey = PubKey(toHex(publicKey));
       target = new FunctionCall('unlock', {
-        contract: p2pkh, unlockingScript: bsv.Script.fromASM([sig, pubkey].join(' ')), args: [{
+        contract: p2pkh, unlockingScript: Script.fromASM([sig, pubkey].join(' ')), args: [{
           name: 'sig',
           type: 'Sig',
           value: sig
@@ -87,7 +89,7 @@ describe('FunctionCall', () => {
 
     describe('toHex() / toString()', () => {
       it('should return the unlocking script in hex', () => {
-        assert.equal(target.toHex(), bsv.Script.fromASM(target.toASM()).toHex());
+        assert.equal(target.toHex(), Script.fromASM(target.toASM()).toHex());
       })
     })
 
@@ -114,7 +116,7 @@ describe('FunctionCall', () => {
     describe('verify()', () => {
       it('should return true if params are appropriate', () => {
         // has no txContext in binding contract
-        result = target.verify({ inputSatoshis, tx, inputIndex: 0 });
+        result = target.verify();
         assert.isTrue(result.success, result.error);
 
         // has txContext in binding contract
@@ -125,23 +127,27 @@ describe('FunctionCall', () => {
       })
 
       it('should fail if param `inputSatoshis` is incorrect', () => {
-        result = target.verify({ inputSatoshis: inputSatoshis + 1, tx, inputIndex: 0 });
+        p2pkh.txContext = { inputSatoshis: inputSatoshis + 1, tx, inputIndex: 0 }
+        result = target.verify();
         assert.isFalse(result.success, result.error);
-        result = target.verify({ inputSatoshis: inputSatoshis - 1, tx, inputIndex: 0 });
+        p2pkh.txContext = { inputSatoshis: inputSatoshis - 1, tx, inputIndex: 0 }
+        result = target.verify();
         assert.isFalse(result.success, result.error);
       })
 
       it('should fail if param `txContext` is incorrect', () => {
         // missing txContext
         expect(() => {
+          p2pkh.txContext = undefined;
           target.verify()
-        }).to.throw('should provide txContext.tx when verify')
+        }).to.throw('should provide txContext when verify')
 
         // incorrect txContext.tx
-        tx.nLockTime = tx.nLockTime + 1;
-        result = target.verify({ inputSatoshis, tx, inputIndex: 0 });
+        tx.lockTime = tx.lockTime + 1;
+        p2pkh.txContext = { inputSatoshis, tx, inputIndex: 0 }
+        result = target.verify();
         assert.isFalse(result.success, result.error);
-        tx.nLockTime = tx.nLockTime - 1;  //reset
+        tx.lockTime = tx.lockTime - 1;  //reset
       })
     })
   })
@@ -615,8 +621,8 @@ describe('string as bigInt', () => {
 
         expect(funCallClone.methodName).to.equal('unlock');
 
-
-        result = funCallClone.verify({ inputSatoshis, tx, inputIndex: 0 })
+        p2pkhClone.txContext = { inputSatoshis, tx, inputIndex: 0 };
+        result = funCallClone.verify()
 
         expect(result.success).to.be.true;
 
