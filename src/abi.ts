@@ -7,9 +7,9 @@ import { SupportedParamType, TypeResolver, Int } from './scryptTypes';
 import { toScriptHex } from './serializer';
 import Stateful from './stateful';
 import { flatternArg } from './typeCheck';
-import { asm2int, bsv, buildContractCode, int2Asm } from './utils';
+import { buildContractCode } from './utils';
 
-export type Script = bsv.Script;
+import { Chain, UnlockingScript, LockingScript, Script, ScriptChunk } from './chain';
 
 export type FileUri = string;
 
@@ -50,19 +50,19 @@ export class FunctionCall {
 
   readonly args: Arguments = [];
 
-  private _unlockingScript?: Script;
+  private _unlockingScript?: UnlockingScript;
 
-  private _lockingScript?: Script;
+  private _lockingScript?: LockingScript;
 
-  get unlockingScript(): Script | undefined {
+  get unlockingScript(): UnlockingScript | undefined {
     return this._unlockingScript;
   }
 
-  get lockingScript(): Script | undefined {
+  get lockingScript(): LockingScript | undefined {
     return this._lockingScript;
   }
 
-  set lockingScript(s: Script | undefined) {
+  set lockingScript(s: LockingScript | undefined) {
     this._lockingScript = s;
   }
 
@@ -70,8 +70,8 @@ export class FunctionCall {
     public methodName: string,
     binding: {
       contract: AbstractContract;
-      unlockingScript?: Script;
-      lockingScript?: Script;
+      unlockingScript?: UnlockingScript;
+      lockingScript?: LockingScript;
       args: Arguments;
     }
   ) {
@@ -105,7 +105,7 @@ export class FunctionCall {
     if (this.lockingScript) {
       return this.lockingScript;
     } else {
-      return this.unlockingScript as Script;
+      return this.unlockingScript;
     }
   }
 
@@ -115,7 +115,7 @@ export class FunctionCall {
 
 
 
-  genLaunchConfig(txContext?: TxContext): FileUri {
+  genLaunchConfig(): FileUri {
 
     const pubFunc: string = this.methodName;
     const name = `Debug ${this.contract.contractName}`;
@@ -130,17 +130,17 @@ export class FunctionCall {
       Object.assign(state, { opReturn: this.contract.dataPart.toASM() });
     }
 
-    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, txContext || {}, state) as TxContext;
+    const txCtx: TxContext = Object.assign({}, this.contract.txContext || {}, state) as TxContext;
 
 
     return genLaunchConfigFile(this.contract.resolver, this.contract.ctorArgs(), this.args, pubFunc, name, program, txCtx, asmArgs);
   }
 
-  verify(txContext?: TxContext): VerifyResult {
-    const result = this.contract.run_verify(this.unlockingScript, txContext);
+  verify(): VerifyResult {
+    const result = this.contract.run_verify(this.unlockingScript);
 
     if (!result.success) {
-      const debugUrl = this.genLaunchConfig(txContext);
+      const debugUrl = this.genLaunchConfig();
       if (debugUrl) {
         result.error = result.error + `\t[Launch Debugger](${debugUrl.replace(/file:/i, 'scryptlaunch:')})\n`;
       }
@@ -157,7 +157,7 @@ export interface CallData {
   /** name of public function */
   methodName: string;
   /** unlocking Script */
-  unlockingScript: bsv.Script;
+  unlockingScript: UnlockingScript;
   /** function arguments */
   args: Arguments;
 }
@@ -221,7 +221,7 @@ export class ABICoder {
   }
 
   encodeConstructorCallFromRawHex(contract: AbstractContract, hexTemplate: string, raw: string): FunctionCall {
-    const script = bsv.Script.fromHex(raw);
+    const script = Chain.getFactory().LockingScript.fromHex(raw);
     const constructorABI = this.abi.filter(entity => entity.type === ABIEntityType.CONSTRUCTOR)[0];
     const cParams = constructorABI?.params || [];
 
@@ -232,103 +232,103 @@ export class ABICoder {
     let codePartEndIndex = -1;
 
     const err = new Error(`the raw script cannot match the ASM template of contract ${contract.contractName}`);
-    function checkOp(chunk: bsv.Script.IOpChunk) {
+    function checkOp(chunk: ScriptChunk) {
 
       const op = hexTemplate.substring(offset, offset + 2);
-      if (parseInt(op, 16) != chunk.opcodenum) {
+      if (parseInt(op, 16) != chunk.op) {
         throw err;
       }
       offset = offset + 2;
     }
 
-    function checkPushByteLength(chunk: bsv.Script.IOpChunk) {
+    function checkPushByteLength(chunk: ScriptChunk) {
 
       const op = hexTemplate.substring(offset, offset + 2);
-      if (parseInt(op, 16) != chunk.opcodenum) {
+      if (parseInt(op, 16) != chunk.op) {
         throw err;
       }
       offset = offset + 2;
 
-      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+      const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (chunk.buf.toString('hex') != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
-      offset = offset + chunk.len * 2;
+      offset = offset + chunk.data.length * 2;
     }
 
 
-    function checkPushData1(chunk: bsv.Script.IOpChunk) {
+    function checkPushData1(chunk: ScriptChunk) {
 
       const op = hexTemplate.substring(offset, offset + 2);
-      if (parseInt(op, 16) != chunk.opcodenum) {
+      if (parseInt(op, 16) != chunk.op) {
         throw err;
       }
       offset = offset + 2;
 
       const next1Byte = hexTemplate.substring(offset, offset + 2);
 
-      if (parseInt(next1Byte, 16) != chunk.len) {
+      if (parseInt(next1Byte, 16) != chunk.data.length) {
         throw err;
       }
 
       offset = offset + 2;
 
-      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+      const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (chunk.buf.toString('hex') != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
-      offset = offset + chunk.len * 2;
+      offset = offset + chunk.data.length * 2;
     }
 
-    function checkPushData2(chunk: bsv.Script.IOpChunk) {
+    function checkPushData2(chunk: ScriptChunk) {
 
       const op = hexTemplate.substring(offset, offset + 2);
-      if (parseInt(op, 16) != chunk.opcodenum) {
+      if (parseInt(op, 16) != chunk.op) {
         throw err;
       }
       offset = offset + 2;
 
       const next2Byte = hexTemplate.substring(offset, offset + 4);
 
-      if (bin2num(next2Byte) != BigInt(chunk.len)) {
+      if (bin2num(next2Byte) != BigInt(chunk.data.length)) {
         throw err;
       }
 
       offset = offset + 4;
 
-      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+      const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (chunk.buf.toString('hex') != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
-      offset = offset + chunk.len * 2;
+      offset = offset + chunk.data.length * 2;
     }
 
-    function checkPushData4(chunk: bsv.Script.IOpChunk) {
+    function checkPushData4(chunk: ScriptChunk) {
 
       const op = hexTemplate.substring(offset, offset + 2);
-      if (parseInt(op, 16) != chunk.opcodenum) {
+      if (parseInt(op, 16) != chunk.op) {
         throw err;
       }
       offset = offset + 2;
 
       const next4Byte = hexTemplate.substring(offset, offset + 8);
 
-      if (bin2num(next4Byte) != BigInt(chunk.len)) {
+      if (bin2num(next4Byte) != BigInt(chunk.data.length)) {
         throw err;
       }
 
       offset = offset + 8;
 
-      const data = hexTemplate.substring(offset, offset + chunk.len * 2);
+      const data = hexTemplate.substring(offset, offset + chunk.data.length * 2);
 
-      if (chunk.buf.toString('hex') != data) {
+      if (Chain.getFactory().Utils.toHex(chunk.data) != data) {
         throw err;
       }
 
-      offset = offset + chunk.len * 2;
+      offset = offset + chunk.data.length * 2;
     }
 
     function findTemplateVariable() {
@@ -353,44 +353,47 @@ export class ABICoder {
       }
     }
 
-    function saveTemplateVariableValue(name: string, chunk: bsv.Script.IOpChunk) {
-      const bw = new bsv.encoding.BufferWriter();
+    function saveTemplateVariableValue(name: string, chunk: ScriptChunk) {
+      const bw = Chain.getFactory().Writer.from();
 
-      bw.writeUInt8(chunk.opcodenum);
-      if (chunk.buf) {
-        if (chunk.opcodenum < bsv.Opcode.OP_PUSHDATA1) {
-          bw.write(chunk.buf);
-        } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA1) {
-          bw.writeUInt8(chunk.len);
-          bw.write(chunk.buf);
-        } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA2) {
-          bw.writeUInt16LE(chunk.len);
-          bw.write(chunk.buf);
-        } else if (chunk.opcodenum === bsv.Opcode.OP_PUSHDATA4) {
-          bw.writeUInt32LE(chunk.len);
-          bw.write(chunk.buf);
+      bw.writeUInt8(chunk.op);
+      if (chunk.op > 0) {
+        if (chunk.op < Chain.getFactory().OP.OP_PUSHDATA1) {
+          bw.write(chunk.data);
+        } else if (chunk.op === Chain.getFactory().OP.OP_PUSHDATA1) {
+          bw.writeUInt8(chunk.data.length);
+          bw.write(chunk.data);
+        } else if (chunk.op === Chain.getFactory().OP.OP_PUSHDATA2) {
+          bw.writeUInt16LE(chunk.data.length);
+          bw.write(chunk.data);
+        } else if (chunk.op === Chain.getFactory().OP.OP_PUSHDATA4) {
+          bw.writeUInt32LE(chunk.data.length);
+          bw.write(chunk.data);
         }
       }
 
+
+
       if (name.startsWith(`<${contract.contractName}.`)) { //inline asm
-        contract.hexTemplateInlineASM.set(name, bw.toBuffer().toString('hex'));
+        contract.hexTemplateInlineASM.set(name, Chain.getFactory().Utils.toHex(bw.toArray()));
       } else {
-        contract.hexTemplateArgs.set(name, bw.toBuffer().toString('hex'));
+        contract.hexTemplateArgs.set(name, Chain.getFactory().Utils.toHex(bw.toArray()));
       }
 
     }
+
 
     for (let index = 0; index < script.chunks.length; index++) {
       const chunk = script.chunks[index];
 
       let breakfor = false;
       switch (true) {
-        case (chunk.opcodenum === 106):
+        case (chunk.op === 106):
           {
 
             if (offset >= hexTemplate.length) {
 
-              const b = bsv.Script.fromChunks(script.chunks.slice(index + 1));
+              const b = Chain.getFactory().LockingScript.from(script.chunks.slice(index + 1));
 
               dataPartInHex = b.toHex();
               codePartEndIndex = index;
@@ -401,7 +404,7 @@ export class ABICoder {
 
             break;
           }
-        case (chunk.opcodenum === 0): {
+        case (chunk.op === 0): {
           const variable = findTemplateVariable();
 
           if (variable) {
@@ -413,7 +416,7 @@ export class ABICoder {
           break;
         }
 
-        case (chunk.opcodenum >= 1 && chunk.opcodenum <= 75):
+        case (chunk.op >= 1 && chunk.op <= 75):
           {
             const variable = findTemplateVariable();
 
@@ -425,7 +428,7 @@ export class ABICoder {
 
             break;
           }
-        case (chunk.opcodenum >= 79 && chunk.opcodenum <= 96):
+        case (chunk.op >= 79 && chunk.op <= 96):
           {
             const variable = findTemplateVariable();
 
@@ -437,7 +440,7 @@ export class ABICoder {
 
             break;
           }
-        case (chunk.opcodenum === 76):
+        case (chunk.op === 76):
           {
             const variable = findTemplateVariable();
 
@@ -448,7 +451,7 @@ export class ABICoder {
             }
             break;
           }
-        case (chunk.opcodenum === 77):
+        case (chunk.op === 77):
           {
             const variable = findTemplateVariable();
 
@@ -459,7 +462,7 @@ export class ABICoder {
             }
             break;
           }
-        case (chunk.opcodenum === 78):
+        case (chunk.op === 78):
           {
             const variable = findTemplateVariable();
 
@@ -511,7 +514,7 @@ export class ABICoder {
 
     return new FunctionCall('constructor', {
       contract,
-      lockingScript: codePartEndIndex > -1 ? bsv.Script.fromChunks(script.chunks.slice(0, codePartEndIndex)) : script,
+      lockingScript: codePartEndIndex > -1 ? Chain.getFactory().LockingScript.from(script.chunks.slice(0, codePartEndIndex)) : script,
       args: ctorArgs
     });
 
@@ -535,10 +538,10 @@ export class ABICoder {
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
-          hex += `${bsv.Script.fromASM(int2Asm(pubFuncIndex.toString())).toHex()}`;
+          hex += `${Chain.getFactory().Utils.num2bin(BigInt(pubFuncIndex))}`;
         }
         return new FunctionCall(name, {
-          contract, unlockingScript: bsv.Script.fromHex(hex), args: entity.params.map((param, index) => ({
+          contract, unlockingScript: Chain.getFactory().UnlockingScript.fromHex(hex), args: entity.params.map((param, index) => ({
             name: param.name,
             type: param.type,
             value: args_[index]
@@ -571,9 +574,9 @@ export class ABICoder {
      */
   parseCallData(hex: string): CallData {
 
-    const unlockingScript = bsv.Script.fromHex(hex);
+    const unlockingScript = Chain.getFactory().UnlockingScript.fromHex(hex);
 
-    const usASM = unlockingScript.toASM() as string;
+    const usASM = unlockingScript.toASM();
 
     const pubFunAbis = this.abi.filter(entity => entity.type === 'function');
     const pubFunCount = pubFunAbis.length;
@@ -585,9 +588,9 @@ export class ABICoder {
 
       const pubFuncIndexASM = usASM.slice(usASM.lastIndexOf(' ') + 1);
 
-      const pubFuncIndex = asm2int(pubFuncIndexASM);
+      const pubFuncIndex = Chain.getFactory().Utils.asm2num(pubFuncIndexASM);
 
-      entity = this.abi.find(entity => entity.index === pubFuncIndex);
+      entity = this.abi.find(entity => entity.index === Number(pubFuncIndex));
     }
 
     if (!entity) {
@@ -617,7 +620,7 @@ export class ABICoder {
 
     dummyArgs.forEach((farg: Argument, index: number) => {
 
-      hexTemplateArgs.set(`<${farg.name}>`, bsv.Script.fromASM(asmOpcodes[index]).toHex());
+      hexTemplateArgs.set(`<${farg.name}>`, Chain.getFactory().UnlockingScript.fromASM(asmOpcodes[index]).toHex());
 
     });
 

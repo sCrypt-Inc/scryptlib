@@ -22,7 +22,6 @@
     "td": "mocha",
     "pretest": "ts-node test/fixture/autoCompile.ts",
     "prepare": "husky install && npm run compile",
-    "postinstall": "node ./postinstall.js",
     "publishcheck": "sh ./publishcheck.sh",
     "prepublishOnly": "npm run testlint && npm run compile",
     "getBinary": "node ./util/getBinary.js",
@@ -58,12 +57,13 @@
     "nyc": "^15.1.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
-    "typescript": "^4.9.5"
+    "typescript": "^5.4.3"
   },
   "dependencies": {
+    "@bsv/sdk": "^1.0.13",
     "@discoveryjs/json-ext": "^0.5.7",
     "@jridgewell/sourcemap-codec": "^1.4.15",
-    "bsv": "^1.5.6",
+    "chalk": "2.4.2",
     "compare-versions": "^3.6.0",
     "find-node-modules": "^2.1.3",
     "get-proxy-settings": "^0.1.13",
@@ -73,7 +73,6 @@
     "node-fetch": "^3.0.0",
     "patch-package": "^6.4.7",
     "rimraf": "^3.0.2",
-    "yargs": "^17.6.2",
-    "chalk": "2.4.2"
+    "yargs": "^17.6.2"
   }
 }

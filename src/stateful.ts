@@ -1,8 +1,9 @@
-import { AbstractContract, Arguments, bin2num, bsv, num2bin } from '.';
-import { deserializeArgfromHex } from './deserializer';
-import { flatternArg } from './internal';
-import { Bool, Bytes, Int, isBytes, OpCodeType, PrivKey, PubKey, Ripemd160, ScryptType, Sha1, Sha256, Sig, SigHashPreimage, SigHashType, SupportedParamType, TypeResolver } from './scryptTypes';
 
+import { AbstractContract, Arguments, bin2num, num2bin } from '.';
+import { Chain, Reader } from './chain';
+import { deserializeArgfromHex } from './deserializer';
+import { flatternArg, pack } from './internal';
+import { Bool, Bytes, Int, isBytes, OpCodeType, PrivKey, PubKey, Ripemd160, ScryptType, Sha1, Sha256, Sig, SigHashPreimage, SigHashType, SupportedParamType, TypeResolver } from './scryptTypes';
 export default class Stateful {
 
   // state version
@@ -10,20 +11,19 @@ export default class Stateful {
 
   static int2hex(n: Int): string {
     let asm = '';
-    const num = new bsv.crypto.BN(n);
-    if (num.eqn(0)) {
+    if (n === BigInt(0)) {
       asm = '00';
     } else {
-      asm = num.toSM({ endian: 'little' }).toString('hex');
+      asm = pack(n)
     }
 
-    return bsv.Script.fromASM(asm).toHex();
+    return Chain.getFactory().LockingScript.fromASM(asm).toHex();
   }
 
   static hex2int(hex: string): bigint {
-    const s = bsv.Script.fromHex(hex);
+    const s = Chain.getFactory().LockingScript.fromHex(hex);
     const chuck = s.chunks[0];
-    return bin2num(chuck.buf.toString('hex'));
+    return bin2num(Chain.getFactory().Utils.toHex(chuck.data));
   }
 
 
@@ -48,16 +48,16 @@ export default class Stateful {
     if (b === '') {
       return '00';
     }
-    return bsv.Script.fromASM(b).toHex();
+    return Chain.getFactory().LockingScript.fromASM(b).toHex();
   }
 
   static hex2bytes(hex: string): Bytes {
     if (hex === '00') {
       return '';
     }
-    const s = bsv.Script.fromHex(hex);
+    const s = Chain.getFactory().LockingScript.fromHex(hex);
     const chuck = s.chunks[0];
-    return chuck.buf.toString('hex');
+    return Chain.getFactory().Utils.toHex(chuck.data);
   }
 
   static toHex(x: SupportedParamType, type: string): string {
@@ -76,12 +76,7 @@ export default class Stateful {
   static serialize(x: SupportedParamType, type: string): string {
 
     if (type === ScryptType.INT || type === ScryptType.PRIVKEY) {
-      const num = new bsv.crypto.BN(x as bigint);
-      if (num.eqn(0)) {
-        return '';
-      } else {
-        return num.toSM({ endian: 'little' }).toString('hex');
-      }
+      return pack(x as bigint);
     } else if (type === ScryptType.BOOL) {
       if (x) {
         return '01';
@@ -204,7 +199,7 @@ export default class Stateful {
 
 
 
-  static readBytes(br: bsv.encoding.BufferReader): {
+  static readBytes(br: Reader): {
     data: string,
     opcodenum: number
   } {
@@ -214,18 +209,18 @@ export default class Stateful {
       let len, data;
       if (opcodenum == 0) {
         data = '';
-      } else if (opcodenum > 0 && opcodenum < bsv.Opcode.OP_PUSHDATA1) {
+      } else if (opcodenum > 0 && opcodenum < Chain.getFactory().OP.OP_PUSHDATA1) {
         len = opcodenum;
-        data = br.read(len).toString('hex');
-      } else if (opcodenum === bsv.Opcode.OP_PUSHDATA1) {
+        data = Chain.getFactory().Utils.toHex(br.read(len));
+      } else if (opcodenum === Chain.getFactory().OP.OP_PUSHDATA1) {
         len = br.readUInt8();
-        data = br.read(len).toString('hex');
-      } else if (opcodenum === bsv.Opcode.OP_PUSHDATA2) {
+        data = Chain.getFactory().Utils.toHex(br.read(len));
+      } else if (opcodenum === Chain.getFactory().OP.OP_PUSHDATA2) {
         len = br.readUInt16LE();
-        data = br.read(len).toString('hex');
-      } else if (opcodenum === bsv.Opcode.OP_PUSHDATA4) {
+        data = Chain.getFactory().Utils.toHex(br.read(len));
+      } else if (opcodenum === Chain.getFactory().OP.OP_PUSHDATA4) {
         len = br.readUInt32LE();
-        data = br.read(len).toString('hex');
+        data = Chain.getFactory().Utils.toHex(br.read(len));
       } else {
         data = num2bin(BigInt(opcodenum - 80), 1);
       }
@@ -250,7 +245,7 @@ export default class Stateful {
 
     const stateHex = scriptHex.substr(scriptHex.length - 10 - stateLen * 2, stateLen * 2);
 
-    const br = new bsv.encoding.BufferReader(Buffer.from(stateHex, 'hex'));
+    const br = Chain.getFactory().Reader.from(Chain.getFactory().Utils.toArray(stateHex, 'hex'));
 
     const opcodenum = br.readUInt8();
 
@@ -270,7 +265,7 @@ export default class Stateful {
         stateTemplateArgs.set(`<${param.name}>`, opcodenum === 1 ? '01' : '00');
       } else {
         const { data } = Stateful.readBytes(br);
-        stateTemplateArgs.set(`<${param.name}>`, data ? bsv.Script.fromASM(data).toHex() : '00');
+        stateTemplateArgs.set(`<${param.name}>`, data ? Chain.getFactory().UnlockingScript.fromASM(data).toHex() : '00');
       }
     });
 

@@ -1,7 +1,8 @@
-import { Argument, arrayTypeAndSize, bin2num, isArrayType, LibraryEntity, ParamEntity, StructEntity, SymbolType, TypeResolver } from '.';
+import { Argument, arrayTypeAndSize, isArrayType, LibraryEntity, ParamEntity, StructEntity, SymbolType, TypeResolver } from '.';
+import { Chain } from './chain';
 import { Bool, Bytes, Int, OpCodeType, PrivKey, PubKey, Ripemd160, ScryptType, Sha1, Sha256, Sig, SigHashPreimage, SigHashType, StructObject, SupportedParamType } from './scryptTypes';
 import Stateful from './stateful';
-import { bsv } from './utils';
+
 
 /**
  * little-endian signed magnitude to int
@@ -13,13 +14,13 @@ export function hex2int(hex: string): bigint {
   } else if (hex === '4f') {
     return Int(-1);
   } else {
-    const b = bsv.Script.fromHex(hex);
+    const b = Chain.getFactory().Script.fromHex(hex);
     const chuck = b.chunks[0];
 
-    if (chuck.opcodenum >= 81 && chuck.opcodenum <= 96) {
-      return BigInt(chuck.opcodenum - 80);
+    if (chuck.op >= 81 && chuck.op <= 96) {
+      return BigInt(chuck.op - 80);
     }
-    return bin2num(chuck.buf.toString('hex'));
+    return Chain.getFactory().Utils.bin2num(chuck.data);
   }
 }
 
@@ -39,14 +40,14 @@ export function hex2bytes(hex: string): Bytes {
     return '';
   }
 
-  const s = bsv.Script.fromHex(hex);
+  const s = Chain.getFactory().Script.fromHex(hex);
   const chuck = s.chunks[0];
 
-  if (chuck.opcodenum >= 81 && chuck.opcodenum <= 96) {
-    return Buffer.from([chuck.opcodenum - 80]).toString('hex');
+  if (chuck.op >= 81 && chuck.op <= 96) {
+    return Chain.getFactory().Utils.toHex([chuck.op - 80])
   }
 
-  return chuck.buf.toString('hex');
+  return Chain.getFactory().Utils.toHex(chuck.data);
 }
 
 export function deserializer(type: string, hex: string): SupportedParamType {

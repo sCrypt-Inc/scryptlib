@@ -1,99 +1,17 @@
 import { parseChunked, stringifyStream } from '@discoveryjs/json-ext';
-import * as bsv from 'bsv';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { join } from 'path';
 import { decode } from '@jridgewell/sourcemap-codec';
 import { fileURLToPath, pathToFileURL } from 'url';
-
-export { bsv };
-
 import { ABIEntity, LibraryEntity } from '.';
 import { compileAsync, OpCode } from './compilerWrapper';
-import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, Script, ScryptType, StructEntity, SupportedParamType } from './internal';
+import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, hash256, ScryptType, StructEntity, SupportedParamType, } from './internal';
 import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
 
-const BN = bsv.crypto.BN;
-const Interp = bsv.Script.Interpreter;
-
-export const DEFAULT_FLAGS =
-  //Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CLEANSTACK | // no longer applies now p2sh is deprecated: cleanstack only applies to p2sh
-  Interp.SCRIPT_ENABLE_MAGNETIC_OPCODES | Interp.SCRIPT_ENABLE_MONOLITH_OPCODES | // TODO: to be removed after upgrade to bsv 2.0
-  Interp.SCRIPT_VERIFY_STRICTENC |
-  Interp.SCRIPT_ENABLE_SIGHASH_FORKID | Interp.SCRIPT_VERIFY_LOW_S | Interp.SCRIPT_VERIFY_NULLFAIL |
-  Interp.SCRIPT_VERIFY_DERSIG |
-  Interp.SCRIPT_VERIFY_MINIMALDATA | Interp.SCRIPT_VERIFY_NULLDUMMY |
-  Interp.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
-  Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY | Interp.SCRIPT_VERIFY_CLEANSTACK;
-
-export const DEFAULT_SIGHASH_TYPE =
-  bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID;
+import { PrivateKey, LockingScript, Chain, Transaction, Script } from './chain'
 
 
-/**
- * decimal or hex int to little-endian signed magnitude
- */
-export function int2Asm(str: string): string {
-
-  if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
-
-    const number = str.startsWith('0x') ? new BN(str.substring(2), 16) : new BN(str, 10);
-
-    if (number.eqn(-1)) { return 'OP_1NEGATE'; }
-
-    if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
-
-    const m = number.toSM({ endian: 'little' });
-    return m.toString('hex');
-
-  } else {
-    throw new Error(`invalid str '${str}' to convert to int`);
-  }
-}
-
-
-
-/**
- * convert asm string to number or bigint
- */
-export function asm2int(str: string): number | string {
-
-  switch (str) {
-    case 'OP_1NEGATE':
-      return -1;
-    case '0':
-    case 'OP_0':
-    case 'OP_1':
-    case 'OP_2':
-    case 'OP_3':
-    case 'OP_4':
-    case 'OP_5':
-    case 'OP_6':
-    case 'OP_7':
-    case 'OP_8':
-    case 'OP_9':
-    case 'OP_10':
-    case 'OP_11':
-    case 'OP_12':
-    case 'OP_13':
-    case 'OP_14':
-    case 'OP_15':
-    case 'OP_16':
-      return parseInt(str.replace('OP_', ''));
-    default: {
-      const value = getValidatedHexString(str);
-      const bn = BN.fromHex(value, {
-        endian: 'little'
-      });
-
-      if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
-        return bn.toNumber();
-      } else {
-        return bn.toString();
-      }
-    }
-  }
-}
 
 
 
@@ -113,6 +31,11 @@ export function toHex(x: { toString(format: 'hex'): string }): string {
   return x.toString('hex');
 }
 
+export function toArray(x: string): number[] {
+  return Chain.getFactory().Utils.toArray(x);
+}
+
+
 export function utf82Hex(val: string): string {
   const encoder = new TextEncoder();
   const uint8array = encoder.encode(val);
@@ -123,30 +46,6 @@ export function utf82Hex(val: string): string {
 
 
 
-
-
-export function bytes2Literal(bytearray: Buffer, type: string): string {
-
-  switch (type) {
-    case 'bool':
-      return BN.fromBuffer(bytearray, { endian: 'little' }).gt(0) ? 'true' : 'false';
-
-    case 'int':
-    case 'PrivKey':
-      return BN.fromSM(bytearray, { endian: 'little' }).toString();
-
-    case 'bytes':
-      return `b'${bytesToHexString(bytearray)}'`;
-
-    default:
-      return `b'${bytesToHexString(bytearray)}'`;
-  }
-
-}
-
-export function bytesToHexString(bytearray: Buffer): string {
-  return bytearray.reduce(function (o, c) { return o += ('0' + (c & 0xFF).toString(16)).slice(-2); }, '');
-}
 
 export function hexStringToBytes(hex: string): number[] {
 
@@ -165,60 +64,36 @@ export function hexStringToBytes(hex: string): number[] {
 }
 
 
-export function signTx(tx: bsv.Transaction, privateKey: bsv.PrivateKey, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
-
-  if (!tx) {
-    throw new Error('param tx can not be empty');
-  }
-
-  if (!privateKey) {
-    throw new Error('param privateKey can not be empty');
-  }
-
-  if (!lockingScript) {
-    throw new Error('param lockingScript can not be empty');
-  }
-
-  if (!inputAmount) {
-    throw new Error('param inputAmount can not be empty');
-  }
-
-  if (typeof lockingScript === 'string') {
-    throw new Error('Breaking change: LockingScript in ASM format is no longer supported, please use the lockingScript object directly');
-  }
-
-  return toHex(bsv.Transaction.Sighash.sign(
-    tx, privateKey, sighashType, inputIndex,
-    lockingScript, new bsv.crypto.BN(inputAmount), flags
-  ).toTxFormat());
+export function signTx(tx: Transaction, privateKey: PrivateKey, subscript: LockingScript, inputAmount: number, inputIndex?: number, sighashType?: number): string {
+  return Chain.getFactory().Utils.signTx(tx, privateKey, subscript, inputAmount, inputIndex, sighashType)
 }
 
 
 
-export function getPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
-  const preimageBuf = bsv.Transaction.Sighash.sighashPreimage(tx, sighashType, inputIndex, lockingScript, new bsv.crypto.BN(inputAmount), flags);
-  return toHex(preimageBuf);
+export function getPreimage(tx: Transaction, subscript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number = 65): string {
+
+  return toHex(Chain.getFactory().Utils.getPreimage(tx, subscript, inputAmount, inputIndex, sighashType));
 }
 
 const MSB_THRESHOLD = 0x7e;
 
 
-export function hashIsPositiveNumber(sighash: Buffer): boolean {
-  const highByte = sighash.readUInt8(31);
+export function hashIsPositiveNumber(sighash: number[]): boolean {
+  const highByte = sighash[31];
   return highByte < MSB_THRESHOLD;
 }
 
 
-export function getLowSPreimage(tx: bsv.Transaction, lockingScript: Script, inputAmount: number, inputIndex = 0, sighashType = DEFAULT_SIGHASH_TYPE, flags = DEFAULT_FLAGS): string {
+export function getLowSPreimage(tx: Transaction, lockingScript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number): string {
 
   for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
-    const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType, flags);
-    const sighash = bsv.crypto.Hash.sha256sha256(Buffer.from(preimage, 'hex'));
-    const msb = sighash.readUInt8();
+    const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType);
+    const sighash = toArray(hash256(preimage));
+    const msb = sighash[0]
     if (msb < MSB_THRESHOLD && hashIsPositiveNumber(sighash)) {
       return preimage;
     }
-    tx.inputs[inputIndex].sequenceNumber--;
+    tx.inputs[inputIndex].sequence--;
   }
 }
 
@@ -450,7 +325,7 @@ function escapeRegExp(stringToGoIntoTheRegex: string) {
 
 
 
-export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTemplateInlineASM: Map<string, string>, hexTemplate: string): bsv.Script {
+export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTemplateInlineASM: Map<string, string>, hexTemplate: string): LockingScript {
 
 
   let lsHex = hexTemplate;
@@ -468,7 +343,7 @@ export function buildContractCode(hexTemplateArgs: Map<string, string>, hexTempl
     lsHex = lsHex.replace(new RegExp(`${escapeRegExp(name)}`, 'g'), value);
   }
 
-  return bsv.Script.fromHex(lsHex);
+  return Chain.getFactory().LockingScript.fromHex(lsHex);
 
 }
 
@@ -493,16 +368,15 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
     return pubFunAbis[0];
   }
 
-  const script = bsv.Script.fromHex(hex);
+  const script = Chain.getFactory().UnlockingScript.fromHex(hex);
 
   const usASM = script.toASM() as string;
 
   const pubFuncIndexASM = usASM.substr(usASM.lastIndexOf(' ') + 1);
 
-  const pubFuncIndex = asm2int(pubFuncIndexASM);
+  const pubFuncIndex = Chain.getFactory().Utils.asm2num(pubFuncIndexASM);
 
-
-  const entity = abis.find(entity => entity.index === pubFuncIndex);
+  const entity = abis.find(entity => entity.index === Number(pubFuncIndex));
 
   if (!entity) {
     throw new Error(`the raw unlocking script cannot match the contract ${contract.contractName}`);
@@ -599,23 +473,28 @@ export function md5(s: string): string {
 }
 
 
-export function checkNOPScript(nopScript: bsv.Script) {
+export function checkNOPScript(nopScript: Script) {
 
-  bsv.Script.Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
-  bsv.Script.Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 
-  const bsi = new bsv.Script.Interpreter();
-  const tx = new bsv.Transaction().from({
-    txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
-    outputIndex: 0,
-    script: '',   // placeholder
-    satoshis: 1
-  });
+  // const bsi = new bsv.Script.Interpreter();
+  // const tx = new Transaction(1, [{
+  //   sourceTXID: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458'
+  // }]).from({
+  //   txId: 'a477af6b2667c29670467e4e0728b685ee07b240235771862318e29ddbe58458',
+  //   outputIndex: 0,
+  //   script: '',   // placeholder
+  //   satoshis: 1
+  // });
 
-  const result = bsi.verify(new bsv.Script(""), nopScript, tx, 0, DEFAULT_FLAGS, new bsv.crypto.BN(1));
+  // const result = bsi.verify(new bsv.Script(""), nopScript, tx, 0, DEFAULT_FLAGS, new bsv.crypto.BN(1));
 
-  if (result || bsi.errstr !== "SCRIPT_ERR_EVAL_FALSE_NO_RESULT") {
-    throw new Error("NopScript should be a script that does not affect the Bitcoin virtual machine stack.");
-  }
+  // if (result || bsi.errstr !== "SCRIPT_ERR_EVAL_FALSE_NO_RESULT") {
+  //   throw new Error("NopScript should be a script that does not affect the Bitcoin virtual machine stack.");
+  // }
 
+}
+
+export function addScript(a: LockingScript, b: LockingScript): LockingScript {
+  const merged = a.chunks.concat(b.chunks);
+  return Chain.getFactory().LockingScript.from(merged);
 }
