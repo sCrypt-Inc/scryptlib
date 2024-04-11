@@ -1,3 +1,5 @@
+import { BigNumber } from "../primitives/BigNumber";
+
 
 export interface ScriptChunk {
     op: number
@@ -19,7 +21,7 @@ export interface Script {
 
     writeOpCode(op: number): this;
 
-    writeBn(bn: bigint): this;
+    writeBn(bn: bigint | BigNumber): this;
 
     writeBin(bin: number[]): this;
 
@@ -35,6 +37,6 @@ export interface Script {
 
     isUnlockingScript(): boolean;
 
-    setChunkOpCode(): Script;
+    setChunkOpCode(i: number, op: number): this;
 
 }

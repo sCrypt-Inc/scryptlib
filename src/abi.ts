@@ -7,7 +7,7 @@ import { SupportedParamType, TypeResolver, Int } from './scryptTypes';
 import { toScriptHex } from './serializer';
 import Stateful from './stateful';
 import { flatternArg } from './typeCheck';
-import { asm2int, buildContractCode, int2Asm } from './utils';
+import { buildContractCode } from './utils';
 
 import { Chain, UnlockingScript, LockingScript, Script, ScriptChunk } from './chain';
 
@@ -538,7 +538,7 @@ export class ABICoder {
         if (this.abi.length > 2 && entity.index !== undefined) {
           // selector when there are multiple public functions
           const pubFuncIndex = entity.index;
-          hex += `${Chain.getFactory().UnlockingScript.fromASM(int2Asm(pubFuncIndex.toString())).toHex()}`;
+          hex += `${Chain.getFactory().Utils.num2bin(BigInt(pubFuncIndex))}`;
         }
         return new FunctionCall(name, {
           contract, unlockingScript: Chain.getFactory().UnlockingScript.fromHex(hex), args: entity.params.map((param, index) => ({
@@ -588,9 +588,9 @@ export class ABICoder {
 
       const pubFuncIndexASM = usASM.slice(usASM.lastIndexOf(' ') + 1);
 
-      const pubFuncIndex = asm2int(pubFuncIndexASM);
+      const pubFuncIndex = Chain.getFactory().Utils.asm2num(pubFuncIndexASM);
 
-      entity = this.abi.find(entity => entity.index === pubFuncIndex);
+      entity = this.abi.find(entity => entity.index === Number(pubFuncIndex));
     }
 
     if (!entity) {

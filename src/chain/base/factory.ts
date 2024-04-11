@@ -1,4 +1,4 @@
-import { ScriptChunk } from "./script/Script";
+import { Script, ScriptChunk } from "./script/Script";
 
 import { UnlockingScript } from "./script/UnlockingScript";
 import { LockingScript } from "./script/LockingScript";
@@ -10,6 +10,7 @@ import { TransactionOutput } from "./transaction/TransactionOutput";
 import { Reader } from "./primitives/Reader";
 import { Writer } from "./primitives/Writer";
 import { IOP } from "./iop";
+import { Spend } from "./script/Spend";
 
 
 interface ITransaction {
@@ -28,6 +29,13 @@ interface IUnlockingScript {
     fromASM: (asm: string) => UnlockingScript,
     fromBinary: (bin: number[]) => UnlockingScript,
     from: (chunks?: ScriptChunk[]) => UnlockingScript,
+}
+
+interface IScript {
+    fromHex: (hex: string) => Script,
+    fromASM: (asm: string) => Script,
+    fromBinary: (bin: number[]) => Script,
+    from: (chunks?: ScriptChunk[]) => Script,
 }
 
 interface ILockingScript {
@@ -90,6 +98,12 @@ interface IUtils {
 
     num2bin(n: bigint, dataLen?: number): number[];
     bin2num(bin: number[]): bigint;
+
+    num2asm(n: bigint): string;
+
+    asm2num(asm: string): bigint;
+
+    signTx(tx: Transaction, privateKey: PrivateKey, subscript: LockingScript, inputAmount: number, inputIndex?: number, sighashType?: number): string;
 }
 
 interface IReader {
@@ -101,16 +115,37 @@ interface IWriter {
 }
 
 
+interface ISpend {
+    from: (params: {
+        sourceTXID: string
+        sourceOutputIndex: number
+        sourceSatoshis: number
+        lockingScript: LockingScript
+        transactionVersion: number
+        otherInputs: TransactionInput[]
+        outputs: TransactionOutput[]
+        unlockingScript: UnlockingScript
+        inputSequence: number
+        inputIndex: number
+        lockTime: number
+    }) => Spend;
+}
+
+
+
 export interface Factory {
     Transaction: ITransaction,
     UnlockingScript: IUnlockingScript,
     LockingScript: ILockingScript,
+
+    Script: IScript,
     PrivateKey: IPrivateKey,
     PublicKey: IPublicKey,
     Hash: IHash,
     Utils: IUtils,
     Reader: IReader,
     Writer: IWriter,
-    OP: IOP
+    OP: IOP,
+    Spend: ISpend,
 
 }

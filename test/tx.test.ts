@@ -2,7 +2,7 @@ import { OP } from "@bsv/sdk";
 import { Chain } from "../src/chain/chain";
 
 
-const factory = Chain.getFactory(Chain.BSV);
+const factory = Chain.getFactory();
 
 const s = factory.LockingScript.fromHex('76a914212771cc264264057238cc3b98a03ddd9aa3a31c88ac');
 

@@ -4,10 +4,7 @@ import { Writer } from "../../base/primitives/Writer";
 import { TARGET } from "../target";
 
 
-export default function createWriterProxy(writer: bsv.Utils.Writer): Writer {
-
-
-
+export function createWriterProxy(writer: bsv.Utils.Writer): Writer {
     return new Proxy<bsv.Utils.Writer>(writer, {
 
         get: function (target, prop) {
@@ -18,5 +15,5 @@ export default function createWriterProxy(writer: bsv.Utils.Writer): Writer {
 
             return Reflect.get(target, prop);
         }
-    }) as unknown as Writer;
+    });
 }

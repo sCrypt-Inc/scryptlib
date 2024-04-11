@@ -1,12 +1,12 @@
 
-import { Transaction as BSVTransaction } from "@bsv/sdk";
+import * as bsv from "@bsv/sdk";
 import { Transaction } from "../../base/transaction/Transaction";
 import { TARGET } from "../target";
 
 
-export default function createTransactionProxy(tx: BSVTransaction): Transaction {
+export function createTransactionProxy(tx: bsv.Transaction): Transaction {
 
-    return new Proxy<BSVTransaction>(tx, {
+    return new Proxy<bsv.Transaction>(tx, {
         // target represents the Person while prop represents
         // proxy property.
         get: function (target, prop) {
@@ -15,6 +15,6 @@ export default function createTransactionProxy(tx: BSVTransaction): Transaction 
             }
             return Reflect.get(target, prop);
         }
-    }) as unknown as Transaction;
+    });
 
 }

@@ -4,9 +4,9 @@ import { FunctionCall } from '../src/abi';
 import { buildContractClass, VerifyResult } from '../src/contract';
 import { signTx, toHex } from '../src/utils';
 import { PubKey, Sig, Ripemd160, Sha256 } from '../src/scryptTypes';
-import { PrivateKey, Script } from '@bsv/sdk';
+import { Chain } from '../src/chain';
 
-const privateKey = PrivateKey.fromRandom();
+const privateKey = Chain.getFactory().PrivateKey.fromRandom();
 const publicKey = privateKey.toPublicKey()
 const pubKeyHash = publicKey.toHash('hex') as string
 const inputSatoshis = 100000;
@@ -75,7 +75,7 @@ describe('FunctionCall', () => {
       sig = Sig(signTx(tx, privateKey, p2pkh.lockingScript, inputSatoshis));
       pubkey = PubKey(toHex(publicKey));
       target = new FunctionCall('unlock', {
-        contract: p2pkh, unlockingScript: Script.fromASM([sig, pubkey].join(' ')), args: [{
+        contract: p2pkh, unlockingScript: Chain.getFactory().UnlockingScript.fromASM([sig, pubkey].join(' ')), args: [{
           name: 'sig',
           type: 'Sig',
           value: sig
@@ -89,7 +89,7 @@ describe('FunctionCall', () => {
 
     describe('toHex() / toString()', () => {
       it('should return the unlocking script in hex', () => {
-        assert.equal(target.toHex(), Script.fromASM(target.toASM()).toHex());
+        assert.equal(target.toHex(), Chain.getFactory().UnlockingScript.fromASM(target.toASM()).toHex());
       })
     })
 

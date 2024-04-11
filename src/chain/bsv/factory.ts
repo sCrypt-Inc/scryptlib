@@ -2,16 +2,18 @@
 import {
     OP, Factory, Transaction, TransactionOutput,
     TransactionInput, PrivateKey, PublicKey, UnlockingScript,
-    LockingScript, ScriptChunk
+    LockingScript, ScriptChunk,
+    Script, Spend
 } from "../base";
 import * as bsv from "@bsv/sdk";
-import createScriptProxy from "./script/script";
-import createTransactionProxy from "./transaction/transaction";
-import createPrivateKeyProxy from "./primitives/PrivateKey";
-import createPublicKeyProxy from "./primitives/PublicKey";
-import createReaderProxy from "./primitives/Reader";
-import createWriterProxy from "./primitives/Writer";
-import { TARGET } from "./target";
+import { createScriptProxy } from "./script/Script";
+import { createTransactionProxy } from "./transaction/Transaction";
+import { createPrivateKeyProxy } from "./primitives/PrivateKey";
+import { createPublicKeyProxy } from "./primitives/PublicKey";
+import { createReaderProxy } from "./primitives/Reader";
+import { createWriterProxy } from "./primitives/Writer";
+import { createSpendProxy } from "./script/Spend";
+import { getPreimage, num2bin, bin2num, num2asm, asm2num, signTx } from "./primitives/Utils";
 
 
 
@@ -81,75 +83,24 @@ export class BSVFactory implements Factory {
             return bsv.Utils.fromBase58Check(str, enc, prefixLength);
         },
         getPreimage: function (tx: Transaction, subscript: LockingScript, inputAmount: number, inputIndex?: number, sighashType?: number): number[] {
-
-            const txTarget = tx[TARGET] as bsv.Transaction;
-
-            const subscriptTarget = subscript[TARGET] as bsv.LockingScript;
-
-            const input = txTarget.inputs[inputIndex]
-            const otherInputs = txTarget.inputs.filter((_, index) => index !== inputIndex)
-
-            const sourceTXID = input.sourceTXID || input.sourceTransaction?.id('hex') as string;
-            if (!sourceTXID) {
-                // Question: Should the library support use-cases where the source transaction is not provided? This is to say, is it ever acceptable for someone to sign an input spending some output from a transaction they have not provided? Some elements (such as the satoshi value and output script) are always required. A merkle proof is also always required, and verifying it (while also verifying that the claimed output is contained within the claimed transaction) is also always required. This seems to require the entire input transaction.
-                throw new Error(
-                    'The source transaction is needed for transaction signing.'
-                )
-            }
-
-            const preimage = bsv.TransactionSignature.format({
-                sourceTXID: sourceTXID,
-                sourceOutputIndex: input.sourceOutputIndex,
-                sourceSatoshis: inputAmount,
-                transactionVersion: txTarget.version,
-                otherInputs,
-                inputIndex,
-                outputs: txTarget.outputs,
-                inputSequence: input.sequence,
-                subscript: subscriptTarget,
-                lockTime: tx.lockTime,
-                scope: sighashType
-            })
-
-            return preimage;
+            return getPreimage(tx, subscript, inputAmount, inputIndex, sighashType);
         },
         num2bin: function (n: bigint, dataLen?: number): number[] {
-            const num = new bsv.BigNumber(n.toString());
-
-            if (typeof dataLen === 'undefined') {
-                return num.toSm('little');
-            }
-
-            const arr = num.toSm('little');
-
-            if (arr.length > dataLen) {
-                throw new Error(`${n} cannot fit in ${dataLen} byte[s]`);
-            }
-
-            if (arr.length === dataLen) {
-                return arr;
-            }
-
-            const paddingLen = dataLen - arr.length;
-
-            let m = arr[arr.length - 1];
-
-            const rest = arr.slice(0, arr.length - 1);
-            if (num.isNeg()) {
-                // reset sign bit
-                m &= 0x7F;
-            }
-
-            const padding = Array(paddingLen).fill(0);
-            if (num.isNeg()) {
-                padding[arr.length - 1] = 0x80
-            }
-            return rest.concat([m]).concat(padding);
+            return num2bin(n, dataLen);
         },
         bin2num: function (bin: number[]): bigint {
-            const bn = bsv.BigNumber.fromSm(bin, 'little');
-            return BigInt(bn.toString());
+            return bin2num(bin);
+        },
+        num2asm: function (n: bigint): string {
+            return num2asm(n);
+        },
+        asm2num(asm: string): bigint {
+            return asm2num(asm);
+        },
+        signTx: function (tx: Transaction, privateKey: PrivateKey, subscript: LockingScript, inputAmount: number, inputIndex?: number, sighashType?: number): string {
+            return signTx(tx, privateKey, subscript, inputAmount, inputIndex, sighashType);
         }
+
     };
     PublicKey = {
         fromPrivateKey: function (key: PrivateKey): PublicKey {
@@ -251,6 +202,53 @@ export class BSVFactory implements Factory {
         }
     }
 
+    Script = {
+        fromHex: function (hex: string): Script {
+            return createScriptProxy(bsv.Script.fromHex(hex));
+        },
+        fromASM: function (asm: string): Script {
+            return createScriptProxy(bsv.Script.fromASM(asm));
+        },
+        fromBinary: function (bin: number[]): Script {
+            return createScriptProxy(bsv.Script.fromBinary(bin));
+        },
+        from: function (chunks: ScriptChunk[] = []): Script {
+            return createScriptProxy(new bsv.Script(chunks));
+        }
+    }
+
     OP = OP
 
+    Spend = {
+        from: function (params: {
+            sourceTXID: string
+            sourceOutputIndex: number
+            sourceSatoshis: number
+            lockingScript: LockingScript
+            transactionVersion: number
+            otherInputs: TransactionInput[]
+            outputs: TransactionOutput[]
+            unlockingScript: UnlockingScript
+            inputSequence: number
+            inputIndex: number
+            lockTime: number
+        }): Spend {
+
+            // const p = {
+            //     sourceTXID: params.sourceTXID,
+            //     sourceOutputIndex: params.sourceOutputIndex,
+            //     sourceSatoshis: params.sourceSatoshis,
+            //     lockingScript: params.lockingScript[TARGET] as bsv.LockingScript,
+            //     transactionVersion: params.transactionVersion,
+            //     otherInputs: params.otherInputs,
+            //     outputs: params.outputs,
+            //     unlockingScript: params.unlockingScript[TARGET] as bsv.UnlockingScript,
+            //     inputSequence: params.inputSequence,
+            //     inputIndex: params.inputIndex,
+            //     lockTime: params.lockTime,
+            // }
+
+            return createSpendProxy(new bsv.Spend(params as any));
+        }
+    }
 }

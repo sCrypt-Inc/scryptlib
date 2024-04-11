@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { Artifact } from '../src/contract';
-import { LockingScript, Transaction, UnlockingScript } from '@bsv/sdk';
+import { Chain, LockingScript } from '../src/chain';
+
 export function loadArtifact(fileName: string): Artifact {
   return JSON.parse(readFileSync(join(__dirname, "../out/", fileName)).toString());
 }
@@ -18,14 +19,14 @@ export function getInvalidContractFilePath(fileName: string): string {
   return join(__dirname, 'fixture', 'invalid', fileName);
 }
 
-export function newTx(inputSatoshis: number = 100000, lockingScript: LockingScript = new LockingScript()) {
+export function newTx(inputSatoshis: number = 100000, lockingScript: LockingScript = Chain.getFactory().LockingScript.from()) {
 
-  const sourceTx = new Transaction(1, [], [{
+  const sourceTx = Chain.getFactory().Transaction.from(1, [], [{
     lockingScript: lockingScript,
     satoshis: inputSatoshis
   }], 0)
 
-  const spendTx = new Transaction(1, [{
+  const spendTx = Chain.getFactory().Transaction.from(1, [{
     sourceTransaction: sourceTx,
     sourceOutputIndex: 0,
     sequence: 0xffffffff,

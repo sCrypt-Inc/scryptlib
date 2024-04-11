@@ -9,70 +9,9 @@ import { compileAsync, OpCode } from './compilerWrapper';
 import { AbstractContract, compile, CompileResult, findCompiler, getValidatedHexString, hash256, ScryptType, StructEntity, SupportedParamType, } from './internal';
 import { arrayTypeAndSizeStr, isGenericType, parseGenericType } from './typeCheck';
 
-import { UnlockingScript, PrivateKey, LockingScript, Chain, Transaction, BigNumber, Script } from './chain'
+import { PrivateKey, LockingScript, Chain, Transaction, Script } from './chain'
 
 
-/**
- * decimal or hex int to little-endian signed magnitude
- */
-export function int2Asm(str: string): string {
-
-  if (/^(-?\d+)$/.test(str) || /^0x([0-9a-fA-F]+)$/.test(str)) {
-
-    const number = str.startsWith('0x') ? new BigNumber(str.substring(2), 16) : new BigNumber(str, 10);
-
-    if (number.eqn(-1)) { return 'OP_1NEGATE'; }
-
-    if (number.gten(0) && number.lten(16)) { return 'OP_' + number.toString(); }
-
-    return number.toHex();
-
-  } else {
-    throw new Error(`invalid str '${str}' to convert to int`);
-  }
-}
-
-
-
-/**
- * convert asm string to number or bigint
- */
-export function asm2int(str: string): number | string {
-
-  switch (str) {
-    case 'OP_1NEGATE':
-      return -1;
-    case '0':
-    case 'OP_0':
-    case 'OP_1':
-    case 'OP_2':
-    case 'OP_3':
-    case 'OP_4':
-    case 'OP_5':
-    case 'OP_6':
-    case 'OP_7':
-    case 'OP_8':
-    case 'OP_9':
-    case 'OP_10':
-    case 'OP_11':
-    case 'OP_12':
-    case 'OP_13':
-    case 'OP_14':
-    case 'OP_15':
-    case 'OP_16':
-      return parseInt(str.replace('OP_', ''));
-    default: {
-      const value = getValidatedHexString(str);
-      const bn = BigNumber.fromHex(value, 'little');
-
-      if (bn.toNumber() < Number.MAX_SAFE_INTEGER && bn.toNumber() > Number.MIN_SAFE_INTEGER) {
-        return bn.toNumber();
-      } else {
-        return bn.toString();
-      }
-    }
-  }
-}
 
 
 
@@ -108,30 +47,6 @@ export function utf82Hex(val: string): string {
 
 
 
-
-export function bytes2Literal(bytearray: Buffer, type: string): string {
-
-  switch (type) {
-    case 'bool':
-      return Array.from(bytearray)[0] !== 0 ? 'true' : 'false';
-
-    case 'int':
-    case 'PrivKey':
-      return BigNumber.fromSm(Array.from(bytearray), "little").toString();
-
-    case 'bytes':
-      return `b'${bytesToHexString(bytearray)}'`;
-
-    default:
-      return `b'${bytesToHexString(bytearray)}'`;
-  }
-
-}
-
-export function bytesToHexString(bytearray: Buffer): string {
-  return bytearray.reduce(function (o, c) { return o += ('0' + (c & 0xFF).toString(16)).slice(-2); }, '');
-}
-
 export function hexStringToBytes(hex: string): number[] {
 
   getValidatedHexString(hex);
@@ -149,31 +64,8 @@ export function hexStringToBytes(hex: string): number[] {
 }
 
 
-export function signTx(tx: Transaction, privateKey: PrivateKey, subscript: LockingScript, inputAmount: number, inputIndex = 0, sighashType: number = 65): string {
-
-  if (!tx) {
-    throw new Error('param tx can not be empty');
-  }
-
-  if (!privateKey) {
-    throw new Error('param privateKey can not be empty');
-  }
-
-  if (!inputAmount) {
-    throw new Error('param inputAmount can not be empty');
-  }
-
-  const preimage = getPreimage(tx, subscript, inputAmount, inputIndex, sighashType);
-
-  const rawSignature = privateKey.sign(Hash.sha256(preimage, 'hex'))
-  const sig = new TransactionSignature(
-    rawSignature.r,
-    rawSignature.s,
-    sighashType
-  )
-  const sigForScript = sig.toChecksigFormat()
-
-  return toHex(sigForScript);
+export function signTx(tx: Transaction, privateKey: PrivateKey, subscript: LockingScript, inputAmount: number, inputIndex?: number, sighashType?: number): string {
+  return Chain.getFactory().Utils.signTx(tx, privateKey, subscript, inputAmount, inputIndex, sighashType)
 }
 
 
@@ -196,7 +88,7 @@ export function getLowSPreimage(tx: Transaction, lockingScript: LockingScript, i
 
   for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
     const preimage = getPreimage(tx, lockingScript, inputAmount, inputIndex, sighashType);
-    const sighash = hash256(preimage);
+    const sighash = toArray(hash256(preimage));
     const msb = sighash[0]
     if (msb < MSB_THRESHOLD && hashIsPositiveNumber(sighash)) {
       return preimage;
@@ -482,10 +374,9 @@ export function parseAbiFromUnlockingScript(contract: AbstractContract, hex: str
 
   const pubFuncIndexASM = usASM.substr(usASM.lastIndexOf(' ') + 1);
 
-  const pubFuncIndex = asm2int(pubFuncIndexASM);
+  const pubFuncIndex = Chain.getFactory().Utils.asm2num(pubFuncIndexASM);
 
-
-  const entity = abis.find(entity => entity.index === pubFuncIndex);
+  const entity = abis.find(entity => entity.index === Number(pubFuncIndex));
 
   if (!entity) {
     throw new Error(`the raw unlocking script cannot match the contract ${contract.contractName}`);
@@ -603,7 +494,7 @@ export function checkNOPScript(nopScript: Script) {
 
 }
 
-export function addScript(a: Script, b: Script): Script {
+export function addScript(a: LockingScript, b: LockingScript): LockingScript {
   const merged = a.chunks.concat(b.chunks);
-  return new Script(merged);
+  return Chain.getFactory().LockingScript.from(merged);
 }

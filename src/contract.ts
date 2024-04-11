@@ -7,7 +7,7 @@ import {
 import { Bytes, Int, isScryptType, SupportedParamType, SymbolType, TypeInfo } from './scryptTypes';
 import Stateful from './stateful';
 import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, subArrayType } from './typeCheck';
-import { LockingScript, BigNumber, OP, Script, Transaction, UnlockingScript, Chain } from './chain';
+import { LockingScript, OP, Script, Transaction, UnlockingScript, Chain } from './chain';
 
 /**
  * TxContext provides some context information of the current transaction, 
@@ -273,12 +273,13 @@ export class AbstractContract {
     if (this._txContext && this._txContext.tx) {
       tx = typeof this._txContext.tx === 'string' ? Chain.getFactory().Transaction.fromHex(this._txContext.tx) : this._txContext.tx;
     } else {
-      const sourceTx = new Transaction(1, [], [{
+
+      const sourceTx = Chain.getFactory().Transaction.from(1, [], [{
         lockingScript: this.lockingScript,
         satoshis: 100000
       }], 0)
 
-      tx = new Transaction(1, [{
+      tx = Chain.getFactory().Transaction.from(1, [{
         sourceTransaction: sourceTx,
         sourceOutputIndex: 0,
         sequence: 0xffffffff
@@ -295,7 +296,7 @@ export class AbstractContract {
     const sourceTXID = tx.inputs[0].sourceTXID || tx.inputs[0].sourceTransaction.id('hex');
 
     const otherInputs = tx.inputs.filter((_, index) => index !== inputIndex)
-    const spend = new Spend({
+    const spend = Chain.getFactory().Spend.from({
       sourceTXID: sourceTXID as string,
       sourceOutputIndex: input.sourceOutputIndex || 0,
       sourceSatoshis: sourceSatoshis,
@@ -796,23 +797,48 @@ export class AbstractContract {
   // sort the map by the result of flattenSha256 of the key
   private static sortmap(map: Map<SupportedParamType, SupportedParamType>, keyType: string): Map<SupportedParamType, SupportedParamType> {
     return new Map([...map.entries()].sort((a, b) => {
-      return unpack(this.flattenSha256(a[0], keyType)) - unpack(this.flattenSha256(a[0], keyType));
+      const abn = unpack(this.flattenSha256(a[0], keyType));
+      const bbn = unpack(this.flattenSha256(b[0], keyType));
+      if (abn > bbn) {
+        return 1;
+      } else if (abn < bbn) {
+        return -1
+      } else {
+        return 0;
+      }
+
     }));
   }
 
   // sort the set by the result of flattenSha256 of the key
   private static sortset(set: Set<SupportedParamType>, keyType: string): Set<SupportedParamType> {
     return new Set([...set.keys()].sort((a, b) => {
-      return BigNumber.fromSm(Utils.toArray(this.flattenSha256(a, keyType)), 'little').
-        cmp(BigNumber.fromSm(Utils.toArray(this.flattenSha256(b, keyType)), 'little'));
+
+      const abn = unpack(this.flattenSha256(a[0], keyType));
+      const bbn = unpack(this.flattenSha256(b[0], keyType));
+      if (abn > bbn) {
+        return 1;
+      } else if (abn < bbn) {
+        return -1
+      } else {
+        return 0;
+      }
     }));
   }
 
 
   private static sortkeys(keys: SupportedParamType[], keyType: string): SupportedParamType[] {
     return keys.sort((a, b) => {
-      return BigNumber.fromSm(Utils.toArray(this.flattenSha256(a, keyType)), 'little')
-        .cmp(BigNumber.fromSm(Utils.toArray(this.flattenSha256(b, keyType)), 'little'));
+
+      const abn = unpack(this.flattenSha256(a[0], keyType));
+      const bbn = unpack(this.flattenSha256(b[0], keyType));
+      if (abn > bbn) {
+        return 1;
+      } else if (abn < bbn) {
+        return -1
+      } else {
+        return 0;
+      }
     });
   }
 

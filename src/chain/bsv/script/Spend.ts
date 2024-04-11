@@ -1,22 +1,19 @@
 
 import * as bsv from "@bsv/sdk";
-import { PrivateKey } from "../../base/primitives/PrivateKey";
+import { Spend } from "../../base/script/Spend";
 import { TARGET } from "../target";
 
+export function createSpendProxy(spend: bsv.Spend): Spend {
 
-export function createPrivateKeyProxy(key: bsv.PrivateKey): PrivateKey {
-    const handler = {
-
+    return new Proxy<bsv.Spend>(spend, {
+        // target represents the Person while prop represents
+        // proxy property.
         get: function (target, prop) {
-
             if (prop === TARGET) {
                 return target
             }
 
-
             return Reflect.get(target, prop);
         }
-    };
-
-    return new Proxy<bsv.PrivateKey>(key, handler);
+    });
 }

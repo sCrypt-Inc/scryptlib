@@ -1,5 +1,4 @@
 import { Point } from "./Point";
-import { PrivateKey } from "./PrivateKey";
 import { Signature } from "./Signature";
 
 
@@ -8,5 +7,4 @@ export interface PublicKey extends Point {
     toDER(): string;
     toHash(enc?: 'hex'): number[] | string;
     toAddress(prefix: number[]): string;
-    deriveChild(privateKey: PrivateKey, invoiceNumber: string): PublicKey;
 }

@@ -1,3 +1,5 @@
+import { BigNumber } from "./BigNumber";
+
 export interface Reader {
     bin: number[];
     pos: number;
@@ -14,13 +16,13 @@ export interface Reader {
     readInt32BE(): number;
     readUInt32LE(): number;
     readInt32LE(): number;
-    readUInt64BEBn(): bigint;
+    readUInt64BEBn(): BigNumber;
 
-    readUInt64LEBn(): bigint;
+    readUInt64LEBn(): BigNumber;
 
     readVarIntNum(): number;
 
     readVarInt(): number[];
 
-    readVarIntBn(): bigint;
+    readVarIntBn(): BigNumber;
 }

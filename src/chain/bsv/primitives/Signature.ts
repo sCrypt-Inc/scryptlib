@@ -1,15 +1,18 @@
 
-import * as bsv from "@bsv/sdk";
-import { Reader } from "../../base/primitives/Reader";
 import { TARGET } from "../target";
+import { Signature } from "../../base/primitives/Signature";
+import * as bsv from "@bsv/sdk";
 
 
-export function createReaderProxy(reader: bsv.Utils.Reader): Reader {
-    return new Proxy<bsv.Utils.Reader>(reader, {
+export function createSignatureProxy(key: bsv.Signature): Signature {
+    return new Proxy<bsv.Signature>(key, {
+
         get: function (target, prop) {
+
             if (prop === TARGET) {
                 return target
             }
+
             return Reflect.get(target, prop);
         }
     });

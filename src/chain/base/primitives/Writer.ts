@@ -1,3 +1,5 @@
+import { BigNumber } from "./BigNumber";
+
 export interface Writer {
     bufs: number[][]
     getLength(): number;
@@ -23,15 +25,15 @@ export interface Writer {
 
     writeInt32LE(n: number): Writer;
 
-    writeUInt64BEBn(bn: bigint): Writer;
+    writeUInt64BEBn(bn: bigint | BigNumber): Writer;
 
-    writeUInt64LEBn(bn: bigint): Writer;
+    writeUInt64LEBn(bn: bigint | BigNumber): Writer;
 
     writeUInt64LE(n: number): Writer;
 
     writeVarIntNum(n: number): Writer;
 
-    writeVarIntBn(bn: bigint): Writer;
+    writeVarIntBn(bn: bigint | BigNumber): Writer;
 
 
 }

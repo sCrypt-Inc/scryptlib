@@ -1,4 +1,4 @@
-import { Bytes, Int, Ripemd160 } from '.';
+import { Bytes, Int, Ripemd160, toHex } from '.';
 import { Chain, LockingScript } from './chain';
 
 /** 
@@ -32,10 +32,6 @@ export function num2bin(n: bigint, dataLen?: number): string {
 export function bin2num(hex: string): bigint {
   const bin = Chain.getFactory().Utils.toArray(hex);
   return Chain.getFactory().Utils.bin2num(bin);
-}
-
-export function toHex(msg: number[]): string {
-  return Chain.getFactory().Utils.toHex(msg);
 }
 
 export function and(a: Int, b: Int): Int {
