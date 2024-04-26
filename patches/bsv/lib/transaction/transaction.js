@@ -62,7 +62,6 @@ function Transaction (serialized) {
 
 var CURRENT_VERSION = 1
 var DEFAULT_NLOCKTIME = 0
-var MAX_BLOCK_SIZE = 1000000
 
 // Minimum amount for an output for it not to be considered a dust output
 Transaction.DUST_AMOUNT = 1
@@ -1199,11 +1198,6 @@ Transaction.prototype.verify = function (notVerifyInput) {
     if (valueoutbn.gt(new BN(Transaction.MAX_MONEY))) {
       return 'transaction txout ' + i + ' total output greater than MAX_MONEY'
     }
-  }
-
-  // Size limits
-  if (this.toBuffer().length > MAX_BLOCK_SIZE) {
-    return 'transaction over the maximum block size'
   }
 
   // Check for duplicate inputs
