@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2.1.42
+
+update bsv lib
+- fix transaction over the maximum block size
+- `signTx` add `hashCache` parameter
+
 ## 2.1.37
 
 - update bsv lib

@@ -10,7 +10,7 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 const { compilerVersion, getPlatformScryptc } = require('../dist');
 const { showDownloadFailed } = require('./showerror');
 
-const DEFAULT_COMPILER_VERSION = '1.19.1';
+const DEFAULT_COMPILER_VERSION = '1.19.2';
 
 function safeCompilerVersion(cmd) {
   try {
