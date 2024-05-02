@@ -45,21 +45,21 @@ export interface Artifact {
   /** version of artifact file */
   version: number;
   /** version of compiler used to produce this file */
-  compilerVersion: string;
+  compilerVersion?: string;
   /** build type, can be debug or release */
-  buildType: string;
+  buildType?: string;
   /** name of the contract */
   contract: string;
   /** md5 of the contract source code */
-  md5: string;
+  md5?: string;
   /** all stateful properties defined in the contracts */
-  stateProps: Array<ParamEntity>;
+  stateProps?: Array<ParamEntity>;
   /** all structures defined in the contracts, including dependent contracts */
-  structs: Array<StructEntity>;
+  structs?: Array<StructEntity>;
   /** all library defined in the contracts, including dependent contracts */
-  library: Array<LibraryEntity>;
+  library?: Array<LibraryEntity>;
   /** all typealias defined in the contracts, including dependent contracts */
-  alias: Array<AliasEntity>
+  alias?: Array<AliasEntity>
   /** ABI of the contract: interfaces of its public functions and constructor */
   abi: Array<ABIEntity>;
   /** @deprecated locking script of the contract in ASM format, including placeholders for constructor parameters */
@@ -67,13 +67,13 @@ export interface Artifact {
   /** locking script of the contract in hex format, including placeholders for constructor parameters */
   hex: string;
   /** file uri of the main contract source code file */
-  file: string;
+  file?: string;
   /** @deprecated **/
   sources?: Array<string>;
   /** @deprecated **/
   sourceMap?: Array<string>;
   /** file uri of source map file **/
-  sourceMapFile: string;
+  sourceMapFile?: string;
 }
 
 

@@ -3,8 +3,13 @@
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": "explicit"
     },
-    "eslint.validate": [
-        "typescript",
-        "javascript"
-    ]
+    "eslint.validate": ["typescript", "javascript"],
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "prettier.configPath": "./.prettierrc",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
