@@ -1,5 +1,5 @@
 import { parseChunked, stringifyStream } from '@discoveryjs/json-ext';
-import * as bsv from 'bsv';
+import * as bsv from '@scrypt-inc/bsv';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { join } from 'path';

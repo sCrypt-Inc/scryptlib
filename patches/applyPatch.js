@@ -39,10 +39,6 @@ module.exports = function () {
             apply(patches.slice(1));
         });
 
-        apply([
-            "bsv/index.d.ts",
-            "bsv/index.js"
-        ]);
         printFinish();
     } catch (error) {
         console.info(`${chalk.red("x")} ${chalk.bgRed.bold("The patches has not been successfully applied.")}`)
