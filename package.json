@@ -41,9 +41,9 @@
   "author": "sCrypt.Inc",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/scrypt-sv/scryptlib/issues"
+    "url": "https://github.com/sCrypt-Inc/scryptlib/issues"
   },
-  "homepage": "https://github.com/scrypt-sv/scryptlib#readme",
+  "homepage": "https://github.com/sCrypt-Inc/scryptlib#readme",
   "devDependencies": {
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",
