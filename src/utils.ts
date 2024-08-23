@@ -349,11 +349,13 @@ export function compileContract(file: string, options?: {
   out?: string,
   sourceMap?: boolean,
   artifact?: boolean,
+  optimize?: boolean,
 }): CompileResult {
   options = Object.assign({
     out: join(__dirname, '../out'),
     sourceMap: false,
     artifact: false,
+    optimize: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -369,6 +371,7 @@ export function compileContract(file: string, options?: {
     {
       artifact: options.artifact, outputDir: options.out,
       sourceMap: options.sourceMap,
+      optimize: options.optimize,
       cmdPrefix: findCompiler()
     }
   );
@@ -380,12 +383,14 @@ export function compileContract(file: string, options?: {
 export function compileContractAsync(file: string, options?: {
   out?: string,
   artifact?: boolean,
-  sourceMap?: boolean
+  sourceMap?: boolean,
+  optimize?: boolean,
 }): Promise<CompileResult> {
   options = Object.assign({
     out: join(__dirname, '..', 'out'),
     sourceMap: false,
     artifact: false,
+    optimize: false,
   }, options);
   if (!fs.existsSync(file)) {
     throw (`file ${file} not exists!`);
@@ -398,6 +403,7 @@ export function compileContractAsync(file: string, options?: {
   return compileAsync({ path: file }, {
     artifact: options.artifact, outputDir: options.out,
     sourceMap: options.sourceMap,
+    optimize: options.optimize,
     hex: true,
     cmdPrefix: findCompiler()
   });

@@ -13,6 +13,10 @@ function compileAllContracts() {
   }
 
   const scryptc = findCompiler();
+
+  if (!scryptc) {
+    throw new Error('No compiler found!')
+  }
   console.log('compiler binary: ', scryptc)
   console.log('compiler version: ', compilerVersion(scryptc))
 

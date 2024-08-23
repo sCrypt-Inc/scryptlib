@@ -227,6 +227,7 @@ export interface CompilingSettings {
   stdout?: boolean,
   sourceMap?: boolean,
   timeout?: number  // in ms
+  optimize?: boolean,
 }
 
 function toOutputDir(artifactsDir: string, sourcePath: string) {
@@ -315,7 +316,8 @@ const defaultCompilingSettings = {
   buildType: BuildType.Debug,
   stdout: false,
   sourceMap: false,
-  timeout: 1200000  // in ms
+  timeout: 1200000,  // in ms
+  optimize: false,
 };
 
 export function settings2cmd(sourcePath: string, settings: CompilingSettings): string {
@@ -328,13 +330,13 @@ export function settings2cmd(sourcePath: string, settings: CompilingSettings): s
   let outOption = `-o "${outputDir}"`;
   if (settings.stdout) {
     outOption = '--stdout';
-    return `"${cmdPrefix}" compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    return `"${cmdPrefix}" compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.optimize ? '-O' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
   } else {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir);
     }
   }
-  return `"${cmdPrefix}" compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  return `"${cmdPrefix}" compile ${settings.hex ? '--hex' : ''} ${settings.optimize ? '-O' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 }
 
 export function compile(
