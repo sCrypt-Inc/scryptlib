@@ -227,6 +227,7 @@ export interface CompilingSettings {
   stdout?: boolean,
   sourceMap?: boolean,
   timeout?: number  // in ms
+  optimize?: boolean,
 }
 
 function toOutputDir(artifactsDir: string, sourcePath: string) {
@@ -237,8 +238,7 @@ export function doCompileAsync(source: {
   content?: string,
 }, settings: CompilingSettings, callback?: (error: Error | null, result: {
   path: string,
-  output: string,
-  md5: string,
+  output: string
 } | null) => void): ChildProcess {
   const sourcePath = source.path;
   const srcDir = dirname(sourcePath);
@@ -258,7 +258,6 @@ export function doCompileAsync(source: {
       callback(null, {
         path: sourcePath,
         output: stdout,
-        md5: md5(sourceContent),
       });
     });
 
@@ -292,7 +291,7 @@ export function compileAsync(source: {
 
         try {
 
-          const result = handleCompilerOutput(source.path, settings, data.output, data.md5);
+          const result = handleCompilerOutput(source.path, settings, data.output);
           resolve(result);
         } catch (error) {
           reject(error);
@@ -317,7 +316,8 @@ const defaultCompilingSettings = {
   buildType: BuildType.Debug,
   stdout: false,
   sourceMap: false,
-  timeout: 1200000  // in ms
+  timeout: 1200000,  // in ms
+  optimize: false,
 };
 
 export function settings2cmd(sourcePath: string, settings: CompilingSettings): string {
@@ -330,13 +330,13 @@ export function settings2cmd(sourcePath: string, settings: CompilingSettings): s
   let outOption = `-o "${outputDir}"`;
   if (settings.stdout) {
     outOption = '--stdout';
-    return `"${cmdPrefix}" compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+    return `"${cmdPrefix}" compile ${settings.asm || settings.artifact ? '--asm' : ''} ${settings.hex ? '--hex' : ''} ${settings.optimize ? '-O' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
   } else {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir);
     }
   }
-  return `"${cmdPrefix}" compile ${settings.hex ? '--hex' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
+  return `"${cmdPrefix}" compile ${settings.hex ? '--hex' : ''} ${settings.optimize ? '-O' : ''} ${settings.ast || settings.artifact ? '--ast' : ''} ${settings.debug == true ? '--debug' : ''} ${settings.sourceMap == true ? '--source-map' : ''} -r ${outOption} ${settings.cmdArgs ? settings.cmdArgs : ''}`;
 }
 
 export function compile(
@@ -360,14 +360,18 @@ export function compile(
   settings = Object.assign({}, defaultCompilingSettings, settings);
   const cmd = settings2cmd(sourcePath, settings);
   const output = execSync(cmd, { input: sourceContent, cwd: curWorkingDir, timeout: settings.timeout, maxBuffer: maxBuffer }).toString();
-  return handleCompilerOutput(sourcePath, settings, output, md5(sourceContent));
+  return handleCompilerOutput(sourcePath, settings, output);
+}
+
+function calcHexMd5(hex: string) {
+  const chex = hex.replace(/<([^>]+)>/g, '<>');
+  return md5(chex);
 }
 
 export function handleCompilerOutput(
   sourcePath: string,
   settings: CompilingSettings,
   output: string,
-  md5: string,
 ): CompileResult {
 
   const srcDir = dirname(sourcePath);
@@ -380,7 +384,6 @@ export function handleCompilerOutput(
     output = output.split(/\r?\n/g).join('\n');
     const result: CompileResult = new CompileResult([], []);
     result.compilerVersion = compilerVersion(settings.cmdPrefix ? settings.cmdPrefix : findCompiler());
-    result.md5 = md5;
     result.buildType = settings.buildType || BuildType.Debug;
     if (output.startsWith('Error:') || output.startsWith('Warning:')) {
       Object.assign(result, getErrorsAndWarnings(output, srcDir, sourceFileName));
@@ -422,6 +425,7 @@ export function handleCompilerOutput(
         renameSync(outputFilePath, hexFile);
         outputFiles['hex'] = hexFile;
         result.hex = readFileSync(hexFile, 'utf8');
+        result.md5 = calcHexMd5(result.hex);
       }
 
       if (settings.sourceMap) {
