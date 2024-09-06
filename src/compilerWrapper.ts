@@ -1,6 +1,6 @@
 import { ChildProcess, exec, execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'fs';
-import { basename, dirname, join } from 'path';
+import { basename, dirname, join, relative } from 'path';
 import {
   buildTypeResolver, Artifact, CURRENT_CONTRACT_ARTIFACT_VERSION, findCompiler, hash160, md5, path2uri, resolveConstValue, TypeResolver
 } from './internal';
@@ -457,6 +457,11 @@ export function handleCompilerOutput(
         const artifact = result.toArtifact();
 
         writeFileSync(artifactFile, JSON.stringify(artifact, (key, value) => {
+
+          if (key === 'file') {
+            return relative(artifactFile, value)
+          }
+
           //ignore deprecated fields
           if (key == 'sources' || key == 'sourceMap' || key === 'asm')
             return undefined;
@@ -542,7 +547,7 @@ export function getFullFilePath(relativePath: string, baseDir: string, curFileNa
   }
 
   if (relativePath === 'std') {
-    return 'std'; // 
+    return 'std'; //
   }
 
   return join(baseDir, relativePath);
@@ -612,7 +617,7 @@ function shortGenericType(genericType: string): string {
 }
 
 /**
- * 
+ *
  * @param astRoot AST root node after main contract compilation
  * @param typeResolver a Type Resolver
  * @returns All function ABIs defined by the main contract, including constructors
@@ -646,7 +651,7 @@ export function getABIDeclaration(astRoot: unknown, typeResolver: TypeResolver):
 }
 
 /**
- * 
+ *
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined structures of the main contract and dependent contracts
@@ -672,7 +677,7 @@ export function getStructDeclaration(astRoot: unknown, dependencyAsts: unknown):
 
 
 /**
- * 
+ *
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined Library of the main contract and dependent contracts
@@ -748,7 +753,7 @@ export function getContractDeclaration(astRoot: unknown, dependencyAsts: unknown
 
 
 /**
- * 
+ *
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined type aliaes of the main contract and dependent contracts
@@ -772,7 +777,7 @@ export function getAliasDeclaration(astRoot: unknown, dependencyAsts: unknown): 
 
 
 /**
- * 
+ *
  * @param astRoot AST root node after main contract compilation
  * @param dependencyAsts AST root node after all dependency contract compilation
  * @returns all defined static const int literal of the main contract and dependent contracts
@@ -928,7 +933,7 @@ function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileNa
   const allAst = addSourceLocation(ast, srcDir, sourceFileName);
 
   const sourceUri = path2uri(sourcePath);
-  result.file = sourceUri;
+  result.file = sourcePath;
   result.ast = allAst[sourceUri];
   delete allAst[sourceUri];
   result.dependencyAsts = allAst;
@@ -977,11 +982,11 @@ function parserAst(result: CompileResult, ast: any, srcDir: string, sourceFileNa
 
 /**
  * @deprecated use `--hex` when compiling
- * @param result 
- * @param asmObj 
- * @param settings 
- * @param srcDir 
- * @param sourceFileName 
+ * @param result
+ * @param asmObj
+ * @param settings
+ * @param srcDir
+ * @param sourceFileName
  */
 function parserASM(result: CompileResult, asmObj: any, settings: CompilingSettings, srcDir: string, sourceFileName: string) {
 

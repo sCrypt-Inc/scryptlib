@@ -1,4 +1,4 @@
-import { basename, dirname } from 'path';
+import { basename, dirname, join } from 'path';
 import { ABIEntityType, Argument, LibraryEntity, ParamEntity, parseGenericType } from '.';
 import { ContractEntity, getFullFilePath, loadSourceMapfromArtifact, OpCode, StaticEntity } from './compilerWrapper';
 import {
@@ -10,7 +10,7 @@ import { arrayTypeAndSize, checkSupportedParamType, flatternArg, hasGeneric, sub
 
 
 /**
- * TxContext provides some context information of the current transaction, 
+ * TxContext provides some context information of the current transaction,
  * needed only if signature is checked inside the contract.
  */
 export interface TxContext {
@@ -66,7 +66,7 @@ export interface Artifact {
   asm?: string;
   /** locking script of the contract in hex format, including placeholders for constructor parameters */
   hex: string;
-  /** file uri of the main contract source code file */
+  /** relative file uri of the main contract source code file */
   file: string;
   /** @deprecated **/
   sources?: Array<string>;
@@ -326,7 +326,7 @@ export class AbstractContract {
   }
 
   /**
-   * format the error 
+   * format the error
    * @param err the result output by  `tx.verifyInputScript(inputIndex)`
    * @returns string the formatted error message.
    */
@@ -346,7 +346,7 @@ export class AbstractContract {
       const sourceMapFilePath = uri2path(this.sourceMapFile);
       const sourceMap = JSONParserSync(sourceMapFilePath);
 
-      const sourcePath = uri2path(this.file);
+      const sourcePath = join(sourceMapFilePath, this.file);
 
       const srcDir = dirname(sourcePath);
       const sourceFileName = basename(sourcePath);
@@ -397,7 +397,7 @@ export class AbstractContract {
 
   /**
    * Generate a debugger launch configuration for the contract's last called public method
-   * @param txContext 
+   * @param txContext
    * @returns a uri of the debugger launch configuration
    */
   public genLaunchConfig(txContext?: TxContext): string {
@@ -435,10 +435,10 @@ export class AbstractContract {
   }
 
   /**
- * @deprecated use setDataPartInASM setDataPartInHex 
+ * @deprecated use setDataPartInASM setDataPartInHex
  * set the data part of the contract
- * @param state 
- * @param isStateHex 
+ * @param state
+ * @param isStateHex
  */
   setDataPart(state: string, isStateHex = false): void {
     if (isStateHex == false) {
@@ -452,8 +452,8 @@ export class AbstractContract {
 
   /**
  * set the data part of the contract in ASM format
- * @param asm 
- * @param  
+ * @param asm
+ * @param
  */
   setDataPartInASM(asm: string): void {
     if (AbstractContract.isStateful(this)) {
@@ -465,7 +465,7 @@ export class AbstractContract {
 
   /**
  * set the data part of the contract in hex format
- * @param hex 
+ * @param hex
  */
   setDataPartInHex(hex: string): void {
     this._dataPartInHex = hex.trim();
@@ -711,7 +711,7 @@ export class AbstractContract {
 
 
 
-  // struct / array: sha256 every single element of the flattened struct / array, and concat the result to a joint byte, and sha256 again 
+  // struct / array: sha256 every single element of the flattened struct / array, and concat the result to a joint byte, and sha256 again
   // basic type: sha256 every single element
   static flattenSha256(data: SupportedParamType, type: string): string {
     const error = checkSupportedParamType(data, {
