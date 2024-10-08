@@ -232,14 +232,6 @@ describe('utils', () => {
       expect(arraySize).to.includes.members([2, 3, 8, 1])
     })
 
-
-    it('arrayTypeAndSize bool[2][3][8][1]', () => {
-
-      const [elemTypeName, arraySize] = arrayTypeAndSize("bool[2][3][8][1]");
-      expect(elemTypeName).to.equal('bool')
-      expect(arraySize).to.includes.members([2, 3, 8, 1])
-    })
-
     it('arrayTypeAndSize L<St, int>[3]', () => {
 
       const [elemTypeName, arraySize] = arrayTypeAndSize("L<St,int>[3]");
