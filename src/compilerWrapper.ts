@@ -352,8 +352,6 @@ export function compile(
 
   const curWorkingDir = settings.cwd || srcDir;
 
-  settings = Object.assign({}, defaultCompilingSettings, settings);
-
   const sourceContent = source.content !== undefined ? source.content : readFileSync(sourcePath, 'utf8');
 
   const maxBuffer = settings.stdout ? 1024 * 1024 * 100 : 1024 * 1024;
