@@ -1,5 +1,16 @@
 # CHANGELOG
 
+
+## 2.2.2
+- Pump `@scrypt-inc/bsv` dependencies
+
+## 2.2.1
+
+- Pump default compiler version to `1.19.4`
+- Change `bsv` dependencies to `@scrypt-inc/bsv`, no bsv patch now
+- Add `optimize` option
+- No longer use source code to calculate md5, but script hex templete
+
 ## 2.2.0
 
 - Pump default compiler version to `1.19.4`
