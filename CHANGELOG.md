@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2.2.4
+- Fix dependencies, add `minimist`
+
+## 2.2.3
+- Pump `@scrypt-inc/bsv` dependencies
 
 ## 2.2.2
 - Pump `@scrypt-inc/bsv` dependencies
