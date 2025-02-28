@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 2.2.6
+- Pump `compiler`
+
 ## 2.2.5
 - Pump `@scrypt-inc/bsv` dependencies
 
